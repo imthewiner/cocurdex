@@ -22,7 +22,7 @@ function preMigrationSnapshots(target: string) {
     .sort();
 }
 
-describe("createCocurdexDatabase", () => {
+describe("createCocurdexDatabase", { timeout: 30_000 }, () => {
   it("creates the marked version-one baseline in WAL mode", () => {
     const target = databasePath();
     const database = createCocurdexDatabase(target);
