@@ -1,30 +1,48 @@
 import {
-  type DaemonEventSubscription,
-  subscribeDaemonEvents,
-} from "@cocurdex/daemon/client";
-import {
   type CocurdexDaemonEvent,
   cocurdexDataAreas,
   type DaemonEventMeta,
 } from "@cocurdex/shared";
+import type {
+  DaemonEventSubscription,
+  DaemonRpcSubscribeOptions,
+} from "./client.ts";
 
-interface ConnectionOptions {
-  ensure(): Promise<void>;
-  userDataPath: string;
+export type DaemonEventSubscriber = (
+  onEvent: (event: CocurdexDaemonEvent, meta: DaemonEventMeta) => void,
+  options: DaemonRpcSubscribeOptions,
+) => Promise<DaemonEventSubscription>;
+
+export interface DaemonEventConnectionOptions {
+  subscribe: DaemonEventSubscriber;
+  ensure?(): Promise<void>;
   onEvent(event: CocurdexDaemonEvent, meta?: DaemonEventMeta): void;
   onConnected?(): void;
-  onDisconnect(error: Error): void;
+  onDisconnect?(error: Error): void;
+  retryDelayMs?: number;
+  maxRetryDelayMs?: number;
 }
 
-export function createDaemonEventConnection(options: ConnectionOptions) {
+export type DaemonEventConnection = ReturnType<
+  typeof createDaemonEventConnection
+>;
+
+function unrefTimer(timer: ReturnType<typeof setTimeout>) {
+  (timer as { unref?: () => void }).unref?.();
+}
+
+export function createDaemonEventConnection(
+  options: DaemonEventConnectionOptions,
+) {
   let generation = 0;
   let disposed = false;
   let subscription: DaemonEventSubscription | null = null;
   let pending: Promise<void> | null = null;
   let controller: AbortController | null = null;
-  let timer: NodeJS.Timeout | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
   let lastSeq: number | null = null;
   let lastEpoch: string | null = null;
+  let failures = 0;
 
   function reset() {
     generation += 1;
@@ -39,15 +57,22 @@ export function createDaemonEventConnection(options: ConnectionOptions) {
     pending = null;
   }
 
+  function retryDelay() {
+    const base = options.retryDelayMs ?? 500;
+    const max = options.maxRetryDelayMs ?? 10_000;
+    failures += 1;
+    return Math.min(base * 2 ** (failures - 1), max);
+  }
+
   function reconnect(attemptGeneration: number, error: Error) {
     if (disposed || attemptGeneration !== generation) return;
     reset();
-    options.onDisconnect(error);
+    options.onDisconnect?.(error);
     timer = setTimeout(() => {
       timer = null;
       void connect();
-    }, 500);
-    timer.unref?.();
+    }, retryDelay());
+    unrefTimer(timer);
   }
 
   function connect(): Promise<void> {
@@ -60,9 +85,9 @@ export function createDaemonEventConnection(options: ConnectionOptions) {
     controller = attemptController;
     const attempt = (async () => {
       try {
-        await Promise.resolve().then(options.ensure);
+        await options.ensure?.();
         if (disposed || attemptGeneration !== generation) return;
-        const connected = await subscribeDaemonEvents(
+        const connected = await options.subscribe(
           (event, meta) => {
             if (!disposed && attemptGeneration === generation)
               options.onEvent(event, meta);
@@ -70,7 +95,6 @@ export function createDaemonEventConnection(options: ConnectionOptions) {
           {
             afterSeq: lastSeq ?? undefined,
             epoch: lastEpoch ?? undefined,
-            userDataPath: options.userDataPath,
             signal: attemptController.signal,
             onDisconnect: (error) =>
               reconnect(
@@ -84,10 +108,8 @@ export function createDaemonEventConnection(options: ConnectionOptions) {
           return;
         }
         subscription = connected;
+        failures = 0;
         if (connected.replayGap) {
-          // The journaled replay could not cover our last position (daemon
-          // restart or journal overflow): assume every data area changed so
-          // consumers refetch authoritative state.
           options.onEvent({
             type: "data.changed",
             areas: [...cocurdexDataAreas],

@@ -1,5 +1,8 @@
-import { readDaemonMetadata } from "@cocurdex/daemon/client";
-import { createDaemonEventConnection } from "./daemon-event-connection";
+import {
+  readDaemonMetadata,
+  subscribeDaemonEvents,
+} from "@cocurdex/daemon/client";
+import { createDaemonEventConnection } from "@cocurdex/rpc/event-connection";
 import { createDaemonRuntimeLifecycle } from "./daemon-runtime-lifecycle";
 import type {
   DaemonRuntimeClient,
@@ -17,8 +20,12 @@ export function createDaemonRuntimeClient(
   const lifecycle = createDaemonRuntimeLifecycle(options);
   const ensureDaemon = lifecycle.ensure;
   const connection = createDaemonEventConnection({
+    subscribe: (onEvent, subscribeOptions) =>
+      subscribeDaemonEvents(onEvent, {
+        ...subscribeOptions,
+        userDataPath: options.userDataPath,
+      }),
     ensure: ensureDaemon,
-    userDataPath: options.userDataPath,
     onEvent: options.onEvent,
     onConnected: options.onConnected,
     onDisconnect(error) {

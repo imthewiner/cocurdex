@@ -1,11 +1,11 @@
-import {
-  type DaemonEventSubscription,
-  subscribeDaemonEvents,
-} from "@cocurdex/daemon/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDaemonEventConnection } from "./daemon-event-connection";
+import type { DaemonEventSubscription } from "./client.ts";
+import {
+  createDaemonEventConnection,
+  type DaemonEventSubscriber,
+} from "./event-connection.ts";
 
-vi.mock("@cocurdex/daemon/client", () => ({ subscribeDaemonEvents: vi.fn() }));
+const subscribeDaemonEvents = vi.fn<DaemonEventSubscriber>();
 const connections: ReturnType<typeof createDaemonEventConnection>[] = [];
 beforeEach(() => {
   vi.resetAllMocks();
@@ -17,14 +17,14 @@ afterEach(() => {
 
 function fixture() {
   const options = {
+    subscribe: subscribeDaemonEvents,
     ensure: vi.fn().mockResolvedValue(undefined),
-    userDataPath: "/unused",
     onEvent: vi.fn(),
     onConnected: vi.fn(),
     onDisconnect: vi.fn(),
   };
   const close = vi.fn();
-  vi.mocked(subscribeDaemonEvents).mockResolvedValue({
+  subscribeDaemonEvents.mockResolvedValue({
     close,
     epoch: null,
     lastSeq: null,
@@ -55,7 +55,7 @@ describe("daemon event connection generations", () => {
   it("closes a late subscription after disposal", async () => {
     const { connection, options, close } = fixture();
     const pending = deferred<DaemonEventSubscription>();
-    vi.mocked(subscribeDaemonEvents).mockReturnValue(pending.promise);
+    subscribeDaemonEvents.mockReturnValue(pending.promise);
     const connecting = connection.connect();
     await vi.waitFor(() =>
       expect(subscribeDaemonEvents).toHaveBeenCalledOnce(),
@@ -69,10 +69,10 @@ describe("daemon event connection generations", () => {
   it("ignores stale disconnect callbacks after reconnect", async () => {
     const { connection, options } = fixture();
     await connection.connect();
-    const previous = vi.mocked(subscribeDaemonEvents).mock.calls[0]?.[1];
+    const previous = subscribeDaemonEvents.mock.calls[0]?.[1];
     connection.reset();
     const currentClose = vi.fn();
-    vi.mocked(subscribeDaemonEvents).mockResolvedValue({
+    subscribeDaemonEvents.mockResolvedValue({
       close: currentClose,
       epoch: null,
       lastSeq: null,
@@ -86,14 +86,14 @@ describe("daemon event connection generations", () => {
   it("does not replace a new subscription with a late old handshake", async () => {
     const { connection } = fixture();
     const pending = deferred<DaemonEventSubscription>();
-    vi.mocked(subscribeDaemonEvents).mockReturnValueOnce(pending.promise);
+    subscribeDaemonEvents.mockReturnValueOnce(pending.promise);
     const first = connection.connect();
     await vi.waitFor(() =>
       expect(subscribeDaemonEvents).toHaveBeenCalledOnce(),
     );
     connection.reset();
     const currentClose = vi.fn();
-    vi.mocked(subscribeDaemonEvents).mockResolvedValue({
+    subscribeDaemonEvents.mockResolvedValue({
       close: currentClose,
       epoch: null,
       lastSeq: null,
@@ -115,7 +115,7 @@ describe("daemon event connection generations", () => {
   });
   it("resumes from the last position after an explicit reset", async () => {
     const { connection } = fixture();
-    vi.mocked(subscribeDaemonEvents).mockResolvedValue({
+    subscribeDaemonEvents.mockResolvedValue({
       close: vi.fn(),
       epoch: "daemon-epoch-a",
       lastSeq: 20,
@@ -124,7 +124,7 @@ describe("daemon event connection generations", () => {
     await connection.connect();
     connection.reset();
     await connection.connect();
-    expect(vi.mocked(subscribeDaemonEvents).mock.calls[1]?.[1]).toMatchObject({
+    expect(subscribeDaemonEvents.mock.calls[1]?.[1]).toMatchObject({
       afterSeq: 20,
       epoch: "daemon-epoch-a",
     });
@@ -133,11 +133,30 @@ describe("daemon event connection generations", () => {
     vi.useFakeTimers();
     const { connection, options } = fixture();
     await connection.connect();
-    const previous = vi.mocked(subscribeDaemonEvents).mock.calls[0]?.[1];
+    const previous = subscribeDaemonEvents.mock.calls[0]?.[1];
     previous?.onDisconnect?.(new Error("error"));
     previous?.onDisconnect?.(new Error("close"));
     await vi.advanceTimersByTimeAsync(500);
     expect(options.onDisconnect).toHaveBeenCalledOnce();
     expect(subscribeDaemonEvents).toHaveBeenCalledTimes(2);
+  });
+  it("backs off between failed attempts and resets after connecting", async () => {
+    vi.useFakeTimers();
+    const { connection } = fixture();
+    subscribeDaemonEvents
+      .mockRejectedValueOnce(new Error("unavailable"))
+      .mockRejectedValueOnce(new Error("unavailable"));
+    await connection.connect();
+    expect(subscribeDaemonEvents).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(subscribeDaemonEvents).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(subscribeDaemonEvents).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(subscribeDaemonEvents).toHaveBeenCalledTimes(3);
+    const previous = subscribeDaemonEvents.mock.calls[2]?.[1];
+    previous?.onDisconnect?.(new Error("close"));
+    await vi.advanceTimersByTimeAsync(500);
+    expect(subscribeDaemonEvents).toHaveBeenCalledTimes(4);
   });
 });

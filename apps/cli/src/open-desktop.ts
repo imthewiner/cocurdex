@@ -24,6 +24,7 @@ const KNOWN_COMMANDS = new Set([
   "open",
   "help",
   "version",
+  "web",
 ]);
 
 export function isKnownCliCommand(resource: string | undefined): boolean {

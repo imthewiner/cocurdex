@@ -14,6 +14,7 @@ export interface DaemonRuntimeClientOptions {
   onEvent(event: CocurdexDaemonEvent, meta?: DaemonEventMeta): void;
   onConnected?(): void;
   userDataPath: string;
+  webRoot?: string;
 }
 
 export interface DaemonRuntimeStatus {

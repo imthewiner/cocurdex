@@ -1,15 +1,6 @@
 import type { TaskApi } from "@cocurdex/shared";
 import { requestDaemon as rpc } from "./daemon-client";
-import type { TaskEventBridge } from "./types";
-
-function getTaskEventBridge(): TaskEventBridge {
-  if (typeof window === "undefined" || !window.taskEvents) {
-    throw new Error(
-      "Task service is unavailable. Connect to an execution host.",
-    );
-  }
-  return window.taskEvents;
-}
+import { onDaemonAgentEvent } from "./daemon-events";
 
 export const taskApi: TaskApi = {
   submitPreviousMessage: (input) => rpc("session.resubmit", input),
@@ -34,5 +25,5 @@ export const taskApi: TaskApi = {
         feedback: decision.feedback ?? null,
       },
     }),
-  onAgentEvent: (listener) => getTaskEventBridge().onAgentEvent(listener),
+  onAgentEvent: onDaemonAgentEvent,
 };

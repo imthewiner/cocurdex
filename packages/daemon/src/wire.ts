@@ -37,6 +37,7 @@ import {
   type DaemonReceiptStore,
 } from "./rpc-receipts";
 import { CocurdexDaemonService } from "./service";
+import { createWebAssetHandler } from "./web-assets";
 import {
   authorizeDaemonWebSocket,
   parseWebSocketProtocolHeader,
@@ -47,6 +48,7 @@ interface StartDaemonServerOptions {
   token: string;
   userDataPath?: string;
   webSocketPort?: number;
+  webRoot?: string;
   onIdleShutdown?(): void;
 }
 
@@ -215,10 +217,20 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   let agentToolHandler:
     | ReturnType<typeof createAgentToolHttpHandler>
     | undefined;
+  const webAssetHandler = options.webRoot
+    ? createWebAssetHandler(options.webRoot)
+    : undefined;
   const httpServer = http.createServer((request, response) => {
     if (!isAgentToolHttpRequest(request)) {
-      response.writeHead(404);
-      response.end();
+      if (!webAssetHandler) {
+        response.writeHead(404);
+        response.end();
+        return;
+      }
+      void webAssetHandler(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(500);
+        response.end();
+      });
       return;
     }
     if (!ready || !agentToolHandler) {

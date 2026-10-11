@@ -3,10 +3,15 @@ import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
 import { TooltipProvider } from "@/components/ui";
 import { i18n } from "@/i18n";
-import { applyPlatformAttribute, desktopApi } from "@/lib";
+import {
+  applyPlatformAttribute,
+  desktopApi,
+  installWebHostBridge,
+} from "@/lib";
 
 import "./styles/globals.css";
 
+installWebHostBridge();
 // Tag the platform before first paint so platform-conditional styling (e.g.
 // native scrollbar treatment in base.css) applies without a flash.
 applyPlatformAttribute();
