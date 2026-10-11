@@ -433,10 +433,25 @@
       "scopeDescription": "用于 Agent 与应用出站网络请求。默认不劫持系统代理，也不接管内置终端。",
       "status": {
         "checking": "正在检测连通性…",
+        "fields": {
+          "egressIp": "出口 IP",
+          "error": "错误",
+          "latency": "延迟",
+          "location": "位置",
+          "mode": "模式"
+        },
         "idle": "悬停可检测连通性",
         "label": "代理状态",
         "offDetail": "出站流量直连，未使用应用内代理。",
-        "openSettings": "打开网络设置"
+        "openSettings": "打开网络设置",
+        "state": {
+          "checking": "检测中",
+          "error": "失败",
+          "incomplete": "配置不完整",
+          "off": "直连",
+          "ok": "连通",
+          "unknown": "未检测"
+        }
       },
       "test": {
         "action": "测试",
