@@ -86,6 +86,7 @@ import type {
   SearchDocumentResult,
   SearchDocumentsPayload,
   SessionAttentionSnapshot,
+  SessionExecutionTree,
   SessionMessagesResult,
   SessionRecord,
   StartScriptRunPayload,
@@ -364,6 +365,9 @@ export interface ProductApi {
   }): Promise<{ removed: boolean }>;
   listScriptRuns(requesterSessionId: string): Promise<ScriptRunRecord[]>;
   getScriptRun(runId: string): Promise<ScriptRunSnapshot>;
+  getSessionExecutionTree(
+    sessionId: string,
+  ): Promise<SessionExecutionTree | null>;
   startScriptRun(payload: StartScriptRunPayload): Promise<ScriptRunRecord>;
   cancelScriptRun(runId: string): Promise<ScriptRunRecord>;
   getScriptRunSettings(): Promise<ScriptRunSettings>;

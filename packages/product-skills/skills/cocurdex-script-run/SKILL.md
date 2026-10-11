@@ -91,6 +91,7 @@ Call `script_run_propose` with a kebab-case `name` and the script. Then tell the
 - `completed`: the body is your returned value as JSON. Merge it for the user, and name the items whose result was `null`.
 - `failed`: the body is the error (a script exception, the agent limit, or the time limit). Fix the cause and propose a corrected run, or do the remaining work yourself.
 - `cancelled` or `interrupted`: the user stopped it or the app restarted. Ask before proposing it again.
+- To see what each agent did before a failure, run `cocurdex session tree <requester-session-id> [--json]` (`cocurdex script-run list` shows the requester); script agents appear as subagent sessions under the run that started them.
 
 Agents with `worktree: true` work on `script/<name>-<id>` branches. List those branches for the user; do not merge them unless asked.
 

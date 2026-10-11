@@ -251,6 +251,11 @@ export async function handleDaemonRequest(
       return service.listSessions();
     case "session.snapshot":
       return service.getSessionSnapshot(request.params.sessionId);
+    case "session.executionTree":
+      return service.getSessionExecutionTree(
+        request.params.sessionId,
+        request.params.maxDepth,
+      );
     case "session.configure":
       return service.saveSessionConfiguration(request.params);
     case "session.get":

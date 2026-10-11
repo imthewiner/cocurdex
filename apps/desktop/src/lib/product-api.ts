@@ -60,6 +60,8 @@ export const daemonProductApi: ProductRequestApi = {
   listScriptRuns: (requesterSessionId) =>
     rpc("scriptRun.list", { requesterSessionId }),
   getScriptRun: (runId) => rpc("scriptRun.get", { runId }),
+  getSessionExecutionTree: (sessionId) =>
+    rpc("session.executionTree", { sessionId }),
   startScriptRun: (payload) => rpc("scriptRun.start", payload),
   cancelScriptRun: (runId) => rpc("scriptRun.cancel", { runId }),
   getScriptRunSettings: () => rpc("scriptRun.settings.get"),

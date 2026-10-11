@@ -17,6 +17,7 @@ export type {
 export * from "./context-compaction";
 export * from "./contracts";
 export * from "./data-events";
+export * from "./execution-tree";
 export * from "./files";
 export * from "./git";
 export * from "./git-worktree";

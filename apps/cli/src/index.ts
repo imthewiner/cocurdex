@@ -40,6 +40,10 @@ import {
   scriptRunUsageLines,
 } from "./script-run-commands";
 import { handleSearchCommand } from "./search-commands";
+import {
+  handleSessionTreeCommand,
+  sessionTreeUsageLines,
+} from "./session-tree-command";
 import { assertSessionTuiAvailable, runSessionTui } from "./session-tui";
 import { handleSkillsCommand, skillsUsageLines } from "./skill-commands";
 import { taskApi } from "./task-client";
@@ -249,6 +253,11 @@ async function main(rawArgs: string[]) {
 
     const message = await sendSessionMessage(sessionId, prompt);
     printResult(message, parsed);
+    return;
+  }
+
+  if (resource === "session" && action === "tree") {
+    await handleSessionTreeCommand(args[0], parsed);
     return;
   }
 
@@ -475,6 +484,7 @@ function printUsage() {
       "  cocurdex session tui [session-id]",
       "  cocurdex session tui --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
       "  cocurdex session send <session-id> <prompt>",
+      ...sessionTreeUsageLines(),
       "  cocurdex session peers <session-id>",
       "  cocurdex session send-peer <from-session-id> <to-session-id> <message>",
       "  cocurdex session peer-inbound <session-id> deliver|refuse",

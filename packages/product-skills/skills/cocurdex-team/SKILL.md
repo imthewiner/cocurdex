@@ -58,6 +58,7 @@ Each report arrives as a separate message and may arrive in any order.
 
 - On `finished`: record the outcome, check `team_task_list` for tasks still in `backlog` or `doing`, and reassign or take them yourself if a teammate stopped early.
 - On `failed`: read the error, decide whether to respawn with a corrected prompt or do the piece yourself.
+- To see where a teammate stopped (its runs, tool calls, subagents, and pending approvals), run `cocurdex session tree <teammate-session-id> [--json]`; `cocurdex session list` shows the ids. A subagent marked not observable means its provider reports no events for it; do not guess what it did.
 - On `is waiting for the user`: only the user can answer it. Tell the user which teammate is waiting and on what, then end your turn; do not resend its work or force-stop it to get unstuck.
 - Check each task in `review` against its evidence and move it to `done` with `team_task_update`, or send the teammate what is missing.
 - When every task is `review` or `done`, write the merged result for the user and state which teammates contributed what.
