@@ -54,16 +54,44 @@ export function ActivitySegment({
       stateKey={`activity:${items[0]?.id}`}
       variant={isTurnWork ? "turn" : "step"}
     >
-      {items.map((item) =>
-        isInterimReply(item) ? (
+      {items.map((item) => {
+        if (isTurnWork) {
+          return (
+            <TimelineItem key={item.id}>
+              {isInterimReply(item) ? (
+                <TimelineReply>{renderItem(item, true)}</TimelineReply>
+              ) : (
+                renderItem(item, true)
+              )}
+            </TimelineItem>
+          );
+        }
+        return isInterimReply(item) ? (
           <div className="py-1.5 first:pt-0" key={item.id}>
             {renderItem(item, true)}
           </div>
         ) : (
           renderItem(item, true)
-        ),
-      )}
+        );
+      })}
     </ActivityBlock>
+  );
+}
+
+function TimelineItem({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-w-0" data-timeline-item="">
+      {children}
+    </div>
+  );
+}
+
+function TimelineReply({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative -mx-1.5 ps-7 pe-1.5" data-timeline-row="">
+      <span aria-hidden className="activity-timeline-dot" />
+      <div className="pt-0.5">{children}</div>
+    </div>
   );
 }
 

@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CocurdexMark } from "@/components/cocurdex-mark";
-import { useMountEffect } from "@/lib";
+import { cn, useMountEffect } from "@/lib";
 import { useToolCallTriggerParts } from "../tool-call/use-tool-call-trigger-parts";
 import {
   type ActivityKind,
@@ -50,7 +50,12 @@ function ToolCallLabel({
       <span className="min-w-0 max-w-lg truncate">
         {title}
         {secondary ? (
-          <span className="ms-1.5 font-normal text-chat-fg-muted/80">
+          <span
+            className={cn(
+              "font-normal text-chat-fg-muted/80",
+              title && "ms-1.5",
+            )}
+          >
             {secondary}
           </span>
         ) : null}
@@ -82,7 +87,7 @@ function ToolStepLabel({ toolCall }: { toolCall: AgentToolCallRecord }) {
   const { title, secondary } = useToolCallTriggerParts(toolCall, "past");
   return (
     <span className="min-w-0 max-w-lg truncate font-normal text-chat-fg-muted/70">
-      {secondary ? `${title} ${secondary}` : title}
+      {[title, secondary].filter(Boolean).join(" ")}
     </span>
   );
 }

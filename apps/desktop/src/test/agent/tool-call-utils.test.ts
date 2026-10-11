@@ -137,9 +137,23 @@ describe("tool call utils", () => {
     });
 
     expect(parts).toEqual({
-      title: "Run",
+      title: "",
       secondary: command,
     });
+  });
+
+  it("titles a command row with the agent's description when present", () => {
+    const parts = getToolCallTriggerParts({
+      ...timedToolCall("2026-05-20T00:00:00.000Z", "2026-05-20T00:00:01.000Z"),
+      title: "Run",
+      kind: "execute",
+      rawInput: {
+        command: "git clone --depth 1 https://github.com/getpaseo/paseo",
+        description: "Clone both repos",
+      },
+    });
+
+    expect(parts).toEqual({ title: "Clone both repos", secondary: "" });
   });
 
   it("shows commands and files relative to the session directory", () => {
