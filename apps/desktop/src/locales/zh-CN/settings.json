@@ -295,6 +295,113 @@
       "restartFailed": "无法重启 daemon"
     }
   },
+  "devices": {
+    "audit": {
+      "action": {
+        "deviceRevoked": "已吊销设备",
+        "pairingCancelled": "已取消配对",
+        "pairingCreated": "已创建配对",
+        "pairingExchanged": "设备已配对",
+        "pairingRejected": "拒绝了一次配对尝试",
+        "remoteDisabled": "已关闭远程访问",
+        "remoteEnabled": "已开启远程访问"
+      },
+      "groupTitle": "访问记录"
+    },
+    "copy": "复制",
+    "list": {
+      "detail": "{{scopes}} · 最近活动 {{time}}",
+      "empty": "还没有设备与这台电脑配对。",
+      "groupTitle": "已配对设备",
+      "revoke": "吊销",
+      "revokeCancel": "取消",
+      "revokedDetail": "已于 {{time}} 吊销",
+      "revokeDescription": "设备会立即断开，重新连接需要再次配对。",
+      "revokeFailed": "无法吊销设备",
+      "revokeTitle": "吊销 {{name}}？",
+      "unnamed": "未命名设备"
+    },
+    "pair": {
+      "create": "生成配对码",
+      "createdDescription": "在另一台设备上打开链接，或输入配对码。配对码只能使用一次。",
+      "description": "选择新设备可以做什么，之后随时可以吊销。",
+      "done": "完成",
+      "enableRemoteFirst": "开启远程访问后，才能得到另一台设备可以打开的链接。",
+      "expires": "{{time}} 过期",
+      "failed": "无法生成配对码",
+      "label": "设备名称",
+      "labelPlaceholder": "例如：我的手机",
+      "open": "配对设备",
+      "title": "配对设备",
+      "ttl": "配对码有效期",
+      "ttlMinutes_other": "{{count}} 分钟"
+    },
+    "pairings": {
+      "cancel": "取消",
+      "cancelFailed": "无法取消配对",
+      "expires": "等待设备连接 · {{time}} 过期",
+      "groupTitle": "待完成的配对"
+    },
+    "remote": {
+      "enable": {
+        "description": "允许局域网或 tailnet 中已配对的设备连接这台电脑。",
+        "title": "允许远程设备"
+      },
+      "error": "远程访问无法启动：{{error}}",
+      "groupDescription": "默认关闭。只有已配对的设备能连接，且只拥有你授予的权限。",
+      "groupTitle": "远程访问",
+      "invalidPort": "端口需在 1024 到 65535 之间",
+      "kind": {
+        "lan": "局域网",
+        "tailscale": "Tailscale"
+      },
+      "noAddresses": "没有找到网络地址。请连接网络或 Tailscale。",
+      "plaintextWarning": "连接未加密。请只在可信网络或通过 Tailscale 使用远程访问。",
+      "port": {
+        "description": "默认 {{port}}。",
+        "title": "端口"
+      },
+      "saveFailed": "无法更改远程访问"
+    },
+    "scope": {
+      "approvals": {
+        "description": "处理权限请求、问题和计划审批。",
+        "title": "审批"
+      },
+      "credentials": {
+        "description": "管理模型提供方登录、API Key 和 MCP 服务器。",
+        "title": "凭据"
+      },
+      "execute": {
+        "description": "启动会话、团队、脚本运行和工作流。",
+        "title": "启动任务"
+      },
+      "filesRead": {
+        "description": "读取工作区文件、差异和 Git 状态。",
+        "title": "读取文件"
+      },
+      "filesWrite": {
+        "description": "编辑工作区文件、暂存和提交。",
+        "title": "写入文件"
+      },
+      "gitDestructive": {
+        "description": "丢弃更改、切换分支和推送。",
+        "title": "破坏性 Git 操作"
+      },
+      "hostAdmin": {
+        "description": "修改应用设置和管理设备，仅限这台电脑。",
+        "title": "主机管理"
+      },
+      "interact": {
+        "description": "发送消息、停止会话、编辑笔记和 issue。",
+        "title": "交互"
+      },
+      "read": {
+        "description": "查看会话、消息、笔记和 issue。",
+        "title": "读取"
+      }
+    }
+  },
   "diagnostics": {
     "actions": {
       "export": "导出诊断日志…"
@@ -714,6 +821,7 @@
     "appearance": "外观",
     "archived": "已归档会话",
     "computer": "电脑使用",
+    "devices": "设备",
     "diagnostics": "诊断",
     "editor": "编辑器",
     "environment": "网络",

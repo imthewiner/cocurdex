@@ -999,6 +999,54 @@ describe("initializeDatabase", () => {
     ]);
   });
 
+  it("adds host access tables from version 23 and keeps user data", () => {
+    const database = new DatabaseSync(":memory:");
+    initializeDatabase(database);
+    database.exec(`
+      DROP TABLE host_pairings;
+      DROP TABLE host_devices;
+      DROP TABLE host_access_audit;
+    `);
+    const now = "2026-10-11T00:00:00.000Z";
+    database.exec(`
+      INSERT INTO workspaces (id, name, root_paths, created_at, updated_at, last_opened_at)
+      VALUES ('w1', 'Repo', '["/repo"]', '${now}', '${now}', '${now}');
+      INSERT INTO sessions (id, workspace_id, title, agent_type, status, write_mode, created_at, updated_at)
+      VALUES ('s1', 'w1', 'Explain', 'codex', 'idle', 'read-only', '${now}', '${now}');
+      INSERT INTO messages (id, session_id, role, content, attachments_json, created_at)
+      VALUES ('m1', 's1', 'user', 'hello', '[]', '${now}');
+      INSERT INTO notes (id, kind, title, body_markdown, created_at, updated_at)
+      VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
+      INSERT INTO issues (id, title, workspace_id, created_at, updated_at)
+      VALUES ('i1', 'Pairing', 'w1', '${now}', '${now}');
+      PRAGMA user_version = 23;
+    `);
+
+    initializeDatabase(database);
+
+    const fresh = new DatabaseSync(":memory:");
+    initializeDatabase(fresh);
+    for (const table of [
+      "host_devices",
+      "host_pairings",
+      "host_access_audit",
+    ]) {
+      expect(tableShape(database, table)).toEqual(tableShape(fresh, table));
+    }
+    expect(database.prepare("SELECT title FROM sessions").all()).toEqual([
+      { title: "Explain" },
+    ]);
+    expect(database.prepare("SELECT content FROM messages").all()).toEqual([
+      { content: "hello" },
+    ]);
+    expect(database.prepare("SELECT title FROM notes").all()).toEqual([
+      { title: "Spec" },
+    ]);
+    expect(database.prepare("SELECT title FROM issues").all()).toEqual([
+      { title: "Pairing" },
+    ]);
+  });
+
   it("keeps an up-to-date database that carries a stale version marker", () => {
     const database = new DatabaseSync(":memory:");
     initializeDatabase(database);

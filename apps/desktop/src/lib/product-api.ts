@@ -198,6 +198,14 @@ export const daemonProductApi: ProductRequestApi = {
   setNetworkProxySettings: (settings) => rpc("network.proxy.set", { settings }),
   testNetworkProxy: (settings) => rpc("network.proxy.test", { settings }),
   testCurrentNetworkProxy: () => rpc("network.proxy.test", {}),
+  getHostRemoteAccess: () => rpc("host.remoteAccess.get"),
+  setHostRemoteAccess: (settings) => rpc("host.remoteAccess.set", settings),
+  createHostPairing: (payload) => rpc("host.pairing.create", payload),
+  listHostPairings: () => rpc("host.pairing.list"),
+  cancelHostPairing: (pairingId) => rpc("host.pairing.cancel", { pairingId }),
+  listHostDevices: () => rpc("host.devices.list"),
+  revokeHostDevice: (deviceId) => rpc("host.devices.revoke", { deviceId }),
+  listHostAudit: (limit) => rpc("host.audit.list", { limit }),
   listSessionMessages: (sessionId) =>
     rpc("session.listMessages", { sessionId }),
   listSessionToolCalls: (sessionId) =>

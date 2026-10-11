@@ -1,4 +1,5 @@
 import { createAgentCapabilityCacheSchemaSql } from "./agents/schema";
+import { createHostAccessSchemaSql } from "./host-access/schema";
 import { createScriptRunSchemaSql } from "./script-run/schema";
 import { createTeamSchemaSql } from "./team/schema";
 import { createWorkflowSchemaSql } from "./workflow/schema";
@@ -521,6 +522,8 @@ export function createSchemaSql() {
     ${createTeamSchemaSql()}
 
     ${createScriptRunSchemaSql()}
+
+    ${createHostAccessSchemaSql()}
 
     ${createAgentCapabilityCacheSchemaSql()}
   `;

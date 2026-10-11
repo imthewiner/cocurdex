@@ -489,6 +489,18 @@ export default interface Resources {
       gitNotRepoDescription: "";
       gitNotRepoTitle: "";
     };
+    webPairing: {
+      codeLabel: "Pairing code";
+      hint: "On the computer running cocurdex, open Settings › Devices, create a pairing code, then open its link here or enter the code.";
+      pair: "Pair";
+      reason: {
+        invalid: "This pairing code or device was not accepted. It may have expired, been used already, or been revoked.";
+        missing: "This browser is not paired with this computer yet.";
+        rateLimited: "Too many pairing attempts. Wait a minute and try again.";
+        unreachable: "The computer could not be reached. Check that it is on and that remote access is enabled.";
+      };
+      title: "Pair this browser";
+    };
   };
   editor: {
     actions: {
@@ -1758,6 +1770,114 @@ export default interface Resources {
         restarted: "Daemon restarted";
       };
     };
+    devices: {
+      audit: {
+        action: {
+          deviceRevoked: "Device revoked";
+          pairingCancelled: "Pairing cancelled";
+          pairingCreated: "Pairing created";
+          pairingExchanged: "Device paired";
+          pairingRejected: "Pairing attempt rejected";
+          remoteDisabled: "Remote access turned off";
+          remoteEnabled: "Remote access turned on";
+        };
+        groupTitle: "Access log";
+      };
+      copy: "Copy";
+      list: {
+        detail: "{{scopes}} · last seen {{time}}";
+        empty: "No devices are paired with this computer yet.";
+        groupTitle: "Paired devices";
+        revoke: "Revoke";
+        revokeCancel: "Cancel";
+        revokeDescription: "The device is disconnected immediately and must pair again to reconnect.";
+        revokeFailed: "Could not revoke the device";
+        revokeTitle: "Revoke {{name}}?";
+        revokedDetail: "Revoked {{time}}";
+        unnamed: "Unnamed device";
+      };
+      pair: {
+        create: "Create pairing code";
+        createdDescription: "Open a link on the other device, or enter the code there. The code works once.";
+        description: "Choose what the new device may do. You can revoke it at any time.";
+        done: "Done";
+        enableRemoteFirst: "Turn on remote access to get a link the other device can open.";
+        expires: "Expires {{time}}";
+        failed: "Could not create a pairing code";
+        label: "Device name";
+        labelPlaceholder: "e.g. My phone";
+        open: "Pair device";
+        title: "Pair a device";
+        ttl: "Code valid for";
+        ttlMinutes_one: "{{count}} minute";
+        ttlMinutes_other: "{{count}} minutes";
+      };
+      pairings: {
+        cancel: "Cancel";
+        cancelFailed: "Could not cancel the pairing";
+        expires: "Waiting for a device · expires {{time}}";
+        groupTitle: "Pending pairings";
+      };
+      remote: {
+        enable: {
+          description: "Let paired devices on your network or tailnet connect to this computer.";
+          title: "Allow remote devices";
+        };
+        error: "Remote access could not start: {{error}}";
+        groupDescription: "Off by default. Only paired devices can connect, with the permissions you grant.";
+        groupTitle: "Remote access";
+        invalidPort: "Use a port between 1024 and 65535";
+        kind: {
+          lan: "LAN";
+          tailscale: "Tailscale";
+        };
+        noAddresses: "No network address found. Connect to a network or Tailscale.";
+        plaintextWarning: "Connections are not encrypted. Use remote access on a trusted network or over Tailscale.";
+        port: {
+          description: "Default {{port}}.";
+          title: "Port";
+        };
+        saveFailed: "Could not change remote access";
+      };
+      scope: {
+        approvals: {
+          description: "Answer permission requests, questions, and plan approvals.";
+          title: "Approvals";
+        };
+        credentials: {
+          description: "Manage provider logins, API keys, and MCP servers.";
+          title: "Credentials";
+        };
+        execute: {
+          description: "Start sessions, teams, script runs, and workflows.";
+          title: "Start work";
+        };
+        filesRead: {
+          description: "Read workspace files, diffs, and Git status.";
+          title: "Read files";
+        };
+        filesWrite: {
+          description: "Edit workspace files, stage, and commit.";
+          title: "Write files";
+        };
+        gitDestructive: {
+          description: "Discard changes, check out branches, and push.";
+          title: "Destructive Git";
+        };
+        hostAdmin: {
+          description: "Change app settings and manage devices. Only this computer has it.";
+          title: "Host administration";
+        };
+        interact: {
+          description: "Send messages, stop sessions, and edit notes and issues.";
+          title: "Interact";
+        };
+        read: {
+          description: "See sessions, messages, notes, and issues.";
+          title: "Read";
+        };
+      };
+    };
     diagnostics: {
       actions: {
         export: "Export Diagnostics…";
@@ -2180,6 +2300,7 @@ export default interface Resources {
       appearance: "Appearance";
       archived: "Archived sessions";
       computer: "Computer use";
+      devices: "Devices";
       diagnostics: "Diagnostics";
       editor: "Editor";
       environment: "Network";

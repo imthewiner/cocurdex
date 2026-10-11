@@ -24,6 +24,7 @@ import { cn } from "@/lib";
 import { AdapterSettingsPanel } from "./adapters";
 import { AppearancePanel } from "./appearance-settings";
 import { ArchivedSessionsPanel } from "./archived-sessions";
+import { DevicesSettingsPanel } from "./devices";
 import { DiagnosticsSettingsPanel } from "./diagnostics-settings";
 import { EditorSettingsPanel } from "./editor-settings";
 import { GeneralPanel } from "./general-settings";
@@ -195,6 +196,10 @@ function SectionPanel({
 
   if (sectionId === "environment") {
     return <NetworkProxySettingsPanel />;
+  }
+
+  if (sectionId === "devices") {
+    return <DevicesSettingsPanel />;
   }
 
   if (sectionId === "git") {
