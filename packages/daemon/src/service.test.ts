@@ -62,6 +62,7 @@ function createPayload(
 ): SendSessionCommand {
   return {
     sessionId: "session-1",
+    messageId: crypto.randomUUID(),
     content,
     delivery,
   };

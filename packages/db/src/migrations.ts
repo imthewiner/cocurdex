@@ -11,7 +11,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 22;
+export const CURRENT_SCHEMA_VERSION = 23;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -396,6 +396,16 @@ function migrateTurnStatsStopReason(database: DatabaseSync): void {
   }
 }
 
+function migrateSessionRuns(database: DatabaseSync): void {
+  for (const table of ["messages", "tool_calls"]) {
+    if (!hasColumn(database, table, "run_id")) {
+      database.exec(
+        `ALTER TABLE ${table} ADD COLUMN run_id TEXT REFERENCES runs(id) ON DELETE SET NULL`,
+      );
+    }
+  }
+}
+
 const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [5, migrateWorkspacesToRootPaths],
   [6, migrateCollaborationModeToSessionModeId],
@@ -414,6 +424,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [19, migrateNotesToCollaborativeDocs],
   [20, baselineSessionAttentionVisits],
   [21, migrateTurnStatsStopReason],
+  [22, migrateSessionRuns],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

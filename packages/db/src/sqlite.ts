@@ -26,6 +26,7 @@ import type {
   PendingSettingsChangeRepository,
   ProviderSessionRepository,
   QueuedAgentInputRepository,
+  RunRepository,
   SessionAttentionRepository,
   SessionRepository,
   SessionUsageRepository,
@@ -43,6 +44,7 @@ import {
   createSqlitePendingSettingsChangeRepository,
   createSqliteProviderSessionRepository,
   createSqliteQueuedAgentInputRepository,
+  createSqliteRunRepository,
   createSqliteSessionAttentionRepository,
   createSqliteSessionRepository,
   createSqliteSessionUsageRepository,
@@ -70,6 +72,7 @@ export interface CocurdexDatabase {
   worktreeEnvironments: WorktreeEnvironmentRepository;
   sessions: SessionRepository;
   messages: MessageRepository;
+  runs: RunRepository;
   messageTurnStats: MessageTurnStatsRepository;
   turnChangeSets: TurnChangeSetRepository;
   workflows: WorkflowRepository;
@@ -181,6 +184,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
     worktreeEnvironments: createSqliteWorktreeEnvironmentRepository(database),
     sessions: createSqliteSessionRepository(database),
     messages: createSqliteMessageRepository(database),
+    runs: createSqliteRunRepository(database),
     messageTurnStats: createSqliteMessageTurnStatsRepository(database),
     turnChangeSets: createSqliteTurnChangeSetRepository(database),
     workflows: createSqliteWorkflowRepository(database),

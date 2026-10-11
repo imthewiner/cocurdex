@@ -23,5 +23,4 @@ export interface SessionRepository {
     archivedAt?: string,
   ): Promise<SessionRecord | null>;
   delete(sessionId: string): Promise<void>;
-  failRunning(): Promise<string[]>;
 }

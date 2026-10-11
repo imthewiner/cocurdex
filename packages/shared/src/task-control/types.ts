@@ -29,7 +29,7 @@ export type SessionConfiguration = Pick<
 
 export interface SendSessionCommand {
   sessionId: string;
-  messageId?: string;
+  messageId: string;
   createdAt?: string;
   content: string;
   attachments?: MessageAttachment[];

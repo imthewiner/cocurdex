@@ -83,6 +83,7 @@ describe("agent state during a window handoff", () => {
       sessions: [],
       queuedAgentInputs: [],
       queuedMessages: [],
+      activeRuns: [],
       sessionUsage: {},
       interactions: { permissions: [], questions: [], planApprovals: [] },
       transcripts: {

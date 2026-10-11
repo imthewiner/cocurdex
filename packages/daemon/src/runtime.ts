@@ -68,8 +68,19 @@ export interface AgentToolsProvider {
   revoke(sessionId: string): void;
 }
 
+export interface AgentEventContext {
+  runId: string | null;
+}
+
+type AgentEventPersistenceHandler = (
+  event: AgentEvent,
+  context: AgentEventContext,
+) => Promise<AgentEvent> | AgentEvent;
+
 interface AgentRuntimeManagerOptions {
   broadcastAgentEvent(event: AgentEvent): void;
+  activeRunId?(sessionId: string): string | null;
+  onProviderEvent?(event: AgentEvent): void;
   createAdapter?: (agentType: AgentId) => AgentAdapter;
   userDataPath?: string;
   agentTools?: AgentToolsProvider;
@@ -114,9 +125,9 @@ export class AgentRuntimeManager {
     string,
     AgentPlanUpdatedEvent["plan"]
   >();
-  private persistAgentEventHandler:
-    | ((event: AgentEvent) => Promise<AgentEvent> | AgentEvent)
-    | null = null;
+  private persistAgentEventHandler: AgentEventPersistenceHandler | null = null;
+  private readonly activeRunId: (sessionId: string) => string | null;
+  private readonly onProviderEvent: (event: AgentEvent) => void;
   // Serialize persistence so events are written in emission order. Without
   // this queue, async writes can interleave and the DB sees out-of-order rows.
   private persistQueue: Promise<void> = Promise.resolve();
@@ -131,11 +142,11 @@ export class AgentRuntimeManager {
     this.createAdapter = options.createAdapter ?? createAgentAdapter;
     this.userDataPath = options.userDataPath;
     this.agentTools = options.agentTools ?? null;
+    this.activeRunId = options.activeRunId ?? (() => null);
+    this.onProviderEvent = options.onProviderEvent ?? (() => undefined);
   }
 
-  configureAgentEventPersistence(
-    handler: (event: AgentEvent) => Promise<AgentEvent> | AgentEvent,
-  ) {
+  configureAgentEventPersistence(handler: AgentEventPersistenceHandler) {
     this.persistAgentEventHandler = handler;
   }
 
@@ -177,7 +188,10 @@ export class AgentRuntimeManager {
       return;
     }
 
-    const persistence = this.persistQueue.then(() => handler(event));
+    const context: AgentEventContext = {
+      runId: this.activeRunId(event.sessionId),
+    };
+    const persistence = this.persistQueue.then(() => handler(event, context));
     this.persistQueue = persistence.then(
       () => undefined,
       (error) => {
@@ -502,6 +516,10 @@ export class AgentRuntimeManager {
         if (!runtime || activeRuntime?.runtime !== runtime) {
           return;
         }
+        this.onProviderEvent(event);
+        if (event.type === "state.changed") {
+          return;
+        }
         this.emitAgentEvent(event);
       },
     );
@@ -590,6 +608,7 @@ export class AgentRuntimeManager {
       });
 
       if (!turnTracker.cancelled) {
+        if (message.role === "assistant") turnTracker.messageId ??= message.id;
         this.emitAgentEvent({
           type: "turn.completed",
           sessionId: payload.session.id,
@@ -647,15 +666,7 @@ export class AgentRuntimeManager {
       return false;
     }
 
-    try {
-      await sessionRuntime.runtime.stop();
-    } finally {
-      this.emitAgentEvent({
-        type: "state.changed",
-        sessionId,
-        status: "idle",
-      });
-    }
+    await sessionRuntime.runtime.stop();
     return true;
   }
 
@@ -681,11 +692,6 @@ export class AgentRuntimeManager {
     } catch (error) {
       failures.push(error);
     }
-    this.emitAgentEvent({
-      type: "state.changed",
-      sessionId,
-      status: "idle",
-    });
     if (failures.length === 1) {
       throw failures[0];
     }

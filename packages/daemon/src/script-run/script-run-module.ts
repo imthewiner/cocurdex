@@ -295,6 +295,7 @@ export class ScriptRunModule {
     await this.deps
       .sendSessionMessage({
         sessionId: requester.id,
+        messageId: crypto.randomUUID(),
         content: renderScriptRunReport(run),
         delivery: this.deps.hasActiveTurn(requester.id)
           ? "queue-after-run"

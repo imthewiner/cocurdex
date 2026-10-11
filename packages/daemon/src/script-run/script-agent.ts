@@ -131,6 +131,7 @@ async function runTurn(
 ): Promise<SessionTurnOutcome> {
   await deps.sendSessionMessage({
     sessionId,
+    messageId: crypto.randomUUID(),
     content,
     delivery: "start-new-run",
   });

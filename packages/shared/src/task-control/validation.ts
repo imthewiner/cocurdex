@@ -29,13 +29,17 @@ function text(value: unknown, name: string, max = 4096, empty = false) {
   }
 }
 
-export function validateSessionId(value: unknown): asserts value is string {
-  text(value, "session ID", 256);
+function validateRecordId(value: unknown, name: string) {
+  text(value, name, 256);
   if (
     typeof value === "string" &&
     (value === "." || value === ".." || /[/\\]/.test(value))
   )
-    throw new Error("Invalid session ID");
+    throw new Error(`Invalid ${name}`);
+}
+
+export function validateSessionId(value: unknown): asserts value is string {
+  validateRecordId(value, "session ID");
 }
 
 function optionalText(value: unknown, name: string) {
@@ -186,7 +190,7 @@ export function validateSendSessionCommand(
   ]);
   validateSessionId(value.sessionId);
   if (value.origin !== undefined) validateMessageOrigin(value.origin);
-  if (value.messageId !== undefined) validateSessionId(value.messageId);
+  validateRecordId(value.messageId, "message ID");
   text(value.content, "message content", 200_000, true);
   if (value.createdAt !== undefined) {
     text(value.createdAt, "message timestamp", 64);
