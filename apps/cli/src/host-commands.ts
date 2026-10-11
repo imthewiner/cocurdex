@@ -1,5 +1,6 @@
 import { requestDaemon } from "@cocurdex/daemon/client";
 import {
+  buildHostPairingLink,
   type HostAccessScope,
   type HostAddress,
   isHostAccessScope,
@@ -44,12 +45,10 @@ export function parseScopesFlag(value: string | undefined): HostAccessScope[] {
 }
 
 export function buildPairingLinks(addresses: HostAddress[], code: string) {
-  return addresses.map((address) => {
-    const url = new URL(address.url);
-    url.pathname = "/";
-    url.hash = new URLSearchParams({ pair: code }).toString();
-    return { kind: address.kind, url: url.toString() };
-  });
+  return addresses.map((address) => ({
+    kind: address.kind,
+    url: buildHostPairingLink(address.url, code),
+  }));
 }
 
 function integerFlag(parsed: ParsedArgs, name: string) {

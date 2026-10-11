@@ -24,6 +24,8 @@ import type {
   CommitMessageModelSelection,
   CompatibleProviderModel,
   CreateColumnPayload,
+  CreatedHostPairing,
+  CreateHostPairingPayload,
   CreateIssueLabelPayload,
   CreateIssuePayload,
   CreateTeamPayload,
@@ -41,7 +43,10 @@ import type {
   GitBranchInfo,
   GitCommitInfo,
   GitWorktreeInfo,
+  HostAccessAuditEntry,
   HostDirectoryListing,
+  HostPairingRecord,
+  HostRemoteAccessStatus,
   ImageAttachment,
   IssueDetail,
   IssueLabel,
@@ -54,6 +59,7 @@ import type {
   MoveIssuePayload,
   NetworkProxySettings,
   NetworkProxyTestResult,
+  PairedDeviceRecord,
   PdfAnnotationsOperation,
   PdfDocumentAnnotations,
   PendingSettingsChangeRecord,
@@ -76,6 +82,7 @@ import type {
   PtySpawnResult,
   QueuedAgentInputActionPayload,
   RefineSessionTitlePayload,
+  RemoteAccessSettings,
   RendererLogPayload,
   SaveAgentRolePayload,
   SaveTeamTemplatePayload,
@@ -518,6 +525,18 @@ export interface ProductApi {
     settings: NetworkProxySettings,
   ): Promise<NetworkProxyTestResult>;
   testCurrentNetworkProxy(): Promise<NetworkProxyTestResult>;
+  getHostRemoteAccess(): Promise<HostRemoteAccessStatus>;
+  setHostRemoteAccess(
+    settings: RemoteAccessSettings,
+  ): Promise<HostRemoteAccessStatus>;
+  createHostPairing(
+    payload: CreateHostPairingPayload,
+  ): Promise<CreatedHostPairing>;
+  listHostPairings(): Promise<HostPairingRecord[]>;
+  cancelHostPairing(pairingId: string): Promise<HostPairingRecord | null>;
+  listHostDevices(): Promise<PairedDeviceRecord[]>;
+  revokeHostDevice(deviceId: string): Promise<PairedDeviceRecord | null>;
+  listHostAudit(limit: number): Promise<HostAccessAuditEntry[]>;
   listSessionMessages(sessionId: string): Promise<SessionMessagesResult>;
   listSessionToolCalls(sessionId: string): Promise<AgentToolCallRecord[]>;
   // Returns user-facing content and raw machine output for a single tool call.

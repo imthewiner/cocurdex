@@ -122,3 +122,11 @@ export interface HostRemoteAccessStatus {
 
 export const HOST_PAIRING_HTTP_PATH = "/api/pair";
 export const DEFAULT_REMOTE_ACCESS_PORT = 47_820;
+
+export function buildHostPairingLink(addressUrl: string, code: string) {
+  const url = new URL(addressUrl);
+  url.pathname = "/";
+  url.search = "";
+  url.hash = new URLSearchParams({ pair: code }).toString();
+  return url.toString();
+}
