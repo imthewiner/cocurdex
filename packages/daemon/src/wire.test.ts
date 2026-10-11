@@ -16,6 +16,7 @@ import path from "node:path";
 import {
   createDaemonRpcClient,
   createWebSocketTransport,
+  daemonWebSocketProtocols,
 } from "@cocurdex/rpc/client";
 import type { WorkspaceRecord } from "@cocurdex/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -46,7 +47,6 @@ describe("startDaemonServer", () => {
       runtimeFingerprint: "ws-runtime",
       token: "ws-token",
       userDataPath,
-      webSocketPort: 0,
     });
     try {
       const metadata = JSON.parse(
@@ -54,13 +54,16 @@ describe("startDaemonServer", () => {
       ) as { webSocketUrl?: string };
       expect(metadata.webSocketUrl).toBe(daemon.webSocketUrl);
       expect(daemon.webSocketUrl).toMatch(/^ws:\/\/127\.0\.0\.1:\d+$/);
-      const transport = createWebSocketTransport(daemon.webSocketUrl as string);
-      await expect(
-        createDaemonRpcClient(transport, "wrong").request(
-          "daemon.status",
-          undefined,
-        ),
-      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+      const unauthenticated = new NodeWebSocket(daemon.webSocketUrl, [
+        "cocurdex.v1",
+      ]);
+      unauthenticated.once("error", () => undefined);
+      const [, rejected] = await once(unauthenticated, "unexpected-response");
+      expect(rejected.statusCode).toBe(401);
+      const transport = createWebSocketTransport(
+        daemon.webSocketUrl,
+        daemonWebSocketProtocols("ws-token"),
+      );
       const client = createDaemonRpcClient(transport, "ws-token");
       await expect(
         client.request("daemon.status", undefined),
@@ -193,18 +196,18 @@ describe("startDaemonServer", () => {
       runtimeFingerprint: "ws-runtime",
       token: "ws-token",
       userDataPath,
-      webSocketPort: 0,
     });
     try {
-      const url = daemon.webSocketUrl as string;
+      const url = daemon.webSocketUrl;
+      const protocols = daemonWebSocketProtocols("ws-token");
       for (const frame of ["not-json", "null", "[]"]) {
-        const raw = new NodeWebSocket(url);
+        const raw = new NodeWebSocket(url, protocols);
         await once(raw, "open");
         raw.send(frame);
         await once(raw, "close");
       }
       const client = createDaemonRpcClient(
-        createWebSocketTransport(url),
+        createWebSocketTransport(url, protocols),
         "ws-token",
       );
       await expect(
@@ -221,12 +224,13 @@ describe("startDaemonServer", () => {
       runtimeFingerprint: "ws-runtime",
       token: "ws-token",
       userDataPath,
-      webSocketPort: 0,
     });
     try {
-      const raw = new NodeWebSocket(daemon.webSocketUrl as string, {
-        origin: "https://evil.example",
-      });
+      const raw = new NodeWebSocket(
+        daemon.webSocketUrl,
+        daemonWebSocketProtocols("ws-token"),
+        { origin: "https://evil.example" },
+      );
       raw.once("error", () => undefined);
       const [, response] = await once(raw, "unexpected-response");
       expect(response.statusCode).toBeGreaterThanOrEqual(400);

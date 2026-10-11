@@ -1,3 +1,4 @@
+import type { DaemonConnectionInfo } from "@cocurdex/rpc";
 import type {
   AgentId,
   AgentPlanApprovalDecision,
@@ -47,6 +48,7 @@ export interface DaemonRuntimeStatus {
 }
 
 export interface DaemonRuntimeClient {
+  connection(): Promise<DaemonConnectionInfo>;
   saveSessionConfiguration(
     payload: SessionConfiguration,
   ): Promise<SessionRecord>;

@@ -2,33 +2,26 @@ import { requestDaemon } from "@cocurdex/daemon/client";
 import type { IpcMain } from "electron";
 import { registerHandler } from "../ipc";
 import {
-  applyNoteDocUpdatePayloadSchema,
   commentIssuePayloadSchema,
   createColumnPayloadSchema,
   createIssueLabelPayloadSchema,
   createIssuePayloadSchema,
-  createNotePayloadSchema,
   createViewPayloadSchema,
   deleteColumnPayloadSchema,
   deleteIssueLabelPayloadSchema,
   deleteIssuePayloadSchema,
-  deleteNotePayloadSchema,
   deleteViewPayloadSchema,
   getIssueDetailPayloadSchema,
   getIssuePayloadSchema,
-  getNoteDocPayloadSchema,
-  getNotePayloadSchema,
   issueRelationPayloadSchema,
   loadViewPayloadSchema,
   moveColumnPayloadSchema,
   moveIssuePayloadSchema,
-  moveNotePayloadSchema,
   saveWorkflowDefinitionPayloadSchema,
   searchDocumentsPayloadSchema,
   updateColumnPayloadSchema,
   updateIssueLabelPayloadSchema,
   updateIssuePayloadSchema,
-  updateNotePayloadSchema,
   updateSessionAttentionPayloadSchema,
   updateViewPayloadSchema,
   workflowDefinitionIdPayloadSchema,
@@ -36,47 +29,6 @@ import {
 
 export function registerDataHandlers(ipc: IpcMain, userDataPath: string): void {
   const options = { userDataPath };
-
-  ipc.handle("notes:list", () => requestDaemon("note.list", options));
-  registerHandler(ipc, "notes:get", getNotePayloadSchema, (_event, payload) =>
-    requestDaemon("note.get", payload, options),
-  );
-  registerHandler(
-    ipc,
-    "notes:getDoc",
-    getNoteDocPayloadSchema,
-    (_event, payload) => requestDaemon("note.getDoc", payload, options),
-  );
-  registerHandler(
-    ipc,
-    "notes:applyDocUpdate",
-    applyNoteDocUpdatePayloadSchema,
-    (_event, payload) => requestDaemon("note.applyDocUpdate", payload, options),
-  );
-  registerHandler(
-    ipc,
-    "notes:create",
-    createNotePayloadSchema,
-    (_event, payload) => requestDaemon("note.create", payload, options),
-  );
-  registerHandler(
-    ipc,
-    "notes:update",
-    updateNotePayloadSchema,
-    (_event, payload) => requestDaemon("note.update", payload, options),
-  );
-  registerHandler(ipc, "notes:move", moveNotePayloadSchema, (_event, payload) =>
-    requestDaemon("note.move", payload, options),
-  );
-  registerHandler(
-    ipc,
-    "notes:delete",
-    deleteNotePayloadSchema,
-    async (_event, payload) => {
-      await requestDaemon("note.delete", payload, options);
-      return null;
-    },
-  );
 
   ipc.handle("issue:listLinkedSessionIds", () =>
     requestDaemon("issue.listLinkedSessionIds", options),

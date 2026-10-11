@@ -8,7 +8,10 @@ import type {
   DaemonMetadata,
   DaemonRequest,
 } from "@cocurdex/rpc";
-import { DAEMON_PROTOCOL_VERSION } from "@cocurdex/rpc";
+import {
+  DAEMON_PROTOCOL_VERSION,
+  DAEMON_WEBSOCKET_PROTOCOL,
+} from "@cocurdex/rpc";
 import { AGENT_TOOL_HTTP_PATH } from "@cocurdex/shared";
 import { WebSocketServer } from "ws";
 import {
@@ -34,6 +37,10 @@ import {
   type DaemonReceiptStore,
 } from "./rpc-receipts";
 import { CocurdexDaemonService } from "./service";
+import {
+  authorizeDaemonWebSocket,
+  parseWebSocketProtocolHeader,
+} from "./websocket-auth";
 
 interface StartDaemonServerOptions {
   runtimeFingerprint: string;
@@ -51,19 +58,6 @@ interface DaemonConnection {
 
 function encodeWireMessage(message: unknown) {
   return `${JSON.stringify(message)}\n`;
-}
-
-function isAllowedWebSocketOrigin(origin: string | undefined) {
-  if (origin === undefined || origin.length === 0) return true;
-  let url: URL;
-  try {
-    url = new URL(origin);
-  } catch {
-    return false;
-  }
-  if (url.protocol === "file:") return true;
-  if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-  return url.hostname === "127.0.0.1" || url.hostname === "localhost";
 }
 
 function parseWebSocketJsonFrame(data: { toString(): string }) {
@@ -254,8 +248,24 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   const attachWebSocket = () => {
     const wss = new WebSocketServer({
       server: httpServer,
-      verifyClient: ({ origin }: { origin: string }) =>
-        isAllowedWebSocketOrigin(origin),
+      verifyClient: ({
+        origin,
+        req,
+      }: {
+        origin: string;
+        req: http.IncomingMessage;
+      }) =>
+        authorizeDaemonWebSocket({
+          origin,
+          protocols: parseWebSocketProtocolHeader(
+            req.headers["sec-websocket-protocol"],
+          ),
+          token: options.token,
+        }),
+      handleProtocols: (protocols) =>
+        protocols.has(DAEMON_WEBSOCKET_PROTOCOL)
+          ? DAEMON_WEBSOCKET_PROTOCOL
+          : false,
     });
     webSocketServer = wss;
     wss.on("connection", (socket) => {
@@ -335,11 +345,8 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     await rm(getDaemonMetadataPath(userDataPath), { force: true });
     const httpHost = await listenHttp(options.webSocketPort ?? 0);
     const agentToolsUrl = `http://${httpHost}${AGENT_TOOL_HTTP_PATH}`;
-    let webSocketUrl: string | undefined;
-    if (options.webSocketPort !== undefined) {
-      attachWebSocket();
-      webSocketUrl = `ws://${httpHost}`;
-    }
+    attachWebSocket();
+    const webSocketUrl = `ws://${httpHost}`;
     service = new CocurdexDaemonService({
       runtimeFingerprint: options.runtimeFingerprint,
       socketPath,

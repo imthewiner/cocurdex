@@ -11,6 +11,7 @@ export {
   openSessionById,
 } from "./context-item-events";
 export { readCssVarPx } from "./css-length";
+export { requestDaemon } from "./daemon-client";
 export { logRendererDiagnostic } from "./diagnostics";
 export { toAbsolutePath } from "./file-path";
 export { htmlPreviewLocationAtom } from "./html-preview-preference";

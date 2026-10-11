@@ -1,12 +1,12 @@
 import type { NoteRecord, NoteSummary } from "@cocurdex/shared";
 import { atom, type Getter, type Setter } from "jotai";
 import { flushNoteDoc } from "./note-doc-registry";
+import { notesApi } from "./notes-api";
 import {
   activeNoteAtom,
   noteSaveStatusAtom,
   noteSummariesAtom,
 } from "./notes-atoms";
-import { notesIpc } from "./notes-ipc";
 
 interface TitleSaveState {
   queued: string | null;
@@ -93,7 +93,7 @@ async function runTitleQueue(get: Getter, set: Setter, noteId: string) {
     state.queued = null;
     setActiveStatus(get, set, noteId, "saving");
     try {
-      const saved = await notesIpc.update({ id: noteId, title });
+      const saved = await notesApi.update({ id: noteId, title });
       state.saved = saved;
       applySavedNoteRecord(get, set, saved);
     } catch {

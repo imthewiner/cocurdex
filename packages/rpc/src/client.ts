@@ -10,6 +10,11 @@ import {
 } from "./index.ts";
 
 export { daemonRequestTimeout } from "./client-timeout.ts";
+export { createSharedTransport } from "./shared-transport.ts";
+export {
+  DAEMON_WEBSOCKET_PROTOCOL,
+  daemonWebSocketProtocols,
+} from "./websocket-protocol.ts";
 
 export interface DaemonTransportHandlers {
   onMessage(message: string): void;
@@ -26,9 +31,12 @@ export type DaemonTransport = (
   handlers: DaemonTransportHandlers,
 ) => DaemonTransportConnection;
 
-export function createWebSocketTransport(url: string): DaemonTransport {
+export function createWebSocketTransport(
+  url: string,
+  protocols?: string[],
+): DaemonTransport {
   return (handlers) => {
-    const socket = new WebSocket(url);
+    const socket = new WebSocket(url, protocols);
     const pending: string[] = [];
     socket.addEventListener("open", () => {
       for (const message of pending.splice(0)) socket.send(message);

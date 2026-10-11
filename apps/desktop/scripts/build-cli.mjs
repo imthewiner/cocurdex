@@ -163,6 +163,7 @@ await build({
       formats: ["cjs"],
       fileName: () => "daemon.cjs",
     },
+    commonjsOptions: { ignore: ["bufferutil", "utf-8-validate"] },
     rollupOptions: {
       output: {
         entryFileNames: "daemon.cjs",

@@ -26,7 +26,8 @@
     "@vscode/ripgrep": "^1.18.0",
     "simple-git": "^4.0.2",
     "undici": "^8.11.2",
-    "ws": "^8.22.0"
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",

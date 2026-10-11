@@ -7,8 +7,8 @@ const ipcMock = vi.hoisted(() => ({
   update: vi.fn(),
 }));
 
-vi.mock("@/features/notes/notes-ipc", () => ({
-  notesIpc: ipcMock,
+vi.mock("@/features/notes/notes-api", () => ({
+  notesApi: ipcMock,
 }));
 
 import { useDebouncedNoteRename } from "@/features/notes/editor/note-editor-sync";

@@ -18,6 +18,7 @@ import {
   stageGitFiles,
   unstageGitFiles,
 } from "./git";
+import { notePayloadSchemas, parsePayload } from "./note-payloads";
 import type { CocurdexDaemonService } from "./service";
 
 function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
@@ -83,19 +84,61 @@ export async function handleDaemonRequest(
     case "note.list":
       return service.dataService.listNotes();
     case "note.get":
-      return service.dataService.getNote(request.params);
+      return service.dataService.getNote(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.getDoc":
-      return service.dataService.getNoteDoc(request.params);
+      return service.dataService.getNoteDoc(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.applyDocUpdate":
-      return service.dataService.applyNoteDocUpdate(request.params);
+      return service.dataService.applyNoteDocUpdate(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.create":
-      return service.dataService.createNote(request.params);
+      return service.dataService.createNote(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.update":
-      return service.dataService.updateNote(request.params);
+      return service.dataService.updateNote(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.move":
-      return service.dataService.moveNote(request.params);
+      return service.dataService.moveNote(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
     case "note.delete":
-      await service.dataService.deleteNote(request.params);
+      await service.dataService.deleteNote(
+        parsePayload(
+          request.method,
+          notePayloadSchemas[request.method],
+          request.params,
+        ),
+      );
       return null;
     case "note.listTags":
       return service.dataService.listNoteTags(request.params.noteId);

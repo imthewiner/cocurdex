@@ -37,6 +37,7 @@ async function serve(
     startedAt: "test",
     protocolVersion: 19,
     runtimeFingerprint: "test",
+    webSocketUrl: "ws://127.0.0.1:0",
   };
   return { metadata, sockets };
 }

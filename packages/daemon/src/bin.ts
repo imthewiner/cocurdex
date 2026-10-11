@@ -3,6 +3,8 @@ import { randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { startDaemonServer } from "./wire";
 
+const CRASH_SHUTDOWN_DEADLINE_MS = 5_000;
+
 function startDaemonProcess() {
   const token =
     process.env.COCURDEX_DAEMON_TOKEN ?? randomBytes(32).toString("hex");
@@ -82,13 +84,20 @@ function startDaemonProcess() {
 
   process.on("SIGINT", () => requestShutdown({ forceProcessTree: false }));
   process.on("SIGTERM", () => requestShutdown({ forceProcessTree: false }));
-  process.on("uncaughtException", (error) => {
-    console.error("Cocurdex daemon uncaught exception", error);
+  function crash(message: string, error: unknown) {
+    console.error(message, error);
+    setTimeout(() => {
+      terminateOwnedProcessTree();
+      process.exit(1);
+    }, CRASH_SHUTDOWN_DEADLINE_MS).unref();
     requestShutdown({ forceProcessTree: true });
+  }
+
+  process.on("uncaughtException", (error) => {
+    crash("Cocurdex daemon uncaught exception", error);
   });
   process.on("unhandledRejection", (reason) => {
-    console.error("Cocurdex daemon unhandled rejection", reason);
-    requestShutdown({ forceProcessTree: true });
+    crash("Cocurdex daemon unhandled rejection", reason);
   });
 
   if (Number.isInteger(ownerFd)) {

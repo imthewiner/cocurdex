@@ -589,22 +589,6 @@ contextBridge.exposeInMainWorld("desktopApi", {
     ipcRenderer.invoke("search:start", payload),
   cancelWorkspaceSearch: (searchId: string) =>
     ipcRenderer.invoke("search:cancel", { searchId }),
-  // === App-owned notes ===
-  notesList: () => ipcRenderer.invoke("notes:list"),
-  notesGet: (payload: { id: string }) =>
-    ipcRenderer.invoke("notes:get", payload),
-  notesGetDoc: (payload: GetNoteDocPayload) =>
-    ipcRenderer.invoke("notes:getDoc", payload),
-  notesApplyDocUpdate: (payload: ApplyNoteDocUpdatePayload) =>
-    ipcRenderer.invoke("notes:applyDocUpdate", payload),
-  notesCreate: (payload: CreateNotePayload) =>
-    ipcRenderer.invoke("notes:create", payload),
-  notesUpdate: (payload: UpdateNotePayload) =>
-    ipcRenderer.invoke("notes:update", payload),
-  notesMove: (payload: MoveNotePayload) =>
-    ipcRenderer.invoke("notes:move", payload),
-  notesDelete: (payload: DeleteNotePayload) =>
-    ipcRenderer.invoke("notes:delete", payload),
   // === App-owned issues and views ===
   issueListViews: () => ipcRenderer.invoke("issue:listViews"),
   issueListLinkedSessionIds: () =>
@@ -743,6 +727,7 @@ contextBridge.exposeInMainWorld("desktopApi", {
   installCliOnPath: () => ipcRenderer.invoke("cli:installOnPath"),
   uninstallCliFromPath: () => ipcRenderer.invoke("cli:uninstallFromPath"),
   getDaemonStatus: () => ipcRenderer.invoke("daemon:getStatus"),
+  getDaemonConnection: () => ipcRenderer.invoke("daemon:connection"),
   restartDaemon: () => ipcRenderer.invoke("daemon:restart"),
   getProductSkillsStatus: (
     scope: "project" | "global",

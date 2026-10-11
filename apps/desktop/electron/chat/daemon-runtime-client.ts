@@ -1,4 +1,4 @@
-import { requestDaemon } from "@cocurdex/daemon/client";
+import { readDaemonMetadata, requestDaemon } from "@cocurdex/daemon/client";
 import { createDaemonEventConnection } from "./daemon-event-connection";
 import { createDaemonRuntimeLifecycle } from "./daemon-runtime-lifecycle";
 import type {
@@ -30,6 +30,13 @@ export function createDaemonRuntimeClient(
     },
   });
   return {
+    async connection() {
+      await ensureDaemon();
+      const { webSocketUrl, token } = await readDaemonMetadata(
+        options.userDataPath,
+      );
+      return { webSocketUrl, token };
+    },
     async saveSessionConfiguration(payload) {
       await ensureDaemon();
       return requestDaemon("session.configure", payload, requestOptions());
