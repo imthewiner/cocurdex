@@ -442,6 +442,7 @@
         },
         "idle": "悬停可检测连通性",
         "label": "代理状态",
+        "latencyValue": "{{durationMs}} 毫秒",
         "offDetail": "出站流量直连，未使用应用内代理。",
         "openSettings": "打开网络设置",
         "state": {

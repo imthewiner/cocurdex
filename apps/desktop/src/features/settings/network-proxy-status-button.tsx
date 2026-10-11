@@ -144,7 +144,9 @@ function ProbeResultRows({
           result.durationMs > SLOW_LATENCY_MS && "text-status-warning",
         )}
       >
-        {result.durationMs} ms
+        {t("network.proxy.status.latencyValue", {
+          durationMs: result.durationMs,
+        })}
       </span>
     </DetailRow>
   );

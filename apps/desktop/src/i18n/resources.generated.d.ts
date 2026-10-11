@@ -1885,6 +1885,7 @@ export default interface Resources {
           };
           idle: "Hover to check connectivity";
           label: "Proxy status";
+          latencyValue: "{{durationMs}} ms";
           offDetail: "Outbound traffic is direct; no app proxy is applied.";
           openSettings: "Open network settings";
           state: {
