@@ -343,6 +343,17 @@ export class DaemonState {
     return this.database.runs.listActive();
   }
 
+  getLatestRun(sessionId: string) {
+    return this.database.runs.listBySessionId(sessionId).at(-1) ?? null;
+  }
+
+  async getRunReply(sessionId: string, runId: string) {
+    const replies = (await this.listMessagesBySessionId(sessionId)).filter(
+      (message) => message.runId === runId && message.role === "assistant",
+    );
+    return replies.at(-1) ?? null;
+  }
+
   async saveQueuedUserMessage(
     message: MessageRecord,
     input: QueuedAgentInputRecord,

@@ -11,8 +11,10 @@ export function decideDelivery(input: {
   requested: AgentInputDelivery | undefined;
   hasActiveRun: boolean;
   fromPeer?: boolean;
+  hold?: boolean;
 }): DeliveryDecision {
   const { requested, hasActiveRun } = input;
+  if (input.hold) return { kind: "queue" };
   if (!hasActiveRun) {
     if (requested === "steer-active-run" && !input.fromPeer) {
       return { kind: "reject", reason: "no-active-run" };

@@ -12,6 +12,23 @@ const reply: MessageRecord = {
 };
 
 describe("decideDelivery", () => {
+  it("queues a held message whether or not a run is active", () => {
+    expect(
+      decideDelivery({
+        requested: "queue-after-run",
+        hasActiveRun: false,
+        hold: true,
+      }),
+    ).toEqual({ kind: "queue" });
+    expect(
+      decideDelivery({
+        requested: "start-new-run",
+        hasActiveRun: true,
+        hold: true,
+      }),
+    ).toEqual({ kind: "queue" });
+  });
+
   it("starts a run when the session is idle", () => {
     expect(
       decideDelivery({ requested: "start-new-run", hasActiveRun: false }),
