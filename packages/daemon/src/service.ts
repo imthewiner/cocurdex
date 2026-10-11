@@ -92,6 +92,7 @@ import { DaemonAttachmentStore } from "./attachment-store";
 import { DaemonCommitMessageService } from "./commit-message";
 import { DaemonDataService } from "./data-service";
 import { logDaemonDiagnostic } from "./diagnostics";
+import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
 import { commitGitChanges } from "./git";
 import { DaemonMcpConfigService } from "./mcp-config";
@@ -1221,6 +1222,20 @@ export class CocurdexDaemonService {
       interactions: this.runtime.getSessionInteractions(sessionId),
       plan: this.runtime.getSessionPlan(sessionId),
     };
+  }
+
+  getSessionExecutionTree(sessionId: string, maxDepth?: number) {
+    return loadExecutionTree(
+      {
+        listSessions: () => this.state.listSessions(),
+        listRuns: (id) => this.state.listRunsBySessionId(id),
+        listToolCalls: (id) => this.state.listToolCallSummaries(id),
+        getInteractions: () => this.runtime.getPendingInteractions(),
+        getPlan: (id) => this.runtime.getSessionPlan(id),
+      },
+      sessionId,
+      maxDepth,
+    );
   }
 
   listWorkflowRuns() {

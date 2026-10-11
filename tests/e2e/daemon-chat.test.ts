@@ -2,63 +2,12 @@ import { requestDaemon, subscribeDaemonEvents } from "@cocurdex/daemon/client";
 import {
   CHAT_WORKSPACE_ID,
   type CocurdexDaemonEvent,
-  createProviderSnapshotForModel,
   type MessageRecord,
-  type ProviderConfigRecord,
-  type ProviderModelRecord,
 } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
-import {
-  type DaemonProcess,
-  spawnDaemon,
-  waitFor,
-} from "./helpers/daemon-process";
-import { type StubLlmServer, startStubLlmServer } from "./helpers/llm-stub";
-
-async function startChatSession(daemon: DaemonProcess, stub: StubLlmServer) {
-  const now = new Date().toISOString();
-  const provider: ProviderConfigRecord = {
-    id: "e2e-stub",
-    name: "E2E Stub",
-    baseUrl: stub.baseUrl,
-    enabled: true,
-    apiKeySecretId: null,
-    headersJson: JSON.stringify({ Authorization: "Bearer e2e-key" }),
-    createdAt: now,
-    updatedAt: now,
-  };
-  const model: ProviderModelRecord = {
-    providerId: "e2e-stub",
-    modelId: "e2e-model",
-    name: "E2E Model",
-    api: "openai-completions",
-    enabled: true,
-    source: "manual",
-    capabilities: ["chat"],
-    createdAt: now,
-    updatedAt: now,
-  };
-  await requestDaemon(
-    "provider.config.save",
-    { config: provider },
-    daemon.options,
-  );
-  await requestDaemon("provider.model.save", { model }, daemon.options);
-  return requestDaemon(
-    "session.configure",
-    {
-      id: crypto.randomUUID(),
-      workspaceId: CHAT_WORKSPACE_ID,
-      sessionKind: "chat",
-      title: "Chat",
-      agentType: "pi",
-      writeMode: "read-only",
-      sessionModeId: null,
-      providerSnapshot: createProviderSnapshotForModel({ provider, model }),
-    },
-    daemon.options,
-  );
-}
+import { startChatSession } from "./helpers/chat-session";
+import { spawnDaemon, waitFor } from "./helpers/daemon-process";
+import { startStubLlmServer } from "./helpers/llm-stub";
 
 function completedResponses(events: CocurdexDaemonEvent[]): MessageRecord[] {
   return events.flatMap((event) =>

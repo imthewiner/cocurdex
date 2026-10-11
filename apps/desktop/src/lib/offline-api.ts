@@ -278,6 +278,7 @@ export const offlineApi: DesktopApi = {
   listManagedWorktrees: async () => [],
   removeWorktree: async () => ({ removed: true }),
   listScriptRuns: async () => [],
+  getSessionExecutionTree: async () => null,
   getScriptRun: async () => {
     throw new Error("Script runs require the desktop app");
   },

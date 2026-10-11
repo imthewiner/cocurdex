@@ -335,6 +335,10 @@ export class DaemonState {
     return this.database.runs.finish(runId, status, endedAt, error);
   }
 
+  listRunsBySessionId(sessionId: string) {
+    return this.database.runs.listBySessionId(sessionId);
+  }
+
   getActiveRun(sessionId: string) {
     return this.database.runs.getActiveBySessionId(sessionId);
   }
