@@ -652,7 +652,7 @@ app
     daemonRuntimeClient = createDaemonRuntimeClient({
       daemonEntryPath: getBundledDaemonEntryPath(),
       logger: daemonLogger,
-      onEvent(event, meta) {
+      onEvent(event) {
         if (event.type === "data.changed" && event.areas.includes("settings")) {
           loadAndApplyNetworkProxyFromDaemon().catch((error: unknown) => {
             appLogger.warn("networkProxy.applyFailed", {
@@ -660,39 +660,10 @@ app
             });
           });
         }
-        for (const window of BrowserWindow.getAllWindows()) {
-          if (event.type === "data.changed") {
-            window.webContents.send("data:changed", event);
-          } else if (event.type === "search.result") {
-            window.webContents.send("search:result", {
-              batch: event.batch,
-              searchId: event.searchId,
-            });
-          } else if (event.type === "search.done") {
-            window.webContents.send("search:done", {
-              reason: event.reason,
-              searchId: event.searchId,
-            });
-          } else if (event.type === "search.error") {
-            window.webContents.send("search:error", {
-              message: event.message,
-              searchId: event.searchId,
-            });
-          } else if (event.type === "workspace.filesChanged") {
-            window.webContents.send("workspace:filesChanged", {
-              rootPath: event.rootPath,
-            });
-          } else if (event.type === "workspace.gitStateChanged") {
-            window.webContents.send("workspace:gitStateChanged", {
-              rootPath: event.rootPath,
-            });
-          } else if (event.type === "peer.message") {
-            appLogger.info("daemon.peerMessage", { ...event });
-          } else if (event.type === "team.changed") {
-            appLogger.info("daemon.teamChanged", { ...event });
-          } else {
-            window.webContents.send("agent:event", event, meta);
-          }
+        if (event.type === "peer.message") {
+          appLogger.info("daemon.peerMessage", { ...event });
+        } else if (event.type === "team.changed") {
+          appLogger.info("daemon.teamChanged", { ...event });
         }
       },
       userDataPath,

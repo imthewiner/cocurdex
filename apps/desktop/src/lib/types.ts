@@ -89,7 +89,6 @@ import type {
   SessionMessagesResult,
   SessionRecord,
   StartScriptRunPayload,
-  TaskApi,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -741,16 +740,13 @@ export type ProductEventApi = Pick<
 
 export type ProductRequestApi = Omit<ProductApi, keyof ProductEventApi>;
 
-export interface HostBridge extends HostApi, ProductEventApi {}
+export type HostBridge = HostApi;
 
 /** Desktop facade: product contract plus the Electron host surface. */
 export interface DesktopApi extends ProductApi, HostApi {}
 
-export type TaskEventBridge = Pick<TaskApi, "onAgentEvent">;
-
 declare global {
   interface Window {
     desktopApi?: HostBridge;
-    taskEvents?: TaskEventBridge;
   }
 }

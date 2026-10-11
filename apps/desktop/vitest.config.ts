@@ -16,6 +16,10 @@ const alias = {
     __dirname,
     "../../packages/rpc/src/client.ts",
   ),
+  "@cocurdex/rpc/event-connection": path.resolve(
+    __dirname,
+    "../../packages/rpc/src/event-connection.ts",
+  ),
   "@cocurdex/rpc": path.resolve(__dirname, "../../packages/rpc/src/index.ts"),
   "@cocurdex/daemon/client": path.resolve(
     __dirname,

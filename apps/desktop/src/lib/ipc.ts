@@ -9,6 +9,7 @@ import {
   PLAN_MODE_ID,
 } from "@cocurdex/shared";
 import { chatWindowFallback } from "./chat-window-fallback";
+import { daemonEventApi } from "./daemon-events";
 import { getHostBridge } from "./host-bridge";
 import { issueFallbackApi } from "./issue-fallback";
 import { daemonProductApi } from "./product-api";
@@ -582,7 +583,10 @@ function getDesktopApi(): DesktopApi {
     return fallbackApi;
   }
   if (composed?.bridge !== bridge) {
-    composed = { bridge, api: { ...bridge, ...daemonProductApi } };
+    composed = {
+      bridge,
+      api: { ...bridge, ...daemonProductApi, ...daemonEventApi },
+    };
   }
   return composed.api;
 }
