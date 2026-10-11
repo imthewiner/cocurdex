@@ -12,6 +12,10 @@
     overflow: hidden;
   }
 
+  #root {
+    isolation: isolate;
+  }
+
   body {
     margin: 0;
     background: var(--app-bg);
@@ -49,7 +53,6 @@
 }
 
 :root {
-  --titlebar-height: 32px;
   --titlebar-controls-inset: calc(
     100vw -
     env(titlebar-area-x, 0px) -
