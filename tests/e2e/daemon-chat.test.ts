@@ -106,7 +106,11 @@ describe("chat sessions over a stubbed OpenAI-compatible provider", () => {
 
       await requestDaemon(
         "session.send",
-        { sessionId: session.id, content: "hi there" },
+        {
+          sessionId: session.id,
+          messageId: crypto.randomUUID(),
+          content: "hi there",
+        },
         daemon.options,
       );
 
@@ -149,7 +153,7 @@ describe("chat sessions over a stubbed OpenAI-compatible provider", () => {
         const before = completedResponses(events).length;
         await requestDaemon(
           "session.send",
-          { sessionId: session.id, content },
+          { sessionId: session.id, messageId: crypto.randomUUID(), content },
           daemon.options,
         );
         await waitFor(() => completedResponses(events).length > before);
@@ -209,7 +213,11 @@ describe("chat sessions over a stubbed OpenAI-compatible provider", () => {
 
       await requestDaemon(
         "session.send",
-        { sessionId: session.id, content: "wait" },
+        {
+          sessionId: session.id,
+          messageId: crypto.randomUUID(),
+          content: "wait",
+        },
         daemon.options,
       );
       await stub.nextRequest();

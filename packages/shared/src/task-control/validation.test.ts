@@ -73,10 +73,17 @@ describe("task message command validation", () => {
     expect(() => validateSendSessionCommand(input)).toThrow();
   });
 
+  it("requires a client-generated message ID for idempotent retries", () => {
+    expect(() =>
+      validateSendSessionCommand({ sessionId: "task-1", content: "Run" }),
+    ).toThrow("Invalid message ID");
+  });
+
   it("accepts a note-only message", () => {
     expect(() =>
       validateSendSessionCommand({
         sessionId: "task-1",
+        messageId: "message-1",
         content: "",
         attachments: [
           {

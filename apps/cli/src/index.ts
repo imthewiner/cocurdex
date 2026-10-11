@@ -193,6 +193,7 @@ async function main(rawArgs: string[]) {
       send: (currentSession, content, delivery) =>
         taskApi.sendMessage({
           sessionId: currentSession.id,
+          messageId: crypto.randomUUID(),
           content,
           delivery,
         }),
@@ -566,7 +567,13 @@ async function resolveSessionTuiSession(
 }
 
 async function sendSessionMessage(sessionId: string, prompt: string) {
-  return withDaemon(() => taskApi.sendMessage({ sessionId, content: prompt }));
+  return withDaemon(() =>
+    taskApi.sendMessage({
+      sessionId,
+      messageId: crypto.randomUUID(),
+      content: prompt,
+    }),
+  );
 }
 
 async function createWorkflow(parsed: ParsedArgs) {

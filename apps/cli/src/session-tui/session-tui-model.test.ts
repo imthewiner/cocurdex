@@ -47,6 +47,7 @@ function createSnapshot(): SessionObservationSnapshot {
     activeMessages: [message("assistant-1", "Par")],
     toolCalls: [],
     queuedAgentInputs: [],
+    activeRun: null,
     turnChangeSets: {},
     usage: null,
     interactions: {

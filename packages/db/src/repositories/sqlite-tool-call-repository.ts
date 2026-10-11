@@ -8,7 +8,7 @@ import type { ToolCallRepository } from "./tool-call-repository";
 // excludes the result columns — those fields are fetched lazily when the user
 // opens the detail popover/sheet (see getResultById).
 const SUMMARY_COLUMNS =
-  "id, session_id, title, kind, status, subagent_json, raw_input_json, locations_json, started_at, updated_at, seq";
+  "id, session_id, title, kind, status, subagent_json, raw_input_json, locations_json, started_at, updated_at, seq, run_id";
 
 export function createSqliteToolCallRepository(
   database: DatabaseSync,
@@ -69,8 +69,8 @@ export function createSqliteToolCallRepository(
           `INSERT INTO tool_calls (
              id, session_id, title, kind, status, subagent_json, content_json,
              raw_input_json, raw_output_json, locations_json, started_at, updated_at,
-             seq
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             seq, run_id
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              session_id = excluded.session_id,
              title = excluded.title,
@@ -82,7 +82,8 @@ export function createSqliteToolCallRepository(
              raw_output_json = excluded.raw_output_json,
              locations_json = excluded.locations_json,
              started_at = excluded.started_at,
-             updated_at = excluded.updated_at`,
+             updated_at = excluded.updated_at,
+             run_id = COALESCE(tool_calls.run_id, excluded.run_id)`,
         )
         .run(
           toolCall.id,
@@ -98,6 +99,7 @@ export function createSqliteToolCallRepository(
           toolCall.startedAt,
           toolCall.updatedAt,
           seq,
+          toolCall.runId ?? null,
         );
       return existing ? (existing.seq ?? null) : seq;
     },

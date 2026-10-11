@@ -8,6 +8,7 @@ import type {
   AgentUsageRecord,
   MessageRecord,
   QueuedAgentInputRecord,
+  RunRecord,
   SessionRecord,
 } from "./contracts";
 import type { TurnChangeSet } from "./workspace-changes";
@@ -24,6 +25,7 @@ export interface SessionObservationSnapshot {
   activeMessages: MessageRecord[];
   toolCalls: AgentToolCallRecord[];
   queuedAgentInputs: QueuedAgentInputRecord[];
+  activeRun: RunRecord | null;
   usage: AgentUsageRecord | null;
   turnChangeSets: Record<string, TurnChangeSet>;
   interactions: SessionInteractionSnapshot;
@@ -51,6 +53,7 @@ export interface AppResyncSnapshot {
   sessions: SessionRecord[];
   queuedAgentInputs: QueuedAgentInputRecord[];
   queuedMessages: MessageRecord[];
+  activeRuns: RunRecord[];
   sessionUsage: Record<string, AgentUsageRecord>;
   interactions: SessionInteractionSnapshot;
   transcripts: Record<string, SessionTranscriptSnapshot | null>;

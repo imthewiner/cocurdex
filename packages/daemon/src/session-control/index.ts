@@ -6,3 +6,10 @@ export type {
   SessionRuntimeMessage,
   SessionTurnOutcome,
 } from "./execution-types";
+export { MessageIdConflictError, resolveRepeatedSend } from "./repeated-send";
+export {
+  type RunHandle,
+  type RunStore,
+  SessionRunCoordinator,
+} from "./run-coordinator";
+export { decideDelivery, decideRunOutcome } from "./run-decisions";

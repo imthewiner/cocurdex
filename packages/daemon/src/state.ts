@@ -22,6 +22,8 @@ import type {
   ProviderConfigRecord,
   ProviderModelRecord,
   QueuedAgentInputRecord,
+  RunRecord,
+  RunStatus,
   SessionMessagesResult,
   SessionRecord,
   SessionStatus,
@@ -46,6 +48,10 @@ import { capToolCallOutput, withoutToolCallOutput } from "./tool-call-output";
 
 type CocurdexDatabase = ReturnType<typeof createCocurdexDatabase>;
 const TERMINAL_STATUSES = new Set<SessionStatus>(["idle", "error", "exited"]);
+export interface AgentEventPersistenceContext {
+  runId: string | null;
+}
+
 const INTERRUPTED_BY_RESTART_MESSAGE =
   "The agent was interrupted because Cocurdex restarted before this turn finished. Send a message to continue.";
 
@@ -120,6 +126,7 @@ export class DaemonState {
         (message): message is MessageRecord => message != null,
       ),
       queuedAgentInputs,
+      activeRuns: this.database.runs.listActive(),
       sessionUsage: await this.database.sessionUsage.list(),
       editorViews: await this.database.editorViews.list(),
     };
@@ -311,6 +318,31 @@ export class DaemonState {
     return this.database.messages.moveToEnd(messageId, sessionId);
   }
 
+  async startRun(run: RunRecord): Promise<RunRecord> {
+    return this.database.transaction(() => {
+      const started = this.database.runs.insert(run);
+      void this.database.messages.assignRun(run.triggerMessageId, run.id);
+      return started;
+    });
+  }
+
+  async finishRun(
+    runId: string,
+    status: Exclude<RunStatus, "running">,
+    endedAt: string,
+    error: string | null,
+  ) {
+    return this.database.runs.finish(runId, status, endedAt, error);
+  }
+
+  getActiveRun(sessionId: string) {
+    return this.database.runs.getActiveBySessionId(sessionId);
+  }
+
+  listActiveRuns() {
+    return this.database.runs.listActive();
+  }
+
   async saveQueuedUserMessage(
     message: MessageRecord,
     input: QueuedAgentInputRecord,
@@ -392,6 +424,7 @@ export class DaemonState {
     this.database.transaction(() => {
       void this.database.toolCalls.deleteAfter(message.sessionId, message.id);
       void this.database.messages.deleteAfter(message.sessionId, message.id);
+      this.database.runs.deleteByTriggerMessageIds([message.id]);
       void this.database.messages.update(message);
       if (!keepProviderSession)
         void this.database.providerSessions.clear(message.sessionId);
@@ -523,8 +556,12 @@ export class DaemonState {
     await this.database.agentRoles.delete(id);
   }
 
-  async persistAgentEvent(event: AgentEvent): Promise<AgentEvent> {
+  async persistAgentEvent(
+    event: AgentEvent,
+    context: AgentEventPersistenceContext = { runId: null },
+  ): Promise<AgentEvent> {
     const eventTimestamp = new Date().toISOString();
+    const runId = context.runId;
 
     if (event.type === "state.changed") {
       if (TERMINAL_STATUSES.has(event.status)) {
@@ -549,21 +586,25 @@ export class DaemonState {
 
     if (event.type === "message.completed") {
       const buffered = this.deltaBuffer.release(event.message.id);
-      const seq = await this.database.messages.append({
+      const message = {
         ...event.message,
         seq: event.message.seq ?? buffered?.seq,
-      });
+        runId: event.message.runId ?? runId,
+      };
+      const seq = await this.database.messages.append(message);
       const session = await this.database.sessions.getById(event.sessionId);
 
       if (session) {
         await this.database.sessions.upsert({
           ...session,
-          status: "idle",
           updatedAt: event.message.createdAt,
           lastMessageAt: event.message.createdAt,
         });
       }
-      return withTimelineSeq(event, seq);
+      const stamped = message.runId
+        ? { ...event, message: { ...event.message, runId: message.runId } }
+        : event;
+      return withTimelineSeq(stamped, seq);
     }
 
     if (event.type === "message.delta") {
@@ -578,7 +619,10 @@ export class DaemonState {
       event.type === "tool.updated" ||
       event.type === "tool.finished"
     ) {
-      const toolCall = capToolCallOutput(event.toolCall);
+      const toolCall = capToolCallOutput({
+        ...event.toolCall,
+        runId: event.toolCall.runId ?? runId,
+      });
       const seq = await this.database.toolCalls.upsert(toolCall);
       await this.persistSubagentChildSession(toolCall);
       return withTimelineSeq(
@@ -615,18 +659,20 @@ export class DaemonState {
 
     if (event.type === "error") {
       await this.flushBufferedMessages(event.sessionId);
-      const systemMessage = this.createSystemMessage(
-        event.sessionId,
-        event.message,
-        eventTimestamp,
-      );
+      const systemMessage: MessageRecord = {
+        ...this.createSystemMessage(
+          event.sessionId,
+          event.message,
+          eventTimestamp,
+        ),
+        ...(runId ? { runId } : {}),
+      };
       const seq = await this.database.messages.append(systemMessage);
       const session = await this.database.sessions.getById(event.sessionId);
 
       if (session) {
         await this.database.sessions.upsert({
           ...session,
-          status: "error",
           updatedAt: eventTimestamp,
           lastMessageAt: eventTimestamp,
         });
@@ -724,9 +770,11 @@ export class DaemonState {
   }
 
   private async failInterruptedSessions() {
-    const sessionIds = await this.database.sessions.failRunning();
-    await this.database.teams.failActiveMembers();
     const createdAt = new Date().toISOString();
+    const { sessionIds } = this.database.transaction(() =>
+      this.database.runs.interruptRunning(createdAt),
+    );
+    await this.database.teams.failActiveMembers();
     for (const sessionId of sessionIds) {
       await this.database.messages.append(
         this.createSystemMessage(

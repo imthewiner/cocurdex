@@ -72,8 +72,28 @@ export function createSchemaSql() {
       created_at TEXT NOT NULL,
       origin_json TEXT,
       seq INTEGER,
+      run_id TEXT REFERENCES runs(id) ON DELETE SET NULL,
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS runs (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      trigger_message_id TEXT NOT NULL,
+      status TEXT NOT NULL
+        CHECK (status IN ('running', 'completed', 'cancelled', 'failed', 'interrupted')),
+      error TEXT,
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+      FOREIGN KEY (trigger_message_id) REFERENCES messages(id) ON DELETE CASCADE
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_one_running_per_session
+      ON runs(session_id) WHERE status = 'running';
+
+    CREATE INDEX IF NOT EXISTS idx_runs_session_started
+      ON runs(session_id, started_at);
 
     CREATE TABLE IF NOT EXISTS session_attention (
       session_id TEXT PRIMARY KEY,
@@ -115,6 +135,7 @@ export function createSchemaSql() {
       started_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       seq INTEGER,
+      run_id TEXT REFERENCES runs(id) ON DELETE SET NULL,
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
     );
 

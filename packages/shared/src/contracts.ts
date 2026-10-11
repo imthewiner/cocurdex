@@ -666,6 +666,24 @@ export interface MessageRecord {
   createdAt: string;
   seq?: number;
   origin?: MessageOrigin | null;
+  runId?: string | null;
+}
+
+export type RunStatus =
+  | "running"
+  | "completed"
+  | "cancelled"
+  | "failed"
+  | "interrupted";
+
+export interface RunRecord {
+  id: string;
+  sessionId: string;
+  triggerMessageId: string;
+  status: RunStatus;
+  error?: string | null;
+  startedAt: string;
+  endedAt?: string | null;
 }
 
 export interface AgentToolCallLocation {
@@ -719,6 +737,7 @@ export interface AgentToolCallRecord {
   startedAt: string;
   updatedAt: string;
   seq?: number;
+  runId?: string | null;
 }
 
 export type AgentPermissionDecision =
@@ -911,6 +930,12 @@ export interface AgentStateChangedEvent {
   type: "state.changed";
   sessionId: string;
   status: SessionStatus;
+}
+
+export interface AgentRunUpdatedEvent {
+  type: "run.updated";
+  sessionId: string;
+  run: RunRecord;
 }
 
 export interface AgentErrorEvent {
@@ -1270,6 +1295,7 @@ export type AgentEvent =
   | AgentTurnCompletedEvent
   | AgentNativeWorkspaceEvidenceEvent
   | AgentTurnChangesUpdatedEvent
+  | AgentRunUpdatedEvent
   | AgentErrorEvent;
 
 export type AgentInputDelivery =
@@ -1355,6 +1381,7 @@ export interface AppBootstrapData {
   sessions: SessionRecord[];
   queuedMessages: MessageRecord[];
   queuedAgentInputs: QueuedAgentInputRecord[];
+  activeRuns: RunRecord[];
   sessionUsage: Record<string, AgentUsageRecord>;
   editorViews: EditorViewRecord[];
 }

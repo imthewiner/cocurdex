@@ -47,8 +47,8 @@ export function createSqliteMessageRepository(
         .prepare(
           `INSERT INTO messages (
              id, session_id, role, kind, content, attachments_json, created_at,
-             origin_json, seq
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             origin_json, seq, run_id
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              session_id = excluded.session_id,
              role = excluded.role,
@@ -56,7 +56,8 @@ export function createSqliteMessageRepository(
              content = excluded.content,
              attachments_json = excluded.attachments_json,
              created_at = excluded.created_at,
-             origin_json = excluded.origin_json`,
+             origin_json = excluded.origin_json,
+             run_id = COALESCE(messages.run_id, excluded.run_id)`,
         )
         .run(
           message.id,
@@ -68,6 +69,7 @@ export function createSqliteMessageRepository(
           message.createdAt,
           message.origin ? JSON.stringify(message.origin) : null,
           seq,
+          message.runId ?? null,
         );
       return existing ? (existing.seq ?? null) : seq;
     },
@@ -77,6 +79,11 @@ export function createSqliteMessageRepository(
         .prepare("UPDATE messages SET seq = ? WHERE id = ? AND session_id = ?")
         .run(seq, messageId, sessionId);
       return seq;
+    },
+    async assignRun(messageId, runId) {
+      database
+        .prepare("UPDATE messages SET run_id = ? WHERE id = ?")
+        .run(runId, messageId);
     },
     async update(message) {
       database

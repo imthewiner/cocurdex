@@ -117,9 +117,13 @@ import { ScriptRunModule } from "./script-run";
 import { DaemonSearchService } from "./search-service";
 import {
   applySessionConfiguration,
+  decideDelivery,
+  type RunHandle,
+  resolveRepeatedSend,
   SessionCheckpointStore,
   SessionCommandQueue,
   type SessionExecutionContext,
+  SessionRunCoordinator,
   type SessionRuntimeMessage,
   type SessionTurnOutcome,
 } from "./session-control";
@@ -178,14 +182,8 @@ interface QueuedFollowUp {
   payload: SessionRuntimeMessage & { messageId: string };
 }
 
-interface PendingTurn {
-  cancelled: boolean;
-  onCancel?(): void;
-}
-
-function cancelPendingTurn(pendingTurn: PendingTurn) {
-  pendingTurn.cancelled = true;
-  pendingTurn.onCancel?.();
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 /** How often checkpoint retention runs on a daemon that never restarts. */
@@ -232,13 +230,8 @@ export class CocurdexDaemonService {
   private readonly userDataPath: string;
   private readonly sessionCheckpoints: SessionCheckpointStore;
   private readonly sessionCommands = new SessionCommandQueue();
-  private readonly pendingTurns = new Map<string, PendingTurn>();
+  readonly runs: SessionRunCoordinator;
   private readonly worktreeSetups = new WorktreeSetupRuns();
-  private readonly turnOutcomes = new Map<
-    string,
-    Promise<SessionTurnOutcome>
-  >();
-  private readonly backgroundSends = new Set<Promise<unknown>>();
   private readonly queuedFollowUps = new Map<string, QueuedFollowUp[]>();
   private readonly workflowWorkerScheduler: WorkflowWorkerScheduler;
   private shutdownPromise: Promise<void> | null = null;
@@ -300,7 +293,7 @@ export class CocurdexDaemonService {
     this.peerMessaging = new PeerMessagingService({
       getSession: (sessionId) => this.state.getSession(sessionId),
       listSessions: () => this.state.listSessions(),
-      hasActiveTurn: (sessionId) => this.pendingTurns.has(sessionId),
+      hasActiveTurn: (sessionId) => this.runs.hasActiveRun(sessionId),
       supportsSteering: async (session) => {
         const agents = await this.listAgents();
         const agent = agents.find((item) => item.id === session.agentType);
@@ -323,7 +316,8 @@ export class CocurdexDaemonService {
         this.peerMessaging.send(payload, render),
       stopSession: (sessionId) => this.stopTeammateSession(sessionId),
       isSessionBusy: (sessionId) =>
-        this.pendingTurns.has(sessionId) || this.queuedFollowUps.has(sessionId),
+        this.runs.hasActiveRun(sessionId) ||
+        this.queuedFollowUps.has(sessionId),
       getMessage: (messageId) => this.state.getMessageById(messageId),
       createWorktree: (input) => this.createWorktree(input),
       broadcast: (event) => {
@@ -350,7 +344,7 @@ export class CocurdexDaemonService {
       createWorktree: (input) => this.createWorktree(input),
       sendSessionMessage: (command) => this.sendSessionMessage(command),
       waitForSessionTurn: (sessionId) => this.waitForSessionTurn(sessionId),
-      hasActiveTurn: (sessionId) => this.pendingTurns.has(sessionId),
+      hasActiveTurn: (sessionId) => this.runs.hasActiveRun(sessionId),
       stopSession: (sessionId) => this.stopSession(sessionId),
       broadcast: (event) => {
         this.events.emit("daemon.event", event);
@@ -372,10 +366,20 @@ export class CocurdexDaemonService {
         this.getSettingValue(key, workspaceId),
       setSettingValue: (input) => this.setSettingValue(input),
     });
+    this.runs = new SessionRunCoordinator({
+      store: this.state,
+      emit: (event) => this.runtime.emitAgentEvent(event),
+      afterPersistedEvents: (work) => this.runtime.withEventPersistence(work),
+      onRunSettled: (run) => void this.startNextQueuedFollowUp(run.sessionId),
+      now: () => new Date().toISOString(),
+      createId: () => crypto.randomUUID(),
+    });
     this.runtime = new AgentRuntimeManager({
       broadcastAgentEvent: (event) => {
         this.events.emit("daemon.event", event);
       },
+      activeRunId: (sessionId) => this.runs.activeRunId(sessionId),
+      onProviderEvent: (event) => this.runs.noteProviderEvent(event),
       userDataPath: options.userDataPath,
       agentTools: this.agentTools,
     });
@@ -399,8 +403,8 @@ export class CocurdexDaemonService {
       CHECKPOINT_RECONCILE_INTERVAL_MS,
     );
     this.checkpointReconcileTimer.unref?.();
-    this.runtime.configureAgentEventPersistence(async (event) => {
-      const persisted = await this.state.persistAgentEvent(event);
+    this.runtime.configureAgentEventPersistence(async (event, context) => {
+      const persisted = await this.state.persistAgentEvent(event, context);
       await this.state.sessionAttention.applyEvent(event);
       if (event.type === "session.mode.updated" && event.availableModes) {
         await this.state.cacheSessionModes(
@@ -447,6 +451,7 @@ export class CocurdexDaemonService {
       new DaemonWorkflowAgentTurnRunner(
         this.state,
         this.runtime,
+        this.runs,
         this.providerCredentials,
       ),
     );
@@ -468,9 +473,7 @@ export class CocurdexDaemonService {
 
   startBackgroundRecovery() {
     if (this.startupRecovery || this.stopping) return;
-    this.startupRecovery = this.trackBackgroundSend(
-      this.recoverInterruptedWork(),
-    );
+    this.startupRecovery = this.runs.track(this.recoverInterruptedWork());
   }
 
   private async recoverInterruptedWork() {
@@ -512,7 +515,7 @@ export class CocurdexDaemonService {
 
   getActiveWork() {
     return {
-      agentTurns: Math.max(this.pendingTurns.size, this.backgroundSends.size),
+      agentTurns: this.runs.activeWorkCount,
       queuedInputs: [...this.queuedFollowUps.values()].reduce(
         (count, inputs) => count + inputs.length,
         0,
@@ -1158,6 +1161,7 @@ export class CocurdexDaemonService {
         sessions: data.sessions,
         queuedAgentInputs: data.queuedAgentInputs,
         queuedMessages: data.queuedMessages,
+        activeRuns: data.activeRuns,
         sessionUsage: data.sessionUsage,
         interactions: this.runtime.getPendingInteractions(),
         transcripts,
@@ -1194,6 +1198,7 @@ export class CocurdexDaemonService {
       activeMessages,
       toolCalls,
       queuedAgentInputs,
+      activeRun: this.state.getActiveRun(sessionId),
       usage,
       turnChangeSets,
       interactions: this.runtime.getSessionInteractions(sessionId),
@@ -1356,7 +1361,7 @@ export class CocurdexDaemonService {
     const existing = await this.state.getSession(input.id);
     if (
       existing &&
-      this.pendingTurns.has(input.id) &&
+      this.runs.hasActiveRun(input.id) &&
       (existing.agentType !== input.agentType ||
         existing.worktreePath !== input.worktreePath)
     ) {
@@ -1631,7 +1636,7 @@ export class CocurdexDaemonService {
       throw new Error("Previous user message not found");
     }
     await this.stopSessionTurn(command.sessionId);
-    if (this.pendingTurns.has(command.sessionId))
+    if (this.runs.hasActiveRun(command.sessionId))
       throw new Error("Session still has an active turn after stop");
     if (command.revertWorkspace) {
       await this.sessionCheckpoints.restore({
@@ -1729,7 +1734,7 @@ export class CocurdexDaemonService {
     message: MessageRecord,
     { keepProviderSession = false } = {},
   ) {
-    if (this.pendingTurns.has(message.sessionId)) {
+    if (this.runs.hasActiveRun(message.sessionId)) {
       throw new Error(
         `Session ${message.sessionId} still has an active turn after stop`,
       );
@@ -1744,14 +1749,8 @@ export class CocurdexDaemonService {
     validateSendSessionCommand(command);
     if (!command.origin) this.peerMessaging.noteHumanInput(command.sessionId);
     return this.sessionCommands.run(command.sessionId, async () => {
-      if (
-        command.messageId &&
-        (await this.state.getMessageById(command.messageId))
-      ) {
-        throw new Error(
-          "Message ID already exists; use the resubmit command to edit a previous message",
-        );
-      }
+      const existing = await this.state.getMessageById(command.messageId);
+      if (existing) return resolveRepeatedSend(existing, command);
       const accepted = await this.acceptSessionMessage(command);
       await this.dataService.linkAttachedIssues(
         command.sessionId,
@@ -1774,26 +1773,24 @@ export class CocurdexDaemonService {
       payload.session,
     );
     if (this.stopping) throw new Error("Daemon is shutting down");
-    const hasActiveTurn = this.pendingTurns.has(payload.session.id);
-    if (
-      payload.delivery === "steer-active-run" &&
-      !hasActiveTurn &&
-      payload.origin?.kind === "peer"
-    ) {
-      payload = { ...payload, delivery: "start-new-run" };
-    }
-    const isSteering = payload.delivery === "steer-active-run";
-    const isQueuedFollowUp = payload.delivery === "queue-after-run";
-    if (hasActiveTurn && !isSteering && !isQueuedFollowUp) {
+    const sessionId = payload.session.id;
+    const decision = decideDelivery({
+      requested: payload.delivery,
+      hasActiveRun: this.runs.hasActiveRun(sessionId),
+      fromPeer: payload.origin?.kind === "peer",
+    });
+    if (decision.kind === "reject") {
       throw new Error(
-        `Session ${payload.session.id} already has an active turn`,
+        decision.reason === "active-run"
+          ? `Session ${sessionId} already has an active turn`
+          : `Session ${sessionId} has no active turn`,
       );
     }
-    if (isSteering && !hasActiveTurn) {
-      throw new Error(`Session ${payload.session.id} has no active turn`);
+    if (decision.kind === "start") {
+      payload = { ...payload, delivery: "start-new-run" };
     }
 
-    if (isSteering) {
+    if (decision.kind === "steer") {
       const agent = await this.ensureAgentAvailable(payload.session.agentType);
       if (!agent.capabilities.supportsSteering) {
         throw new Error(
@@ -1801,18 +1798,21 @@ export class CocurdexDaemonService {
         );
       }
       payload = await this.refreshSessionWorkingPath(payload);
-      const createdMessage = this.createUserMessage(payload);
+      const createdMessage: MessageRecord = {
+        ...this.createUserMessage(payload),
+        runId: this.runs.activeRunId(sessionId),
+      };
       await this.captureSessionCheckpoint(payload, createdMessage);
       const userMessage = await this.state.saveUserMessage(createdMessage);
-      void this.trackBackgroundSend(
+      void this.runs.track(
         this.dispatchSteeringMessage(payload, userMessage, providerConfig),
       );
       return userMessage;
     }
 
-    if (isQueuedFollowUp && hasActiveTurn) {
+    if (decision.kind === "queue") {
       await this.ensureAgentAvailable(payload.session.agentType);
-      await this.loadQueuedFollowUps(payload.session.id);
+      await this.loadQueuedFollowUps(sessionId);
       payload = await this.refreshSessionWorkingPath(payload);
       const createdMessage = this.createUserMessage(payload);
       const userMessage = await this.state.saveQueuedUserMessage(
@@ -1825,7 +1825,7 @@ export class CocurdexDaemonService {
           createdAt: createdMessage.createdAt,
         },
       );
-      const queued = this.queuedFollowUps.get(payload.session.id) ?? [];
+      const queued = this.queuedFollowUps.get(sessionId) ?? [];
       queued.push({
         payload: {
           ...payload,
@@ -1834,7 +1834,7 @@ export class CocurdexDaemonService {
           delivery: "start-new-run",
         },
       });
-      this.queuedFollowUps.set(payload.session.id, queued);
+      this.queuedFollowUps.set(sessionId, queued);
       this.events.emit("daemon.event", {
         type: "data.changed",
         areas: ["agent"],
@@ -1842,90 +1842,52 @@ export class CocurdexDaemonService {
       return userMessage;
     }
 
-    const pendingTurn: PendingTurn = { cancelled: false };
-    this.pendingTurns.set(payload.session.id, pendingTurn);
-    let userMessage: MessageRecord;
-    let persistence: RuntimePersistence;
+    await this.ensureAgentAvailable(payload.session.agentType);
+    payload = await this.refreshSessionWorkingPath(payload);
+    const createdMessage = this.createUserMessage(payload);
+    await this.captureSessionCheckpoint(payload, createdMessage);
+    if (dequeued) {
+      await this.state.moveMessageToEnd(createdMessage.id, sessionId);
+    }
+    const savedMessage = await this.state.saveUserMessage(createdMessage);
+    const persistence: RuntimePersistence = {
+      ...(await this.createRuntimePersistence(sessionId)),
+      providerConfig,
+    };
+    if (this.stopping) throw new Error("Daemon is shutting down");
+    const run = await this.runs.start(sessionId, savedMessage.id);
+    const userMessage: MessageRecord = { ...savedMessage, runId: run.runId };
     try {
-      await this.ensureAgentAvailable(payload.session.agentType);
-      payload = await this.refreshSessionWorkingPath(payload);
-      const createdMessage = this.createUserMessage(payload);
-      await this.captureSessionCheckpoint(payload, createdMessage);
-      if (dequeued) {
-        await this.state.moveMessageToEnd(
-          createdMessage.id,
-          payload.session.id,
-        );
-      }
-      userMessage = await this.state.saveUserMessage(createdMessage);
-      persistence = {
-        ...(await this.createRuntimePersistence(payload.session.id)),
-        providerConfig,
-      };
       this.runtime.createSessionRuntime(payload, persistence);
-      this.runtime.emitAgentEvent({
-        type: "state.changed",
-        sessionId: payload.session.id,
-        status: "running",
-      });
     } catch (error) {
-      this.pendingTurns.delete(payload.session.id);
+      await this.runs.settle(run, {
+        kind: "rejected",
+        error: errorMessage(error, "Unknown agent runtime error"),
+      });
       throw error;
     }
 
-    const sessionId = payload.session.id;
-    const outcome = this.dispatchSessionMessage(
-      payload,
-      userMessage,
-      pendingTurn,
-      persistence,
-      providerConfig,
-    )
-      .then(
-        (message): SessionTurnOutcome =>
-          message && !pendingTurn.cancelled
-            ? { status: "completed", message }
-            : { status: "cancelled" },
-        (error: unknown): SessionTurnOutcome => {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Unknown agent runtime error";
+    void this.runs.track(
+      this.dispatchSessionMessage(payload, userMessage, run, persistence).then(
+        (message) => this.runs.settle(run, { kind: "resolved", message }),
+        (error: unknown) => {
+          const message = errorMessage(error, "Unknown agent runtime error");
           console.error("[CocurdexDaemonService] Background send failed", {
             agentType: payload.session.agentType,
             error: message,
             sessionId,
           });
-          this.runtime.emitAgentEvent({
-            type: "error",
-            sessionId,
-            message,
-          });
-          return { status: "failed", error: message };
+          this.runtime.emitAgentEvent({ type: "error", sessionId, message });
+          return this.runs.settle(run, { kind: "rejected", error: message });
         },
-      )
-      .finally(() => {
-        if (this.turnOutcomes.get(sessionId) === outcome) {
-          this.turnOutcomes.delete(sessionId);
-        }
-        if (this.pendingTurns.get(sessionId) === pendingTurn) {
-          this.pendingTurns.delete(sessionId);
-          void this.startNextQueuedFollowUp(sessionId);
-        }
-      });
-    this.turnOutcomes.set(sessionId, outcome);
-    void this.trackBackgroundSend(outcome);
+      ),
+    );
 
     return userMessage;
   }
 
   waitForSessionTurn(sessionId: string): Promise<SessionTurnOutcome | null> {
-    return this.turnOutcomes.get(sessionId) ?? Promise.resolve(null);
-  }
-
-  private trackBackgroundSend<T>(work: Promise<T>): Promise<T> {
-    this.backgroundSends.add(work);
-    return work.finally(() => this.backgroundSends.delete(work));
+    return this.runs.outcomeOf(sessionId);
   }
 
   async resumeQueuedSession(sessionId: string) {
@@ -1936,7 +1898,7 @@ export class CocurdexDaemonService {
   }
 
   private async restoreQueuedSession(sessionId: string) {
-    if (this.pendingTurns.has(sessionId) || this.stopping) return false;
+    if (this.runs.hasActiveRun(sessionId) || this.stopping) return false;
     if (!(await this.loadQueuedFollowUps(sessionId))) return false;
     return this.dispatchNextQueuedInput(sessionId);
   }
@@ -2038,7 +2000,7 @@ export class CocurdexDaemonService {
   }
 
   async steerQueuedAgentInput(sessionId: string, messageId: string) {
-    if (!this.pendingTurns.has(sessionId)) {
+    if (!this.runs.hasActiveRun(sessionId)) {
       return this.sendQueuedAgentInputNow(sessionId, messageId);
     }
 
@@ -2129,7 +2091,7 @@ export class CocurdexDaemonService {
         throw new Error(`Queued message ${messageId} was not found`);
       }
 
-      if (this.pendingTurns.has(sessionId)) {
+      if (this.runs.hasActiveRun(sessionId)) {
         await this.stopSessionTurn(sessionId);
       }
 
@@ -2153,7 +2115,7 @@ export class CocurdexDaemonService {
 
   private async dispatchNextQueuedInput(sessionId: string): Promise<boolean> {
     if (this.stopping) return false;
-    if (this.pendingTurns.has(sessionId)) return false;
+    if (this.runs.hasActiveRun(sessionId)) return false;
 
     const queued = this.queuedFollowUps.get(sessionId);
     const next = queued?.shift();
@@ -2238,39 +2200,16 @@ export class CocurdexDaemonService {
   }
 
   private async stopSessionTurn(sessionId: string) {
-    const pendingTurn = this.clearPendingTurn(sessionId);
+    const stopped = this.runs.stop(sessionId);
     await this.workspaceChanges.failTurn(sessionId, "interrupted");
-    const cancelled = await this.runtime.cancelSessionTurn(sessionId);
-    if (pendingTurn && !cancelled) {
-      this.runtime.emitAgentEvent({
-        type: "state.changed",
-        sessionId,
-        status: "idle",
-      });
-    }
+    await Promise.all([stopped, this.runtime.cancelSessionTurn(sessionId)]);
     return null;
   }
 
   private async disposeSessionRuntime(sessionId: string) {
-    const pendingTurn = this.clearPendingTurn(sessionId);
+    const stopped = this.runs.stop(sessionId);
     this.queuedFollowUps.delete(sessionId);
-    const disposed = await this.runtime.disposeSessionRuntime(sessionId);
-    if (pendingTurn && !disposed) {
-      this.runtime.emitAgentEvent({
-        type: "state.changed",
-        sessionId,
-        status: "idle",
-      });
-    }
-  }
-
-  private clearPendingTurn(sessionId: string) {
-    const pendingTurn = this.pendingTurns.get(sessionId);
-    if (pendingTurn) {
-      cancelPendingTurn(pendingTurn);
-      this.pendingTurns.delete(sessionId);
-    }
-    return pendingTurn;
+    await Promise.all([stopped, this.runtime.disposeSessionRuntime(sessionId)]);
   }
 
   resolvePermission(requestId: string, optionId: string) {
@@ -2329,10 +2268,7 @@ export class CocurdexDaemonService {
     this.stopping = true;
     await this.startupRecovery;
     clearInterval(this.checkpointReconcileTimer);
-    for (const pendingTurn of this.pendingTurns.values()) {
-      cancelPendingTurn(pendingTurn);
-    }
-    this.pendingTurns.clear();
+    await this.runs.interruptAll();
     this.queuedFollowUps.clear();
     await this.scriptRuns.shutdown();
     const schedulerClose = this.workflowWorkerScheduler.close();
@@ -2344,7 +2280,7 @@ export class CocurdexDaemonService {
         Promise.resolve().then(() => this.searchService.dispose()),
         Promise.resolve().then(() => this.workspaceWatch.close()),
       ]);
-      await Promise.allSettled([...this.backgroundSends]);
+      await this.runs.drainBackground();
       await this.runtime.flushEvents();
       const failures = results.flatMap((result) =>
         result.status === "rejected" ? [result.reason] : [],
@@ -2447,7 +2383,7 @@ export class CocurdexDaemonService {
 
   private createUserMessage(payload: SessionRuntimeMessage): MessageRecord {
     return {
-      id: payload.messageId ?? crypto.randomUUID(),
+      id: payload.messageId,
       sessionId: payload.session.id,
       role: "user",
       content: payload.content.trim(),
@@ -2460,9 +2396,8 @@ export class CocurdexDaemonService {
   private async dispatchSessionMessage(
     payload: SessionRuntimeMessage,
     userMessage: MessageRecord,
-    pendingTurn: PendingTurn,
+    run: RunHandle,
     persistence: RuntimePersistence,
-    providerConfig: AgentRuntimeProviderConfig | null,
   ) {
     const [messages, queuedInputs] = await Promise.all([
       this.state.listMessagesBySessionId(payload.session.id),
@@ -2475,7 +2410,7 @@ export class CocurdexDaemonService {
       (message) =>
         message.id === userMessage.id || !queuedMessageIds.has(message.id),
     );
-    if (pendingTurn.cancelled) {
+    if (run.signal.aborted) {
       return null;
     }
 
@@ -2485,12 +2420,12 @@ export class CocurdexDaemonService {
         runs: this.worktreeSetups,
         sessionId: payload.session.id,
         worktreePath,
-        cancelled: new Promise((resolve) => {
-          pendingTurn.onCancel = resolve;
+        cancelled: new Promise<void>((resolve) => {
+          run.signal.addEventListener("abort", () => resolve(), { once: true });
         }),
         emit: (event) => this.runtime.emitAgentEvent(event),
       });
-      if (pendingTurn.cancelled) {
+      if (run.signal.aborted) {
         return null;
       }
     }
@@ -2503,7 +2438,7 @@ export class CocurdexDaemonService {
       });
     }
 
-    if (pendingTurn.cancelled) {
+    if (run.signal.aborted) {
       await this.workspaceChanges.failTurn(payload.session.id, "interrupted");
       return null;
     }
@@ -2514,11 +2449,7 @@ export class CocurdexDaemonService {
         content: userMessage.content,
         attachments: userMessage.attachments,
       },
-      {
-        ...persistence,
-        history,
-        providerConfig,
-      },
+      { ...persistence, history },
     );
   }
 
@@ -2587,7 +2518,7 @@ export class CocurdexDaemonService {
       type: "data.changed",
       areas: ["agent"],
     });
-    if (!this.pendingTurns.has(payload.session.id)) {
+    if (!this.runs.hasActiveRun(payload.session.id)) {
       void this.startNextQueuedFollowUp(payload.session.id);
     }
   }

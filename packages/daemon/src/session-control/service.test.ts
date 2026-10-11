@@ -66,6 +66,7 @@ describe("authoritative task commands", () => {
     const dispatch = vi.spyOn(service.runtime, "sendSessionMessage");
     await service.sendSessionMessage({
       sessionId: "session-1",
+      messageId: crypto.randomUUID(),
       content: "Run",
     });
     let closed = false;
@@ -89,7 +90,7 @@ describe("authoritative task commands", () => {
     const dispatch = vi
       .spyOn(service.runtime, "sendSessionMessage")
       .mockImplementation(async (payload) => ({
-        id: payload.messageId ?? "message-1",
+        id: payload.messageId,
         sessionId: payload.session.id,
         role: "user",
         content: payload.content,
@@ -99,6 +100,7 @@ describe("authoritative task commands", () => {
     await expect(
       service.sendSessionMessage({
         sessionId: "session-1",
+        messageId: crypto.randomUUID(),
         content: "Run",
         workspaceRootPath: "/untrusted",
       } as SendSessionCommand),
@@ -109,6 +111,7 @@ describe("authoritative task commands", () => {
 
     await service.sendSessionMessage({
       sessionId: "session-1",
+      messageId: crypto.randomUUID(),
       content: "Run",
     });
     await vi.waitFor(
@@ -124,7 +127,11 @@ describe("authoritative task commands", () => {
   it("rejects unknown and archived sessions without creating messages", async () => {
     const { service } = await fixture();
     await expect(
-      service.sendSessionMessage({ sessionId: "unknown", content: "Run" }),
+      service.sendSessionMessage({
+        sessionId: "unknown",
+        messageId: crypto.randomUUID(),
+        content: "Run",
+      }),
     ).rejects.toThrow("not found");
     const session = await service.getSession("session-1");
     if (!session) throw new Error("Missing session");
@@ -133,7 +140,11 @@ describe("authoritative task commands", () => {
       archivedAt: new Date().toISOString(),
     });
     await expect(
-      service.sendSessionMessage({ sessionId: session.id, content: "Run" }),
+      service.sendSessionMessage({
+        sessionId: session.id,
+        messageId: crypto.randomUUID(),
+        content: "Run",
+      }),
     ).rejects.toThrow("Restore the session");
     expect(await service.state.listMessagesBySessionId(session.id)).toEqual([]);
   });
@@ -158,10 +169,12 @@ describe("authoritative task commands", () => {
       const results = await Promise.allSettled([
         service.sendSessionMessage({
           sessionId: "session-1",
+          messageId: crypto.randomUUID(),
           content: "First",
         }),
         service.sendSessionMessage({
           sessionId: "session-1",
+          messageId: crypto.randomUUID(),
           content: "Second",
         }),
       ]);
@@ -203,7 +216,7 @@ describe("authoritative task commands", () => {
         messageId: existing.id,
         content: "Replace",
       }),
-    ).rejects.toThrow("Message ID already exists");
+    ).rejects.toThrow("was already used for a different message");
     await expect(
       service.submitPreviousMessage({
         sessionId: "session-1",
@@ -237,7 +250,12 @@ describe("authoritative task commands", () => {
       content: " Revised ",
       revertWorkspace: false,
     });
-    expect(result).toEqual({ ...existing, content: "Revised", seq: 1 });
+    expect(result).toEqual({
+      ...existing,
+      content: "Revised",
+      seq: 1,
+      runId: expect.any(String),
+    });
   });
 
   it("creates chat sessions in a hidden workspace under user data", async () => {

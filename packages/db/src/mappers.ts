@@ -103,6 +103,7 @@ export function mapMessage(row: SqliteRow): MessageRecord {
     ...(typeof row.origin_json === "string" && row.origin_json
       ? { origin: parseJson<MessageRecord["origin"]>(row.origin_json, null) }
       : {}),
+    ...(typeof row.run_id === "string" ? { runId: row.run_id } : {}),
   };
 }
 
@@ -127,6 +128,7 @@ export function mapToolCall(row: SqliteRow): AgentToolCallRecord {
     startedAt: String(row.started_at),
     updatedAt: String(row.updated_at),
     ...(typeof row.seq === "number" ? { seq: row.seq } : {}),
+    ...(typeof row.run_id === "string" ? { runId: row.run_id } : {}),
   };
 }
 
@@ -154,6 +156,7 @@ export function mapToolCallSummary(row: SqliteRow): AgentToolCallRecord {
     startedAt: String(row.started_at),
     updatedAt: String(row.updated_at),
     ...(typeof row.seq === "number" ? { seq: row.seq } : {}),
+    ...(typeof row.run_id === "string" ? { runId: row.run_id } : {}),
   };
 }
 

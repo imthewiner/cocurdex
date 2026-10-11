@@ -30,6 +30,7 @@ function createPayload(): SessionRuntimeMessage {
   return {
     session: createSessionRecord(),
     workspaceRootPath: "/workspace",
+    messageId: "message-1",
     content: "hello",
   };
 }

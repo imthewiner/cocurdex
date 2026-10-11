@@ -311,6 +311,7 @@ export class TeamModule {
     this.changed(team);
     await this.deps.sendSessionMessage({
       sessionId: session.id,
+      messageId: crypto.randomUUID(),
       content: renderTeammateBriefing({
         name: payload.name,
         leadSessionId: lead.id,

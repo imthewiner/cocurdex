@@ -950,6 +950,55 @@ describe("initializeDatabase", () => {
     ]);
   });
 
+  it("adds runs and run ids from version 22 and keeps user data", async () => {
+    const database = new DatabaseSync(":memory:");
+    initializeDatabase(database);
+    database.exec(`
+      ALTER TABLE messages DROP COLUMN run_id;
+      ALTER TABLE tool_calls DROP COLUMN run_id;
+      DROP TABLE runs;
+    `);
+    const now = "2026-10-11T00:00:00.000Z";
+    database.exec(`
+      INSERT INTO workspaces (id, name, root_paths, created_at, updated_at, last_opened_at)
+      VALUES ('w1', 'Repo', '["/repo"]', '${now}', '${now}', '${now}');
+      INSERT INTO sessions (id, workspace_id, title, agent_type, status, write_mode, created_at, updated_at)
+      VALUES ('s1', 'w1', 'Explain', 'codex', 'running', 'read-only', '${now}', '${now}');
+      INSERT INTO messages (id, session_id, role, content, attachments_json, created_at)
+      VALUES ('m1', 's1', 'user', 'hello', '[]', '${now}');
+      INSERT INTO tool_calls (id, session_id, title, status, content_json, locations_json, started_at, updated_at)
+      VALUES ('t1', 's1', 'Read', 'completed', '[]', '[]', '${now}', '${now}');
+      INSERT INTO notes (id, kind, title, body_markdown, created_at, updated_at)
+      VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
+      INSERT INTO issues (id, title, workspace_id, created_at, updated_at)
+      VALUES ('i1', 'Runs', 'w1', '${now}', '${now}');
+      PRAGMA user_version = 22;
+    `);
+
+    initializeDatabase(database);
+
+    const fresh = new DatabaseSync(":memory:");
+    initializeDatabase(fresh);
+    for (const table of ["messages", "tool_calls", "runs"]) {
+      expect(tableShape(database, table)).toEqual(tableShape(fresh, table));
+    }
+    expect(database.prepare("SELECT id, run_id FROM messages").all()).toEqual([
+      { id: "m1", run_id: null },
+    ]);
+    expect(database.prepare("SELECT id, run_id FROM tool_calls").all()).toEqual(
+      [{ id: "t1", run_id: null }],
+    );
+    expect(database.prepare("SELECT status FROM sessions").all()).toEqual([
+      { status: "running" },
+    ]);
+    expect(database.prepare("SELECT title FROM notes").all()).toEqual([
+      { title: "Spec" },
+    ]);
+    expect(database.prepare("SELECT title FROM issues").all()).toEqual([
+      { title: "Runs" },
+    ]);
+  });
+
   it("keeps an up-to-date database that carries a stale version marker", () => {
     const database = new DatabaseSync(":memory:");
     initializeDatabase(database);

@@ -11,7 +11,11 @@ describe("task client connection boundary", () => {
   it("rejects disconnected commands instead of fabricating successful messages", async () => {
     Reflect.deleteProperty(window, "taskApi");
     await expect(
-      taskApi.sendMessage({ sessionId: "session-1", content: "Run" }),
+      taskApi.sendMessage({
+        sessionId: "session-1",
+        messageId: "message-1",
+        content: "Run",
+      }),
     ).rejects.toThrow("unavailable");
     await expect(taskApi.listSessions()).rejects.toThrow("unavailable");
     expect(() => taskApi.onAgentEvent(() => {})).toThrow("unavailable");
