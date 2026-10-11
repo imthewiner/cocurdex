@@ -651,6 +651,7 @@ app
     initializeAppState(userDataPath);
     daemonRuntimeClient = createDaemonRuntimeClient({
       daemonEntryPath: getBundledDaemonEntryPath(),
+      webRoot: path.join(app.getAppPath(), "out", "renderer"),
       logger: daemonLogger,
       onEvent(event) {
         if (event.type === "data.changed" && event.areas.includes("settings")) {

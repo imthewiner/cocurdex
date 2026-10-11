@@ -44,6 +44,7 @@ import { handleSkillsCommand, skillsUsageLines } from "./skill-commands";
 import { taskApi } from "./task-client";
 import { handleTeamCommand, teamUsageLines } from "./team-commands";
 import { getCliVersion } from "./version";
+import { handleWebCommand, webUsageLines } from "./web-command";
 import { assertWorkflowTuiAvailable, runWorkflowTui } from "./workflow-tui";
 import { handleWorktreeCommand, worktreeUsageLines } from "./worktree-commands";
 
@@ -123,6 +124,11 @@ async function main(rawArgs: string[]) {
     if (handled) {
       return;
     }
+  }
+
+  if (resource === "web") {
+    await handleWebCommand(parsed);
+    return;
   }
 
   if (resource === "daemon" && action === "status") {
@@ -452,6 +458,7 @@ function printUsage() {
       "  cocurdex search <query> [--kind note|issue] [--workspace <id>] [--json]",
       ...skillsUsageLines(),
       "  cocurdex daemon status",
+      ...webUsageLines(),
       ...worktreeUsageLines(),
       "  cocurdex workspace list",
       "  cocurdex session list",

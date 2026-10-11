@@ -49,6 +49,7 @@ export type {
   GitCommitInfo,
   GitContentsOmittedReason,
   GitFileStagedState,
+  HostCapabilities,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
   WorkspaceFileEntry,
@@ -58,3 +59,4 @@ export type {
   WorkspaceGitStatusEntry,
 } from "./types";
 export { cn } from "./utils";
+export { installWebHostBridge } from "./web-host-bridge";

@@ -26,6 +26,7 @@ interface SpawnOwnedDaemonProcessOptions {
   onExit(code: number | null, signal: NodeJS.Signals | null): void;
   runtimeFingerprint: string;
   userDataPath: string;
+  webRoot?: string;
 }
 
 export type DaemonDiagnosticSource = "diagnostic" | "stderr";
@@ -103,6 +104,7 @@ export function spawnOwnedDaemonProcess(
       COCURDEX_DAEMON_OWNER_FD: "3",
       COCURDEX_DAEMON_RUNTIME_FINGERPRINT: options.runtimeFingerprint,
       COCURDEX_USER_DATA_PATH: options.userDataPath,
+      COCURDEX_WEB_ROOT: options.webRoot ?? "",
       ELECTRON_RUN_AS_NODE: "1",
     },
     stdio: ["ignore", "pipe", "pipe", "pipe"],

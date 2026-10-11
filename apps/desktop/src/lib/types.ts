@@ -289,6 +289,8 @@ export interface HostCapabilities {
    * daemon `fs.listDirectories` browse RPC to pick paths on the daemon host.
    */
   nativeDirectoryDialog: boolean;
+  terminal: boolean;
+  browserView: boolean;
 }
 
 /**
