@@ -7,6 +7,10 @@ import {
   createSqliteAgentCapabilityCacheRepository,
 } from "./agents";
 import {
+  createSqliteHostAccessRepository,
+  type HostAccessRepository,
+} from "./host-access";
+import {
   createSqliteIssueTrackerRepository,
   type IssueTrackerRepository,
 } from "./issues";
@@ -78,6 +82,7 @@ export interface CocurdexDatabase {
   workflows: WorkflowRepository;
   teams: TeamRepository;
   scriptRuns: ScriptRunRepository;
+  hostAccess: HostAccessRepository;
   sessionUsage: SessionUsageRepository;
   toolCalls: ToolCallRepository;
   editorViews: EditorViewRepository;
@@ -190,6 +195,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
     workflows: createSqliteWorkflowRepository(database),
     teams: createSqliteTeamRepository(database),
     scriptRuns: createSqliteScriptRunRepository(database),
+    hostAccess: createSqliteHostAccessRepository(database),
     sessionUsage: createSqliteSessionUsageRepository(database),
     toolCalls: createSqliteToolCallRepository(database),
     editorViews: createSqliteEditorViewRepository(database),

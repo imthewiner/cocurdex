@@ -47,3 +47,12 @@ Model providers are configured through the `cocurdex provider` CLI (or Settings 
 - Configure: `cocurdex provider add <id> --template <template-id>` for a built-in provider, or `--name <name> --base-url <url>` for a custom endpoint. `cocurdex provider update <id>`, `cocurdex provider remove <id>`, `cocurdex provider model add|remove`, and `cocurdex provider default --agent <agent> --provider <id> --model <model-id>` change the rest.
 - Move configs in bulk with pi's `models.json` format: `cocurdex provider import <file|->` upserts providers and models, and `cocurdex provider export [--output <file>]` writes them out. Exports never include stored API keys or OAuth logins, but custom `headers` are exported as-is.
 - Credentials are the user's step. `cocurdex provider login <id>` runs OAuth or API-key login interactively, and `cocurdex provider key set <id>` reads a key from stdin. Suggest the command; never run them with a secret you were given. A built-in provider lists no models and is hidden from model pickers until it has a credential; `cocurdex provider status <id>` shows whether it does.
+
+## Remote devices
+
+Other devices (a phone, a second laptop, the browser on another machine) reach this host through the `cocurdex host` CLI or Settings → Devices. Remote access is off by default and serves plain HTTP, so enable it only on a trusted network or over Tailscale.
+
+- Inspect: `cocurdex host status` shows the host id, whether remote access is listening, and its LAN/Tailscale addresses. `cocurdex host devices`, `cocurdex host pairings`, and `cocurdex host audit [--limit <n>]` list paired devices, pending pairings, and the access log. Add `--json` for machine-readable output.
+- Change: `cocurdex host remote enable [--port <port>]` / `cocurdex host remote disable`; `cocurdex host pair --label <name> [--scopes read,interact,approvals] [--ttl <minutes>]` prints a one-time code and `#pair=` links; `cocurdex host pairing cancel <pairing-id>`; `cocurdex host revoke <device-id>` disconnects a device immediately.
+- Scopes: `read`, `interact`, `execute`, `files.read`, `files.write`, `git.destructive`, `approvals`, `credentials`. `host.admin` is never granted to a paired device. Default to the narrowest set the user asks for.
+- Only enable remote access, create pairings, or widen scopes when the user explicitly asks. Hand the pairing code or link to the user; never send it anywhere else.

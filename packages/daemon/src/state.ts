@@ -220,6 +220,13 @@ export class DaemonState {
     loadNetworkProxySettingsFromJson(valueJson, process.env);
   }
 
+  get hostAccessStore() {
+    return {
+      repository: this.database.hostAccess,
+      settings: this.database.appSettings,
+    };
+  }
+
   get data() {
     return {
       issues: this.database.issues,

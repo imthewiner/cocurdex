@@ -17,6 +17,7 @@ import {
   type WorkspaceRecord,
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
+import { handleHostCommand, hostUsageLines } from "./host-commands";
 import { handleIssueCommand } from "./issue-commands";
 import { handleNoteCommand } from "./note-commands";
 import {
@@ -129,6 +130,13 @@ async function main(rawArgs: string[]) {
   if (resource === "web") {
     await handleWebCommand(parsed);
     return;
+  }
+
+  if (resource === "host") {
+    const handled = await handleHostCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
   }
 
   if (resource === "daemon" && action === "status") {
@@ -459,6 +467,7 @@ function printUsage() {
       ...skillsUsageLines(),
       "  cocurdex daemon status",
       ...webUsageLines(),
+      ...hostUsageLines(),
       ...worktreeUsageLines(),
       "  cocurdex workspace list",
       "  cocurdex session list",

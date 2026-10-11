@@ -1,5 +1,6 @@
 import type { DaemonMethod, DaemonRequest } from "@cocurdex/rpc";
 import { z } from "zod";
+import { hostPayloadSchemas } from "./host-payloads";
 import { issuePayloadSchemas } from "./issue-payloads";
 import { notePayloadSchemas } from "./note-payloads";
 import type { PayloadSchemas } from "./primitives";
@@ -8,6 +9,7 @@ import { sessionPayloadSchemas } from "./session-payloads";
 import { workspacePayloadSchemas } from "./workspace-payloads";
 
 export const daemonPayloadSchemas: PayloadSchemas = {
+  ...hostPayloadSchemas,
   ...issuePayloadSchemas,
   ...notePayloadSchemas,
   ...providerPayloadSchemas,

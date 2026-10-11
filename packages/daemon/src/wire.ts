@@ -3,17 +3,11 @@ import { readFileSync, unlinkSync } from "node:fs";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
-import type {
-  DaemonEventEnvelope,
-  DaemonMetadata,
-  DaemonRequest,
-} from "@cocurdex/rpc";
-import {
-  DAEMON_PROTOCOL_VERSION,
-  DAEMON_WEBSOCKET_PROTOCOL,
-} from "@cocurdex/rpc";
-import { AGENT_TOOL_HTTP_PATH } from "@cocurdex/shared";
-import { WebSocketServer } from "ws";
+import os from "node:os";
+import type { DaemonEventEnvelope, DaemonMetadata } from "@cocurdex/rpc";
+import { DAEMON_PROTOCOL_VERSION } from "@cocurdex/rpc";
+import { AGENT_TOOL_HTTP_PATH, type HostPrincipal } from "@cocurdex/shared";
+import type { WebSocket, WebSocketServer } from "ws";
 import {
   createAgentToolHttpHandler,
   isAgentToolHttpRequest,
@@ -25,23 +19,22 @@ import {
   createDaemonEventJournal,
   type DaemonEventJournalEntry,
 } from "./event-journal";
-import { handleDaemonRequest } from "./handler";
+import { createRemoteAccessListener } from "./host-access";
 import {
   getConfiguredUserDataPath,
   getDaemonMetadataPath,
   getDaemonSocketPath,
 } from "./paths";
-import {
-  createDaemonReceiptStore,
-  type DaemonReceiptOutcome,
-  type DaemonReceiptStore,
-} from "./rpc-receipts";
+import { createDaemonReceiptStore } from "./rpc-receipts";
 import { CocurdexDaemonService } from "./service";
 import { createWebAssetHandler } from "./web-assets";
+import { authorizeDaemonWebSocket } from "./websocket-auth";
+import { createRemoteServerFactory } from "./wire-remote";
+import { handleDaemonWireMessage } from "./wire-request";
 import {
-  authorizeDaemonWebSocket,
-  parseWebSocketProtocolHeader,
-} from "./websocket-auth";
+  attachDaemonWebSocketServer,
+  closeWebSocketServer,
+} from "./wire-websocket";
 
 interface StartDaemonServerOptions {
   runtimeFingerprint: string;
@@ -57,6 +50,13 @@ interface DaemonConnection {
   onClose(listener: () => void): void;
   close(): void;
 }
+
+interface DaemonTransport {
+  remote: boolean;
+  remoteAddress: string | null;
+}
+
+const LOCAL_TRANSPORT: DaemonTransport = { remote: false, remoteAddress: null };
 
 function encodeWireMessage(message: unknown) {
   return `${JSON.stringify(message)}\n`;
@@ -140,17 +140,21 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   let ready = false;
   let metadataPublished = false;
   const gate = new DaemonShutdownGate();
-  const connections = new Set<DaemonConnection>();
+  const connections = new Map<DaemonConnection, Set<string>>();
   const eventJournal = createDaemonEventJournal();
   const eventSubscribers = new Set<(entry: DaemonEventJournalEntry) => void>();
   const receipts = createDaemonReceiptStore();
-  const attachConnection = (connection: DaemonConnection) => {
+  const attachConnection = (
+    connection: DaemonConnection,
+    transport: DaemonTransport,
+  ) => {
     const activeService = service;
     if (!ready || !activeService) {
       connection.close();
       return null;
     }
-    connections.add(connection);
+    const deviceIds = new Set<string>();
+    connections.set(connection, deviceIds);
     let subscribedToDaemonEvents = false;
     const send = (message: unknown, onSent?: () => void) => {
       connection.send(encodeWireMessage(message), onSent);
@@ -171,47 +175,77 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       connections.delete(connection);
       eventSubscribers.delete(eventListener);
     });
-    return (message: unknown) => {
-      void handleSocketMessage(
-        activeService,
-        options.token,
-        message,
-        send,
-        gate,
-        receipts,
-        async () => {
-          await close();
-          options.onIdleShutdown?.();
-        },
-        (afterSeq, requestEpoch) => {
-          // Replay first, then go live: this block is synchronous, so no live
-          // event can interleave between the journaled tail and the flag flip.
-          const crossEpoch =
-            requestEpoch !== undefined && requestEpoch !== startedAt;
-          // A position from a previous daemon lifetime cannot be honored:
-          // replay everything this lifetime retained and flag the gap.
-          const replay = crossEpoch
-            ? eventJournal.entriesAfter(0)
-            : eventJournal.entriesAfter(afterSeq);
-          for (const entry of replay.entries) {
-            sendEvent(entry);
-          }
-          subscribedToDaemonEvents = true;
-          return {
-            epoch: startedAt,
-            replayGap: crossEpoch || replay.hasGap,
-          };
-        },
-      );
+    const runtime = {
+      service: activeService,
+      gate,
+      receipts,
+      close: async () => {
+        await close();
+        options.onIdleShutdown?.();
+      },
     };
+    const requestConnection = {
+      ...transport,
+      send,
+      onPrincipal: (principal: HostPrincipal) => {
+        if (principal.kind === "device") deviceIds.add(principal.deviceId);
+      },
+      subscribe: (afterSeq: number | undefined, requestEpoch?: string) => {
+        // Replay first, then go live: this block is synchronous, so no live
+        // event can interleave between the journaled tail and the flag flip.
+        const crossEpoch =
+          requestEpoch !== undefined && requestEpoch !== startedAt;
+        // A position from a previous daemon lifetime cannot be honored:
+        // replay everything this lifetime retained and flag the gap.
+        const replay = crossEpoch
+          ? eventJournal.entriesAfter(0)
+          : eventJournal.entriesAfter(afterSeq);
+        for (const entry of replay.entries) {
+          sendEvent(entry);
+        }
+        subscribedToDaemonEvents = true;
+        return {
+          epoch: startedAt,
+          replayGap: crossEpoch || replay.hasGap,
+        };
+      },
+    };
+    return (message: unknown) => {
+      void handleDaemonWireMessage(runtime, requestConnection, message);
+    };
+  };
+  const attachWebSocketConnection = (
+    socket: WebSocket,
+    transport: DaemonTransport,
+  ) => {
+    const onMessage = attachConnection(
+      {
+        send: (message, onSent) => socket.send(message, () => onSent?.()),
+        onClose: (listener) => socket.on("close", listener),
+        close: () => socket.terminate(),
+      },
+      transport,
+    );
+    if (!onMessage) return;
+    socket.on("message", (data) => {
+      const message = parseWebSocketJsonFrame(data);
+      if (message === undefined) {
+        socket.terminate();
+        return;
+      }
+      onMessage(message);
+    });
   };
   const server = net.createServer((socket) => {
     socket.on("error", () => socket.destroy());
-    const onMessage = attachConnection({
-      send: (message, onSent) => socket.write(message, onSent),
-      onClose: (listener) => socket.on("close", listener),
-      close: () => socket.destroy(),
-    });
+    const onMessage = attachConnection(
+      {
+        send: (message, onSent) => socket.write(message, onSent),
+        onClose: (listener) => socket.on("close", listener),
+        close: () => socket.destroy(),
+      },
+      LOCAL_TRANSPORT,
+    );
     if (onMessage) readJsonLines(socket, onMessage);
   });
   let agentToolHandler:
@@ -258,46 +292,14 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     });
   let webSocketServer: WebSocketServer | undefined;
   const attachWebSocket = () => {
-    const wss = new WebSocketServer({
-      server: httpServer,
-      verifyClient: ({
-        origin,
-        req,
-      }: {
-        origin: string;
-        req: http.IncomingMessage;
-      }) =>
-        authorizeDaemonWebSocket({
-          origin,
-          protocols: parseWebSocketProtocolHeader(
-            req.headers["sec-websocket-protocol"],
-          ),
-          token: options.token,
-        }),
-      handleProtocols: (protocols) =>
-        protocols.has(DAEMON_WEBSOCKET_PROTOCOL)
-          ? DAEMON_WEBSOCKET_PROTOCOL
-          : false,
-    });
-    webSocketServer = wss;
-    wss.on("connection", (socket) => {
-      socket.on("error", () => socket.terminate());
-      const onMessage = attachConnection({
-        send: (message, onSent) => socket.send(message, () => onSent?.()),
-        onClose: (listener) => socket.on("close", listener),
-        close: () => socket.terminate(),
-      });
-      if (!onMessage) return;
-      socket.on("message", (data) => {
-        const message = parseWebSocketJsonFrame(data);
-        if (message === undefined) {
-          socket.terminate();
-          return;
-        }
-        onMessage(message);
-      });
+    webSocketServer = attachDaemonWebSocketServer(httpServer, {
+      authorize: ({ origin, protocols }) =>
+        authorizeDaemonWebSocket({ origin, protocols, token: options.token }),
+      onConnection: (socket) =>
+        attachWebSocketConnection(socket, LOCAL_TRANSPORT),
     });
   };
+  let remoteListener: ReturnType<typeof createRemoteAccessListener> | undefined;
 
   let closePromise: Promise<void> | null = null;
   const close = () => {
@@ -305,13 +307,9 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       ready = false;
       try {
         try {
-          for (const connection of connections) connection.close();
-          if (webSocketServer) {
-            const wss = webSocketServer;
-            await new Promise<void>((resolve, reject) => {
-              wss.close((error) => (error ? reject(error) : resolve()));
-            });
-          }
+          for (const connection of connections.keys()) connection.close();
+          await remoteListener?.close();
+          if (webSocketServer) await closeWebSocketServer(webSocketServer);
           if (httpServer.listening) {
             httpServer.closeAllConnections();
             await new Promise<void>((resolve, reject) => {
@@ -365,8 +363,28 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       startedAt,
       userDataPath,
       agentToolsUrl,
+      localToken: options.token,
     });
+    const hostAccess = service.hostAccess;
     agentToolHandler = createAgentToolHttpHandler(service.agentTools);
+    remoteListener = createRemoteAccessListener(
+      createRemoteServerFactory({
+        hostAccess,
+        machineName: os.hostname(),
+        webRoot: options.webRoot,
+        onWebSocket: (socket, request) =>
+          attachWebSocketConnection(socket, {
+            remote: true,
+            remoteAddress: request.socket.remoteAddress ?? null,
+          }),
+      }),
+    );
+    hostAccess.bindRemoteListener(remoteListener);
+    hostAccess.onDeviceRevoked((deviceId) => {
+      for (const [connection, deviceIds] of connections) {
+        if (deviceIds.has(deviceId)) connection.close();
+      }
+    });
     service.events.on("daemon.event", (event: unknown) => {
       const entry = eventJournal.record(
         event as DaemonEventJournalEntry["event"],
@@ -377,6 +395,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     });
     service.bindEventSeqProvider(() => eventJournal.currentSeq());
     await service.state.waitForStartupRecovery();
+    await service.hostAccessReady;
     await writeDaemonMetadata(
       {
         pid: process.pid,
@@ -392,6 +411,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     );
     metadataPublished = true;
     ready = true;
+    await hostAccess.startRemoteListener();
     service.startBackgroundRecovery();
     return { close, server, service, webSocketUrl };
   } catch (error) {
@@ -423,114 +443,5 @@ function removeOwnedDaemonMetadata(
     metadata.startedAt === startedAt
   ) {
     unlinkSync(metadataPath);
-  }
-}
-
-function normalizeAfterSeq(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0
-    ? Math.floor(value)
-    : undefined;
-}
-
-function normalizeEpoch(value: unknown) {
-  return typeof value === "string" && value.length > 0 && value.length <= 128
-    ? value
-    : undefined;
-}
-
-function normalizeIdempotencyKey(value: unknown) {
-  return typeof value === "string" && value.length > 0 && value.length <= 256
-    ? value
-    : undefined;
-}
-
-async function handleSocketMessage(
-  service: CocurdexDaemonService,
-  token: string,
-  message: unknown,
-  send: (message: unknown, onSent?: () => void) => void,
-  gate: DaemonShutdownGate,
-  receipts: DaemonReceiptStore,
-  close: () => Promise<void>,
-  subscribeToDaemonEvents: (
-    afterSeq: number | undefined,
-    epoch: string | undefined,
-  ) => { epoch: string; replayGap: boolean },
-) {
-  const request = message as DaemonRequest;
-
-  if (request.token !== token) {
-    send({
-      id: request.id,
-      error: { code: "UNAUTHORIZED", message: "Invalid daemon token" },
-    });
-    return;
-  }
-
-  try {
-    if (request.method === "daemon.shutdownIfIdle") {
-      const status = service.status();
-      if (
-        request.params.pid !== status.pid ||
-        request.params.startedAt !== status.startedAt
-      ) {
-        throw new Error("Daemon identity changed; shutdown was not accepted");
-      }
-      const result = gate.prepare(service.getActiveWork());
-      send(
-        { id: request.id, result },
-        result.status === "accepted"
-          ? () => {
-              void close().catch((error: unknown) =>
-                console.error("Daemon shutdown failed", error),
-              );
-            }
-          : undefined,
-      );
-      return;
-    }
-    let subscribeResult: { epoch: string; replayGap: boolean } | undefined;
-    if (request.method === "daemon.subscribe") {
-      subscribeResult = subscribeToDaemonEvents(
-        normalizeAfterSeq(request.params?.afterSeq),
-        normalizeEpoch(request.params?.epoch),
-      );
-    }
-    const run = async (): Promise<DaemonReceiptOutcome> => {
-      try {
-        const result =
-          request.method === "daemon.subscribe"
-            ? subscribeResult
-            : request.method === "daemon.status"
-              ? await handleDaemonRequest(service, request)
-              : await gate.run(() => handleDaemonRequest(service, request));
-        return { ok: true, result };
-      } catch (error) {
-        return {
-          ok: false,
-          error: {
-            code: "REQUEST_FAILED",
-            message: error instanceof Error ? error.message : "Unknown error",
-          },
-        };
-      }
-    };
-    const idempotencyKey = normalizeIdempotencyKey(request.idempotencyKey);
-    const execution = idempotencyKey
-      ? await receipts.execute(`${request.method}:${idempotencyKey}`, run)
-      : { outcome: await run(), replayed: false };
-    if (execution.outcome.ok) {
-      send({ id: request.id, result: execution.outcome.result });
-    } else {
-      send({ id: request.id, error: execution.outcome.error });
-    }
-  } catch (error) {
-    send({
-      id: request.id,
-      error: {
-        code: "REQUEST_FAILED",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-    });
   }
 }

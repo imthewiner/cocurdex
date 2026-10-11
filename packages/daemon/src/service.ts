@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { statSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
+import os, { homedir } from "node:os";
 import path from "node:path";
 import {
   deleteOpenCodeSession,
@@ -94,6 +94,7 @@ import { DaemonDataService } from "./data-service";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { listHostDirectories } from "./fs-browse";
 import { commitGitChanges } from "./git";
+import { HostAccessService, listHostAddresses } from "./host-access";
 import { DaemonMcpConfigService } from "./mcp-config";
 import { probeNetworkProxy } from "./network-proxy-probe";
 import {
@@ -168,9 +169,11 @@ export interface CocurdexDaemonServiceOptions {
   startedAt?: string;
   userDataPath: string;
   agentToolsUrl?: string;
+  localToken?: string;
 }
 
 export interface CocurdexDaemonStatus {
+  hostId: string;
   pid: number;
   protocolVersion: number;
   runtimeFingerprint: string;
@@ -221,6 +224,8 @@ export class CocurdexDaemonService {
   readonly searchService: DaemonSearchService;
   readonly skillsService: DaemonSkillsService;
   readonly state: DaemonState;
+  readonly hostAccess: HostAccessService;
+  readonly hostAccessReady: Promise<void>;
   readonly workflows: WorkflowModule;
   readonly workspaceChanges: WorkspaceChangeCoordinator;
   private readonly scanPolicy: ReturnType<typeof createWorkspaceScanPolicy>;
@@ -244,6 +249,14 @@ export class CocurdexDaemonService {
     this.userDataPath = options.userDataPath;
     this.sessionCheckpoints = new SessionCheckpointStore(options.userDataPath);
     this.state = new DaemonState(options.userDataPath);
+    this.hostAccess = new HostAccessService({
+      localToken: options.localToken ?? crypto.randomUUID(),
+      repository: this.state.hostAccessStore.repository,
+      settings: this.state.hostAccessStore.settings,
+      hostName: () => os.hostname(),
+      listAddresses: (port) => listHostAddresses(os.networkInterfaces(), port),
+    });
+    this.hostAccessReady = this.hostAccess.initialize();
     this.workflows = new WorkflowModule(this.state.workflows);
     this.dataService = new DaemonDataService(this.state, this.events);
     this.providerCredentials = new ProviderCredentials(
@@ -519,6 +532,7 @@ export class CocurdexDaemonService {
 
   status(): CocurdexDaemonStatus {
     return {
+      hostId: this.hostAccess.identity().hostId,
       pid: process.pid,
       protocolVersion: DAEMON_PROTOCOL_VERSION,
       runtimeFingerprint: this.runtimeFingerprint,

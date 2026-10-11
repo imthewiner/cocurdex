@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { createHostAccessSchemaSql } from "./host-access/schema";
 import {
   ensureIssueIndexes,
   migrateIssuesToAgentCore,
@@ -11,7 +12,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 23;
+export const CURRENT_SCHEMA_VERSION = 24;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -406,6 +407,10 @@ function migrateSessionRuns(database: DatabaseSync): void {
   }
 }
 
+function createHostAccessTables(database: DatabaseSync): void {
+  database.exec(createHostAccessSchemaSql());
+}
+
 const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [5, migrateWorkspacesToRootPaths],
   [6, migrateCollaborationModeToSessionModeId],
@@ -425,6 +430,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [20, baselineSessionAttentionVisits],
   [21, migrateTurnStatsStopReason],
   [22, migrateSessionRuns],
+  [23, createHostAccessTables],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {
