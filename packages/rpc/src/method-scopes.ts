@@ -35,6 +35,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "session.listSlashCommands": "read",
   "session.checkpointStatus": "read",
   "session.listTurnChangeSets": "read",
+  "session.executionTree": "read",
   "session.getToolCallResult": "read",
   "daemon.subscribe": "read",
   "network.proxy.get": "read",
