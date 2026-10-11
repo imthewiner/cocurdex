@@ -39,6 +39,16 @@ To recommend scripts:
 4. Suggest both scripts and leave neither empty. Submit via `settings_propose` with key `workspace.worktreeEnvironment`, `setupScript`, `cleanupScript`, and a short `rationale` explaining what you found and why.
 5. If the user says the suggestion is wrong, iterate: inspect more, adjust, and propose again — the new proposal replaces the pending one.
 
+## Agent run limits
+
+The daemon-owned `agents.runLimits` key (`write` tier, applies at once) caps parallel agent work:
+
+- `maxConcurrentRuns` (1–64, default 8) — runs across all sessions.
+- `maxConcurrentRunsPerAgent` (1–64, default 4) — runs of one agent type.
+- `delegatedRunTimeoutMinutes` (1–1440 or `null`, default 60) — a teammate or subagent run that exceeds it fails with "Run timed out".
+
+Only delegated runs (teammates and spawned subagents) wait for capacity, in arrival order; runs the user starts are never held but count toward the limits. Read the value with `settings_get` before changing it, and send all three fields with `settings_set`.
+
 ## Providers
 
 Model providers are configured through the `cocurdex provider` CLI (or Settings → Providers), not the settings catalog. Run `cocurdex provider --help` for the full command list.

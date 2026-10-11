@@ -21,6 +21,7 @@ import type {
   AgentId,
   AgentPlanApprovalDecision,
   AgentRoleRecord,
+  AgentRunLimits,
   AgentRuntimeProviderConfig,
   AppBootstrapData,
   AppResyncSnapshot,
@@ -48,6 +49,7 @@ import type {
   WorktreeSettings,
 } from "@cocurdex/shared";
 import {
+  AGENT_RUN_LIMITS_SETTING_KEY,
   CHAT_WORKSPACE_ID,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
@@ -65,8 +67,10 @@ import {
   normalizeWorkspaceActions,
   normalizeWorkspaceRootPaths,
   PLAN_EXECUTE_REVIEW_WORKFLOW_ID,
+  parseAgentRunLimits,
   primaryWorkspaceRootPath,
   resolveSessionWorkingPath,
+  resolveStoredAgentRunLimits,
   toolMayMutateWorkspace,
   validateSendSessionCommand,
   validateSessionConfiguration,
@@ -119,6 +123,7 @@ import { DaemonSearchService } from "./search-service";
 import {
   applySessionConfiguration,
   decideDelivery,
+  RunCapacity,
   type RunHandle,
   resolveRepeatedSend,
   SessionCheckpointStore,
@@ -234,6 +239,7 @@ export class CocurdexDaemonService {
   readonly runs: SessionRunCoordinator;
   private readonly worktreeSetups = new WorktreeSetupRuns();
   private readonly queuedFollowUps = new Map<string, QueuedFollowUp[]>();
+  private readonly runCapacity: RunCapacity;
   private readonly workflowWorkerScheduler: WorkflowWorkerScheduler;
   private shutdownPromise: Promise<void> | null = null;
   private readonly checkpointReconcileTimer: NodeJS.Timeout;
@@ -379,8 +385,21 @@ export class CocurdexDaemonService {
       emit: (event) => this.runtime.emitAgentEvent(event),
       afterPersistedEvents: (work) => this.runtime.withEventPersistence(work),
       onRunSettled: (run) => void this.startNextQueuedFollowUp(run.sessionId),
+      onRunEnded: (run) => this.runCapacity.onRunEnded(run),
       now: () => new Date().toISOString(),
       createId: () => crypto.randomUUID(),
+    });
+    this.runCapacity = new RunCapacity({
+      readLimits: () => this.readAgentRunLimits(),
+      activeAgentTypes: () => this.activeAgentTypes(),
+      getSession: (sessionId) => this.state.getSession(sessionId),
+      hasActiveRun: (sessionId) => this.runs.hasActiveRun(sessionId),
+      dispatchQueued: (sessionId) => this.startNextQueuedFollowUp(sessionId),
+      expireRun: (sessionId, runId, reason) =>
+        this.expireRun(sessionId, runId, reason),
+      track: (work) => void this.runs.track(work),
+      onError: (error) =>
+        console.error("[CocurdexDaemonService] Run capacity failed", error),
     });
     this.runtime = new AgentRuntimeManager({
       broadcastAgentEvent: (event) => {
@@ -843,6 +862,7 @@ export class CocurdexDaemonService {
   }
 
   private async readDaemonSetting(key: string): Promise<unknown> {
+    if (key === AGENT_RUN_LIMITS_SETTING_KEY) return this.readAgentRunLimits();
     if (key === "git.commitMessageModel") {
       return this.commitMessageService.getModelSetting();
     }
@@ -850,6 +870,10 @@ export class CocurdexDaemonService {
   }
 
   private async writeDaemonSetting(key: string, value: unknown): Promise<void> {
+    if (key === AGENT_RUN_LIMITS_SETTING_KEY) {
+      await this.setAgentRunLimits(value as AgentRunLimits);
+      return;
+    }
     if (key === "git.commitMessageModel") {
       await this.commitMessageService.setModelSetting(
         value as CommitMessageModelSelection | null,
@@ -1849,6 +1873,10 @@ export class CocurdexDaemonService {
     if (decision.kind === "start") {
       payload = { ...payload, delivery: "start-new-run" };
     }
+    const heldForCapacity =
+      decision.kind === "start" &&
+      !dequeued &&
+      (await this.runCapacity.mustWait(payload.session));
 
     if (decision.kind === "steer") {
       const agent = await this.ensureAgentAvailable(payload.session.agentType);
@@ -1870,7 +1898,7 @@ export class CocurdexDaemonService {
       return userMessage;
     }
 
-    if (decision.kind === "queue") {
+    if (decision.kind === "queue" || heldForCapacity) {
       await this.ensureAgentAvailable(payload.session.agentType);
       if (!hold) await this.loadQueuedFollowUps(sessionId);
       payload = await this.refreshSessionWorkingPath(payload);
@@ -1898,6 +1926,7 @@ export class CocurdexDaemonService {
         });
         this.queuedFollowUps.set(sessionId, queued);
       }
+      if (heldForCapacity) this.runCapacity.hold(sessionId);
       this.events.emit("daemon.event", {
         type: "data.changed",
         areas: ["agent"],
@@ -1919,6 +1948,7 @@ export class CocurdexDaemonService {
     };
     if (this.stopping) throw new Error("Daemon is shutting down");
     const run = await this.runs.start(sessionId, savedMessage.id);
+    await this.runCapacity.armDeadline(payload.session, run.runId);
     const userMessage: MessageRecord = { ...savedMessage, runId: run.runId };
     try {
       this.runtime.createSessionRuntime(payload, persistence);
@@ -1949,8 +1979,51 @@ export class CocurdexDaemonService {
     return userMessage;
   }
 
-  waitForSessionTurn(sessionId: string): Promise<SessionTurnOutcome | null> {
+  async waitForSessionTurn(
+    sessionId: string,
+  ): Promise<SessionTurnOutcome | null> {
+    try {
+      await this.runCapacity.whenAdmitted(sessionId);
+    } catch {
+      return { status: "cancelled" };
+    }
     return this.runs.outcomeOf(sessionId);
+  }
+
+  getAgentRunLimits() {
+    return this.readAgentRunLimits();
+  }
+
+  async setAgentRunLimits(value: AgentRunLimits) {
+    const limits = parseAgentRunLimits(value);
+    if (!limits) throw new Error("Agent run limits are out of range");
+    await this.state.setAppSetting(
+      AGENT_RUN_LIMITS_SETTING_KEY,
+      JSON.stringify(limits),
+    );
+    this.broadcastSettingsChanged();
+    return limits;
+  }
+
+  private async readAgentRunLimits() {
+    return resolveStoredAgentRunLimits(
+      await this.state.getAppSetting(AGENT_RUN_LIMITS_SETTING_KEY),
+    );
+  }
+
+  private async activeAgentTypes() {
+    const sessions = await Promise.all(
+      this.runs.activeRuns().map((run) => this.state.getSession(run.sessionId)),
+    );
+    return sessions.flatMap((session) => (session ? [session.agentType] : []));
+  }
+
+  private async expireRun(sessionId: string, runId: string, reason: string) {
+    await this.sessionCommands.run(sessionId, async () => {
+      if (!(await this.runs.expire(sessionId, runId, reason))) return;
+      await this.workspaceChanges.failTurn(sessionId, "interrupted");
+      await this.runtime.cancelSessionTurn(sessionId);
+    });
   }
 
   async resumeQueuedSession(sessionId: string) {
@@ -2263,6 +2336,7 @@ export class CocurdexDaemonService {
   }
 
   private async stopSessionTurn(sessionId: string) {
+    this.runCapacity.release(sessionId, new Error("Session was stopped"));
     const stopped = this.runs.stop(sessionId);
     await this.workspaceChanges.failTurn(sessionId, "interrupted");
     await Promise.all([stopped, this.runtime.cancelSessionTurn(sessionId)]);
@@ -2270,6 +2344,7 @@ export class CocurdexDaemonService {
   }
 
   private async disposeSessionRuntime(sessionId: string) {
+    this.runCapacity.release(sessionId, new Error("Session was closed"));
     const stopped = this.runs.stop(sessionId);
     this.queuedFollowUps.delete(sessionId);
     await Promise.all([stopped, this.runtime.disposeSessionRuntime(sessionId)]);
@@ -2331,6 +2406,7 @@ export class CocurdexDaemonService {
     this.stopping = true;
     await this.startupRecovery;
     clearInterval(this.checkpointReconcileTimer);
+    this.runCapacity.close(new Error("Daemon is shutting down"));
     await this.runs.interruptAll();
     this.queuedFollowUps.clear();
     await this.scriptRuns.shutdown();

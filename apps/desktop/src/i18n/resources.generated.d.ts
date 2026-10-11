@@ -1528,6 +1528,25 @@ export default interface Resources {
         title: "ACP Registry";
         unsupported: "Not available for this platform";
       };
+      runLimits: {
+        description: "Caps how many agent runs execute at once. Delegated runs past a limit wait in the queue; runs you start yourself are never held back.";
+        invalid: "Enter whole numbers within the allowed range.";
+        maxConcurrentRuns: {
+          description: "Total agent runs across all sessions (1–64).";
+          title: "Concurrent runs";
+        };
+        maxConcurrentRunsPerAgent: {
+          description: "Runs of the same agent at once (1–64).";
+          title: "Concurrent runs per agent";
+        };
+        saveFailed: "Could not save run limits.";
+        timeout: {
+          description: "Stops a teammate or subagent run that exceeds this time. Leave empty for no timeout.";
+          none: "None";
+          title: "Delegated run timeout (minutes)";
+        };
+        title: "Run limits";
+      };
       status: {
         builtin: "Built in — ships with cocurdex, nothing to install.";
         detecting: "Checking installation…";

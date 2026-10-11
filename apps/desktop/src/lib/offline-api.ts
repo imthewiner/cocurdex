@@ -1,6 +1,7 @@
 import {
   type AgentDescriptor,
   type AgentSessionMode,
+  DEFAULT_AGENT_RUN_LIMITS,
   DEFAULT_SCRIPT_RUN_SETTINGS,
   emptyWorktreeEnvironment,
   getAgentSessionTitleStrategy,
@@ -440,6 +441,8 @@ export const offlineApi: DesktopApi = {
   }),
   getCommitMessageModel: async () => null,
   setCommitMessageModel: async () => {},
+  getAgentRunLimits: async () => DEFAULT_AGENT_RUN_LIMITS,
+  setAgentRunLimits: async (limits) => limits,
   getNetworkProxySettings: async () => ({
     mode: "system" as const,
     httpProxy: "",

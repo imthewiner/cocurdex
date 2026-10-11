@@ -1,6 +1,9 @@
-import type {
-  AgentToolCallerContext,
-  WorkspaceWorktreeEnvironment,
+import {
+  AGENT_RUN_LIMIT_BOUNDS,
+  AGENT_RUN_LIMITS_SETTING_KEY,
+  type AgentToolCallerContext,
+  parseAgentRunLimits,
+  type WorkspaceWorktreeEnvironment,
 } from "@cocurdex/shared";
 import type { AgentToolRegistry } from "../tool-registry";
 
@@ -229,6 +232,48 @@ export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [
         ACTIVITY_DISPLAY_MODES,
       )(record.activityDisplay);
       return { activityDisplay: record.activityDisplay };
+    },
+  },
+  {
+    key: AGENT_RUN_LIMITS_SETTING_KEY,
+    scope: "global",
+    tier: "write",
+    storage: "daemon",
+    description:
+      "Limits for runs that agents start on behalf of a session (teammates and script agents). Delegated runs wait in order once the host-wide or per-agent concurrency limit is reached; runs the user starts are never held but count toward the limits. A delegated run that exceeds delegatedRunTimeoutMinutes fails with a timeout; null disables the timeout.",
+    valueSchema: {
+      type: "object",
+      properties: {
+        maxConcurrentRuns: {
+          type: "integer",
+          minimum: AGENT_RUN_LIMIT_BOUNDS.maxConcurrentRuns.min,
+          maximum: AGENT_RUN_LIMIT_BOUNDS.maxConcurrentRuns.max,
+        },
+        maxConcurrentRunsPerAgent: {
+          type: "integer",
+          minimum: AGENT_RUN_LIMIT_BOUNDS.maxConcurrentRunsPerAgent.min,
+          maximum: AGENT_RUN_LIMIT_BOUNDS.maxConcurrentRunsPerAgent.max,
+        },
+        delegatedRunTimeoutMinutes: {
+          type: ["integer", "null"],
+          minimum: AGENT_RUN_LIMIT_BOUNDS.delegatedRunTimeoutMinutes.min,
+          maximum: AGENT_RUN_LIMIT_BOUNDS.delegatedRunTimeoutMinutes.max,
+        },
+      },
+      required: [
+        "maxConcurrentRuns",
+        "maxConcurrentRunsPerAgent",
+        "delegatedRunTimeoutMinutes",
+      ],
+    },
+    validate(value) {
+      const limits = parseAgentRunLimits(value);
+      if (!limits) {
+        throw new Error(
+          `Value for '${AGENT_RUN_LIMITS_SETTING_KEY}' must be integers within the documented bounds; delegatedRunTimeoutMinutes may be null`,
+        );
+      }
+      return limits;
     },
   },
   {
