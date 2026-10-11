@@ -1,6 +1,8 @@
 import type { TeamRepository } from "@cocurdex/db";
 import type {
   AgentRoleRecord,
+  RunRecord,
+  RunStatus,
   SendSessionCommand,
   SessionRecord,
   TeamChangedEvent,
@@ -9,7 +11,7 @@ import type {
   TeamTaskRecord,
 } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
-import { TeamModule } from "./team-module";
+import { TeamModule, type TeammateReportCommand } from "./team-module";
 
 function session(overrides: Partial<SessionRecord>): SessionRecord {
   return {
@@ -46,6 +48,11 @@ function memoryRepository(): TeamRepository {
       return snapshot(
         [...teams.values()].find((t) => t.leadSessionId === leadSessionId),
       );
+    },
+    async listActive() {
+      return [...teams.values()]
+        .filter((team) => team.status === "active")
+        .flatMap((team) => snapshot(team) ?? []);
     },
     async findBySession(sessionId) {
       const member = [...members.values()].find(
@@ -133,6 +140,23 @@ const pairMembers = [
   { agentRoleId: "role-1", prompt: "go" },
 ];
 
+function run(
+  sessionId: string,
+  status: RunStatus,
+  overrides: Partial<RunRecord> = {},
+): RunRecord {
+  return {
+    id: `run-${sessionId}`,
+    sessionId,
+    triggerMessageId: "trigger",
+    status,
+    error: null,
+    startedAt: "",
+    endedAt: status === "running" ? null : "",
+    ...overrides,
+  };
+}
+
 function harness({ busy = new Set<string>() } = {}) {
   const settings = new Map<string, string>();
   const sessions = new Map<string, SessionRecord>([
@@ -142,6 +166,10 @@ function harness({ busy = new Set<string>() } = {}) {
   const reports: { to: string; content: string }[] = [];
   const stopped: string[] = [];
   const events: TeamChangedEvent[] = [];
+  const delivered: TeammateReportCommand[] = [];
+  const activeRuns = new Set<string>();
+  const latestRuns = new Map<string, RunRecord>();
+  const tracked: Promise<unknown>[] = [];
   let ids = 0;
   const module = new TeamModule({
     repository: memoryRepository(),
@@ -173,23 +201,72 @@ function harness({ busy = new Set<string>() } = {}) {
       });
       return { messageId: "r", delivery: "start-new-run" };
     },
-    stopSession: async (id) => {
-      stopped.push(id);
+    deliverReport: async (report) => {
+      delivered.push(report);
+      return {
+        id: report.messageId,
+        sessionId: report.toSessionId,
+        role: "user",
+        content: report.content,
+        attachments: [],
+        createdAt: "",
+      };
     },
-    isSessionBusy: (id) => busy.has(id),
-    getMessage: async (id) => ({
-      id,
-      sessionId: "x",
+    hasActiveRun: (id) => activeRuns.has(id),
+    supportsSteering: async (record) => record.agentType === "codex",
+    getRunReply: async (sessionId, runId) => ({
+      id: `reply-${runId}`,
+      sessionId,
       role: "assistant",
       content: "final answer",
       attachments: [],
       createdAt: "",
+      runId,
     }),
+    latestRun: (id) => latestRuns.get(id) ?? null,
+    stopSession: async (id) => {
+      stopped.push(id);
+    },
+    track: (work) => {
+      tracked.push(work);
+    },
+    onReportFailed: (error) => {
+      throw error;
+    },
+    isSessionBusy: (id) => busy.has(id),
+    getMessage: async (id) => {
+      const report = delivered.find((item) => item.messageId === id);
+      return report
+        ? {
+            id,
+            sessionId: report.toSessionId,
+            role: "user",
+            content: report.content,
+            attachments: [],
+            createdAt: "",
+          }
+        : null;
+    },
     broadcast: (event) => events.push(event),
     now: () => "2026-01-02T00:00:00.000Z",
     createId: () => `id-${++ids}`,
   });
-  return { module, sessions, sent, reports, stopped, events, settings };
+  const settled = async () => {
+    await Promise.all(tracked);
+  };
+  return {
+    module,
+    settled,
+    sessions,
+    sent,
+    reports,
+    stopped,
+    events,
+    settings,
+    delivered,
+    activeRuns,
+    latestRuns,
+  };
 }
 
 describe("TeamModule", () => {
@@ -247,30 +324,100 @@ describe("TeamModule", () => {
     ).rejects.toMatchObject({ code: "lead_not_main" });
   });
 
-  it("reports teammate turns to the lead and tracks member status", async () => {
-    const { module, reports } = harness();
+  it("reports teammate runs to the lead and tracks member status", async () => {
+    const { module, settled, delivered } = harness();
     const member = await module.spawn("lead", { name: "alpha", prompt: "go" });
     await module.onAgentEvent({
-      type: "state.changed",
+      type: "run.updated",
       sessionId: member.sessionId,
-      status: "running",
+      run: run(member.sessionId, "running"),
     });
     expect((await module.get("lead"))?.members[0]?.status).toBe("running");
     await module.onAgentEvent({
-      type: "turn.completed",
+      type: "run.updated",
       sessionId: member.sessionId,
-      messageId: "m-final",
-      durationMs: 1,
-      completedAt: "",
+      run: run(member.sessionId, "completed"),
     });
     expect((await module.get("lead"))?.members[0]?.status).toBe("idle");
-    expect(reports).toEqual([
-      { to: "lead", content: '[Teammate "alpha" finished]\nfinal answer' },
+    await settled();
+    expect(delivered).toEqual([
+      {
+        fromSessionId: member.sessionId,
+        toSessionId: "lead",
+        messageId: `teammate-report-run-${member.sessionId}`,
+        content: '[Teammate "alpha" finished]\nfinal answer',
+        delivery: "start-new-run",
+      },
+    ]);
+  });
+
+  it("delivers each teammate run's report once", async () => {
+    const { module, settled, delivered } = harness();
+    const member = await module.spawn("lead", { name: "alpha", prompt: "go" });
+    const finished = {
+      type: "run.updated" as const,
+      sessionId: member.sessionId,
+      run: run(member.sessionId, "completed"),
+    };
+    await module.onAgentEvent(finished);
+    await module.onAgentEvent(finished);
+    await settled();
+    expect(delivered).toHaveLength(1);
+  });
+
+  it("steers a running lead and carries a teammate's failure reason", async () => {
+    const { module, settled, delivered, activeRuns } = harness();
+    const member = await module.spawn("lead", { name: "alpha", prompt: "go" });
+    activeRuns.add("lead");
+    await module.onAgentEvent({
+      type: "run.updated",
+      sessionId: member.sessionId,
+      run: run(member.sessionId, "failed", { error: "provider exploded" }),
+    });
+    expect((await module.get("lead"))?.members[0]?.status).toBe("error");
+    await settled();
+    expect(delivered[0]).toMatchObject({
+      delivery: "steer-active-run",
+      content: expect.stringMatching(
+        /^\[Teammate "alpha" failed\]\nError: provider exploded/,
+      ),
+    });
+  });
+
+  it("does not report runs ended by stopping the team", async () => {
+    const { module, settled, delivered } = harness();
+    const member = await module.spawn("lead", { name: "alpha", prompt: "go" });
+    await module.onLeadStopped("lead");
+    await module.onAgentEvent({
+      type: "run.updated",
+      sessionId: member.sessionId,
+      run: run(member.sessionId, "cancelled"),
+    });
+    await settled();
+    expect(delivered).toEqual([]);
+  });
+
+  it("holds reports a restart left undelivered without waking the lead", async () => {
+    const { module, delivered, latestRuns } = harness();
+    const done = await module.spawn("lead", { name: "alpha", prompt: "go" });
+    const busy = await module.spawn("lead", { name: "beta", prompt: "go" });
+    latestRuns.set(done.sessionId, run(done.sessionId, "interrupted"));
+    latestRuns.set(busy.sessionId, run(busy.sessionId, "running"));
+
+    await module.recoverReports();
+    await module.recoverReports();
+
+    expect(delivered).toEqual([
+      expect.objectContaining({
+        fromSessionId: done.sessionId,
+        delivery: "hold",
+        content: expect.stringMatching(/^\[Teammate "alpha" was interrupted\]/),
+      }),
     ]);
   });
 
   it("tells the lead once per turn when a teammate waits on the user", async () => {
-    const { module, reports } = harness();
+    const { module, settled, reports } = harness();
     const member = await module.spawn("lead", { name: "alpha", prompt: "go" });
     const permission = (id: string) => ({
       type: "permission.requested" as const,
@@ -289,12 +436,13 @@ describe("TeamModule", () => {
       },
     });
     await module.onAgentEvent({
-      type: "state.changed",
+      type: "run.updated",
       sessionId: member.sessionId,
-      status: "running",
+      run: run(member.sessionId, "running"),
     });
     await module.onAgentEvent(permission("first"));
     await module.onAgentEvent(permission("second"));
+    await settled();
     expect(reports).toEqual([
       {
         to: "lead",
@@ -305,16 +453,14 @@ describe("TeamModule", () => {
     ]);
 
     await module.onAgentEvent({
-      type: "turn.completed",
+      type: "run.updated",
       sessionId: member.sessionId,
-      messageId: "m-final",
-      durationMs: 1,
-      completedAt: "",
+      run: run(member.sessionId, "completed"),
     });
     await module.onAgentEvent({
-      type: "state.changed",
+      type: "run.updated",
       sessionId: member.sessionId,
-      status: "running",
+      run: run(member.sessionId, "running", { id: "run-2" }),
     });
     await module.onAgentEvent({
       type: "question.requested",
@@ -329,6 +475,7 @@ describe("TeamModule", () => {
         updatedAt: "",
       },
     });
+    await settled();
     expect(reports.at(-1)?.content).toMatch(
       /^\[Teammate "alpha" is waiting for the user\]\nWhich branch\?/,
     );

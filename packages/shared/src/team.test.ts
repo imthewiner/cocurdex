@@ -3,9 +3,13 @@ import {
   buildTeamRosterMembers,
   canSpawnTeammate,
   checkTeamTaskUpdate,
+  decideTeammateReport,
   normalizeTeamTemplateMembers,
   TEAM_MAX_MEMBERS,
   type TeamMemberRecord,
+  teamMemberEventFromRun,
+  teammateReportMessageId,
+  teammateRunReport,
   transitionTeamMember,
 } from "./team";
 
@@ -268,5 +272,116 @@ describe("team template members", () => {
       ok: false,
       reason: "invalid_name",
     });
+  });
+});
+
+describe("teamMemberEventFromRun", () => {
+  it("maps run states onto member transitions", () => {
+    expect(teamMemberEventFromRun("running")).toEqual({
+      type: "turn.started",
+    });
+    expect(teamMemberEventFromRun("completed")).toEqual({
+      type: "turn.completed",
+    });
+    expect(teamMemberEventFromRun("cancelled")).toEqual({
+      type: "turn.completed",
+    });
+    expect(teamMemberEventFromRun("interrupted")).toEqual({
+      type: "turn.completed",
+    });
+    expect(teamMemberEventFromRun("failed")).toEqual({ type: "turn.failed" });
+  });
+});
+
+describe("teammateReportMessageId", () => {
+  it("derives one stable message ID per teammate run", () => {
+    expect(teammateReportMessageId("run-1")).toBe(
+      teammateReportMessageId("run-1"),
+    );
+    expect(teammateReportMessageId("run-1")).not.toBe(
+      teammateReportMessageId("run-2"),
+    );
+    expect(teammateReportMessageId("run-1")).not.toMatch(/[/\\:]/);
+  });
+});
+
+describe("teammateRunReport", () => {
+  it("reports the final reply of a completed run", () => {
+    expect(
+      teammateRunReport({ status: "completed", error: null }, "All done"),
+    ).toEqual({ outcome: "finished", content: "All done" });
+  });
+
+  it("carries the failure reason of a failed run", () => {
+    const report = teammateRunReport(
+      { status: "failed", error: "provider exploded" },
+      "Partial work",
+    );
+    expect(report.outcome).toBe("failed");
+    expect(report.content).toContain("provider exploded");
+    expect(report.content).toContain("Partial work");
+  });
+
+  it("explains cancelled and interrupted runs", () => {
+    expect(
+      teammateRunReport({ status: "cancelled", error: null }, null),
+    ).toMatchObject({ outcome: "cancelled" });
+    const interrupted = teammateRunReport(
+      { status: "interrupted", error: null },
+      null,
+    );
+    expect(interrupted.outcome).toBe("interrupted");
+    expect(interrupted.content).not.toBe("");
+  });
+});
+
+describe("decideTeammateReport", () => {
+  const base = {
+    memberStopped: false,
+    teamStopped: false,
+    leadArchived: false,
+    leadHasActiveRun: false,
+    leadSupportsSteering: true,
+    recovering: false,
+  };
+
+  it("starts a new lead run when the lead is idle", () => {
+    expect(decideTeammateReport(base)).toEqual({
+      kind: "deliver",
+      delivery: "start-new-run",
+    });
+  });
+
+  it("steers a running lead that supports steering and queues otherwise", () => {
+    expect(decideTeammateReport({ ...base, leadHasActiveRun: true })).toEqual({
+      kind: "deliver",
+      delivery: "steer-active-run",
+    });
+    expect(
+      decideTeammateReport({
+        ...base,
+        leadHasActiveRun: true,
+        leadSupportsSteering: false,
+      }),
+    ).toEqual({ kind: "deliver", delivery: "queue-after-run" });
+  });
+
+  it("holds reports recovered after a restart without waking the lead", () => {
+    expect(decideTeammateReport({ ...base, recovering: true })).toEqual({
+      kind: "deliver",
+      delivery: "hold",
+    });
+  });
+
+  it("drops reports from runs the team or member was stopped out of", () => {
+    expect(decideTeammateReport({ ...base, memberStopped: true })).toEqual({
+      kind: "skip",
+    });
+    expect(decideTeammateReport({ ...base, teamStopped: true })).toEqual({
+      kind: "skip",
+    });
+    expect(
+      decideTeammateReport({ ...base, leadArchived: true, recovering: true }),
+    ).toEqual({ kind: "skip" });
   });
 });
