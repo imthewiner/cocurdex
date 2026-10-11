@@ -1,25 +1,9 @@
-import type { AgentEvent, DaemonEventMeta, TaskApi } from "@cocurdex/shared";
+import type { AgentEvent, DaemonEventMeta } from "@cocurdex/shared";
 import { contextBridge, ipcRenderer } from "electron";
+import type { TaskEventBridge } from "../../src/lib/types";
 
-export function exposeTaskApi() {
-  const api: TaskApi = {
-    submitPreviousMessage: (input) =>
-      ipcRenderer.invoke("task:resubmit", input),
-    getPreviousMessageCheckpointStatus: (sessionId, messageId) =>
-      ipcRenderer.invoke("task:checkpointStatus", sessionId, messageId),
-    listSessions: () => ipcRenderer.invoke("task:list"),
-    getSessionSnapshot: (sessionId) =>
-      ipcRenderer.invoke("task:snapshot", sessionId),
-    saveSessionConfiguration: (input) =>
-      ipcRenderer.invoke("task:configure", input),
-    sendMessage: (input) => ipcRenderer.invoke("task:send", input),
-    stopSession: (sessionId) => ipcRenderer.invoke("session:stop", sessionId),
-    resolvePermission: (id, optionId) =>
-      ipcRenderer.invoke("permission:resolve", id, optionId),
-    resolveQuestion: (id, answer) =>
-      ipcRenderer.invoke("question:resolve", id, answer),
-    resolvePlanApproval: (id, decision) =>
-      ipcRenderer.invoke("planApproval:resolve", id, decision),
+export function exposeTaskEvents() {
+  const bridge: TaskEventBridge = {
     onAgentEvent(listener) {
       const handler = (
         _event: Electron.IpcRendererEvent,
@@ -30,5 +14,5 @@ export function exposeTaskApi() {
       return () => ipcRenderer.removeListener("agent:event", handler);
     },
   };
-  contextBridge.exposeInMainWorld("taskApi", api);
+  contextBridge.exposeInMainWorld("taskEvents", bridge);
 }

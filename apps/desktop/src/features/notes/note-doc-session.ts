@@ -5,7 +5,7 @@ import {
 import type { NoteRecord } from "@cocurdex/shared";
 import * as Y from "yjs";
 import { registerNoteDocSession } from "./note-doc-registry";
-import { notesIpc } from "./notes-ipc";
+import { notesApi } from "./notes-api";
 
 const REMOTE_ORIGIN = Symbol("note-doc-remote");
 const SEND_DELAY_MS = 300;
@@ -53,7 +53,7 @@ export function attachNoteDocSession(
     }
     const update = Y.mergeUpdates(pending);
     pending = [];
-    sending = notesIpc
+    sending = notesApi
       .applyDocUpdate({ id: noteId, update: encodeNoteDocBytes(update) })
       .then((note) => {
         callbacks.onSaved(note);
@@ -83,7 +83,7 @@ export function attachNoteDocSession(
   };
 
   const pull = async () => {
-    const snapshot = await notesIpc.getDoc({
+    const snapshot = await notesApi.getDoc({
       id: noteId,
       stateVector: encodeNoteDocBytes(Y.encodeStateVector(doc)),
     });

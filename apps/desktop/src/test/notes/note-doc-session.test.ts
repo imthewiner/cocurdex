@@ -9,8 +9,8 @@ import { createNoteServer, noteRecord } from "./note-server-mock";
 
 const server = vi.hoisted(() => ({ current: null as unknown }));
 
-vi.mock("@/features/notes/notes-ipc", () => ({
-  get notesIpc() {
+vi.mock("@/features/notes/notes-api", () => ({
+  get notesApi() {
     return (server.current as ReturnType<typeof createNoteServer>).ipc;
   },
 }));

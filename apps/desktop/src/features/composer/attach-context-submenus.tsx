@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   Input,
 } from "@/components/ui";
-import { desktopApi } from "@/lib";
+import { desktopApi, requestDaemon } from "@/lib";
 import { MenuRowSidecar } from "./menu-row-sidecar";
 import { SlashCommandPreview } from "./slash-command-preview";
 
@@ -131,7 +131,7 @@ export function AttachContextSubmenus({
   };
 
   const attachNote = async (id: string) => {
-    const note = await desktopApi.notesGet({ id });
+    const note = await requestDaemon("note.get", { id });
     if (!note) return;
     onInsertContext({
       kind: "context-item",
@@ -172,7 +172,7 @@ export function AttachContextSubmenus({
         icon={FileText}
         label={t("composer.attachMenu.notes")}
         load={async () =>
-          (await desktopApi.notesList())
+          (await requestDaemon("note.list"))
             .filter((note) => note.kind === "note")
             .map((note) => ({
               id: note.id,

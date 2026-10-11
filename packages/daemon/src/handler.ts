@@ -18,6 +18,7 @@ import {
   stageGitFiles,
   unstageGitFiles,
 } from "./git";
+import { parseDaemonRequest } from "./payloads";
 import type { CocurdexDaemonService } from "./service";
 
 function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
@@ -30,8 +31,9 @@ export function handleDaemonRequest<M extends DaemonMethod>(
 ): Promise<DaemonResultByMethod[M]>;
 export async function handleDaemonRequest(
   service: CocurdexDaemonService,
-  request: DaemonRequest,
+  rawRequest: DaemonRequest,
 ) {
+  const request = parseDaemonRequest(rawRequest);
   await service.acpRegistry.ready;
   switch (request.method) {
     case "daemon.status":

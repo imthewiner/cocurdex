@@ -25,6 +25,12 @@ import {
 const saveWorkspace =
   vi.fn<(workspace: WorkspaceRecord) => Promise<WorkspaceRecord>>();
 
+vi.mock("@/lib/product-api", () => ({
+  daemonProductApi: {
+    saveWorkspace: (workspace: WorkspaceRecord) => saveWorkspace(workspace),
+  },
+}));
+
 function makeWorkspace(
   id: string,
   lastOpenedAt: string,
@@ -50,8 +56,7 @@ beforeEach(() => {
   }));
   window.localStorage.removeItem(PDF_OPEN_PATHS_KEY);
   window.localStorage.removeItem(PDF_ACTIVE_PATH_KEY);
-  // The IPC layer reads window.desktopApi at call time; inject a spyable stub.
-  (window as unknown as { desktopApi: unknown }).desktopApi = { saveWorkspace };
+  (window as unknown as { desktopApi: unknown }).desktopApi = {};
 });
 
 afterEach(() => {

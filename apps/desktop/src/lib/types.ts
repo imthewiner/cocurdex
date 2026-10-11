@@ -1,3 +1,4 @@
+import type { DaemonConnectionInfo } from "@cocurdex/rpc";
 import type {
   AcpRegistryAgentId,
   AcpRegistryCatalogAgent,
@@ -14,7 +15,6 @@ import type {
   AgentToolCallRecord,
   AgentToolCallResult,
   AppBootstrapData,
-  ApplyNoteDocUpdatePayload,
   AppResyncSnapshot,
   ArchiveSessionPayload,
   BrowserAnnotation,
@@ -26,13 +26,11 @@ import type {
   CreateColumnPayload,
   CreateIssueLabelPayload,
   CreateIssuePayload,
-  CreateNotePayload,
   CreateTeamPayload,
   CreateViewPayload,
   DeleteColumnPayload,
   DeleteIssueLabelPayload,
   DeleteIssuePayload,
-  DeleteNotePayload,
   DeleteSessionPayload,
   DeleteViewPayload,
   DiagnosticsExportResult,
@@ -40,8 +38,6 @@ import type {
   EditorViewRecord,
   GetIssueDetailPayload,
   GetIssuePayload,
-  GetNoteDocPayload,
-  GetNotePayload,
   GitBranchInfo,
   GitCommitInfo,
   GitWorktreeInfo,
@@ -56,12 +52,8 @@ import type {
   MessageRecord,
   MoveColumnPayload,
   MoveIssuePayload,
-  MoveNotePayload,
   NetworkProxySettings,
   NetworkProxyTestResult,
-  NoteDocSnapshot,
-  NoteRecord,
-  NoteSummary,
   PdfAnnotationsOperation,
   PdfDocumentAnnotations,
   PendingSettingsChangeRecord,
@@ -97,6 +89,7 @@ import type {
   SessionMessagesResult,
   SessionRecord,
   StartScriptRunPayload,
+  TaskApi,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -113,7 +106,6 @@ import type {
   UpdateColumnPayload,
   UpdateIssueLabelPayload,
   UpdateIssuePayload,
-  UpdateNotePayload,
   UpdateQueuedAgentInputPayload,
   UpdateSessionAttentionPayload,
   UpdateSessionTitlePayload,
@@ -566,15 +558,6 @@ export interface ProductApi {
   onWorkspaceSearchError(
     listener: (event: WorkspaceSearchErrorEvent) => void,
   ): () => void;
-  // === App-owned notes ===
-  notesList(): Promise<NoteSummary[]>;
-  notesGet(payload: GetNotePayload): Promise<NoteRecord | null>;
-  notesGetDoc(payload: GetNoteDocPayload): Promise<NoteDocSnapshot | null>;
-  notesApplyDocUpdate(payload: ApplyNoteDocUpdatePayload): Promise<NoteRecord>;
-  notesCreate(payload: CreateNotePayload): Promise<NoteRecord>;
-  notesUpdate(payload: UpdateNotePayload): Promise<NoteRecord>;
-  notesMove(payload: MoveNotePayload): Promise<NoteRecord>;
-  notesDelete(payload: DeleteNotePayload): Promise<void>;
   // === App-owned issues and views ===
   issueListViews(): Promise<ViewSummary[]>;
   issueListLinkedSessionIds(): Promise<string[]>;
@@ -669,6 +652,7 @@ export interface HostApi {
   uninstallCliFromPath(): Promise<CliPathStatus>;
   getDaemonStatus(): Promise<DaemonRuntimeStatus>;
   restartDaemon(): Promise<DaemonRuntimeStatus>;
+  getDaemonConnection(): Promise<DaemonConnectionInfo | null>;
   openWorkspaceInFileManager(rootPath: string): Promise<void>;
   // Reveal a specific file or directory in the OS file manager, highlighting it
   // within its parent folder (vs. openWorkspaceInFileManager which opens a dir).
@@ -745,11 +729,28 @@ export interface HostApi {
   onPtyActivity(listener: (event: PtyActivityEvent) => void): () => void;
 }
 
+export type ProductEventApi = Pick<
+  ProductApi,
+  | "onDataChanged"
+  | "onWorkspaceFilesChanged"
+  | "onWorkspaceGitStateChanged"
+  | "onWorkspaceSearchResult"
+  | "onWorkspaceSearchDone"
+  | "onWorkspaceSearchError"
+>;
+
+export type ProductRequestApi = Omit<ProductApi, keyof ProductEventApi>;
+
+export interface HostBridge extends HostApi, ProductEventApi {}
+
 /** Desktop facade: product contract plus the Electron host surface. */
 export interface DesktopApi extends ProductApi, HostApi {}
 
+export type TaskEventBridge = Pick<TaskApi, "onAgentEvent">;
+
 declare global {
   interface Window {
-    desktopApi: DesktopApi;
+    desktopApi?: HostBridge;
+    taskEvents?: TaskEventBridge;
   }
 }

@@ -9,6 +9,11 @@ import {
   shouldRevalidateProviderModels,
 } from "./provider-model-cache";
 
+const probeApi = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/product-api", () => ({
+  daemonProductApi: { probeProviderModelAxes: probeApi },
+}));
+
 describe("provider model cache revalidation", () => {
   it("always revalidates the OpenCode catalog while rendering cached models", () => {
     expect(shouldRevalidateProviderModels("opencode", true, false)).toBe(true);
@@ -78,14 +83,12 @@ const devinAxes = {
 } as const;
 
 describe("probeProviderModelAxes", () => {
-  const probeApi = vi.fn();
-
   beforeEach(() => {
     resetNewSessionProviderModelMemoryCacheForTest();
     probeApi.mockReset().mockResolvedValue(devinAxes);
     Object.defineProperty(window, "desktopApi", {
       configurable: true,
-      value: { probeProviderModelAxes: probeApi },
+      value: {},
       writable: true,
     });
     providerModelCache.set("acp:devin", {

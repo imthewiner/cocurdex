@@ -4,7 +4,7 @@ import {
 } from "@cocurdex/note-doc/bytes";
 import { atom } from "jotai";
 import { applySavedNoteRecord, waitForNoteSaves } from "./note-save-store";
-import { notesIpc } from "./notes-ipc";
+import { notesApi } from "./notes-api";
 import { activeNoteAtom, createNoteAtom, loadNotesAtom } from "./notes-store";
 
 // Registered by the mounted TipTap note body so other features (e.g. PDF
@@ -59,7 +59,7 @@ function appendMarkdownBodies(existing: string, clip: string): string {
 
 async function appendMarkdownThroughDaemon(noteId: string, clip: string) {
   await waitForNoteSaves(noteId);
-  const snapshot = await notesIpc.getDoc({ id: noteId });
+  const snapshot = await notesApi.getDoc({ id: noteId });
   if (!snapshot) {
     return null;
   }
@@ -74,7 +74,7 @@ async function appendMarkdownThroughDaemon(noteId: string, clip: string) {
     state,
     appendMarkdownBodies(noteDocToMarkdown(state), clip),
   );
-  return notesIpc.applyDocUpdate({
+  return notesApi.applyDocUpdate({
     id: noteId,
     update: encodeNoteDocBytes(
       diffNoteDoc(next.state, noteDocStateVector(state)),

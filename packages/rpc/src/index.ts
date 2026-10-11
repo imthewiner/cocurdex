@@ -153,7 +153,13 @@ import type {
   WorktreeSettingsSnapshot,
 } from "@cocurdex/shared";
 
-export const DAEMON_PROTOCOL_VERSION = 25;
+export {
+  DAEMON_WEBSOCKET_PROTOCOL,
+  daemonWebSocketProtocols,
+  readDaemonWebSocketToken,
+} from "./websocket-protocol.ts";
+
+export const DAEMON_PROTOCOL_VERSION = 26;
 
 export interface DaemonMetadata {
   pid: number;
@@ -162,9 +168,14 @@ export interface DaemonMetadata {
   socketPath: string;
   token: string;
   startedAt: string;
-  webSocketUrl?: string;
+  webSocketUrl: string;
   agentToolsUrl?: string;
 }
+
+export type DaemonConnectionInfo = Pick<
+  DaemonMetadata,
+  "webSocketUrl" | "token"
+>;
 
 export interface DaemonStatus {
   pid: number;

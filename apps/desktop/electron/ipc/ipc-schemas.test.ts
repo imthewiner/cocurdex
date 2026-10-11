@@ -1,86 +1,5 @@
-import { homedir } from "node:os";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  httpUrlSchema,
-  isBroadFilesystemScanRoot,
-  schemas,
-} from "./ipc-schemas";
-
-describe("schemas.toolCallId", () => {
-  it.each([
-    "tool-1",
-    "call_example|fc_example",
-    `call_example|${"a".repeat(400)}+/=`,
-  ])("preserves provider tool call ID %s", (id) => {
-    expect(schemas.toolCallId.parse(id)).toBe(id);
-  });
-
-  it.each(["", "tool\u0000id", "tool\rid", "a".repeat(4097), 42, null])(
-    "rejects malformed tool call ID %j",
-    (id) => {
-      expect(schemas.toolCallId.safeParse(id).success).toBe(false);
-    },
-  );
-
-  it("keeps session IDs restricted", () => {
-    expect(schemas.sessionId.safeParse("call_example|fc_example").success).toBe(
-      false,
-    );
-  });
-});
-
-describe("provider-minted request IDs", () => {
-  // Devin's ACP toolCallId embeds a "#" separator; Claude echoes toolUseID and
-  // OpenCode echoes its permission id. All are opaque provider strings that
-  // must round-trip through the resolve channels.
-  const devinToolCallId =
-    "call_1f058c81523341fe8833b328#47d6d5e5cdff43fd81380990458824d7";
-
-  it("accepts provider request IDs on permission:resolve", () => {
-    expect(
-      schemas.permissionResolve.safeParse([devinToolCallId, "allow"]).success,
-    ).toBe(true);
-  });
-
-  it("accepts Cursor's newline-joined request IDs on permission:resolve", () => {
-    const cursorToolCallId =
-      "call-2b8ed068-77e4-4be6-b234-07a445e8315b-11\nfc_39066401-957d-9733-8e74-4d8b0515686b_3";
-    expect(
-      schemas.permissionResolve.safeParse([cursorToolCallId, "allow"]).success,
-    ).toBe(true);
-  });
-
-  it("rejects other control characters in provider request IDs", () => {
-    expect(
-      schemas.permissionResolve.safeParse(["call\u0000x", "allow"]).success,
-    ).toBe(false);
-  });
-
-  it("accepts provider request IDs on question:resolve", () => {
-    expect(
-      schemas.questionResolve.safeParse([devinToolCallId, "answer"]).success,
-    ).toBe(true);
-  });
-
-  it("accepts provider request IDs on planApproval:resolve", () => {
-    expect(
-      schemas.planApprovalResolve.safeParse([
-        devinToolCallId,
-        { outcome: "approved" },
-      ]).success,
-    ).toBe(true);
-  });
-
-  it("still rejects malformed request IDs", () => {
-    expect(
-      schemas.permissionResolve.safeParse(["bad\rid", "allow"]).success,
-    ).toBe(false);
-    expect(schemas.permissionResolve.safeParse(["", "allow"]).success).toBe(
-      false,
-    );
-  });
-});
+import { httpUrlSchema, schemas } from "./ipc-schemas";
 
 describe("httpUrlSchema", () => {
   it("accepts http and https URLs", () => {
@@ -175,23 +94,5 @@ describe("schemas.browserAnnotation", () => {
       type: "script",
     });
     expect(parsed.success).toBe(false);
-  });
-});
-
-describe("isBroadFilesystemScanRoot", () => {
-  it("rejects the filesystem root", () => {
-    expect(isBroadFilesystemScanRoot(path.parse(process.cwd()).root)).toBe(
-      true,
-    );
-  });
-
-  it("rejects the user home directory", () => {
-    expect(isBroadFilesystemScanRoot(homedir())).toBe(true);
-  });
-
-  it("allows a project subdirectory", () => {
-    expect(
-      isBroadFilesystemScanRoot(path.join(homedir(), "src", "cocurdex")),
-    ).toBe(false);
   });
 });

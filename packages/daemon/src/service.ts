@@ -610,6 +610,7 @@ export class CocurdexDaemonService {
     if (settings) {
       assertTestableNetworkProxySettings(settings);
       await saveNetworkProxySettings(this.state, settings);
+      this.broadcastSettingsChanged();
     }
     return probeNetworkProxy(getNetworkProxySettings());
   }
@@ -618,8 +619,10 @@ export class CocurdexDaemonService {
     return readNetworkProxySettings(this.state);
   }
 
-  setNetworkProxySettings(settings: NetworkProxySettings) {
-    return saveNetworkProxySettings(this.state, settings);
+  async setNetworkProxySettings(settings: NetworkProxySettings) {
+    const saved = await saveNetworkProxySettings(this.state, settings);
+    this.broadcastSettingsChanged();
+    return saved;
   }
 
   listSessionAttention() {

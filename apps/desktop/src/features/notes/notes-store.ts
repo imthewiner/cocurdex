@@ -10,6 +10,7 @@ import {
   toNoteSummary,
   waitForNoteSaves,
 } from "./note-save-store";
+import { notesApi } from "./notes-api";
 import {
   activeNoteAtom,
   activeNoteDocAtom,
@@ -20,7 +21,6 @@ import {
   notesRevealNonceAtom,
   noteTitleEpochAtom,
 } from "./notes-atoms";
-import { notesIpc } from "./notes-ipc";
 
 export {
   type ActiveNoteDoc,
@@ -38,14 +38,14 @@ export {
 export const loadNotesAtom = atom(null, async (_get, set) => {
   set(notesLoadingAtom, true);
   try {
-    set(noteSummariesAtom, await notesIpc.list());
+    set(noteSummariesAtom, await notesApi.list());
   } finally {
     set(notesLoadingAtom, false);
   }
 });
 
 async function fetchNoteDoc(noteId: string) {
-  const snapshot = await notesIpc.getDoc({ id: noteId });
+  const snapshot = await notesApi.getDoc({ id: noteId });
   return snapshot
     ? { noteId, state: decodeNoteDocBytes(snapshot.update) }
     : null;
@@ -69,7 +69,7 @@ export const openNoteAtom = atom(null, async (get, set, noteId: string) => {
   set(noteSaveStatusAtom, "idle");
   await waitForNoteSaves(noteId);
   const [note, doc] = await Promise.all([
-    notesIpc.get({ id: noteId }),
+    notesApi.get({ id: noteId }),
     fetchNoteDoc(noteId),
   ]);
   if (get(activeNoteIdAtom) === noteId) {
@@ -105,7 +105,7 @@ export const createNoteAtom = atom(
   async (get, set, input: CreateNoteInput = null) => {
     const { parentId, workspaceId, title, kind } =
       normalizeCreateNoteInput(input);
-    const note = await notesIpc.create({
+    const note = await notesApi.create({
       parentId,
       workspaceId,
       kind,
@@ -136,8 +136,8 @@ export const moveNoteAtom = atom(
     },
   ): Promise<NoteRecord> => {
     await waitForNoteSaves(payload.id);
-    const moved = await notesIpc.move(payload);
-    set(noteSummariesAtom, await notesIpc.list());
+    const moved = await notesApi.move(payload);
+    set(noteSummariesAtom, await notesApi.list());
     const current = get(activeNoteAtom);
     if (current?.id === moved.id) {
       set(activeNoteAtom, moved);
@@ -154,9 +154,9 @@ function clearActiveNote(set: Setter) {
 
 export const deleteNoteAtom = atom(null, async (get, set, noteId: string) => {
   await waitForNoteSaves(noteId);
-  await notesIpc.delete({ id: noteId });
+  await notesApi.delete({ id: noteId });
   forgetNote(noteId);
-  const summaries = await notesIpc.list();
+  const summaries = await notesApi.list();
   set(noteSummariesAtom, summaries);
   if (!summaries.some((note) => note.id === get(activeNoteIdAtom))) {
     clearActiveNote(set);
@@ -188,7 +188,7 @@ async function refreshActiveTitle(get: Getter, set: Setter, noteId: string) {
   if (hasPendingNoteSave(noteId)) {
     return;
   }
-  const fresh = await notesIpc.get({ id: noteId });
+  const fresh = await notesApi.get({ id: noteId });
   const current = get(activeNoteAtom);
   if (!fresh || current?.id !== noteId || hasPendingNoteSave(noteId)) {
     return;
@@ -205,7 +205,7 @@ export const refreshNotesAtom = atom(null, async (get, set) => {
   }
 
   try {
-    const summaries = await notesIpc.list();
+    const summaries = await notesApi.list();
     set(noteSummariesAtom, summaries);
     const activeId = get(activeNoteIdAtom);
     if (!activeId) {

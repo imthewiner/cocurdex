@@ -9,8 +9,10 @@ import {
   PLAN_MODE_ID,
 } from "@cocurdex/shared";
 import { chatWindowFallback } from "./chat-window-fallback";
+import { getHostBridge } from "./host-bridge";
 import { issueFallbackApi } from "./issue-fallback";
-import type { DesktopApi } from "./types";
+import { daemonProductApi } from "./product-api";
+import type { DesktopApi, HostBridge } from "./types";
 
 function planSessionModes(): AgentSessionMode[] {
   return [
@@ -157,6 +159,7 @@ const fallbackApi: DesktopApi = {
     error: null,
   }),
   restartDaemon: async () => fallbackApi.getDaemonStatus(),
+  getDaemonConnection: async () => null,
   getProductSkillsStatus: async () => ({
     scope: "global",
     packVersion: "0.0.0",
@@ -566,73 +569,22 @@ const fallbackApi: DesktopApi = {
   onWorkspaceSearchDone: () => () => {},
   onWorkspaceSearchError: () => () => {},
   // Data fallbacks used in unit tests and SSR without the preload bridge.
-  notesList: async () => [],
-  notesGet: async () => null,
-  notesGetDoc: async () => null,
-  notesApplyDocUpdate: async (payload) => {
-    throw new Error(`Note doc sync is unavailable: ${payload.id}`);
-  },
-  notesCreate: async (payload) => {
-    const kind = payload.kind ?? "note";
-    const now = new Date().toISOString();
-    return {
-      id: crypto.randomUUID(),
-      parentId: payload.parentId ?? null,
-      workspaceId: payload.workspaceId ?? null,
-      kind,
-      title: payload.title ?? "",
-      icon: payload.icon ?? null,
-      sortOrder: 0,
-      revision: 1,
-      createdAt: now,
-      updatedAt: now,
-      bodyMarkdown: "",
-    };
-  },
-  notesUpdate: async (payload) => {
-    const now = new Date().toISOString();
-    return {
-      id: payload.id,
-      parentId: null,
-      workspaceId: payload.workspaceId ?? null,
-      kind: "note" as const,
-      title: payload.title ?? "",
-      icon: payload.icon ?? null,
-      sortOrder: 0,
-      revision: (payload.expectedRevision ?? 0) + 1,
-      createdAt: now,
-      updatedAt: now,
-      bodyMarkdown: payload.bodyMarkdown ?? "",
-    };
-  },
-  notesMove: async (payload) => {
-    const now = new Date().toISOString();
-    return {
-      id: payload.id,
-      parentId: payload.parentId,
-      workspaceId: null,
-      kind: "note" as const,
-      title: payload.id,
-      icon: null,
-      sortOrder: payload.sortOrder ?? 0,
-      revision: (payload.expectedRevision ?? 0) + 1,
-      createdAt: now,
-      updatedAt: now,
-      bodyMarkdown: "",
-    };
-  },
-  notesDelete: async () => {},
   ...issueFallbackApi,
   searchDocuments: async () => [],
   onDataChanged: () => () => {},
 };
 
+let composed: { bridge: HostBridge; api: DesktopApi } | null = null;
+
 function getDesktopApi(): DesktopApi {
-  if (typeof window === "undefined") {
+  const bridge = getHostBridge();
+  if (!bridge) {
     return fallbackApi;
   }
-
-  return window.desktopApi ?? fallbackApi;
+  if (composed?.bridge !== bridge) {
+    composed = { bridge, api: { ...bridge, ...daemonProductApi } };
+  }
+  return composed.api;
 }
 
 export const desktopApi = new Proxy(fallbackApi, {

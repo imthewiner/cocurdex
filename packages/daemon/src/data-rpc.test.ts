@@ -14,6 +14,34 @@ import { handleDaemonRequest } from "./handler";
 import { CocurdexDaemonService } from "./service";
 
 describe("daemon data RPC", () => {
+  it("rejects malformed note payloads before touching storage", async () => {
+    const service = new CocurdexDaemonService({
+      runtimeFingerprint: "test-runtime",
+      userDataPath: mkdtempSync(path.join(tmpdir(), "cocurdex-daemon-bad-")),
+    });
+    const request = (params: unknown) =>
+      handleDaemonRequest<"note.create">(service, {
+        id: "1",
+        method: "note.create",
+        params: params as DaemonRequest<"note.create">["params"],
+        token: "test",
+      });
+
+    await expect(request({ title: 7 })).rejects.toThrow(
+      /Invalid note\.create payload/,
+    );
+    await expect(request({ parentId: "../escape" })).rejects.toThrow(
+      /Invalid note\.create payload/,
+    );
+    await expect(
+      handleDaemonRequest<"note.list">(service, {
+        id: "2",
+        method: "note.list",
+        token: "test",
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it("owns note mutations and emits database change events", async () => {
     const service = new CocurdexDaemonService({
       runtimeFingerprint: "test-runtime",

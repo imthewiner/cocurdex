@@ -80,6 +80,49 @@ describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
     expect(status.pid).toBe(metadata.pid);
     expect(status.startedAt).toBe(metadata.startedAt);
 
+    const title = "Renderer WebSocket note ".repeat(4);
+    const window = app.windows().find((candidate) => !candidate.isClosed());
+    if (!window) throw new Error("No open desktop window");
+    const created = await window.evaluate(async (noteTitle) => {
+      const api = (
+        globalThis as unknown as {
+          desktopApi: {
+            getDaemonConnection(): Promise<{
+              webSocketUrl: string;
+              token: string;
+            }>;
+          };
+        }
+      ).desktopApi;
+      const { webSocketUrl, token } = await api.getDaemonConnection();
+      const socket = new WebSocket(webSocketUrl, [
+        "cocurdex.v1",
+        `cocurdex.token.${token}`,
+      ]);
+      const id = crypto.randomUUID();
+      return new Promise<unknown>((resolve, reject) => {
+        socket.onerror = () => reject(new Error("WebSocket failed"));
+        socket.onopen = () =>
+          socket.send(
+            JSON.stringify({
+              id,
+              method: "note.create",
+              params: { title: noteTitle },
+              token,
+            }),
+          );
+        socket.onmessage = (event) => {
+          const response = JSON.parse(String(event.data));
+          if (response.id !== id) return;
+          socket.close();
+          resolve(response.result);
+        };
+      });
+    }, title);
+    expect(created).toMatchObject({ title: title.trim() });
+    const afterWebSocket = await requestDaemon("daemon.status", { metadata });
+    expect(afterWebSocket.pid).toBe(metadata.pid);
+
     await sleep(2_000);
     expect(pageErrors).toEqual([]);
   });
