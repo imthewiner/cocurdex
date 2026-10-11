@@ -12,7 +12,7 @@ import {
   type DaemonRpcRequestOptions,
   daemonWebSocketProtocols,
 } from "@cocurdex/rpc/client";
-import { desktopApi } from "./ipc";
+import { getHostBridge } from "./host-bridge";
 
 let current: Promise<DaemonRpcClient> | null = null;
 
@@ -39,7 +39,11 @@ function connect(info: DaemonConnectionInfo, onDrop: () => void) {
 
 function getDaemonClient() {
   if (current) return current;
-  const attempt = desktopApi.getDaemonConnection().then((info) => {
+  const bridge = getHostBridge();
+  const connection = bridge
+    ? bridge.getDaemonConnection()
+    : Promise.resolve(null);
+  const attempt = connection.then((info) => {
     if (!info) throw new Error("The Cocurdex daemon is unavailable");
     return connect(info, drop);
   });

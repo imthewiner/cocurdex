@@ -1,4 +1,4 @@
-export { createTaskClient, sessionConfiguration } from "./client";
+export { sessionConfiguration } from "./client";
 export type {
   SendSessionCommand,
   SessionConfiguration,

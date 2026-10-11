@@ -62,7 +62,9 @@ it("reads tool results through the named RPC and rejects invalid IDs", async () 
 
     const lookup = vi.spyOn(database.toolCalls, "getResultById");
     for (const id of ["", "tool\r", "tool\0", "a".repeat(4097), null, 42]) {
-      await expect(request(id)).rejects.toThrow("Invalid tool call ID");
+      await expect(request(id)).rejects.toThrow(
+        /Invalid session\.getToolCallResult payload/,
+      );
     }
     expect(lookup).not.toHaveBeenCalled();
   } finally {

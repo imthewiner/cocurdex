@@ -9,8 +9,10 @@ import {
   PLAN_MODE_ID,
 } from "@cocurdex/shared";
 import { chatWindowFallback } from "./chat-window-fallback";
+import { getHostBridge } from "./host-bridge";
 import { issueFallbackApi } from "./issue-fallback";
-import type { DesktopApi } from "./types";
+import { daemonProductApi } from "./product-api";
+import type { DesktopApi, HostBridge } from "./types";
 
 function planSessionModes(): AgentSessionMode[] {
   return [
@@ -572,12 +574,17 @@ const fallbackApi: DesktopApi = {
   onDataChanged: () => () => {},
 };
 
+let composed: { bridge: HostBridge; api: DesktopApi } | null = null;
+
 function getDesktopApi(): DesktopApi {
-  if (typeof window === "undefined") {
+  const bridge = getHostBridge();
+  if (!bridge) {
     return fallbackApi;
   }
-
-  return window.desktopApi ?? fallbackApi;
+  if (composed?.bridge !== bridge) {
+    composed = { bridge, api: { ...bridge, ...daemonProductApi } };
+  }
+  return composed.api;
 }
 
 export const desktopApi = new Proxy(fallbackApi, {

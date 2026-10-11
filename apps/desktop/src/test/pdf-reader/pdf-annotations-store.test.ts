@@ -61,6 +61,15 @@ const updatePdfAnnotations = vi.fn(
   },
 );
 
+vi.mock("@/lib/product-api", () => ({
+  daemonProductApi: {
+    loadPdfAnnotations: (...args: Parameters<typeof loadPdfAnnotations>) =>
+      loadPdfAnnotations(...args),
+    updatePdfAnnotations: (...args: Parameters<typeof updatePdfAnnotations>) =>
+      updatePdfAnnotations(...args),
+  },
+}));
+
 function deferred<T>() {
   let resolve: (value: T) => void = () => undefined;
   let reject: (error: unknown) => void = () => undefined;
@@ -78,14 +87,7 @@ beforeEach(() => {
   resetPdfAnnotationsSyncStateForTests();
   loadPdfAnnotations.mockClear();
   updatePdfAnnotations.mockClear();
-  (
-    window as unknown as {
-      desktopApi: {
-        loadPdfAnnotations: typeof loadPdfAnnotations;
-        updatePdfAnnotations: typeof updatePdfAnnotations;
-      };
-    }
-  ).desktopApi = { loadPdfAnnotations, updatePdfAnnotations };
+  (window as unknown as { desktopApi: unknown }).desktopApi = {};
 });
 
 describe("pdf annotations store", () => {

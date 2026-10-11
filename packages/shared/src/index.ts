@@ -46,7 +46,6 @@ export type {
   TaskApi,
 } from "./task-control";
 export {
-  createTaskClient,
   sessionConfiguration,
   validateSendSessionCommand,
   validateSessionConfiguration,

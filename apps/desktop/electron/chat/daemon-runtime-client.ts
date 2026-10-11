@@ -1,4 +1,4 @@
-import { readDaemonMetadata, requestDaemon } from "@cocurdex/daemon/client";
+import { readDaemonMetadata } from "@cocurdex/daemon/client";
 import { createDaemonEventConnection } from "./daemon-event-connection";
 import { createDaemonRuntimeLifecycle } from "./daemon-runtime-lifecycle";
 import type {
@@ -16,7 +16,6 @@ export function createDaemonRuntimeClient(
 ): DaemonRuntimeClient {
   const lifecycle = createDaemonRuntimeLifecycle(options);
   const ensureDaemon = lifecycle.ensure;
-  const requestOptions = () => ({ userDataPath: options.userDataPath });
   const connection = createDaemonEventConnection({
     ensure: ensureDaemon,
     userDataPath: options.userDataPath,
@@ -37,14 +36,6 @@ export function createDaemonRuntimeClient(
       );
       return { webSocketUrl, token };
     },
-    async saveSessionConfiguration(payload) {
-      await ensureDaemon();
-      return requestDaemon("session.configure", payload, requestOptions());
-    },
-    async deleteSession(sessionId) {
-      await ensureDaemon();
-      await requestDaemon("session.delete", { sessionId }, requestOptions());
-    },
     async dispose() {
       connection.dispose();
       await lifecycle.dispose();
@@ -62,134 +53,6 @@ export function createDaemonRuntimeClient(
         await connection.connect();
       }
       return lifecycle.getStatus();
-    },
-    async listSlashCommands(agentType, workspaceRootPath) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.listSlashCommands",
-        { agentType, workspaceRootPath },
-        requestOptions(),
-      );
-    },
-    async resolvePermission(requestId, optionId) {
-      await ensureDaemon();
-      return requestDaemon(
-        "permission.resolve",
-        { requestId, optionId },
-        requestOptions(),
-      );
-    },
-    async resolveQuestion(questionId, answer) {
-      await ensureDaemon();
-      return requestDaemon(
-        "question.resolve",
-        { questionId, answer },
-        requestOptions(),
-      );
-    },
-    async resolvePlanApproval(approvalId, decision) {
-      await ensureDaemon();
-      return requestDaemon(
-        "planApproval.resolve",
-        { approvalId, decision },
-        requestOptions(),
-      );
-    },
-    async resumeQueuedSession(sessionId) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.resumeQueued",
-        { sessionId },
-        requestOptions(),
-      );
-    },
-    async sendMessage(payload) {
-      await ensureDaemon();
-      return requestDaemon("session.send", payload, requestOptions());
-    },
-    async updateQueuedInput(sessionId, messageId, content) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.updateQueued",
-        { sessionId, messageId, content },
-        requestOptions(),
-      );
-    },
-    async deleteQueuedInput(sessionId, messageId) {
-      await ensureDaemon();
-      await requestDaemon(
-        "session.deleteQueued",
-        { sessionId, messageId },
-        requestOptions(),
-      );
-    },
-    async steerQueuedInput(sessionId, messageId) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.steerQueued",
-        { sessionId, messageId },
-        requestOptions(),
-      );
-    },
-    async sendQueuedInputNow(sessionId, messageId) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.sendQueuedNow",
-        { sessionId, messageId },
-        requestOptions(),
-      );
-    },
-    async setConfig(sessionId, configId, value) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.setConfig",
-        { sessionId, configId, value },
-        requestOptions(),
-      );
-    },
-    async setMode(sessionId, modeId) {
-      await ensureDaemon();
-      await requestDaemon(
-        "session.setMode",
-        { sessionId, modeId },
-        requestOptions(),
-      );
-    },
-    async stop(sessionId) {
-      await ensureDaemon();
-      await requestDaemon("session.stop", { sessionId }, requestOptions());
-    },
-    async undoTurnChanges(payload) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.undoTurnChanges",
-        payload,
-        requestOptions(),
-      );
-    },
-    async getTurnChangeFile(payload) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.getTurnChangeFile",
-        payload,
-        requestOptions(),
-      );
-    },
-    async listTurnChangeSets(sessionId) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.listTurnChangeSets",
-        { sessionId },
-        requestOptions(),
-      );
-    },
-    async getTurnChangeDiff(payload) {
-      await ensureDaemon();
-      return requestDaemon(
-        "session.getTurnChangeDiff",
-        payload,
-        requestOptions(),
-      );
     },
   };
 }
