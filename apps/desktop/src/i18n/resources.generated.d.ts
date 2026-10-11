@@ -1876,10 +1876,26 @@ export default interface Resources {
         scopeDescription: "Used for Agents and app outbound network requests. Does not hijack the system proxy or the integrated terminal by default.";
         status: {
           checking: "Checking connectivity…";
+          fields: {
+            egressIp: "Exit IP";
+            error: "Error";
+            latency: "Latency";
+            location: "Location";
+            mode: "Mode";
+          };
           idle: "Hover to check connectivity";
           label: "Proxy status";
+          latencyValue: "{{durationMs}} ms";
           offDetail: "Outbound traffic is direct; no app proxy is applied.";
           openSettings: "Open network settings";
+          state: {
+            checking: "Checking";
+            error: "Failed";
+            incomplete: "Incomplete";
+            off: "Direct";
+            ok: "Connected";
+            unknown: "Not checked";
+          };
         };
         test: {
           action: "Test";

@@ -12,9 +12,10 @@ import {
 } from "@/components";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib";
+import { workspaceIconFor } from "./workspace-icon";
 import { sortWorkspacesByLastOpenedAtDesc } from "./workspace-order";
 import { compactWorkspacePath } from "./workspace-path";
-import { MultiRootWorkspaceTooltip } from "./workspace-roots-preview";
+import { WorkspaceRootsTooltip } from "./workspace-roots-preview";
 
 const OPEN_FOLDER_VALUE = "__open_folder__";
 
@@ -85,7 +86,7 @@ export function WorkspacePicker({
           icon: missing ? (
             <FolderX className="size-3.5 text-destructive" />
           ) : (
-            <Folder className="size-3.5" />
+            <WorkspaceOptionIcon workspace={workspace} />
           ),
           ...(missing
             ? {
@@ -130,8 +131,12 @@ export function WorkspacePicker({
     (workspace) => workspace.id === activeWorkspaceId,
   );
 
+  const ActiveWorkspaceIcon = activeWorkspace
+    ? workspaceIconFor(activeWorkspace)
+    : Folder;
+
   return (
-    <MultiRootWorkspaceTooltip side="bottom" workspace={activeWorkspace}>
+    <WorkspaceRootsTooltip side="bottom" workspace={activeWorkspace}>
       <AppSearchableSelect
         align={align}
         appearance={appearance}
@@ -146,7 +151,7 @@ export function WorkspacePicker({
         triggerLabel={
           triggerLabel ?? (
             <span className="flex min-w-0 items-center gap-1.5">
-              <Folder className="size-3.5 shrink-0" />
+              <ActiveWorkspaceIcon className="size-3.5 shrink-0" />
               <span className="truncate">
                 {workspaceName ?? t("workspace.enterWorkspace")}
               </span>
@@ -169,6 +174,11 @@ export function WorkspacePicker({
           onSelectWorkspace?.(next);
         }}
       />
-    </MultiRootWorkspaceTooltip>
+    </WorkspaceRootsTooltip>
   );
+}
+
+function WorkspaceOptionIcon({ workspace }: { workspace: WorkspaceRecord }) {
+  const Icon = workspaceIconFor(workspace);
+  return <Icon className="size-3.5" />;
 }
