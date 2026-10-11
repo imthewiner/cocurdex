@@ -5,7 +5,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
-    "./event-connection": "./src/event-connection.ts",
     "./method-scopes": "./src/method-scopes.ts"
   },
   "scripts": {

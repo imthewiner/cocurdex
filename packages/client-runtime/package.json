@@ -1,0 +1,20 @@
+{
+  "name": "@cocurdex/client-runtime",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@cocurdex/rpc": "workspace:*",
+    "@cocurdex/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}

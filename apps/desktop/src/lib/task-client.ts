@@ -1,5 +1,5 @@
 import type { TaskApi } from "@cocurdex/shared";
-import { requestDaemon as rpc } from "./daemon-client";
+import { commandDaemon, requestDaemon as rpc } from "./daemon-client";
 import { onDaemonAgentEvent } from "./daemon-events";
 
 export const taskApi: TaskApi = {
@@ -9,7 +9,8 @@ export const taskApi: TaskApi = {
   listSessions: () => rpc("session.list"),
   getSessionSnapshot: (sessionId) => rpc("session.snapshot", { sessionId }),
   saveSessionConfiguration: (input) => rpc("session.configure", input),
-  sendMessage: (input) => rpc("session.send", input),
+  sendMessage: (input) =>
+    commandDaemon("session.send", input, { idempotencyKey: input.messageId }),
   stopSession: async (sessionId) => {
     await rpc("session.stop", { sessionId });
   },

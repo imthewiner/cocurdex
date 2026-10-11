@@ -1,14 +1,10 @@
 import {
-  createDaemonEventConnection,
-  type DaemonEventConnection,
-} from "@cocurdex/rpc/event-connection";
-import {
   type AgentEvent,
   type CocurdexDaemonEvent,
   type DaemonEventMeta,
   isAgentEvent,
 } from "@cocurdex/shared";
-import { subscribeDaemon } from "./daemon-client";
+import { onLocalHostEvent } from "./daemon-client";
 import type { ProductEventApi } from "./types";
 
 type DaemonEventListener = (
@@ -16,27 +12,8 @@ type DaemonEventListener = (
   meta: DaemonEventMeta,
 ) => void;
 
-const unknownPosition: DaemonEventMeta = { epoch: null, seq: null };
-const listeners = new Set<DaemonEventListener>();
-let connection: DaemonEventConnection | null = null;
-
-function dispatch(event: CocurdexDaemonEvent, meta?: DaemonEventMeta) {
-  for (const listener of [...listeners])
-    listener(event, meta ?? unknownPosition);
-}
-
 export function onDaemonEvent(listener: DaemonEventListener): () => void {
-  listeners.add(listener);
-  if (!connection) {
-    connection = createDaemonEventConnection({
-      subscribe: subscribeDaemon,
-      onEvent: dispatch,
-    });
-    void connection.connect();
-  }
-  return () => {
-    listeners.delete(listener);
-  };
+  return onLocalHostEvent(listener);
 }
 
 export function onDaemonAgentEvent(

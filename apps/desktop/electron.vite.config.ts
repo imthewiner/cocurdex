@@ -67,9 +67,9 @@ const alias = {
     __dirname,
     "../../packages/rpc/src/client.ts",
   ),
-  "@cocurdex/rpc/event-connection": path.resolve(
+  "@cocurdex/client-runtime": path.resolve(
     __dirname,
-    "../../packages/rpc/src/event-connection.ts",
+    "../../packages/client-runtime/src/index.ts",
   ),
   "@cocurdex/rpc/method-scopes": path.resolve(
     __dirname,

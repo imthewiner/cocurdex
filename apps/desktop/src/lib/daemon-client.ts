@@ -1,81 +1,84 @@
+import {
+  createHostRegistry,
+  type HostCommandOptions,
+  type HostEventListener,
+  type HostRegistry,
+  type PlatformSignals,
+} from "@cocurdex/client-runtime";
 import type {
-  DaemonConnectionInfo,
   DaemonMethod,
   DaemonRequestPayloadByMethod,
   DaemonResultByMethod,
 } from "@cocurdex/rpc";
-import {
-  createDaemonRpcClient,
-  createSharedTransport,
-  createWebSocketTransport,
-  type DaemonRpcClient,
-  type DaemonRpcRequestOptions,
-  type DaemonRpcSubscribeOptions,
-  daemonWebSocketProtocols,
-} from "@cocurdex/rpc/client";
-import type { CocurdexDaemonEvent, DaemonEventMeta } from "@cocurdex/shared";
+import type { DaemonRpcRequestOptions } from "@cocurdex/rpc/client";
 import { getHostBridge } from "./host-bridge";
 
-let current: Promise<DaemonRpcClient> | null = null;
+export const LOCAL_HOST_ID = "local";
 
-function connect(info: DaemonConnectionInfo, onDrop: () => void) {
-  const socket = createWebSocketTransport(
-    info.webSocketUrl,
-    daemonWebSocketProtocols(info.token),
-  );
-  const transport = createSharedTransport((handlers) =>
-    socket({
-      onMessage: handlers.onMessage,
-      onError(error) {
-        onDrop();
-        handlers.onError(error);
-      },
-      onClose() {
-        onDrop();
-        handlers.onClose();
-      },
-    }),
-  );
-  return createDaemonRpcClient(transport, info.token);
+let registry: HostRegistry | null = null;
+
+export function getHostRegistry() {
+  registry ??= createHostRegistry();
+  return registry;
 }
 
-async function getConnectionInfo() {
+function browserSignals(): PlatformSignals {
+  if (typeof window === "undefined") return {};
+  return {
+    network: {
+      isOnline: () => navigator.onLine,
+      subscribe(listener) {
+        const online = () => listener(true);
+        const offline = () => listener(false);
+        window.addEventListener("online", online);
+        window.addEventListener("offline", offline);
+        return () => {
+          window.removeEventListener("online", online);
+          window.removeEventListener("offline", offline);
+        };
+      },
+    },
+    lifecycle: {
+      subscribeForeground(listener) {
+        const visible = () => {
+          if (document.visibilityState === "visible") listener();
+        };
+        document.addEventListener("visibilitychange", visible);
+        return () => document.removeEventListener("visibilitychange", visible);
+      },
+    },
+  };
+}
+
+async function resolveLocalEndpoint() {
   const info = await getHostBridge()?.getDaemonConnection();
   if (!info) throw new Error("The Cocurdex daemon is unavailable");
   return info;
 }
 
-function getDaemonClient() {
-  if (current) return current;
-  const attempt = getConnectionInfo().then((info) => connect(info, drop));
-  const drop = () => {
-    if (current === attempt) current = null;
-  };
-  current = attempt;
-  attempt.catch(drop);
-  return attempt;
+export function getLocalHost() {
+  return getHostRegistry().register({
+    hostId: LOCAL_HOST_ID,
+    platform: { ...browserSignals(), resolveEndpoint: resolveLocalEndpoint },
+  });
 }
 
-export async function requestDaemon<M extends DaemonMethod>(
+export function requestDaemon<M extends DaemonMethod>(
   method: M,
   params?: DaemonRequestPayloadByMethod[M],
   options?: DaemonRpcRequestOptions,
 ): Promise<DaemonResultByMethod[M]> {
-  const client = await getDaemonClient();
-  return client.request(method, params, options);
+  return getLocalHost().request(method, params, options);
 }
 
-export async function subscribeDaemon(
-  onEvent: (event: CocurdexDaemonEvent, meta: DaemonEventMeta) => void,
-  options: DaemonRpcSubscribeOptions,
-) {
-  const info = await getConnectionInfo();
-  const transport = createWebSocketTransport(
-    info.webSocketUrl,
-    daemonWebSocketProtocols(info.token),
-  );
-  return createDaemonRpcClient(transport, info.token).subscribe(
-    onEvent,
-    options,
-  );
+export function commandDaemon<M extends DaemonMethod>(
+  method: M,
+  params: DaemonRequestPayloadByMethod[M],
+  options: HostCommandOptions,
+): Promise<DaemonResultByMethod[M]> {
+  return getLocalHost().command(method, params, options);
+}
+
+export function onLocalHostEvent(listener: HostEventListener) {
+  return getLocalHost().onEvent(listener);
 }
