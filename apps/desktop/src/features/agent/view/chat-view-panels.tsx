@@ -13,7 +13,6 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { useAtomValue } from "jotai";
-import { Folder } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -31,7 +30,7 @@ import {
   TeamPanel,
   type ThinkingLevelOption,
 } from "@/features/sessions";
-import { MultiRootWorkspaceTooltip } from "@/features/workspaces";
+import { WorkspaceRootsTooltip, workspaceIconFor } from "@/features/workspaces";
 import { desktopApi } from "@/lib";
 import { PermissionCard, permissionsBySessionAtom } from "../permission";
 import { PlanApprovalCard, PlanPanel, type SessionPlan } from "../plan";
@@ -122,20 +121,19 @@ function SessionWorkspaceFooterLabel({
     return null;
   }
 
-  const multiRoot = workspace.rootPaths.length > 1;
+  const WorkspaceIcon = workspaceIconFor(workspace);
 
   return (
-    <MultiRootWorkspaceTooltip workspace={workspace}>
+    <WorkspaceRootsTooltip workspace={workspace}>
       <span
         className={composerFooterControlClassName(
           "flex max-w-40 text-chat-fg-muted",
         )}
-        title={multiRoot ? undefined : workspace.name}
       >
-        <Folder className="size-3.5 shrink-0" />
+        <WorkspaceIcon className="size-3.5 shrink-0" />
         <span className="min-w-0 truncate">{workspace.name}</span>
       </span>
-    </MultiRootWorkspaceTooltip>
+    </WorkspaceRootsTooltip>
   );
 }
 

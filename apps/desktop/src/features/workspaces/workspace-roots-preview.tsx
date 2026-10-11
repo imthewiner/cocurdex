@@ -82,7 +82,7 @@ export function WorkspaceRootsPreview({
   );
 }
 
-export function MultiRootWorkspaceTooltip({
+export function WorkspaceRootsTooltip({
   children,
   side = "top",
   workspace,
@@ -91,7 +91,7 @@ export function MultiRootWorkspaceTooltip({
   side?: "top" | "bottom";
   workspace?: WorkspaceRoots | null;
 }) {
-  if (!workspace || workspace.rootPaths.length < 2) {
+  if (!workspace || workspace.rootPaths.length === 0) {
     return children;
   }
 

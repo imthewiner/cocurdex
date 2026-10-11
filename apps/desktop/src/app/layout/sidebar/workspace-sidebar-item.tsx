@@ -3,14 +3,7 @@ import { primaryWorkspaceRootPath } from "@cocurdex/shared";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAtomValue } from "jotai";
-import {
-  Folder,
-  FolderOpen,
-  Folders,
-  Pencil,
-  SquarePen,
-  Trash2,
-} from "lucide-react";
+import { FolderOpen, Pencil, SquarePen, Trash2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -22,8 +15,8 @@ import {
   SidebarListRowActions,
   SidebarMenuItem,
 } from "@/components/ui";
+import { workspaceIconFor } from "@/features/workspaces";
 import { cn, desktopApi } from "@/lib";
-import { FoldersOpen } from "./folders-open-icon";
 import { pendingRequestSessionIdsAtom } from "./pending-request-store";
 import { SidebarContextMenuItem } from "./sidebar-context-menu-item";
 import { WorkspaceItemTooltip } from "./sidebar-item-preview";
@@ -189,11 +182,4 @@ export function WorkspaceSidebarItem({
       ) : null}
     </SidebarMenuItem>
   );
-}
-
-function workspaceIconFor(workspace: WorkspaceRecord, expanded: boolean) {
-  if (workspace.rootPaths.length > 1) {
-    return expanded ? FoldersOpen : Folders;
-  }
-  return expanded ? FolderOpen : Folder;
 }

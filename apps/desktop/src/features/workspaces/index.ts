@@ -16,6 +16,7 @@ export { HostDirectoryPickerHost } from "./host-directory-picker";
 export { useWorkspaceFolderDrop } from "./use-workspace-folder-drop";
 export { activeWorkingPathAtom } from "./working-path";
 export { WorkspaceFolderDropOverlay } from "./workspace-folder-drop-overlay";
+export { workspaceIconFor } from "./workspace-icon";
 export { sortWorkspacesBySortOrder } from "./workspace-order";
 export { compactWorkspacePath } from "./workspace-path";
 export {
@@ -23,8 +24,8 @@ export {
   WorkspacePicker,
 } from "./workspace-picker";
 export {
-  MultiRootWorkspaceTooltip,
   WorkspaceRootsPreview,
+  WorkspaceRootsTooltip,
 } from "./workspace-roots-preview";
 export {
   activeWorkspaceIdAtom,
