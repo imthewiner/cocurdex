@@ -1153,6 +1153,18 @@ export default interface Resources {
       treeOutline: "Tree outline";
     };
     defaultTitle: "New {{agentLabel}} session";
+    executionTree: {
+      description: "Runs, tool calls, subagents, and pending approvals for this session. Select a session to open it.";
+      limited: "Subagent {{name}} is not observable: its provider reports no events for it.";
+      planProgress: "Plan {{done}}/{{total}}";
+      run: "Run started {{time}}";
+      title: "Execution tree";
+      truncated: "Deeper sessions are not shown.";
+      unavailable: "The execution tree is unavailable for this session.";
+      waitingAnswer: "Waiting for an answer: {{question}}";
+      waitingPermission: "Waiting for permission: {{title}}";
+      waitingPlanApproval: "Waiting for plan approval";
+    };
     modelMenu: {
       defaultTag: "Default";
       empty: "No matching models.";
@@ -1294,6 +1306,7 @@ export default interface Resources {
       collapseChildren: "Collapse subagent sessions";
       delete: "Delete";
       editWorkspace: "Edit workspace";
+      executionTree: "Execution tree";
       expandChildren: "Expand subagent sessions";
       markUnread: "Mark as unread";
       marketplace: "Marketplace";
