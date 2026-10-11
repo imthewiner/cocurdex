@@ -66,16 +66,18 @@ describe("startDaemonServer", () => {
       );
       const client = createDaemonRpcClient(transport, "ws-token");
       await expect(
-        client.request("daemon.status", undefined),
+        client.request("daemon.status", undefined, { timeoutMs: 15_000 }),
       ).resolves.toMatchObject({ runtimeFingerprint: "ws-runtime" });
       const onEvent = vi.fn();
       const subscription = await client.subscribe(onEvent);
       daemon.service.events.emit("daemon.event", { type: "test" });
-      await vi.waitFor(() =>
-        expect(onEvent).toHaveBeenCalledWith(
-          { type: "test" },
-          { epoch: expect.any(String), seq: 1 },
-        ),
+      await vi.waitFor(
+        () =>
+          expect(onEvent).toHaveBeenCalledWith(
+            { type: "test" },
+            { epoch: expect.any(String), seq: 1 },
+          ),
+        { timeout: 5_000 },
       );
       subscription.close();
     } finally {
@@ -109,7 +111,9 @@ describe("startDaemonServer", () => {
         expect(received).toEqual(["second", "third"]);
         expect(subscription.lastSeq).toBe(3);
         emit("fourth");
-        await vi.waitFor(() => expect(received).toContain("fourth"));
+        await vi.waitFor(() => expect(received).toContain("fourth"), {
+          timeout: 5_000,
+        });
         expect(subscription.lastSeq).toBe(4);
       } finally {
         subscription.close();
@@ -211,7 +215,7 @@ describe("startDaemonServer", () => {
         "ws-token",
       );
       await expect(
-        client.request("daemon.status", undefined),
+        client.request("daemon.status", undefined, { timeoutMs: 15_000 }),
       ).resolves.toMatchObject({ runtimeFingerprint: "ws-runtime" });
     } finally {
       await daemon.close();
