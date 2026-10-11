@@ -59,4 +59,10 @@ export type {
   WorkspaceGitStatusEntry,
 } from "./types";
 export { cn } from "./utils";
-export { installWebHostBridge } from "./web-host-bridge";
+export {
+  installWebHostBridge,
+  pairThisBrowser,
+  type WebHostAccess,
+  type WebPairingReason,
+  webPairingFailureReason,
+} from "./web-host-bridge";

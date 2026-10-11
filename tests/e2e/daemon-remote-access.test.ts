@@ -5,7 +5,10 @@ import {
   createWebSocketTransport,
   daemonWebSocketProtocols,
 } from "@cocurdex/rpc/client";
-import { HOST_PAIRING_HTTP_PATH } from "@cocurdex/shared";
+import {
+  HOST_PAIRING_HTTP_PATH,
+  HOST_SESSION_HTTP_PATH,
+} from "@cocurdex/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
 
@@ -39,6 +42,12 @@ function exchange(port: number, body: unknown) {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+  });
+}
+
+function checkSession(port: number, token: string) {
+  return fetch(`http://127.0.0.1:${port}${HOST_SESSION_HTTP_PATH}`, {
+    headers: { authorization: `Bearer ${token}` },
   });
 }
 
@@ -96,6 +105,11 @@ describe("remote host access", () => {
     const replay = await exchange(port, { code });
     expect(replay.status).toBe(401);
 
+    const session = await checkSession(port, paired.token);
+    expect(session.status).toBe(200);
+    await expect(session.json()).resolves.toMatchObject({
+      principal: { kind: "device", deviceId: paired.deviceId },
+    });
     const client = remoteClient(port, paired.token);
     await expect(client.request("session.list", undefined)).resolves.toEqual(
       [],
@@ -132,6 +146,7 @@ describe("remote host access", () => {
     daemons.push(daemon);
     const port = await enableRemoteAccess(daemon);
 
+    expect((await checkSession(port, daemon.metadata.token)).status).toBe(401);
     await expect(
       remoteClient(port, daemon.metadata.token).request(
         "session.list",
@@ -172,6 +187,7 @@ describe("remote host access", () => {
     );
 
     await closed;
+    expect((await checkSession(port, paired.token)).status).toBe(401);
     await expect(
       remoteClient(port, paired.token).request("session.list", undefined),
     ).rejects.toMatchObject({ code: "TRANSPORT_ERROR" });

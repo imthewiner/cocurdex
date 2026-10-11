@@ -1,20 +1,9 @@
 import type http from "node:http";
 import type { HostAccessService } from "./host-access-service";
+import { sendJson } from "./http-json";
 import type { FixedWindowRateLimiter } from "./rate-limiter";
 
 const MAX_BODY_BYTES = 4_096;
-
-function sendJson(
-  response: http.ServerResponse,
-  status: number,
-  body: unknown,
-) {
-  response.writeHead(status, {
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store",
-  });
-  response.end(JSON.stringify(body));
-}
 
 function readBody(request: http.IncomingMessage) {
   return new Promise<string | null>((resolve, reject) => {

@@ -24,3 +24,4 @@ export {
   type DaemonRequestContext,
   LOCAL_REQUEST_CONTEXT,
 } from "./request-context";
+export { createSessionHttpHandler } from "./session-http";

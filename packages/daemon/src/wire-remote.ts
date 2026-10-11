@@ -1,11 +1,15 @@
 import http from "node:http";
 import { readDaemonWebSocketToken } from "@cocurdex/rpc";
-import { HOST_PAIRING_HTTP_PATH } from "@cocurdex/shared";
+import {
+  HOST_PAIRING_HTTP_PATH,
+  HOST_SESSION_HTTP_PATH,
+} from "@cocurdex/shared";
 import type { WebSocket } from "ws";
 import { isAgentToolHttpRequest } from "./agent-tools";
 import {
   createFixedWindowRateLimiter,
   createPairingHttpHandler,
+  createSessionHttpHandler,
   type HostAccessService,
   isAllowedRemoteHostHeader,
   isAllowedRemoteOrigin,
@@ -19,6 +23,7 @@ import {
 
 const PAIRING_ATTEMPTS_PER_WINDOW = 10;
 const PAIRING_WINDOW_MS = 60_000;
+const SESSION_CHECKS_PER_WINDOW = 60;
 
 export interface RemoteServerFactoryOptions {
   hostAccess: HostAccessService;
@@ -50,6 +55,13 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
       windowMs: PAIRING_WINDOW_MS,
     }),
   });
+  const sessionHandler = createSessionHttpHandler({
+    hostAccess: options.hostAccess,
+    limiter: createFixedWindowRateLimiter({
+      limit: SESSION_CHECKS_PER_WINDOW,
+      windowMs: PAIRING_WINDOW_MS,
+    }),
+  });
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot, isAllowedHost)
     : undefined;
@@ -65,6 +77,10 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     const pathname = requestPathname(request);
     if (pathname === HOST_PAIRING_HTTP_PATH) {
       await pairingHandler(request, response);
+      return;
+    }
+    if (pathname === HOST_SESSION_HTTP_PATH) {
+      sessionHandler(request, response);
       return;
     }
     if (isAgentToolHttpRequest(request) || !webAssetHandler) {

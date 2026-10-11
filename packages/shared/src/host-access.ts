@@ -121,6 +121,7 @@ export interface HostRemoteAccessStatus {
 }
 
 export const HOST_PAIRING_HTTP_PATH = "/api/pair";
+export const HOST_SESSION_HTTP_PATH = "/api/session";
 export const DEFAULT_REMOTE_ACCESS_PORT = 47_820;
 
 export function buildHostPairingLink(addressUrl: string, code: string) {
