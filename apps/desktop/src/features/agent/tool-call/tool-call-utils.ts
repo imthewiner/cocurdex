@@ -7,6 +7,7 @@ import {
 } from "@cocurdex/shared";
 import { i18n } from "@/i18n";
 import { getContextCompactionLabel } from "./context-compaction-label";
+import { getCommandDescription } from "./tool-call-command-description";
 import {
   getDisplayDirectory,
   getWorkspaceRelativePath,
@@ -574,11 +575,13 @@ export function getToolCallTriggerParts(
   const title = getToolCallTitle(toolCall);
 
   if (isCommandToolCall(toolCall)) {
+    const description = getCommandDescription(toolCall);
+    if (description) {
+      return { title: description, secondary: "" };
+    }
     const titleCommand = title.replace(/^(execute|run)\s*/i, "").trim();
     return {
-      title: isPast
-        ? i18n.t("agent:toolCalls.executeDone")
-        : i18n.t("agent:toolCalls.execute"),
+      title: "",
       secondary:
         getToolCallInputSummary(toolCall, workspacePath) ||
         truncateMiddle(sanitizeCommand(titleCommand || title)),

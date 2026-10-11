@@ -13,15 +13,19 @@ import { HtmlPreview } from "./markdown-html-preview";
 // Mermaid, which is the largest of the three and is needed only by ```mermaid.
 export type HeavyPluginKind = "code" | "math" | "mermaid";
 
-const importers: Record<HeavyPluginKind, () => Promise<unknown>> = {
-  code: () => import("@streamdown/code").then((module) => module.code),
+const importers: Record<HeavyPluginKind, () => Promise<PluginConfig>> = {
+  code: () =>
+    import("@streamdown/code").then((module) => ({ code: module.code })),
   // singleDollarTextMath keeps the $E=mc^2$ form our prompts use; double-dollar
   // blocks still work.
   math: () =>
-    import("@streamdown/math").then((module) =>
-      module.createMathPlugin({ singleDollarTextMath: true }),
-    ),
-  mermaid: () => import("@streamdown/mermaid").then((module) => module.mermaid),
+    import("@streamdown/math").then((module) => ({
+      math: module.createMathPlugin({ singleDollarTextMath: true }),
+    })),
+  mermaid: () =>
+    import("./markdown-mermaid").then((module) => ({
+      renderers: [module.MERMAID_RENDERER],
+    })),
 };
 
 export const LIGHT_STREAMDOWN_PLUGINS: PluginConfig = {
@@ -29,7 +33,7 @@ export const LIGHT_STREAMDOWN_PLUGINS: PluginConfig = {
   renderers: [{ language: ["html", "htm"], component: HtmlPreview }],
 };
 
-const loaded = new Map<HeavyPluginKind, unknown>();
+const loaded = new Map<HeavyPluginKind, PluginConfig>();
 const inFlight = new Set<HeavyPluginKind>();
 const listeners = new Set<() => void>();
 
@@ -37,6 +41,16 @@ const listeners = new Set<() => void>();
 // same object until a plugin actually lands. Building it per call makes React
 // re-render forever.
 let snapshot: PluginConfig = LIGHT_STREAMDOWN_PLUGINS;
+
+function mergePluginConfigs(configs: PluginConfig[]): PluginConfig {
+  return {
+    ...LIGHT_STREAMDOWN_PLUGINS,
+    ...Object.assign({}, ...configs),
+    renderers: [LIGHT_STREAMDOWN_PLUGINS, ...configs].flatMap(
+      (config) => config.renderers ?? [],
+    ),
+  };
+}
 
 export function getStreamdownPlugins() {
   return snapshot;
@@ -59,10 +73,7 @@ export function loadHeavyPlugins(kinds: readonly HeavyPluginKind[]) {
     void importers[kind]()
       .then((plugin) => {
         loaded.set(kind, plugin);
-        snapshot = {
-          ...LIGHT_STREAMDOWN_PLUGINS,
-          ...(Object.fromEntries(loaded) as PluginConfig),
-        };
+        snapshot = mergePluginConfigs([...loaded.values()]);
         // Every mounted MarkdownRenderer re-renders here, and on a long
         // transcript that means highlighting the whole history at once. Keep it
         // interruptible so hover and input stay alive while it runs.

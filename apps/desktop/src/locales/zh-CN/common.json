@@ -39,6 +39,11 @@
   },
   "jumpToLatest": "跳到最新消息",
   "jumpToTop": "跳到顶部",
+  "mermaid": {
+    "download": "下载 SVG",
+    "openPreview": "打开预览",
+    "title": "Mermaid 图表"
+  },
   "message": {
     "showLess": "收起",
     "showMore": "展开"
@@ -47,6 +52,14 @@
     "allowed": "",
     "denied": "",
     "pending": ""
+  },
+  "preview": {
+    "closePreview": "关闭预览",
+    "resetView": "重置视图",
+    "resetZoom": "重置缩放",
+    "rotate": "顺时针旋转",
+    "zoomIn": "放大",
+    "zoomOut": "缩小"
   },
   "states": {
     "gitEmptyBranchDescription": "",

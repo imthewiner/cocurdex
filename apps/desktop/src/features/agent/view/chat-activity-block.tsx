@@ -60,8 +60,9 @@ export function ActivityBlock({
       {trigger}
       <CollapsibleContent
         className={cn(
-          "flex flex-col gap-1 overflow-hidden",
-          variant === "turn" && "mt-1 mb-3",
+          "flex flex-col overflow-hidden",
+          variant === "turn" && "activity-timeline mt-1 mb-3",
+          variant === "step" && "gap-1",
           variant === "step" &&
             "ms-3 mt-0.5 mb-1 border-s border-chat-border-soft ps-2.5",
           // Height/margin interpolate between 0 and `auto` (interpolate-size)

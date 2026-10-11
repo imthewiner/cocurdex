@@ -69,19 +69,13 @@
     "tooltip": "约为上下文限制的 {{percent}}%"
   },
   "imagePreview": {
-    "closePreview": "关闭图片预览",
     "copied": "已复制",
     "copyFailed": "复制失败",
     "copyImage": "复制图片",
     "downloadImage": "下载图片",
     "imagePosition": "{{current}} / {{total}}",
     "nextImage": "下一张",
-    "previousImage": "上一张",
-    "resetView": "复原视图",
-    "resetZoom": "重置缩放",
-    "rotate": "顺时针旋转",
-    "zoomIn": "放大",
-    "zoomOut": "缩小"
+    "previousImage": "上一张"
   },
   "jumpToLatest": "跳到最新消息",
   "jumpToTop": "跳到顶部",

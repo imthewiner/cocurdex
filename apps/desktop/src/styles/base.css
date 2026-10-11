@@ -12,6 +12,10 @@
     overflow: hidden;
   }
 
+  #root {
+    isolation: isolate;
+  }
+
   body {
     margin: 0;
     background: var(--app-bg);

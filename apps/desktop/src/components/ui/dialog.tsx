@@ -11,6 +11,8 @@ const dialogContentSizeClassName = {
   default: "sm:max-w-lg",
   palette: "sm:max-w-2xl",
   wide: "sm:max-w-4xl",
+  window:
+    "start-0 top-0 bottom-0 max-w-none translate-x-0 translate-y-0 rounded-none ring-0 rtl:translate-x-0 data-open:zoom-in-100 data-closed:zoom-out-100",
 } as const;
 
 function Dialog({

@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui";
-import { openContextItem } from "@/lib";
+import { cn, openContextItem } from "@/lib";
 import {
   type MentionContentSegment,
   splitContentByMentions,
@@ -186,11 +186,18 @@ function ReasoningTriggerRow({
       ) : (
         <Brain className="size-3.5 shrink-0 text-chat-fg-muted" />
       )}
-      {isStreaming || !preview ? (
-        <span className="shrink-0">{label}</span>
-      ) : null}
+      <span
+        className={cn(
+          "shrink-0",
+          preview &&
+            !isStreaming &&
+            "hidden group-data-[panel-open]/reasoning:inline",
+        )}
+      >
+        {label}
+      </span>
       {preview ? (
-        <span className="min-w-0 truncate font-normal text-chat-fg-muted group-data-[panel-open]/reasoning:hidden">
+        <span className="min-w-0 max-w-lg truncate font-normal text-chat-fg-muted group-data-[panel-open]/reasoning:hidden">
           {preview}
         </span>
       ) : null}
@@ -242,10 +249,11 @@ export function ReasoningMarkdown({
   // gap-2 (8) = 28px. No guide line, matching the tool-call detail.
   return (
     <Collapsible
-      className="-mx-1.5 flex min-w-0 flex-col gap-1.5"
+      className="relative -mx-1.5 flex min-w-0 flex-col gap-1.5"
+      data-timeline-row=""
       defaultOpen={mode === "full"}
     >
-      <CollapsibleTrigger className="group/reasoning flex w-full min-w-0 items-center gap-2 rounded-control px-1.5 py-1 text-left font-medium text-chat-fg-muted text-body">
+      <CollapsibleTrigger className="group/reasoning flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 text-left font-medium text-chat-fg-muted text-body transition-colors hover:bg-chat-surface-row-hover">
         <ReasoningTriggerRow
           isStreaming={isStreaming}
           label={label}

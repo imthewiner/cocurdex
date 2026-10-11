@@ -53,16 +53,21 @@ function ToolCallTriggerRow({ toolCall }: { toolCall: AgentToolCallRecord }) {
   return (
     <>
       <ToolCallRowIcon className="shrink-0" toolCall={toolCall} />
-      <span
-        className={cn(
-          "text-chat-fg-secondary",
-          secondary ? "shrink-0" : "min-w-0 truncate",
-        )}
-      >
-        {title}
-      </span>
+      {title ? (
+        <span
+          className={cn(
+            "text-chat-fg-muted",
+            secondary ? "shrink-0" : "min-w-0 truncate",
+          )}
+        >
+          {title}
+        </span>
+      ) : null}
       {secondary ? (
-        <span className="min-w-0 flex-1 truncate font-mono text-chat-fg-muted [font-variant-ligatures:none]">
+        <span
+          className="min-w-0 max-w-md truncate font-mono text-chat-fg-muted/70 [font-variant-ligatures:none]"
+          title={secondary}
+        >
           {secondary}
         </span>
       ) : null}
@@ -193,19 +198,22 @@ export function ToolCallItem({
   const readLocation = getSingleReadLocation(toolCall);
   if (readLocation && onOpenToolLocation && toolCall.status === "completed") {
     return (
-      <button
-        className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 text-left text-chat-fg-muted text-body transition-colors hover:bg-chat-surface-row-hover"
-        onClick={() => onOpenToolLocation(readLocation)}
-        type="button"
-      >
-        <ToolCallTriggerRow toolCall={toolCall} />
-      </button>
+      <div className="relative w-full min-w-0" data-timeline-row="">
+        <button
+          className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 text-left text-chat-fg-muted text-body transition-colors hover:bg-chat-surface-row-hover"
+          onClick={() => onOpenToolLocation(readLocation)}
+          type="button"
+        >
+          <ToolCallTriggerRow toolCall={toolCall} />
+        </button>
+      </div>
     );
   }
 
   return (
     <Collapsible
-      className="w-full min-w-0 overflow-hidden"
+      className="relative w-full min-w-0 overflow-hidden"
+      data-timeline-row=""
       onOpenChange={setOpen}
       open={open}
     >
@@ -316,7 +324,10 @@ export function ToolCallGroup({
 
   if (nested) {
     return (
-      <div className="-mx-1.5 flex min-w-0 flex-col gap-0.5 overflow-hidden">
+      <div
+        className="-mx-1.5 flex min-w-0 flex-col gap-0.5 overflow-hidden"
+        data-timeline-group=""
+      >
         {runNodes}
       </div>
     );

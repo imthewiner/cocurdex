@@ -1,11 +1,6 @@
-import { type CSSProperties, Fragment, useMemo, useState } from "react";
-import type { ThemedToken } from "shiki";
-import { cn, useMountEffect, useResolvedTheme } from "@/lib";
-import {
-  codeToTokenLines,
-  getCodeThemeId,
-  loadCodeHighlighter,
-} from "./code-textarea-highlighter";
+import { Fragment } from "react";
+import { cn } from "@/lib";
+import { shellTokenStyle, useShellTokenLines } from "./use-shell-token-lines";
 import "./code-textarea.css";
 
 // Both layers share this so the highlighted text lands exactly on the editable
@@ -17,19 +12,6 @@ const LAYER_CLASS =
 // keystroke. Past this size the cost would block typing, so the field falls
 // back to a plain textarea instead.
 const MAX_HIGHLIGHT_LENGTH = 6000;
-
-// Shiki's FontStyle flags.
-const ITALIC = 1;
-const BOLD = 2;
-
-function tokenStyle(token: ThemedToken): CSSProperties {
-  const fontStyle = token.fontStyle ?? 0;
-  return {
-    color: token.color,
-    fontStyle: fontStyle & ITALIC ? "italic" : undefined,
-    fontWeight: fontStyle & BOLD ? 700 : undefined,
-  };
-}
 
 interface CodeTextareaProps {
   className?: string;
@@ -47,43 +29,7 @@ export function CodeTextarea({
   placeholder,
   value,
 }: CodeTextareaProps) {
-  const resolvedTheme = useResolvedTheme();
-  const [highlighter, setHighlighter] = useState<Awaited<
-    ReturnType<typeof loadCodeHighlighter>
-  > | null>(null);
-
-  useMountEffect(() => {
-    let cancelled = false;
-    void loadCodeHighlighter()
-      .then((instance) => {
-        if (!cancelled) {
-          setHighlighter(instance);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  });
-
-  const tokenLines = useMemo(() => {
-    if (
-      !highlighter ||
-      value.length === 0 ||
-      value.length > MAX_HIGHLIGHT_LENGTH
-    ) {
-      return null;
-    }
-    try {
-      return codeToTokenLines(
-        highlighter,
-        value,
-        getCodeThemeId(resolvedTheme),
-      );
-    } catch {
-      return null;
-    }
-  }, [highlighter, resolvedTheme, value]);
+  const tokenLines = useShellTokenLines(value, MAX_HIGHLIGHT_LENGTH);
 
   const isHighlighted = tokenLines !== null;
 
@@ -110,7 +56,7 @@ export function CodeTextarea({
               {lineIndex > 0 ? "\n" : null}
               {line.map((token, tokenIndex) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: tokens are a pure render of `value` and never reorder
-                <span key={tokenIndex} style={tokenStyle(token)}>
+                <span key={tokenIndex} style={shellTokenStyle(token)}>
                   {token.content}
                 </span>
               ))}

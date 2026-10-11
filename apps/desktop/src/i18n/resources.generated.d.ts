@@ -82,7 +82,6 @@ export default interface Resources {
       tooltip: "{{percent}}% of context limit";
     };
     imagePreview: {
-      closePreview: "Close image preview";
       copied: "Copied";
       copyFailed: "Copy failed";
       copyImage: "Copy image";
@@ -90,11 +89,6 @@ export default interface Resources {
       imagePosition: "{{current}} / {{total}}";
       nextImage: "Next image";
       previousImage: "Previous image";
-      resetView: "Reset view";
-      resetZoom: "Reset zoom";
-      rotate: "Rotate clockwise";
-      zoomIn: "Zoom in";
-      zoomOut: "Zoom out";
     };
     jumpToLatest: "Jump to latest";
     jumpToTop: "Jump to top";
@@ -451,6 +445,11 @@ export default interface Resources {
     };
     jumpToLatest: "Jump to latest";
     jumpToTop: "Jump to top";
+    mermaid: {
+      download: "Download SVG";
+      openPreview: "Open preview";
+      title: "Mermaid diagram";
+    };
     message: {
       showLess: "Show less";
       showMore: "Show more";
@@ -459,6 +458,14 @@ export default interface Resources {
       allowed: "";
       denied: "";
       pending: "";
+    };
+    preview: {
+      closePreview: "Close preview";
+      resetView: "Reset view";
+      resetZoom: "Reset zoom";
+      rotate: "Rotate clockwise";
+      zoomIn: "Zoom in";
+      zoomOut: "Zoom out";
     };
     states: {
       gitEmptyBranchDescription: "";
