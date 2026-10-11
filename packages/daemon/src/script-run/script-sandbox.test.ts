@@ -1,7 +1,7 @@
+import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import {
-  runScript,
-  ScriptAbortedError,
+  runScript as runScriptEffect,
   type ScriptHost,
   ScriptRejectedError,
 } from "./script-sandbox";
@@ -21,10 +21,17 @@ function fakeHost(reply: (prompt: string) => unknown = (prompt) => prompt) {
 }
 
 function options(overrides: { signal?: AbortSignal } = {}) {
-  return {
-    maxListItems: 4,
-    signal: overrides.signal ?? new AbortController().signal,
-  };
+  return { maxListItems: 4, signal: overrides.signal };
+}
+
+function runScript(
+  script: string,
+  host: ScriptHost,
+  { signal, ...scriptOptions }: ReturnType<typeof options>,
+) {
+  return Effect.runPromise(runScriptEffect(script, host, scriptOptions), {
+    signal,
+  });
 }
 
 describe("runScript", () => {
@@ -119,7 +126,7 @@ describe("runScript", () => {
         host,
         options({ signal: controller.signal }),
       ),
-    ).rejects.toBeInstanceOf(ScriptAbortedError);
+    ).rejects.toThrow();
   });
 
   it("does not call the host after an abort", async () => {
@@ -134,7 +141,7 @@ describe("runScript", () => {
         host,
         options({ signal: controller.signal }),
       ),
-    ).rejects.toBeInstanceOf(ScriptAbortedError);
+    ).rejects.toThrow();
     expect(prompts).toEqual(["first"]);
   });
 

@@ -61,7 +61,11 @@ function memoryRepository(): ScriptRunRepository {
 
 type Reply = (prompt: string) => string | "hang";
 
-function harness(reply: Reply, settings: Record<string, unknown> = {}) {
+function harness(
+  reply: Reply,
+  settings: Record<string, unknown> = {},
+  maxConcurrency = 4,
+) {
   const sessions = new Map<string, SessionRecord>([
     ["lead", session({ id: "lead" })],
   ]);
@@ -105,7 +109,7 @@ function harness(reply: Reply, settings: Record<string, unknown> = {}) {
     broadcast: (event) => events.push(event),
     now: () => "2026-09-16T00:00:00.000Z",
     createId: () => `id-${++ids}`,
-    maxConcurrency: 4,
+    maxConcurrency,
   });
 
   const waitForRun = async (runId: string) => {
@@ -127,6 +131,7 @@ function harness(reply: Reply, settings: Record<string, unknown> = {}) {
 
   return {
     module,
+    hangs,
     sessions,
     sent,
     stopped,
@@ -280,5 +285,45 @@ describe("ScriptRunModule", () => {
     expect(second.sent.some((command) => command.sessionId === "lead")).toBe(
       false,
     );
+  });
+
+  it("runs at most maxConcurrency agents at once", async () => {
+    const { module, hangs, sent, waitForHangingTurn, waitForRun } = harness(
+      () => "hang",
+      {},
+      1,
+    );
+    const draft = await module.create({
+      requesterSessionId: "lead",
+      name: "fanout",
+      script: `await parallel([() => agent("a"), () => agent("b")]);`,
+    });
+    await module.start({ runId: draft.id });
+    await waitForHangingTurn();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(hangs.size).toBe(1);
+    expect(sent.filter((command) => command.sessionId !== "lead")).toHaveLength(
+      1,
+    );
+    await module.cancel(draft.id);
+    const { agents } = await waitForRun(draft.id);
+    expect(agents.map((agent) => agent.status)).toEqual(["cancelled"]);
+  });
+
+  it("stops running agents on shutdown without finishing the run", async () => {
+    const { module, sent, stopped, waitForHangingTurn } = harness(() => "hang");
+    const draft = await module.create({
+      requesterSessionId: "lead",
+      name: "slow",
+      script: `await agent("wait");`,
+    });
+    await module.start({ runId: draft.id });
+    await waitForHangingTurn();
+    await module.shutdown();
+    const { run, agents } = await module.get(draft.id);
+    expect(run.completedAt).toBeNull();
+    expect(stopped).toHaveLength(1);
+    expect(agents.map((agent) => agent.status)).toEqual(["cancelled"]);
+    expect(sent.some((command) => command.sessionId === "lead")).toBe(false);
   });
 });
