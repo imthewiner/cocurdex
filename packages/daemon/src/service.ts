@@ -129,7 +129,7 @@ import {
 } from "./session-control";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
-import { TeamModule } from "./team";
+import { TeamModule, type TeammateReportCommand } from "./team";
 import {
   DaemonWorkflowAgentTurnRunner,
   type DecideWorkflowGateInput,
@@ -294,11 +294,7 @@ export class CocurdexDaemonService {
       getSession: (sessionId) => this.state.getSession(sessionId),
       listSessions: () => this.state.listSessions(),
       hasActiveTurn: (sessionId) => this.runs.hasActiveRun(sessionId),
-      supportsSteering: async (session) => {
-        const agents = await this.listAgents();
-        const agent = agents.find((item) => item.id === session.agentType);
-        return agent?.capabilities.supportsSteering ?? false;
-      },
+      supportsSteering: (session) => this.agentSupportsSteering(session),
       sendSessionMessage: (command) => this.sendSessionMessage(command),
       broadcast: (event) => this.events.emit("daemon.event", event),
       peerScope: (sessionId) => this.team.peerScope(sessionId),
@@ -314,7 +310,18 @@ export class CocurdexDaemonService {
       sendSessionMessage: (command) => this.sendSessionMessage(command),
       sendPeerMessage: (payload, render) =>
         this.peerMessaging.send(payload, render),
+      deliverReport: (report) => this.deliverTeammateReport(report),
+      hasActiveRun: (sessionId) => this.runs.hasActiveRun(sessionId),
+      supportsSteering: (session) => this.agentSupportsSteering(session),
+      getRunReply: (sessionId, runId) =>
+        this.state.getRunReply(sessionId, runId),
+      latestRun: (sessionId) => this.state.getLatestRun(sessionId),
       stopSession: (sessionId) => this.stopTeammateSession(sessionId),
+      track: (work) => void this.runs.track(work),
+      onReportFailed: (error) =>
+        logDaemonDiagnostic("warn", "team.reportFailed", {
+          error: errorMessage(error, "Unknown error"),
+        }),
       isSessionBusy: (sessionId) =>
         this.runs.hasActiveRun(sessionId) ||
         this.queuedFollowUps.has(sessionId),
@@ -471,6 +478,12 @@ export class CocurdexDaemonService {
     this.wakeWorkflowWorker();
   }
 
+  private async agentSupportsSteering(session: SessionRecord) {
+    const agents = await this.listAgents();
+    const agent = agents.find((item) => item.id === session.agentType);
+    return agent?.capabilities.supportsSteering ?? false;
+  }
+
   startBackgroundRecovery() {
     if (this.startupRecovery || this.stopping) return;
     this.startupRecovery = this.runs.track(this.recoverInterruptedWork());
@@ -480,6 +493,7 @@ export class CocurdexDaemonService {
     try {
       await this.state.waitForStartupRecovery();
       await this.scriptRuns.recoverInterrupted();
+      await this.team.recoverReports();
     } catch {
       logDaemonDiagnostic("warn", "daemon.recoveryUnavailable");
     }
@@ -1748,10 +1762,37 @@ export class CocurdexDaemonService {
   async sendSessionMessage(command: SendSessionCommand) {
     validateSendSessionCommand(command);
     if (!command.origin) this.peerMessaging.noteHumanInput(command.sessionId);
+    return this.submitSessionMessage(command);
+  }
+
+  private async deliverTeammateReport(report: TeammateReportCommand) {
+    const sender = await this.state.getSession(report.fromSessionId);
+    const hold = report.delivery === "hold";
+    return this.submitSessionMessage(
+      {
+        sessionId: report.toSessionId,
+        messageId: report.messageId,
+        content: report.content,
+        delivery:
+          report.delivery === "hold" ? "queue-after-run" : report.delivery,
+        origin: {
+          kind: "peer",
+          sessionId: report.fromSessionId,
+          sessionTitle: sender?.title ?? report.fromSessionId,
+        },
+      },
+      { hold },
+    );
+  }
+
+  private submitSessionMessage(
+    command: SendSessionCommand,
+    { hold = false } = {},
+  ) {
     return this.sessionCommands.run(command.sessionId, async () => {
       const existing = await this.state.getMessageById(command.messageId);
       if (existing) return resolveRepeatedSend(existing, command);
-      const accepted = await this.acceptSessionMessage(command);
+      const accepted = await this.acceptSessionMessage(command, { hold });
       await this.dataService.linkAttachedIssues(
         command.sessionId,
         command.attachments,
@@ -1762,7 +1803,7 @@ export class CocurdexDaemonService {
 
   private async acceptSessionMessage(
     command: SendSessionCommand,
-    { dequeued = false } = {},
+    { dequeued = false, hold = false } = {},
   ) {
     let payload: SessionRuntimeMessage = {
       ...command,
@@ -1778,6 +1819,7 @@ export class CocurdexDaemonService {
       requested: payload.delivery,
       hasActiveRun: this.runs.hasActiveRun(sessionId),
       fromPeer: payload.origin?.kind === "peer",
+      hold,
     });
     if (decision.kind === "reject") {
       throw new Error(
@@ -1812,7 +1854,7 @@ export class CocurdexDaemonService {
 
     if (decision.kind === "queue") {
       await this.ensureAgentAvailable(payload.session.agentType);
-      await this.loadQueuedFollowUps(sessionId);
+      if (!hold) await this.loadQueuedFollowUps(sessionId);
       payload = await this.refreshSessionWorkingPath(payload);
       const createdMessage = this.createUserMessage(payload);
       const userMessage = await this.state.saveQueuedUserMessage(
@@ -1825,16 +1867,19 @@ export class CocurdexDaemonService {
           createdAt: createdMessage.createdAt,
         },
       );
-      const queued = this.queuedFollowUps.get(sessionId) ?? [];
-      queued.push({
-        payload: {
-          ...payload,
-          messageId: userMessage.id,
-          createdAt: userMessage.createdAt,
-          delivery: "start-new-run",
-        },
-      });
-      this.queuedFollowUps.set(sessionId, queued);
+      const loaded = this.queuedFollowUps.get(sessionId);
+      if (loaded || !hold) {
+        const queued = loaded ?? [];
+        queued.push({
+          payload: {
+            ...payload,
+            messageId: userMessage.id,
+            createdAt: userMessage.createdAt,
+            delivery: "start-new-run",
+          },
+        });
+        this.queuedFollowUps.set(sessionId, queued);
+      }
       this.events.emit("daemon.event", {
         type: "data.changed",
         areas: ["agent"],

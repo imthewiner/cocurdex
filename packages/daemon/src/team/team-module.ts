@@ -7,10 +7,12 @@ import {
   type CreateTeamPayload,
   canSpawnTeammate,
   checkTeamTaskUpdate,
+  decideTeammateReport,
   findRosterMember,
   type MessageRecord,
   normalizeAgentRoleAvatar,
   normalizeTeamTemplateMembers,
+  type RunRecord,
   renderTeammateBriefing,
   renderTeammateReport,
   type SaveTeamTemplatePayload,
@@ -30,6 +32,7 @@ import {
   TEAM_TEMPLATES_SETTING_KEY,
   type TeamChangedEvent,
   type TeamMemberRecord,
+  type TeammateReportDelivery,
   type TeammateReportOutcome,
   type TeamRecord,
   type TeamRoster,
@@ -39,7 +42,9 @@ import {
   type TeamTaskStatus,
   type TeamTemplateMember,
   type TeamTemplateRecord,
-  teamMemberEventFromSessionStatus,
+  teamMemberEventFromRun,
+  teammateReportMessageId,
+  teammateRunReport,
   transitionTeamMember,
   validateSessionId,
 } from "@cocurdex/shared";
@@ -71,6 +76,14 @@ export class TeamError extends Error {
   }
 }
 
+export interface TeammateReportCommand {
+  fromSessionId: string;
+  toSessionId: string;
+  messageId: string;
+  content: string;
+  delivery: TeammateReportDelivery;
+}
+
 export interface TeamModuleDependencies {
   repository: TeamRepository;
   getSession(sessionId: string): Promise<SessionRecord | null>;
@@ -84,7 +97,14 @@ export interface TeamModuleDependencies {
     payload: SendPeerMessagePayload,
     renderEnvelope: (origin: unknown, content: string) => string,
   ): Promise<SendPeerMessageResult>;
+  deliverReport(report: TeammateReportCommand): Promise<MessageRecord>;
+  hasActiveRun(sessionId: string): boolean;
+  supportsSteering(session: SessionRecord): Promise<boolean>;
+  getRunReply(sessionId: string, runId: string): Promise<MessageRecord | null>;
+  latestRun(sessionId: string): RunRecord | null;
   stopSession(sessionId: string): Promise<unknown>;
+  track(work: Promise<unknown>): void;
+  onReportFailed(error: unknown): void;
   isSessionBusy(sessionId: string): boolean;
   getMessage(messageId: string): Promise<MessageRecord | null>;
   createWorktree?(input: {
@@ -204,6 +224,7 @@ export class TeamModule {
   private readonly now: () => string;
   private readonly createId: () => string;
   private readonly waitingReported = new Set<string>();
+  private reports: Promise<void> = Promise.resolve();
 
   constructor(private readonly deps: TeamModuleDependencies) {
     this.now = deps.now ?? (() => new Date().toISOString());
@@ -394,15 +415,15 @@ export class TeamModule {
 
   async stop(teamId: string) {
     const snapshot = await this.requireTeam(teamId);
-    for (const member of snapshot.members) {
-      await this.stopOne(member);
-    }
     const team: TeamRecord = {
       ...snapshot.team,
       status: "stopped",
       updatedAt: this.now(),
     };
     await this.deps.repository.saveTeam(team);
+    for (const member of snapshot.members) {
+      await this.stopOne(member);
+    }
     this.changed(team);
     return team;
   }
@@ -420,31 +441,47 @@ export class TeamModule {
       await this.reportWaiting(event.sessionId, waitingOn);
       return;
     }
-    const memberEvent =
-      event.type === "turn.completed"
-        ? { type: "turn.completed" as const }
-        : event.type === "state.changed"
-          ? teamMemberEventFromSessionStatus(event.status)
-          : null;
-    if (!memberEvent) return;
+    if (event.type !== "run.updated") return;
     const snapshot = await this.deps.repository.findBySession(event.sessionId);
     const member = snapshot?.members.find(
       (item) => item.sessionId === event.sessionId,
     );
     if (!snapshot || !member || member.status === "stopped") return;
     this.waitingReported.delete(member.sessionId);
-    const next = transitionTeamMember(member, memberEvent, this.now());
-    if (next === member) return;
-    await this.deps.repository.saveMember(next);
-    this.changed(snapshot.team);
-    if (memberEvent.type === "turn.completed") {
-      const message =
-        event.type === "turn.completed"
-          ? await this.deps.getMessage(event.messageId)
-          : null;
-      await this.report(snapshot.team, member, "finished", message?.content);
-    } else if (memberEvent.type === "turn.failed") {
-      await this.report(snapshot.team, member, "failed");
+    const next = transitionTeamMember(
+      member,
+      teamMemberEventFromRun(event.run.status),
+      this.now(),
+    );
+    if (next !== member) {
+      await this.deps.repository.saveMember(next);
+      this.changed(snapshot.team);
+    }
+    const run = event.run;
+    if (run.status !== "running") {
+      this.enqueueReport(() =>
+        this.reportRun(snapshot.team, member, run, false),
+      );
+    }
+  }
+
+  private enqueueReport(work: () => Promise<void>) {
+    const next = this.reports
+      .then(work)
+      .catch((error: unknown) => this.deps.onReportFailed(error));
+    this.reports = next;
+    this.deps.track(next);
+  }
+
+  async recoverReports() {
+    for (const snapshot of await this.deps.repository.listActive()) {
+      for (const member of snapshot.members) {
+        const run = this.deps.latestRun(member.sessionId);
+        if (!run || run.status === "running") continue;
+        await this.reportRun(snapshot.team, member, run, true).catch(
+          () => undefined,
+        );
+      }
     }
   }
 
@@ -659,13 +696,13 @@ export class TeamModule {
 
   private async stopOne(member: TeamMemberRecord) {
     if (member.status === "stopped") return member;
-    await this.deps.stopSession(member.sessionId);
     const stopped = transitionTeamMember(
       member,
       { type: "stopped" },
       this.now(),
     );
     await this.deps.repository.saveMember(stopped);
+    await this.deps.stopSession(member.sessionId);
     return stopped;
   }
 
@@ -677,7 +714,43 @@ export class TeamModule {
     );
     if (!snapshot || !member || member.status === "stopped") return;
     this.waitingReported.add(sessionId);
-    await this.report(snapshot.team, member, "waiting", summary);
+    this.enqueueReport(() =>
+      this.report(snapshot.team, member, "waiting", summary),
+    );
+  }
+
+  private async reportRun(
+    team: TeamRecord,
+    member: TeamMemberRecord,
+    run: RunRecord,
+    recovering: boolean,
+  ) {
+    const messageId = teammateReportMessageId(run.id);
+    if (await this.deps.getMessage(messageId)) return;
+    const lead = await this.deps.getSession(team.leadSessionId);
+    const decision = decideTeammateReport({
+      memberStopped: member.status === "stopped",
+      teamStopped: team.status === "stopped",
+      leadArchived: !lead || Boolean(lead.archivedAt),
+      leadHasActiveRun: this.deps.hasActiveRun(team.leadSessionId),
+      leadSupportsSteering: lead
+        ? await this.deps.supportsSteering(lead)
+        : false,
+      recovering,
+    });
+    if (decision.kind === "skip") return;
+    const reply = await this.deps.getRunReply(member.sessionId, run.id);
+    const report = teammateRunReport(run, reply?.content ?? null);
+    await this.deps.deliverReport({
+      fromSessionId: member.sessionId,
+      toSessionId: team.leadSessionId,
+      messageId,
+      content: renderTeammateReport(
+        { name: member.name, outcome: report.outcome },
+        report.content,
+      ),
+      delivery: decision.delivery,
+    });
   }
 
   private async report(

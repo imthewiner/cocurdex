@@ -1,5 +1,6 @@
 import type { AgentRoleAvatar } from "./agent-role";
-import type { AgentId, SessionStatus } from "./contracts";
+import type { AgentId, RunRecord, RunStatus } from "./contracts";
+import type { PeerMessageDelivery } from "./peer-messaging";
 
 export type TeamStatus = "active" | "stopped";
 export type TeamMemberStatus =
@@ -224,12 +225,16 @@ export function transitionTeamMember(
   return { ...member, status, updatedAt: now };
 }
 
-export function teamMemberEventFromSessionStatus(
-  status: SessionStatus,
-): TeamMemberEvent | null {
-  if (status === "running") return { type: "turn.started" };
-  if (status === "error") return { type: "turn.failed" };
-  return null;
+const memberEventByRunStatus: Record<RunStatus, TeamMemberEvent> = {
+  running: { type: "turn.started" },
+  completed: { type: "turn.completed" },
+  cancelled: { type: "turn.completed" },
+  interrupted: { type: "turn.completed" },
+  failed: { type: "turn.failed" },
+};
+
+export function teamMemberEventFromRun(status: RunStatus): TeamMemberEvent {
+  return memberEventByRunStatus[status];
 }
 
 export type SpawnTeammateRejection =
@@ -297,11 +302,18 @@ export function renderTeammateBriefing(input: {
   ].join("\n");
 }
 
-export type TeammateReportOutcome = "finished" | "failed" | "waiting";
+export type TeammateReportOutcome =
+  | "finished"
+  | "failed"
+  | "cancelled"
+  | "interrupted"
+  | "waiting";
 
 const TEAMMATE_REPORT_HEADERS: Record<TeammateReportOutcome, string> = {
   finished: "finished",
   failed: "failed",
+  cancelled: "was cancelled",
+  interrupted: "was interrupted",
   waiting: "is waiting for the user",
 };
 
@@ -311,4 +323,72 @@ export function renderTeammateReport(
 ) {
   const header = `[Teammate "${input.name}" ${TEAMMATE_REPORT_HEADERS[input.outcome]}]`;
   return `${header}\n${content}`;
+}
+
+export function teammateReportMessageId(runId: string) {
+  return `teammate-report-${runId}`;
+}
+
+type TerminalRunStatus = Exclude<RunStatus, "running">;
+
+const REPORT_OUTCOME_BY_RUN_STATUS: Record<
+  TerminalRunStatus,
+  TeammateReportOutcome
+> = {
+  completed: "finished",
+  failed: "failed",
+  cancelled: "cancelled",
+  interrupted: "interrupted",
+};
+
+const REPORT_FALLBACK_BY_RUN_STATUS: Record<TerminalRunStatus, string> = {
+  completed: "",
+  failed: "The run failed.",
+  cancelled: "The run was cancelled before it finished.",
+  interrupted: "The daemon stopped before the run finished.",
+};
+
+export function teammateRunReport(
+  run: Pick<RunRecord, "status" | "error">,
+  reply: string | null,
+): { outcome: TeammateReportOutcome; content: string } {
+  const status: TerminalRunStatus =
+    run.status === "running" ? "interrupted" : run.status;
+  const reason = run.error
+    ? `Error: ${run.error}`
+    : REPORT_FALLBACK_BY_RUN_STATUS[status];
+  const parts = status === "completed" ? [reply ?? ""] : [reason, reply ?? ""];
+  return {
+    outcome: REPORT_OUTCOME_BY_RUN_STATUS[status],
+    content: parts.filter(Boolean).join("\n\n"),
+  };
+}
+
+export type TeammateReportDelivery = PeerMessageDelivery | "hold";
+
+export type TeammateReportDecision =
+  | { kind: "skip" }
+  | { kind: "deliver"; delivery: TeammateReportDelivery };
+
+export function decideTeammateReport(input: {
+  memberStopped: boolean;
+  teamStopped: boolean;
+  leadArchived: boolean;
+  leadHasActiveRun: boolean;
+  leadSupportsSteering: boolean;
+  recovering: boolean;
+}): TeammateReportDecision {
+  if (input.memberStopped || input.teamStopped || input.leadArchived) {
+    return { kind: "skip" };
+  }
+  if (input.recovering) return { kind: "deliver", delivery: "hold" };
+  if (!input.leadHasActiveRun) {
+    return { kind: "deliver", delivery: "start-new-run" };
+  }
+  return {
+    kind: "deliver",
+    delivery: input.leadSupportsSteering
+      ? "steer-active-run"
+      : "queue-after-run",
+  };
 }

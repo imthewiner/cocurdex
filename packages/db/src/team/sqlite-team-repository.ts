@@ -156,6 +156,14 @@ export function createSqliteTeamRepository(
           .get(leadSessionId) as TeamRow | undefined,
       );
     },
+    async listActive() {
+      const rows = database
+        .prepare(
+          "SELECT * FROM teams WHERE status = 'active' ORDER BY created_at, id",
+        )
+        .all() as TeamRow[];
+      return rows.flatMap((row) => snapshot(row) ?? []);
+    },
     async findBySession(sessionId) {
       return snapshot(
         database
