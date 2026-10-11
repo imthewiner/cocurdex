@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   CircleDot,
+  ListTree,
   Pencil,
   SquareSplitHorizontal,
   SquareSplitVertical,
@@ -29,6 +30,7 @@ import {
   canMarkSessionUnread,
   collectSessionSubtreeIds,
   deleteSessionAtom,
+  ExecutionTreeDialog,
   focusedPaneCanSplitDownAtom,
   focusedPaneCanSplitRightAtom,
   getAgentDisplayLabel,
@@ -182,6 +184,7 @@ export function SessionSidebarItem({
     : null;
   const [isRenaming, setIsRenaming] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isTreeOpen, setIsTreeOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState(session.title);
   const descendantIds =
     hasChildren && !isExpanded
@@ -317,127 +320,141 @@ export function SessionSidebarItem({
   }
 
   return (
-    <ContextMenu>
-      <SidebarItemTooltip
-        agentId={session.agentType}
-        agentLabel={getAgentDisplayLabel(session.agentType)}
-        role={selectedRole ?? undefined}
-        roleSummary={roleSummary ?? undefined}
-        timestamp={activityAt}
-        title={session.title}
-        workspaceName={workspaceName}
-      >
-        <ContextMenuTrigger asChild>
-          <SidebarListRow
-            isActive={isActive}
-            className={cn(isChild ? "ps-11 text-sidebar-fg-muted" : "ps-6")}
-            onClick={hasChildren ? undefined : onSelect}
-            render={hasChildren ? undefined : <button type="button" />}
-          >
-            {hasChildren ? (
-              <button
-                type="button"
-                className="flex size-3.5 shrink-0 items-center justify-center text-sidebar-fg-muted hover:text-sidebar-fg"
-                aria-expanded={isExpanded}
-                aria-label={
-                  isExpanded
-                    ? t("sidebar.collapseChildren")
-                    : t("sidebar.expandChildren")
-                }
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleExpand?.();
-                }}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="size-3.5" />
-                ) : (
-                  <ChevronRight className="size-3.5 rtl:-scale-x-100" />
-                )}
-              </button>
-            ) : null}
-            {hasChildren ? (
-              <button
-                type="button"
-                className="flex min-w-0 flex-1 items-center gap-1.5 text-start"
-                onClick={onSelect}
-              >
-                <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
-                <SessionTrailing
-                  isRunning={isRunning}
-                  isUnread={isUnread && !isActive}
-                  needsAttention={needsAttention}
-                  showTimestamp={showTimestamp}
-                  timestamp={activityAt}
-                />
-              </button>
-            ) : (
-              <>
-                <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
-                <SessionTrailing
-                  isRunning={isRunning}
-                  isUnread={isUnread && !isActive}
-                  needsAttention={needsAttention}
-                  showTimestamp={showTimestamp}
-                  timestamp={activityAt}
-                />
-              </>
-            )}
-          </SidebarListRow>
-        </ContextMenuTrigger>
-      </SidebarItemTooltip>
-      <ContextMenuContent className="min-w-26">
-        <SidebarContextMenuItem icon={Pencil} onClick={startRename}>
-          {t("sidebar.rename")}
-        </SidebarContextMenuItem>
-        <SidebarContextMenuItem
-          disabled={!canSplitRight}
-          icon={SquareSplitVertical}
-          onClick={() =>
-            openSessionInSplit({
-              sessionId: session.id,
-              direction: "right",
-            })
-          }
+    <>
+      <ContextMenu>
+        <SidebarItemTooltip
+          agentId={session.agentType}
+          agentLabel={getAgentDisplayLabel(session.agentType)}
+          role={selectedRole ?? undefined}
+          roleSummary={roleSummary ?? undefined}
+          timestamp={activityAt}
+          title={session.title}
+          workspaceName={workspaceName}
         >
-          {t("sidebar.splitRight")}
-        </SidebarContextMenuItem>
-        <SidebarContextMenuItem
-          disabled={!canSplitDown}
-          icon={SquareSplitHorizontal}
-          onClick={() =>
-            openSessionInSplit({
-              sessionId: session.id,
-              direction: "down",
-            })
-          }
-        >
-          {t("sidebar.splitDown")}
-        </SidebarContextMenuItem>
-        {!isActive && canMarkSessionUnread(resultAttention) ? (
-          <SidebarContextMenuItem
-            icon={CircleDot}
-            onClick={() => markSessionUnread(session.id)}
-          >
-            {t("sidebar.markUnread")}
+          <ContextMenuTrigger asChild>
+            <SidebarListRow
+              isActive={isActive}
+              className={cn(isChild ? "ps-11 text-sidebar-fg-muted" : "ps-6")}
+              onClick={hasChildren ? undefined : onSelect}
+              render={hasChildren ? undefined : <button type="button" />}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  className="flex size-3.5 shrink-0 items-center justify-center text-sidebar-fg-muted hover:text-sidebar-fg"
+                  aria-expanded={isExpanded}
+                  aria-label={
+                    isExpanded
+                      ? t("sidebar.collapseChildren")
+                      : t("sidebar.expandChildren")
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleExpand?.();
+                  }}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="size-3.5" />
+                  ) : (
+                    <ChevronRight className="size-3.5 rtl:-scale-x-100" />
+                  )}
+                </button>
+              ) : null}
+              {hasChildren ? (
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-1.5 text-start"
+                  onClick={onSelect}
+                >
+                  <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
+                  <SessionTrailing
+                    isRunning={isRunning}
+                    isUnread={isUnread && !isActive}
+                    needsAttention={needsAttention}
+                    showTimestamp={showTimestamp}
+                    timestamp={activityAt}
+                  />
+                </button>
+              ) : (
+                <>
+                  <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
+                  <SessionTrailing
+                    isRunning={isRunning}
+                    isUnread={isUnread && !isActive}
+                    needsAttention={needsAttention}
+                    showTimestamp={showTimestamp}
+                    timestamp={activityAt}
+                  />
+                </>
+              )}
+            </SidebarListRow>
+          </ContextMenuTrigger>
+        </SidebarItemTooltip>
+        <ContextMenuContent className="min-w-26">
+          <SidebarContextMenuItem icon={Pencil} onClick={startRename}>
+            {t("sidebar.rename")}
           </SidebarContextMenuItem>
-        ) : null}
-        <SidebarContextMenuItem
-          icon={Archive}
-          onClick={handleArchive}
-          disabled={isArchiving}
-        >
-          {t("sidebar.archive")}
-        </SidebarContextMenuItem>
-        <ContextMenuSeparator />
-        <SidebarContextMenuItem
-          destructive
-          icon={Trash2}
-          onClick={handleDelete}
-        >
-          {t("sidebar.delete")}
-        </SidebarContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+          <SidebarContextMenuItem
+            disabled={!canSplitRight}
+            icon={SquareSplitVertical}
+            onClick={() =>
+              openSessionInSplit({
+                sessionId: session.id,
+                direction: "right",
+              })
+            }
+          >
+            {t("sidebar.splitRight")}
+          </SidebarContextMenuItem>
+          <SidebarContextMenuItem
+            disabled={!canSplitDown}
+            icon={SquareSplitHorizontal}
+            onClick={() =>
+              openSessionInSplit({
+                sessionId: session.id,
+                direction: "down",
+              })
+            }
+          >
+            {t("sidebar.splitDown")}
+          </SidebarContextMenuItem>
+          {!isActive && canMarkSessionUnread(resultAttention) ? (
+            <SidebarContextMenuItem
+              icon={CircleDot}
+              onClick={() => markSessionUnread(session.id)}
+            >
+              {t("sidebar.markUnread")}
+            </SidebarContextMenuItem>
+          ) : null}
+          <SidebarContextMenuItem
+            icon={ListTree}
+            onClick={() => setIsTreeOpen(true)}
+          >
+            {t("sidebar.executionTree")}
+          </SidebarContextMenuItem>
+          <SidebarContextMenuItem
+            icon={Archive}
+            onClick={handleArchive}
+            disabled={isArchiving}
+          >
+            {t("sidebar.archive")}
+          </SidebarContextMenuItem>
+          <ContextMenuSeparator />
+          <SidebarContextMenuItem
+            destructive
+            icon={Trash2}
+            onClick={handleDelete}
+          >
+            {t("sidebar.delete")}
+          </SidebarContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      {isTreeOpen ? (
+        <ExecutionTreeDialog
+          onClose={() => setIsTreeOpen(false)}
+          sessionId={session.id}
+        />
+      ) : null}
+    </>
   );
 }

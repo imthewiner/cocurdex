@@ -83,6 +83,18 @@
     "treeOutline": "目录结构"
   },
   "defaultTitle": "新建 {{agentLabel}} 会话",
+  "executionTree": {
+    "description": "此会话的运行、工具调用、子代理和待处理审批。选择会话即可打开。",
+    "limited": "子代理 {{name}} 不可观测：其提供方未上报任何事件。",
+    "planProgress": "计划 {{done}}/{{total}}",
+    "run": "运行开始于 {{time}}",
+    "title": "执行树",
+    "truncated": "更深层的会话未显示。",
+    "unavailable": "此会话的执行树不可用。",
+    "waitingAnswer": "等待回答：{{question}}",
+    "waitingPermission": "等待权限：{{title}}",
+    "waitingPlanApproval": "等待计划审批"
+  },
   "modelMenu": {
     "defaultTag": "默认",
     "empty": "未找到匹配的模型。",
@@ -219,6 +231,7 @@
     "collapseChildren": "折叠子会话",
     "delete": "删除",
     "editWorkspace": "编辑工作区",
+    "executionTree": "执行树",
     "expandChildren": "展开子会话",
     "marketplace": "市场",
     "markUnread": "标为未读",

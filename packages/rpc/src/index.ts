@@ -107,6 +107,7 @@ import type {
   SendSessionCommand,
   SessionAttentionSnapshot,
   SessionConfiguration,
+  SessionExecutionTree,
   SessionMessagesResult,
   SessionObservationSnapshot,
   SessionRecord,
@@ -253,6 +254,7 @@ export type DaemonRequestPayloadByMethod = {
   };
   "session.list": undefined;
   "session.snapshot": { sessionId: string };
+  "session.executionTree": { sessionId: string; maxDepth?: number };
   "session.configure": SessionConfiguration;
   "session.get": { sessionId: string };
   "session.listPeers": { sessionId: string };
@@ -521,6 +523,7 @@ export type DaemonResultByMethod = {
   "scriptRun.settings.get": ScriptRunSettings;
   "scriptRun.settings.save": ScriptRunSettings;
   "session.snapshot": SessionObservationSnapshot | null;
+  "session.executionTree": SessionExecutionTree | null;
   "session.configure": SessionRecord;
   "session.get": SessionRecord | null;
   "session.delete": null;
