@@ -89,6 +89,7 @@ import type {
   SessionMessagesResult,
   SessionRecord,
   StartScriptRunPayload,
+  TaskApi,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -728,11 +729,28 @@ export interface HostApi {
   onPtyActivity(listener: (event: PtyActivityEvent) => void): () => void;
 }
 
+export type ProductEventApi = Pick<
+  ProductApi,
+  | "onDataChanged"
+  | "onWorkspaceFilesChanged"
+  | "onWorkspaceGitStateChanged"
+  | "onWorkspaceSearchResult"
+  | "onWorkspaceSearchDone"
+  | "onWorkspaceSearchError"
+>;
+
+export type ProductRequestApi = Omit<ProductApi, keyof ProductEventApi>;
+
+export interface HostBridge extends HostApi, ProductEventApi {}
+
 /** Desktop facade: product contract plus the Electron host surface. */
 export interface DesktopApi extends ProductApi, HostApi {}
 
+export type TaskEventBridge = Pick<TaskApi, "onAgentEvent">;
+
 declare global {
   interface Window {
-    desktopApi: DesktopApi;
+    desktopApi?: HostBridge;
+    taskEvents?: TaskEventBridge;
   }
 }

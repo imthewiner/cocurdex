@@ -1,27 +1,8 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
-import type {
-  AgentId,
-  ArchiveSessionPayload,
-  BrowserAnnotation,
-  DeleteSessionPayload,
-  EditorViewRecord,
-  ImportDocumentAttachmentPayload,
-  ImportImageAttachmentPayload,
-  RefineSessionTitlePayload,
-  SendSessionCommand,
-  SessionConfiguration,
-  SubmitPreviousMessageCommand,
-  UpdateSessionTitlePayload,
-  WorkspaceRecord,
-} from "@cocurdex/shared";
-import {
-  hashLogValue,
-  hostForLog,
-  validateSendSessionCommand,
-  validateSubmitPreviousMessageCommand,
-} from "@cocurdex/shared";
+import type { BrowserAnnotation } from "@cocurdex/shared";
+import { hashLogValue, hostForLog } from "@cocurdex/shared";
 import {
   app,
   BrowserWindow,
@@ -51,27 +32,10 @@ import {
   toggleBrowserAnnotationMode,
 } from "./browser";
 import {
-  archiveSession,
-  bootstrapAppState,
   chatDaemonOptions,
-  deleteAgentRole,
-  deleteWorkspace,
-  getToolCallResult,
   initializeAppState,
-  listAgentRoles,
-  listAgents,
-  listArchivedSessions,
-  listMessagesBySessionId,
-  listToolCallsBySessionId,
   listWorkspaces,
-  readAdapterRateLimits,
-  readAgentSessionModes,
-  restoreSession,
-  saveAgentRole,
-  saveEditorView,
-  saveWorkspace,
   setDaemonReady,
-  updateSessionTitle,
 } from "./chat";
 import {
   createDaemonRuntimeClient,
@@ -82,7 +46,6 @@ import {
   getBundledDaemonEntryPath,
   registerCliPathHandlers,
 } from "./cli-path";
-import { registerDataHandlers } from "./data";
 import { listSystemFontFamilies } from "./fonts/system-fonts";
 import { registerHandler, registerHandlerArgs, schemas } from "./ipc";
 import {
@@ -95,11 +58,9 @@ import {
   startCrashReporter,
   summarizeProcessGone,
 } from "./logging";
-import { registerMcpHandlers } from "./mcp";
 import {
   initializeNetworkProxyRuntime,
   loadAndApplyNetworkProxyFromDaemon,
-  registerNetworkProxyHandlers,
 } from "./network";
 import {
   consumePendingOpenFolder,
@@ -109,12 +70,9 @@ import {
   queueOpenFolder,
 } from "./open-folder";
 import { registerOssLicensesHandlers } from "./oss-licenses";
-import { registerProviderHandlers } from "./provider";
 import { getPtyService } from "./pty";
-import { registerScriptRunHandlers } from "./script-run";
 import { denyWindowNavigation, resolveMainWindowDevTools } from "./security";
 import { applyShellEnv, resolveShellEnv } from "./shell-env";
-import { registerSkillsHandlers } from "./skills";
 import { registerAppUpdateHandlers, startAppUpdater } from "./updater";
 import {
   hasTitleBarOverlay,
@@ -136,7 +94,6 @@ const MIN_WINDOW_WIDTH = 400;
 const MIN_WINDOW_HEIGHT = 520;
 const REMOTE_DEBUGGING_PORT_ENV = "COCURDEX_REMOTE_DEBUGGING_PORT";
 const appLogger = createLogger("app");
-const sessionLogger = createLogger("session");
 const daemonLogger = createLogger("daemon-runtime-client");
 let appQuitAllowed = false;
 let appShutdownPromise: Promise<void> | null = null;
@@ -255,10 +212,6 @@ function requireDaemonRuntimeClient() {
   return daemonRuntimeClient;
 }
 
-async function permanentlyDeleteSession(sessionId: string) {
-  await requireDaemonRuntimeClient().deleteSession(sessionId);
-}
-
 // Match the renderer's surface color so there is no dark flash before the
 // first paint and no black gutters during async child-view resizes.
 function getSurfaceColor() {
@@ -344,29 +297,6 @@ function createWindow() {
 }
 
 function registerWorkspaceHandlers() {
-  ipcMain.handle("workspace:list", async () => listWorkspaces());
-  registerHandler(
-    ipcMain,
-    "workspace:save",
-    schemas.workspaceSave,
-    async (_event, workspace) => {
-      const saved = await saveWorkspace(
-        workspace as unknown as WorkspaceRecord,
-      );
-      return saved;
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:delete",
-    schemas.workspaceId,
-    async (_event, workspaceId) => {
-      await deleteWorkspace(workspaceId);
-    },
-  );
-  // Reveals the workspace root in Finder/Explorer/Files. The directory on
-  // disk is never modified — this is the read-only sibling to workspace:delete
-  // which only touches the app's local DB.
   registerHandler(
     ipcMain,
     "workspace:openInFileManager",
@@ -378,9 +308,6 @@ function registerWorkspaceHandlers() {
       }
     },
   );
-  // Reveals a specific file or directory in Finder/Explorer/Files, selecting
-  // the item within its parent folder. Read-only sibling to openInFileManager,
-  // which opens a directory directly rather than highlighting an entry.
   registerHandler(
     ipcMain,
     "workspace:revealPath",
@@ -388,406 +315,6 @@ function registerWorkspaceHandlers() {
     async (_event, targetPath) => {
       shell.showItemInFolder(targetPath);
     },
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:listEntries",
-    schemas.rootPath,
-    async (_event, rootPath) =>
-      requestDaemon(
-        "workspace.listEntries",
-        { rootPath },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "fs:listDirectories",
-    schemas.directoryBrowse,
-    async (_event, payload) =>
-      requestDaemon(
-        "fs.listDirectories",
-        { path: payload.path },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:listFiles",
-    schemas.rootPath,
-    async (_event, rootPath) => {
-      return requestDaemon(
-        "workspace.listFiles",
-        { rootPath },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:listBranches",
-    schemas.rootPath,
-    async (_event, rootPath) => {
-      return requestDaemon(
-        "git.listBranches",
-        { rootPath },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:checkoutBranch",
-    schemas.gitBranch,
-    async (_event, { rootPath, branch }) =>
-      requestDaemon(
-        "git.checkoutBranch",
-        { rootPath, branch },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:listWorktrees",
-    schemas.rootPath,
-    async (_event, rootPath) => {
-      return requestDaemon(
-        "git.listWorktrees",
-        { rootPath },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:addWorktree",
-    schemas.gitWorktreeAdd,
-    async (_event, payload) => {
-      const userDataPath = app.getPath("userData");
-      return requestDaemon(
-        "worktree.create",
-        { workspaceId: payload.workspaceId },
-        { userDataPath },
-      );
-    },
-  );
-  ipcMain.handle("worktree:getSettings", async () =>
-    requestDaemon("worktree.settings.get", {
-      userDataPath: app.getPath("userData"),
-    }),
-  );
-  ipcMain.handle("worktree:listManaged", async () =>
-    requestDaemon("worktree.list", {
-      userDataPath: app.getPath("userData"),
-    }),
-  );
-  registerHandler(
-    ipcMain,
-    "worktree:saveSettings",
-    schemas.worktreeSettingsSave,
-    async (_event, payload) =>
-      requestDaemon("worktree.settings.save", payload, {
-        userDataPath: app.getPath("userData"),
-      }),
-  );
-  registerHandler(
-    ipcMain,
-    "worktree:remove",
-    schemas.worktreeRemove,
-    async (_event, payload) => {
-      const removed = await requestDaemon("worktree.remove", payload, {
-        userDataPath: app.getPath("userData"),
-      });
-      return removed;
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "team:get",
-    schemas.sessionId,
-    async (_event, leadSessionId) =>
-      requestDaemon(
-        "team.get",
-        { leadSessionId },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "team:create",
-    schemas.teamCreate,
-    async (_event, payload) =>
-      requestDaemon("team.create", payload, {
-        userDataPath: app.getPath("userData"),
-      }),
-  );
-  registerHandler(
-    ipcMain,
-    "team:stop",
-    schemas.teamId,
-    async (_event, teamId) =>
-      requestDaemon(
-        "team.stop",
-        { teamId },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "team:stopMember",
-    schemas.teamMember,
-    async (_event, payload) =>
-      requestDaemon("team.stopMember", payload, {
-        userDataPath: app.getPath("userData"),
-      }),
-  );
-  ipcMain.handle("teamTemplate:list", async () =>
-    requestDaemon("teamTemplate.list", {
-      userDataPath: app.getPath("userData"),
-    }),
-  );
-  registerHandler(
-    ipcMain,
-    "teamTemplate:save",
-    schemas.teamTemplateSave,
-    async (_event, payload) =>
-      requestDaemon("teamTemplate.save", payload, {
-        userDataPath: app.getPath("userData"),
-      }),
-  );
-  registerHandler(
-    ipcMain,
-    "teamTemplate:delete",
-    schemas.teamId,
-    async (_event, id) =>
-      requestDaemon(
-        "teamTemplate.delete",
-        { id },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:getWorktreeEnvironment",
-    schemas.workspaceId,
-    async (_event, workspaceId) =>
-      requestDaemon(
-        "workspace.worktreeEnvironment.get",
-        { workspaceId },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:saveWorktreeEnvironment",
-    schemas.worktreeEnvironmentSave,
-    async (_event, payload) =>
-      requestDaemon(
-        "workspace.worktreeEnvironment.save",
-        {
-          workspaceId: payload.workspaceId,
-          setupScript: payload.setupScript,
-          cleanupScript: payload.cleanupScript,
-          actions: payload.actions,
-          updatedAt: null,
-          proposal: null,
-        },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "assistant:createSession",
-    schemas.workspaceId,
-    async (_event, workspaceId) =>
-      requestDaemon(
-        "assistant.session.create",
-        { workspaceId },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "assistant:getOrCreateSession",
-    schemas.workspaceId,
-    async (_event, workspaceId) =>
-      requestDaemon(
-        "assistant.session.getOrCreate",
-        { workspaceId },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  ipcMain.handle("settings:listPendingChanges", async () =>
-    requestDaemon("settings.pendingChanges.list", {
-      userDataPath: app.getPath("userData"),
-    }),
-  );
-  registerHandler(
-    ipcMain,
-    "settings:ackPendingChange",
-    schemas.settingsChangeAck,
-    async (_event, payload) =>
-      requestDaemon(
-        "settings.pendingChanges.ack",
-        { id: payload.id },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "settings:reportValues",
-    schemas.settingsValuesReport,
-    async (_event, payload) =>
-      requestDaemon(
-        "settings.values.report",
-        { values: payload.values },
-        { userDataPath: app.getPath("userData") },
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:listCommits",
-    schemas.gitCommitsQuery,
-    async (_event, { rootPath, limit }) => {
-      return requestDaemon(
-        "git.listCommits",
-        { rootPath, limit },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:getWorkspaceDiff",
-    schemas.gitDiffQuery,
-    async (_event, { rootPath, query }) => {
-      return requestDaemon(
-        "git.diff",
-        { rootPath, query },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:getWorkspaceStatus",
-    schemas.rootPath,
-    async (_event, rootPath) => {
-      return requestDaemon(
-        "git.status",
-        { rootPath },
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "git:stageFiles",
-    schemas.gitFiles,
-    async (_event, { rootPath, filePaths }) =>
-      requestDaemon(
-        "git.stageFiles",
-        { rootPath, filePaths },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:unstageFiles",
-    schemas.gitFiles,
-    async (_event, { rootPath, filePaths }) =>
-      requestDaemon(
-        "git.unstageFiles",
-        { rootPath, filePaths },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:discardFiles",
-    schemas.gitFiles,
-    async (_event, { rootPath, filePaths }) =>
-      requestDaemon(
-        "git.discardFiles",
-        { rootPath, filePaths },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:commit",
-    schemas.gitCommit,
-    async (_event, { rootPath, message, includeUnstaged }) =>
-      requestDaemon(
-        "git.commit",
-        { rootPath, message, includeUnstaged },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:generateCommitMessage",
-    schemas.gitGenerateCommitMessage,
-    async (_event, { rootPath, includeUnstaged }) =>
-      requestDaemon(
-        "git.generateCommitMessage",
-        { workspaceRootPath: rootPath, includeUnstaged },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "git:push",
-    schemas.rootPath,
-    async (_event, rootPath) =>
-      requestDaemon("git.push", { rootPath }, await chatDaemonOptions()),
-  );
-  registerHandler(
-    ipcMain,
-    "file:readText",
-    schemas.filePath,
-    async (_event, filePath) =>
-      requestDaemon("file.readText", { filePath }, await chatDaemonOptions()),
-  );
-  registerHandler(
-    ipcMain,
-    "file:exists",
-    schemas.filePath,
-    async (_event, filePath) =>
-      requestDaemon("file.exists", { filePath }, await chatDaemonOptions()),
-  );
-  registerHandler(
-    ipcMain,
-    "attachment:importDocument",
-    schemas.importDocument,
-    async (_event, payload) =>
-      requestDaemon(
-        "attachment.importDocument",
-        payload as unknown as ImportDocumentAttachmentPayload,
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "attachment:importImage",
-    schemas.importImage,
-    async (_event, payload) =>
-      requestDaemon(
-        "attachment.importImage",
-        payload as unknown as ImportImageAttachmentPayload,
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "attachment:readImageDataUrl",
-    schemas.filePath,
-    async (_event, filePath) =>
-      requestDaemon(
-        "attachment.readImageDataUrl",
-        { filePath },
-        await chatDaemonOptions(),
-      ),
   );
   registerHandler(
     ipcMain,
@@ -799,326 +326,6 @@ function registerWorkspaceHandlers() {
         await listWorkspaceRootPaths(),
       );
       return buildPdfAssetUrl(payload.filePath);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "pdf:load-annotations",
-    schemas.loadPdfAnnotations,
-    async (_event, payload) =>
-      requestDaemon(
-        "pdf.loadAnnotations",
-        { filePath: payload.filePath },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "pdf:update-annotations",
-    schemas.updatePdfAnnotations,
-    async (_event, payload) =>
-      requestDaemon(
-        "pdf.updateAnnotations",
-        { filePath: payload.filePath, operation: payload.operation },
-        await chatDaemonOptions(),
-      ),
-  );
-}
-
-function registerSessionHandlers() {
-  registerHandler(
-    ipcMain,
-    "session:listMessages",
-    schemas.sessionId,
-    async (_event, sessionId) => listMessagesBySessionId(sessionId),
-  );
-  registerHandler(
-    ipcMain,
-    "session:listToolCalls",
-    schemas.sessionId,
-    async (_event, sessionId) => listToolCallsBySessionId(sessionId),
-  );
-  registerHandler(
-    ipcMain,
-    "session:getToolCallResult",
-    schemas.toolCallId,
-    async (_event, toolCallId) => getToolCallResult(toolCallId),
-  );
-  registerHandler(
-    ipcMain,
-    "session:undoTurnChanges",
-    schemas.undoTurnChanges,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().undoTurnChanges(payload),
-  );
-  registerHandler(
-    ipcMain,
-    "session:getTurnChangeFile",
-    schemas.turnChangeFile,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().getTurnChangeFile(payload),
-  );
-  registerHandler(
-    ipcMain,
-    "session:listTurnChangeSets",
-    schemas.sessionId,
-    async (_event, sessionId) =>
-      requireDaemonRuntimeClient().listTurnChangeSets(sessionId),
-  );
-  registerHandler(
-    ipcMain,
-    "session:getTurnChangeDiff",
-    schemas.turnChangeDiff,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().getTurnChangeDiff(payload),
-  );
-  ipcMain.handle("task:list", async () =>
-    requestDaemon("session.list", await chatDaemonOptions()),
-  );
-  registerHandler(
-    ipcMain,
-    "task:snapshot",
-    schemas.sessionId,
-    async (_event, sessionId) =>
-      requestDaemon(
-        "session.snapshot",
-        { sessionId },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "task:configure",
-    schemas.sessionConfigure,
-    async (_event, input) =>
-      requireDaemonRuntimeClient().saveSessionConfiguration(
-        input as SessionConfiguration,
-      ),
-  );
-  ipcMain.handle("task:send", async (_event, command: SendSessionCommand) => {
-    validateSendSessionCommand(command);
-    return requireDaemonRuntimeClient().sendMessage(command);
-  });
-  registerHandler(
-    ipcMain,
-    "session:updateQueuedInput",
-    schemas.queuedInputUpdate,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().updateQueuedInput(
-        payload.sessionId,
-        payload.messageId,
-        payload.content,
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "session:deleteQueuedInput",
-    schemas.queuedInput,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().deleteQueuedInput(
-        payload.sessionId,
-        payload.messageId,
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "session:steerQueuedInput",
-    schemas.queuedInput,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().steerQueuedInput(
-        payload.sessionId,
-        payload.messageId,
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "session:sendQueuedInputNow",
-    schemas.queuedInput,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().sendQueuedInputNow(
-        payload.sessionId,
-        payload.messageId,
-      ),
-  );
-  ipcMain.handle(
-    "task:resubmit",
-    async (_event, command: SubmitPreviousMessageCommand) => {
-      validateSubmitPreviousMessageCommand(command);
-      return requestDaemon(
-        "session.resubmit",
-        command,
-        await chatDaemonOptions(),
-      );
-    },
-  );
-  registerHandlerArgs(
-    ipcMain,
-    "task:checkpointStatus",
-    schemas.checkpointStatus,
-    async (_event, sessionId, messageId) =>
-      requestDaemon(
-        "session.checkpointStatus",
-        { sessionId, messageId },
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "session:updateTitle",
-    schemas.updateTitle,
-    async (_event, raw) => {
-      const payload = raw as unknown as UpdateSessionTitlePayload;
-      sessionLogger.debug("session.titleUpdateRequested", {
-        sessionId: payload.sessionId,
-        expectedTitleLength: payload.expectedTitle?.length ?? null,
-        titleLength: payload.title.length,
-      });
-
-      const updatedSession = await updateSessionTitle(
-        payload.sessionId,
-        payload.title,
-        {
-          expectedTitle: payload.expectedTitle,
-          updatedAt: payload.updatedAt,
-        },
-      );
-
-      sessionLogger.debug("session.titleUpdateCompleted", {
-        sessionId: payload.sessionId,
-        returnedTitleLength: updatedSession?.title.length ?? null,
-        updated: updatedSession?.title === payload.title,
-      });
-
-      return updatedSession;
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "session:archive",
-    schemas.archive,
-    async (_event, raw) => {
-      const payload = raw as unknown as ArchiveSessionPayload;
-      return archiveSession(payload.sessionId);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "session:restore",
-    schemas.delete,
-    async (_event, raw) => {
-      return restoreSession(raw.sessionId);
-    },
-  );
-  ipcMain.handle("session:listArchived", () => listArchivedSessions());
-  registerHandler(
-    ipcMain,
-    "session:delete",
-    schemas.delete,
-    async (_event, raw) => {
-      const payload = raw as unknown as DeleteSessionPayload;
-      return permanentlyDeleteSession(payload.sessionId);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "session:refineTitle",
-    schemas.refineTitle,
-    async (_event, raw) =>
-      requestDaemon(
-        "session.refineTitle",
-        raw as unknown as RefineSessionTitlePayload,
-        await chatDaemonOptions(),
-      ),
-  );
-  registerHandler(
-    ipcMain,
-    "editorView:save",
-    schemas.editorView,
-    async (_event, view) => saveEditorView(view as unknown as EditorViewRecord),
-  );
-  registerHandler(
-    ipcMain,
-    "session:stop",
-    schemas.sessionId,
-    async (_event, sessionId) => {
-      await requireDaemonRuntimeClient().stop(sessionId);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "session:listSlashCommands",
-    schemas.slashCommands,
-    async (_event, payload) => {
-      // Always logged (not gated behind diagnostics): the renderer swallows a
-      // failure here into an empty menu, so this file log is the only way to
-      // tell "agent has no commands" from "listing threw" on a user machine.
-      try {
-        const commands = await requireDaemonRuntimeClient().listSlashCommands(
-          payload.agentType as AgentId,
-          payload.workspaceRootPath,
-        );
-        sessionLogger.info("session.slashCommandsListed", {
-          agentType: payload.agentType,
-          count: commands.length,
-          workspaceHash: hashLogValue(payload.workspaceRootPath),
-        });
-        return commands;
-      } catch (error) {
-        sessionLogger.error("session.slashCommandsFailed", {
-          agentType: payload.agentType,
-          message: error instanceof Error ? error.message : String(error),
-          workspaceHash: hashLogValue(payload.workspaceRootPath),
-        });
-        throw error;
-      }
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "session:setRuntimeMode",
-    schemas.sessionRuntimeMode,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().setMode(payload.sessionId, payload.modeId),
-  );
-  registerHandler(
-    ipcMain,
-    "session:setRuntimeConfig",
-    schemas.sessionRuntimeConfig,
-    async (_event, payload) =>
-      requireDaemonRuntimeClient().setConfig(
-        payload.sessionId,
-        payload.configId,
-        payload.value,
-      ),
-  );
-  registerHandlerArgs(
-    ipcMain,
-    "permission:resolve",
-    schemas.permissionResolve,
-    async (_event, requestId, optionId) => {
-      return requireDaemonRuntimeClient().resolvePermission(
-        requestId,
-        optionId,
-      );
-    },
-  );
-  registerHandlerArgs(
-    ipcMain,
-    "question:resolve",
-    schemas.questionResolve,
-    async (_event, questionId, answer) => {
-      return requireDaemonRuntimeClient().resolveQuestion(questionId, answer);
-    },
-  );
-  registerHandlerArgs(
-    ipcMain,
-    "planApproval:resolve",
-    schemas.planApprovalResolve,
-    async (_event, approvalId, decision) => {
-      return requireDaemonRuntimeClient().resolvePlanApproval(approvalId, {
-        outcome: decision.outcome,
-        feedback: decision.feedback ?? null,
-      });
     },
   );
 }
@@ -1297,30 +504,6 @@ async function listWorkspaceRootPaths(): Promise<string[]> {
   return workspaces.flatMap((workspace) => workspace.rootPaths);
 }
 
-// Search execution lives in the daemon so headless clients can run the same
-// queries; results stream back through daemon events bridged to the renderer
-// search:result/search:done/search:error channels.
-function registerSearchHandlers() {
-  registerHandler(
-    ipcMain,
-    "search:start",
-    schemas.searchStart,
-    async (_event, payload) =>
-      requestDaemon("search.start", payload, await chatDaemonOptions()),
-  );
-  registerHandler(
-    ipcMain,
-    "search:cancel",
-    schemas.searchCancel,
-    async (_event, payload) =>
-      requestDaemon(
-        "search.cancel",
-        { searchId: payload.searchId },
-        await chatDaemonOptions(),
-      ),
-  );
-}
-
 function registerPtyHandlers() {
   registerHandler(
     ipcMain,
@@ -1470,6 +653,13 @@ app
       daemonEntryPath: getBundledDaemonEntryPath(),
       logger: daemonLogger,
       onEvent(event, meta) {
+        if (event.type === "data.changed" && event.areas.includes("settings")) {
+          loadAndApplyNetworkProxyFromDaemon().catch((error: unknown) => {
+            appLogger.warn("networkProxy.applyFailed", {
+              message: error instanceof Error ? error.message : String(error),
+            });
+          });
+        }
         for (const window of BrowserWindow.getAllWindows()) {
           if (event.type === "data.changed") {
             window.webContents.send("data:changed", event);
@@ -1531,18 +721,10 @@ app
     registerRendererProtocol(rendererRootDir);
     registerPdfProtocol(listWorkspaceRootPaths);
     registerWorkspaceHandlers();
-    registerSessionHandlers();
-    registerProviderHandlers();
-    registerNetworkProxyHandlers();
-    registerMcpHandlers();
     registerBrowserHandlers();
-    registerSearchHandlers();
     registerPtyHandlers();
     registerLoggingHandlers();
-    registerDataHandlers(ipcMain, userDataPath);
-    registerScriptRunHandlers(ipcMain, userDataPath);
     registerCliPathHandlers();
-    registerSkillsHandlers();
     registerAppUpdateHandlers();
     registerOssLicensesHandlers();
     chatWindows = registerChatWindowHandlers({
@@ -1577,33 +759,9 @@ app
     // Packaged builds: best-effort symlink/shim into ~/.local/bin (or
     // %LOCALAPPDATA%\Cocurdex\bin) so `cocurdex` is on the user PATH.
     void ensureCliOnPathBestEffort();
-    ipcMain.handle("app:bootstrap", () => bootstrapAppState());
-    registerHandler(
-      ipcMain,
-      "app:resync",
-      schemas.sessionIds,
-      async (_event, sessionIds) =>
-        requestDaemon("app.resync", { sessionIds }, await chatDaemonOptions()),
-    );
     ipcMain.handle("app:getHomeDir", () => homedir());
     // Installed font families for Appearance pickers (cached in system-fonts).
     ipcMain.handle("app:listFontFamilies", () => listSystemFontFamilies());
-    ipcMain.handle("agent:list", async () => listAgents());
-    ipcMain.handle("agentRole:list", async () => listAgentRoles());
-    ipcMain.handle("agentRole:save", async (_event, payload) =>
-      saveAgentRole(payload),
-    );
-    ipcMain.handle("agentRole:delete", async (_event, id: string) =>
-      deleteAgentRole(id),
-    );
-    ipcMain.handle(
-      "agent:readRateLimits",
-      async (_event, agentIds: AgentId[]) =>
-        readAdapterRateLimits(Array.isArray(agentIds) ? agentIds : []),
-    );
-    ipcMain.handle("agent:readSessionModes", async (_event, agentId: AgentId) =>
-      readAgentSessionModes(agentId),
-    );
     ipcMain.handle("dialog:openDirectory", async () =>
       dialog.showOpenDialog({ properties: ["openDirectory"] }),
     );

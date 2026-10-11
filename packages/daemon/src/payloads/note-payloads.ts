@@ -8,6 +8,7 @@ import type {
   UpdateNotePayload,
 } from "@cocurdex/shared";
 import { z } from "zod";
+import type { PayloadSchemas } from "./primitives";
 
 const idSchema = z
   .string()
@@ -72,18 +73,4 @@ export const notePayloadSchemas = {
   "note.update": updateNote,
   "note.move": moveNote,
   "note.delete": deleteNote,
-};
-
-export function parsePayload<T>(
-  method: string,
-  schema: z.ZodType<T>,
-  value: unknown,
-): T {
-  const result = schema.safeParse(value);
-  if (!result.success) {
-    throw new Error(
-      `Invalid ${method} payload: ${z.prettifyError(result.error)}`,
-    );
-  }
-  return result.data;
-}
+} satisfies PayloadSchemas;

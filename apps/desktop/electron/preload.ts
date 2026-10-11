@@ -1,63 +1,11 @@
 import type {
-  AcpRegistryAgentId,
-  AcpRegistryCatalogAgent,
-  AcpRegistryInstalledAgent,
-  AgentId,
-  AgentProviderModelAxes,
-  AgentProviderSelection,
-  AgentRoleRecord,
-  ArchiveSessionPayload,
   CocurdexDataChangedEvent,
-  CommentIssuePayload,
-  CompatibleProviderModel,
-  CreateColumnPayload,
-  CreateIssueLabelPayload,
-  CreateIssuePayload,
-  CreateTeamPayload,
-  CreateViewPayload,
-  DeleteColumnPayload,
-  DeleteIssueLabelPayload,
-  DeleteIssuePayload,
-  DeleteSessionPayload,
-  DeleteViewPayload,
-  GetIssueDetailPayload,
-  GetIssuePayload,
-  IssueRelationPayload,
-  LoadViewPayload,
-  MoveColumnPayload,
-  MoveIssuePayload,
-  NetworkProxySettings,
-  NetworkProxyTestResult,
-  ProviderAuthLoginUpdate,
-  ProviderAuthMethod,
-  ProviderAuthState,
-  ProviderConfigRecord,
-  ProviderImportResult,
-  ProviderListModelsResult,
-  ProviderModelRecord,
   PtyActivityEvent,
   PtyDataEvent,
   PtyExitEvent,
   PtySpawnPayload,
   PtySpawnResult,
-  QueuedAgentInputActionPayload,
-  RefineSessionTitlePayload,
   RendererLogPayload,
-  SaveAgentRolePayload,
-  SaveTeamTemplatePayload,
-  SaveWorkflowDefinitionPayload,
-  ScriptRunSettings,
-  SearchDocumentsPayload,
-  StartScriptRunPayload,
-  TitleModelProbeResult,
-  TitleModelSelection,
-  UpdateColumnPayload,
-  UpdateIssueLabelPayload,
-  UpdateIssuePayload,
-  UpdateQueuedAgentInputPayload,
-  UpdateSessionTitlePayload,
-  UpdateViewPayload,
-  WorkspaceAction,
 } from "@cocurdex/shared";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type {
@@ -66,26 +14,23 @@ import type {
   BrowserAnnotationActionEvent,
   BrowserAnnotationEvent,
   BrowserViewBounds,
+  HostBridge,
   WorkspaceSearchDoneEvent,
   WorkspaceSearchErrorEvent,
   WorkspaceSearchResultEvent,
-  WorkspaceSearchStartPayload,
 } from "../src/lib/types";
-import { exposeTaskApi } from "./chat/task-preload";
+import { exposeTaskEvents } from "./chat/task-preload";
 
 import { chatWindowApi } from "./window/chat-window-preload";
 
-exposeTaskApi();
+exposeTaskEvents();
 
-contextBridge.exposeInMainWorld("desktopApi", {
+const hostBridge: HostBridge = {
   chatWindow: chatWindowApi,
   capabilities: {
     fileManager: true,
     nativeDirectoryDialog: true,
   },
-  bootstrapApp: () => ipcRenderer.invoke("app:bootstrap"),
-  resyncApp: (sessionIds: string[]) =>
-    ipcRenderer.invoke("app:resync", sessionIds),
   // Sandboxed preload cannot import node:os — resolve home in main.
   // Default terminal cwd when no workspace is open.
   getHomeDir: () => ipcRenderer.invoke("app:getHomeDir") as Promise<string>,
@@ -111,41 +56,10 @@ contextBridge.exposeInMainWorld("desktopApi", {
       ipcRenderer.removeListener("app:updateState", handler);
     };
   },
-  listAgents: () => ipcRenderer.invoke("agent:list"),
-  listAgentRoles: (): Promise<AgentRoleRecord[]> =>
-    ipcRenderer.invoke("agentRole:list"),
-  saveAgentRole: (payload: SaveAgentRolePayload): Promise<AgentRoleRecord> =>
-    ipcRenderer.invoke("agentRole:save", payload),
-  deleteAgentRole: (id: string): Promise<void> =>
-    ipcRenderer.invoke("agentRole:delete", id),
-  listWorkflowDefinitions: () => ipcRenderer.invoke("workflow:listDefinitions"),
-  getWorkflowDefinition: (definitionId: string) =>
-    ipcRenderer.invoke("workflow:getDefinition", { definitionId }),
-  saveWorkflowDefinition: (payload: SaveWorkflowDefinitionPayload) =>
-    ipcRenderer.invoke("workflow:saveDefinition", payload),
-  duplicateWorkflowDefinition: (definitionId: string) =>
-    ipcRenderer.invoke("workflow:duplicateDefinition", { definitionId }),
-  deleteWorkflowDefinition: (definitionId: string) =>
-    ipcRenderer.invoke("workflow:deleteDefinition", { definitionId }),
-  readAdapterRateLimits: (agentIds: AgentId[]) =>
-    ipcRenderer.invoke("agent:readRateLimits", agentIds),
-  readAgentSessionModes: (agentId: AgentId) =>
-    ipcRenderer.invoke("agent:readSessionModes", agentId),
-  listWorkspaces: () => ipcRenderer.invoke("workspace:list"),
-  saveWorkspace: (workspace: import("@cocurdex/shared").WorkspaceRecord) =>
-    ipcRenderer.invoke("workspace:save", workspace),
-  deleteWorkspace: (workspaceId: string) =>
-    ipcRenderer.invoke("workspace:delete", workspaceId),
   openWorkspaceInFileManager: (rootPath: string) =>
     ipcRenderer.invoke("workspace:openInFileManager", rootPath),
   revealPathInFileManager: (targetPath: string) =>
     ipcRenderer.invoke("workspace:revealPath", targetPath),
-  listHostDirectories: (path?: string) =>
-    ipcRenderer.invoke("fs:listDirectories", { path }),
-  listWorkspaceEntries: (rootPath: string) =>
-    ipcRenderer.invoke("workspace:listEntries", rootPath),
-  listWorkspaceFiles: (rootPath: string) =>
-    ipcRenderer.invoke("workspace:listFiles", rootPath),
   onWorkspaceFilesChanged: (
     listener: (event: { rootPath: string }) => void,
   ) => {
@@ -189,276 +103,8 @@ contextBridge.exposeInMainWorld("desktopApi", {
       ipcRenderer.removeListener("data:changed", handler);
     };
   },
-  listGitBranches: (rootPath: string) =>
-    ipcRenderer.invoke("git:listBranches", rootPath),
-  checkoutGitBranch: (rootPath: string, branch: string) =>
-    ipcRenderer.invoke("git:checkoutBranch", { rootPath, branch }),
-  listGitWorktrees: (rootPath: string) =>
-    ipcRenderer.invoke("git:listWorktrees", rootPath),
-  addGitWorktree: (payload: { repoRootPath: string; workspaceId: string }) =>
-    ipcRenderer.invoke("git:addWorktree", payload),
-  getWorktreeSettings: () => ipcRenderer.invoke("worktree:getSettings"),
-  saveWorktreeSettings: (payload: {
-    fetchBeforeCreate: boolean;
-    rootPath: string | null;
-  }) => ipcRenderer.invoke("worktree:saveSettings", payload),
-  listManagedWorktrees: () => ipcRenderer.invoke("worktree:listManaged"),
-  removeWorktree: (payload: {
-    workspaceId: string;
-    worktreePath: string;
-    workspaceRootPath?: string;
-  }) => ipcRenderer.invoke("worktree:remove", payload),
-  listScriptRuns: (requesterSessionId: string) =>
-    ipcRenderer.invoke("scriptRun:list", requesterSessionId),
-  getScriptRun: (runId: string) => ipcRenderer.invoke("scriptRun:get", runId),
-  startScriptRun: (payload: StartScriptRunPayload) =>
-    ipcRenderer.invoke("scriptRun:start", payload),
-  cancelScriptRun: (runId: string) =>
-    ipcRenderer.invoke("scriptRun:cancel", runId),
-  getScriptRunSettings: () => ipcRenderer.invoke("scriptRun:getSettings"),
-  saveScriptRunSettings: (settings: ScriptRunSettings) =>
-    ipcRenderer.invoke("scriptRun:saveSettings", settings),
-  getTeam: (leadSessionId: string) =>
-    ipcRenderer.invoke("team:get", leadSessionId),
-  createTeam: (payload: CreateTeamPayload) =>
-    ipcRenderer.invoke("team:create", payload),
-  stopTeam: (teamId: string) => ipcRenderer.invoke("team:stop", teamId),
-  stopTeamMember: (payload: { teamId: string; sessionId: string }) =>
-    ipcRenderer.invoke("team:stopMember", payload),
-  listTeamTemplates: () => ipcRenderer.invoke("teamTemplate:list"),
-  saveTeamTemplate: (payload: SaveTeamTemplatePayload) =>
-    ipcRenderer.invoke("teamTemplate:save", payload),
-  deleteTeamTemplate: (id: string) =>
-    ipcRenderer.invoke("teamTemplate:delete", id),
-  getWorktreeEnvironment: (workspaceId: string) =>
-    ipcRenderer.invoke("workspace:getWorktreeEnvironment", workspaceId),
-  saveWorktreeEnvironment: (payload: {
-    workspaceId: string;
-    setupScript: string;
-    cleanupScript: string;
-    actions: WorkspaceAction[];
-  }) => ipcRenderer.invoke("workspace:saveWorktreeEnvironment", payload),
-  createAssistantSession: (workspaceId: string) =>
-    ipcRenderer.invoke("assistant:createSession", workspaceId),
-  getOrCreateAssistantSession: (workspaceId: string) =>
-    ipcRenderer.invoke("assistant:getOrCreateSession", workspaceId),
-  listPendingSettingsChanges: () =>
-    ipcRenderer.invoke("settings:listPendingChanges"),
-  ackPendingSettingsChange: (id: string) =>
-    ipcRenderer.invoke("settings:ackPendingChange", { id }),
-  reportSettingValues: (values: Record<string, unknown>) =>
-    ipcRenderer.invoke("settings:reportValues", { values }),
-  listGitCommits: (rootPath: string, options?: { limit?: number }) =>
-    ipcRenderer.invoke("git:listCommits", {
-      rootPath,
-      limit: options?.limit,
-    }),
-  getWorkspaceGitDiff: (
-    rootPath: string,
-    query?: import("../src/lib/types").WorkspaceGitDiffQuery,
-  ) => ipcRenderer.invoke("git:getWorkspaceDiff", { rootPath, query }),
-  getWorkspaceGitStatus: (rootPath: string) =>
-    ipcRenderer.invoke("git:getWorkspaceStatus", rootPath),
-  stageGitFiles: (rootPath: string, filePaths: string[]) =>
-    ipcRenderer.invoke("git:stageFiles", { rootPath, filePaths }),
-  unstageGitFiles: (rootPath: string, filePaths: string[]) =>
-    ipcRenderer.invoke("git:unstageFiles", { rootPath, filePaths }),
-  discardGitFiles: (rootPath: string, filePaths: string[]) =>
-    ipcRenderer.invoke("git:discardFiles", { rootPath, filePaths }),
-  commitGitChanges: (
-    rootPath: string,
-    options: { message: string; includeUnstaged: boolean },
-  ) =>
-    ipcRenderer.invoke("git:commit", {
-      rootPath,
-      message: options.message,
-      includeUnstaged: options.includeUnstaged,
-    }),
-  generateGitCommitMessage: (
-    rootPath: string,
-    options: { includeUnstaged: boolean },
-  ) =>
-    ipcRenderer.invoke("git:generateCommitMessage", {
-      rootPath,
-      includeUnstaged: options.includeUnstaged,
-    }),
-  pushGitBranch: (rootPath: string) => ipcRenderer.invoke("git:push", rootPath),
-  readTextFile: (filePath: string) =>
-    ipcRenderer.invoke("file:readText", filePath),
-  fileExists: (filePath: string) => ipcRenderer.invoke("file:exists", filePath),
-  importDocumentAttachment: (
-    payload: import("../src/lib/types").ImportDocumentAttachmentPayload,
-  ) => ipcRenderer.invoke("attachment:importDocument", payload),
-  importImageAttachment: (
-    payload: import("../src/lib/types").ImportImageAttachmentPayload,
-  ) => ipcRenderer.invoke("attachment:importImage", payload),
-  readImageAttachmentDataUrl: (filePath: string) =>
-    ipcRenderer.invoke("attachment:readImageDataUrl", filePath),
   readPdfData: (payload: { filePath: string }) =>
     ipcRenderer.invoke("pdf:read-data", payload) as Promise<string>,
-  loadPdfAnnotations: (payload: { filePath: string }) =>
-    ipcRenderer.invoke("pdf:load-annotations", payload),
-  updatePdfAnnotations: (payload: {
-    filePath: string;
-    operation: import("../src/lib/types").PdfAnnotationsOperationDto;
-  }) => ipcRenderer.invoke("pdf:update-annotations", payload),
-  updateSessionTitle: (payload: UpdateSessionTitlePayload) =>
-    ipcRenderer.invoke("session:updateTitle", payload),
-  archiveSession: (payload: ArchiveSessionPayload) =>
-    ipcRenderer.invoke("session:archive", payload),
-  listArchivedSessions: () => ipcRenderer.invoke("session:listArchived"),
-  restoreSession: (payload: { sessionId: string }) =>
-    ipcRenderer.invoke("session:restore", payload),
-  deleteSession: (payload: DeleteSessionPayload) =>
-    ipcRenderer.invoke("session:delete", payload),
-  refineSessionTitle: (payload: RefineSessionTitlePayload) =>
-    ipcRenderer.invoke("session:refineTitle", payload),
-  listProviderConfigs: () => ipcRenderer.invoke("provider:listConfigs"),
-  listProviderTemplates: () => ipcRenderer.invoke("provider:listTemplates"),
-  readMcpConfig: () => ipcRenderer.invoke("mcp:readConfig"),
-  saveMcpConfig: (content: string) =>
-    ipcRenderer.invoke("mcp:saveConfig", content),
-  saveProviderConfig: (config: ProviderConfigRecord) =>
-    ipcRenderer.invoke("provider:saveConfig", config),
-  deleteProviderConfig: (providerId: string) =>
-    ipcRenderer.invoke("provider:deleteConfig", providerId),
-  setProviderApiKey: (providerId: string, apiKey: string) =>
-    ipcRenderer.invoke("provider:setApiKey", providerId, apiKey),
-  importProviderJson: (json: string): Promise<ProviderImportResult> =>
-    ipcRenderer.invoke("provider:importJson", json),
-  clearProviderApiKey: (providerId: string) =>
-    ipcRenderer.invoke("provider:clearApiKey", providerId),
-  readProviderAuth: (providerId: string): Promise<ProviderAuthState> =>
-    ipcRenderer.invoke("provider:authRead", providerId),
-  startProviderAuthLogin: (
-    providerId: string,
-    method: ProviderAuthMethod,
-  ): Promise<{ loginId: string }> =>
-    ipcRenderer.invoke("provider:authLoginStart", providerId, method),
-  nextProviderAuthLogin: (loginId: string): Promise<ProviderAuthLoginUpdate> =>
-    ipcRenderer.invoke("provider:authLoginNext", loginId),
-  respondProviderAuthLogin: (
-    loginId: string,
-    promptId: string,
-    value: string,
-  ) =>
-    ipcRenderer.invoke("provider:authLoginRespond", loginId, promptId, value),
-  cancelProviderAuthLogin: (loginId: string) =>
-    ipcRenderer.invoke("provider:authLoginCancel", loginId),
-  logoutProviderAuth: (providerId: string) =>
-    ipcRenderer.invoke("provider:authLogout", providerId),
-  listProviderModels: (providerId: string): Promise<ProviderListModelsResult> =>
-    ipcRenderer.invoke("provider:listModels", providerId),
-  listAllProviderModels: () => ipcRenderer.invoke("provider:listAllModels"),
-  getCommitMessageModel: () =>
-    ipcRenderer.invoke("provider:getCommitMessageModel"),
-  setCommitMessageModel: (
-    selection: import("@cocurdex/shared").CommitMessageModelSelection | null,
-  ) => ipcRenderer.invoke("provider:setCommitMessageModel", selection),
-  saveProviderModel: (model: ProviderModelRecord) =>
-    ipcRenderer.invoke("provider:saveModel", model),
-  deleteProviderModel: (providerId: string, modelId: string) =>
-    ipcRenderer.invoke("provider:deleteModel", providerId, modelId),
-  listCompatibleProvidersForAgent: (
-    agentId: AgentId,
-    options?: { forceRefresh?: boolean },
-  ): Promise<CompatibleProviderModel[]> =>
-    ipcRenderer.invoke("provider:listCompatibleForAgent", agentId, options),
-  probeProviderModelAxes: (
-    agentId: AgentId,
-    modelId: string,
-  ): Promise<AgentProviderModelAxes | null> =>
-    ipcRenderer.invoke("provider:probeModelAxes", agentId, modelId),
-  loginAgent: (agentId: AgentId): Promise<void> =>
-    ipcRenderer.invoke("agent:login", agentId),
-  listAcpRegistryCatalog: (options?: {
-    forceRefresh?: boolean;
-  }): Promise<AcpRegistryCatalogAgent[]> =>
-    ipcRenderer.invoke("acpRegistry:catalog", options),
-  installAcpRegistryAgent: (
-    registryId: string,
-  ): Promise<AcpRegistryInstalledAgent> =>
-    ipcRenderer.invoke("acpRegistry:install", registryId),
-  installAcpRegistryCommand: (params: {
-    registryId: string;
-    command: string;
-    args: string[];
-  }): Promise<AcpRegistryInstalledAgent> =>
-    ipcRenderer.invoke("acpRegistry:installCommand", params),
-  uninstallAcpRegistryAgent: (agentId: AcpRegistryAgentId): Promise<void> =>
-    ipcRenderer.invoke("acpRegistry:uninstall", agentId),
-  listAgentProviderDefaults: (): Promise<AgentProviderSelection[]> =>
-    ipcRenderer.invoke("provider:listDefaults"),
-  getAgentProviderDefault: (agentId: AgentId) =>
-    ipcRenderer.invoke("provider:getDefault", agentId),
-  setAgentProviderDefault: (
-    agentId: AgentId,
-    providerId: string,
-    modelId: string,
-  ) => ipcRenderer.invoke("provider:setDefault", agentId, providerId, modelId),
-  getTitleModel: (): Promise<TitleModelSelection | null> =>
-    ipcRenderer.invoke("provider:getTitleModel"),
-  setTitleModel: (selection: TitleModelSelection | null) =>
-    ipcRenderer.invoke("provider:setTitleModel", selection),
-  probeTitleModel: (
-    selection: TitleModelSelection,
-  ): Promise<TitleModelProbeResult> =>
-    ipcRenderer.invoke("provider:probeTitleModel", selection),
-  getNetworkProxySettings: (): Promise<NetworkProxySettings> =>
-    ipcRenderer.invoke("network:getProxySettings"),
-  setNetworkProxySettings: (
-    settings: NetworkProxySettings,
-  ): Promise<NetworkProxySettings> =>
-    ipcRenderer.invoke("network:setProxySettings", settings),
-  testNetworkProxy: (
-    settings: NetworkProxySettings,
-  ): Promise<NetworkProxyTestResult> =>
-    ipcRenderer.invoke("network:testProxy", settings),
-  testCurrentNetworkProxy: (): Promise<NetworkProxyTestResult> =>
-    ipcRenderer.invoke("network:testCurrentProxy"),
-  listSessionMessages: (sessionId: string) =>
-    ipcRenderer.invoke("session:listMessages", sessionId),
-  listSessionToolCalls: (sessionId: string) =>
-    ipcRenderer.invoke("session:listToolCalls", sessionId),
-  getToolCallResult: (toolCallId: string) =>
-    ipcRenderer.invoke("session:getToolCallResult", toolCallId),
-  undoTurnChanges: (payload: import("@cocurdex/shared").UndoTurnChangesInput) =>
-    ipcRenderer.invoke("session:undoTurnChanges", payload),
-  getTurnChangeFile: (
-    payload: import("@cocurdex/shared").TurnChangeFileContentRequest,
-  ) => ipcRenderer.invoke("session:getTurnChangeFile", payload),
-  listTurnChangeSets: (sessionId: string) =>
-    ipcRenderer.invoke("session:listTurnChangeSets", sessionId),
-  getTurnChangeDiff: (
-    payload: import("@cocurdex/shared").TurnChangeDiffRequest,
-  ) => ipcRenderer.invoke("session:getTurnChangeDiff", payload),
-  updateQueuedInput: (payload: UpdateQueuedAgentInputPayload) =>
-    ipcRenderer.invoke("session:updateQueuedInput", payload),
-  deleteQueuedInput: (payload: QueuedAgentInputActionPayload) =>
-    ipcRenderer.invoke("session:deleteQueuedInput", payload),
-  steerQueuedInput: (payload: QueuedAgentInputActionPayload) =>
-    ipcRenderer.invoke("session:steerQueuedInput", payload),
-  sendQueuedInputNow: (payload: QueuedAgentInputActionPayload) =>
-    ipcRenderer.invoke("session:sendQueuedInputNow", payload),
-  saveEditorView: (view: import("@cocurdex/shared").EditorViewRecord) =>
-    ipcRenderer.invoke("editorView:save", view),
-  listSlashCommands: (agentType: AgentId, workspaceRootPath: string) =>
-    ipcRenderer.invoke("session:listSlashCommands", {
-      agentType,
-      workspaceRootPath,
-    }),
-  setSessionRuntimeMode: (sessionId: string, modeId: string) =>
-    ipcRenderer.invoke("session:setRuntimeMode", { sessionId, modeId }),
-  setSessionRuntimeConfig: (
-    sessionId: string,
-    configId: string,
-    value: boolean | string,
-  ) =>
-    ipcRenderer.invoke("session:setRuntimeConfig", {
-      sessionId,
-      configId,
-      value,
-    }),
   openWorkspace: () => ipcRenderer.invoke("dialog:openDirectory"),
   consumePendingOpenFolder: () =>
     ipcRenderer.invoke("workspace:consumeOpenFolder") as Promise<{
@@ -579,60 +225,6 @@ contextBridge.exposeInMainWorld("desktopApi", {
     ipcRenderer.invoke("pty:resize", { terminalId, cols, rows }),
   ptyKill: (terminalId: string) =>
     ipcRenderer.invoke("pty:kill", { terminalId }),
-  startWorkspaceSearch: (payload: WorkspaceSearchStartPayload) =>
-    ipcRenderer.invoke("search:start", payload),
-  cancelWorkspaceSearch: (searchId: string) =>
-    ipcRenderer.invoke("search:cancel", { searchId }),
-  // === App-owned issues and views ===
-  issueListViews: () => ipcRenderer.invoke("issue:listViews"),
-  issueListLinkedSessionIds: () =>
-    ipcRenderer.invoke("issue:listLinkedSessionIds"),
-  listSessionAttention: () => ipcRenderer.invoke("attention:list"),
-  updateSessionAttention: (
-    payload: import("@cocurdex/shared").UpdateSessionAttentionPayload,
-  ) => ipcRenderer.invoke("attention:update", payload),
-  issueLoad: (payload: LoadViewPayload) =>
-    ipcRenderer.invoke("issue:load", payload),
-  issueGet: (payload: GetIssuePayload) =>
-    ipcRenderer.invoke("issue:get", payload),
-  issueCreateView: (payload: CreateViewPayload) =>
-    ipcRenderer.invoke("issue:createView", payload),
-  issueDeleteView: (payload: DeleteViewPayload) =>
-    ipcRenderer.invoke("issue:deleteView", payload),
-  issueUpdateView: (payload: UpdateViewPayload) =>
-    ipcRenderer.invoke("issue:updateView", payload),
-  issueCreateColumn: (payload: CreateColumnPayload) =>
-    ipcRenderer.invoke("issue:createColumn", payload),
-  issueUpdateColumn: (payload: UpdateColumnPayload) =>
-    ipcRenderer.invoke("issue:updateColumn", payload),
-  issueMoveColumn: (payload: MoveColumnPayload) =>
-    ipcRenderer.invoke("issue:moveColumn", payload),
-  issueDeleteColumn: (payload: DeleteColumnPayload) =>
-    ipcRenderer.invoke("issue:deleteColumn", payload),
-  issueCreate: (payload: CreateIssuePayload) =>
-    ipcRenderer.invoke("issue:create", payload),
-  issueUpdate: (payload: UpdateIssuePayload) =>
-    ipcRenderer.invoke("issue:update", payload),
-  issueMove: (payload: MoveIssuePayload) =>
-    ipcRenderer.invoke("issue:move", payload),
-  issueDelete: (payload: DeleteIssuePayload) =>
-    ipcRenderer.invoke("issue:delete", payload),
-  issueGetDetail: (payload: GetIssueDetailPayload) =>
-    ipcRenderer.invoke("issue:getDetail", payload),
-  issueCreateLabel: (payload: CreateIssueLabelPayload) =>
-    ipcRenderer.invoke("issue:createLabel", payload),
-  issueUpdateLabel: (payload: UpdateIssueLabelPayload) =>
-    ipcRenderer.invoke("issue:updateLabel", payload),
-  issueDeleteLabel: (payload: DeleteIssueLabelPayload) =>
-    ipcRenderer.invoke("issue:deleteLabel", payload),
-  issueAddRelation: (payload: IssueRelationPayload) =>
-    ipcRenderer.invoke("issue:addRelation", payload),
-  issueRemoveRelation: (payload: IssueRelationPayload) =>
-    ipcRenderer.invoke("issue:removeRelation", payload),
-  issueComment: (payload: CommentIssuePayload) =>
-    ipcRenderer.invoke("issue:comment", payload),
-  searchDocuments: (payload: SearchDocumentsPayload) =>
-    ipcRenderer.invoke("search:documents", payload),
   onPtyData: (listener: (event: PtyDataEvent) => void) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
@@ -723,28 +315,6 @@ contextBridge.exposeInMainWorld("desktopApi", {
   getDaemonStatus: () => ipcRenderer.invoke("daemon:getStatus"),
   getDaemonConnection: () => ipcRenderer.invoke("daemon:connection"),
   restartDaemon: () => ipcRenderer.invoke("daemon:restart"),
-  getProductSkillsStatus: (
-    scope: "project" | "global",
-    workspaceRootPath?: string | null,
-  ) =>
-    ipcRenderer.invoke("skills:getStatus", {
-      scope,
-      workspaceRootPath: workspaceRootPath ?? null,
-    }),
-  installProductSkills: (
-    scope: "project" | "global",
-    workspaceRootPath?: string | null,
-  ) =>
-    ipcRenderer.invoke("skills:install", {
-      scope,
-      workspaceRootPath: workspaceRootPath ?? null,
-    }),
-  removeProductSkills: (
-    scope: "project" | "global",
-    workspaceRootPath?: string | null,
-  ) =>
-    ipcRenderer.invoke("skills:remove", {
-      scope,
-      workspaceRootPath: workspaceRootPath ?? null,
-    }),
-});
+};
+
+contextBridge.exposeInMainWorld("desktopApi", hostBridge);

@@ -2,7 +2,7 @@ import type {
   DaemonTransport,
   DaemonTransportConnection,
   DaemonTransportHandlers,
-} from "./client.ts";
+} from "./transport-types.ts";
 
 interface SharedConnection {
   connection: DaemonTransportConnection;
