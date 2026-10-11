@@ -9,6 +9,7 @@ import type {
   AgentProviderSelection,
   AgentRateLimitsReadResult,
   AgentRoleRecord,
+  AgentRunLimits,
   AgentSessionConfigOption,
   AgentSessionMode,
   AgentSlashCommand,
@@ -517,6 +518,8 @@ export interface ProductApi {
   setCommitMessageModel(
     selection: CommitMessageModelSelection | null,
   ): Promise<void>;
+  getAgentRunLimits(): Promise<AgentRunLimits>;
+  setAgentRunLimits(limits: AgentRunLimits): Promise<AgentRunLimits>;
   getNetworkProxySettings(): Promise<NetworkProxySettings>;
   setNetworkProxySettings(
     settings: NetworkProxySettings,

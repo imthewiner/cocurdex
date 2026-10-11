@@ -24,6 +24,7 @@ export interface SessionRunCoordinatorDeps {
   emit(event: AgentEvent): void;
   afterPersistedEvents<T>(work: () => Promise<T>): Promise<T>;
   onRunSettled(run: RunRecord): void;
+  onRunEnded?(run: RunRecord): void;
   now(): string;
   createId(): string;
 }
@@ -163,6 +164,17 @@ export class SessionRunCoordinator {
     return this.end(sessionId, "cancelled");
   }
 
+  async expire(sessionId: string, runId: string, error: string) {
+    const entry = this.active.get(sessionId);
+    if (!entry || entry.record.id !== runId) return null;
+    entry.controller.abort();
+    if (entry.ending) {
+      await entry.ending;
+      return null;
+    }
+    return this.finish(entry, { status: "failed", error }, "failed");
+  }
+
   async interruptAll() {
     await Promise.all(
       [...this.active.keys()].map((sessionId) =>
@@ -213,6 +225,7 @@ export class SessionRunCoordinator {
       sessionId,
       status: SESSION_STATUS_BY_RUN_STATUS[status],
     });
+    this.deps.onRunEnded?.(entry.record);
     return entry.record;
   }
 }

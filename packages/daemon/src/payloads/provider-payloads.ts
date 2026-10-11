@@ -208,6 +208,15 @@ export const providerPayloadSchemas = {
   ),
   "codex.login.wait": exact<Payload<"codex.login.wait">>()(loginIdPayload),
   "codex.login.cancel": exact<Payload<"codex.login.cancel">>()(loginIdPayload),
+  "agent.runLimits.set": exact<Payload<"agent.runLimits.set">>()(
+    z.object({
+      limits: z.object({
+        maxConcurrentRuns: z.number().int(),
+        maxConcurrentRunsPerAgent: z.number().int(),
+        delegatedRunTimeoutMinutes: z.number().int().nullable(),
+      }),
+    }),
+  ),
   "git.commitMessageModel.set": exact<Payload<"git.commitMessageModel.set">>()(
     z.object({ selection: commitMessageModelSelectionSchema.nullable() }),
   ),

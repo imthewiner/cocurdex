@@ -37,6 +37,7 @@ import {
 } from "./adapter-rate-limits";
 import { adapterRateLimitsCacheAtom } from "./adapter-rate-limits-cache";
 import { sortAdaptersForSettings } from "./adapter-settings-order";
+import { AgentRunLimitsGroup } from "./agent-run-limits-group";
 
 const statusDotClassName: Record<AdapterStatusKind, string> = {
   builtin: "bg-status-success",
@@ -446,6 +447,7 @@ export function AdapterSettingsPanel() {
           ))}
         </div>
       </div>
+      <AgentRunLimitsGroup />
     </div>
   );
 }

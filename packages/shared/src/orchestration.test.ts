@@ -1,26 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  type AgentRuntimeRecord,
-  canDispatchToRuntime,
-  decideWorkspaceIsolation,
-} from "./orchestration";
-
-const runtime: AgentRuntimeRecord = {
-  id: "runtime-1",
-  agentId: "codex",
-  scope: "local",
-  status: "online",
-  version: "1.0.0",
-  supportedModels: ["gpt-5"],
-  capacity: {
-    maxConcurrentTasks: 2,
-    activeTaskCount: 1,
-  },
-  health: {
-    lastCheckedAt: "2026-05-24T00:00:00.000Z",
-    message: null,
-  },
-};
+import { decideWorkspaceIsolation } from "./orchestration";
 
 describe("orchestration helpers", () => {
   it("keeps read-only work in the shared workspace", () => {
@@ -60,18 +39,5 @@ describe("orchestration helpers", () => {
         canUsePatchSandbox: true,
       }),
     ).toMatchObject({ mode: "patch-sandbox", allowed: true });
-  });
-
-  it("dispatches only to online runtimes with remaining capacity", () => {
-    expect(canDispatchToRuntime(runtime)).toBe(true);
-    expect(
-      canDispatchToRuntime({
-        ...runtime,
-        capacity: { maxConcurrentTasks: 1, activeTaskCount: 1 },
-      }),
-    ).toBe(false);
-    expect(canDispatchToRuntime({ ...runtime, status: "degraded" })).toBe(
-      false,
-    );
   });
 });

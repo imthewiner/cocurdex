@@ -520,6 +520,10 @@ export async function handleDaemonRequest(
       );
     case "provider.listConfigs":
       return service.providerService.listProviderConfigs();
+    case "agent.runLimits.get":
+      return service.getAgentRunLimits();
+    case "agent.runLimits.set":
+      return service.setAgentRunLimits(request.params.limits);
     case "git.commitMessageModel.get":
       return service.commitMessageService.getModelSetting();
     case "git.commitMessageModel.set":

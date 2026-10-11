@@ -15,6 +15,7 @@ function setup() {
   const rows = new Map<string, RunRecord>();
   const events: AgentEvent[] = [];
   const settled: RunRecord[] = [];
+  const ended: RunRecord[] = [];
   let nextId = 0;
   const store: RunStore = {
     async startRun(run) {
@@ -34,6 +35,7 @@ function setup() {
     emit: (event) => events.push(event),
     afterPersistedEvents: (work) => work(),
     onRunSettled: (run) => settled.push(run),
+    onRunEnded: (run) => ended.push(run),
     now: () => "2026-10-11T00:00:00.000Z",
     createId: () => `run-${++nextId}`,
   });
@@ -41,7 +43,7 @@ function setup() {
     events.flatMap((event) =>
       event.type === "state.changed" ? [event.status] : [],
     );
-  return { coordinator, rows, events, settled, statuses };
+  return { coordinator, rows, events, settled, ended, statuses };
 }
 
 describe("SessionRunCoordinator", () => {
@@ -157,5 +159,40 @@ describe("SessionRunCoordinator", () => {
     await expect(failing.start("s1", "m1")).rejects.toThrow("disk full");
     expect(failing.hasActiveRun("s1")).toBe(false);
     expect(coordinator.hasActiveRun("s1")).toBe(false);
+  });
+
+  it("fails an expired run with its reason and ignores a stale deadline", async () => {
+    const { coordinator, rows, settled, ended, statuses } = setup();
+    const handle = await coordinator.start("s1", "m1");
+
+    expect(await coordinator.expire("s1", "other-run", "late")).toBeNull();
+    const expired = await coordinator.expire("s1", handle.runId, "timed out");
+
+    expect(expired).toMatchObject({ status: "failed", error: "timed out" });
+    expect(rows.get(handle.runId)?.status).toBe("failed");
+    expect(handle.signal.aborted).toBe(true);
+    expect(coordinator.hasActiveRun("s1")).toBe(false);
+    expect(statuses().at(-1)).toBe("error");
+    expect(settled).toEqual([]);
+    expect(ended.map((run) => run.status)).toEqual(["failed"]);
+    await expect(
+      coordinator.settle(handle, { kind: "resolved", message: reply }),
+    ).resolves.toEqual({ status: "cancelled" });
+  });
+
+  it("reports every way a run ends, not only settlement", async () => {
+    const { coordinator, ended } = setup();
+    const first = await coordinator.start("s1", "m1");
+    await coordinator.settle(first, { kind: "resolved", message: reply });
+    await coordinator.start("s1", "m2");
+    await coordinator.stop("s1");
+    await coordinator.start("s2", "m3");
+    await coordinator.interruptAll();
+
+    expect(ended.map((run) => run.status)).toEqual([
+      "completed",
+      "cancelled",
+      "interrupted",
+    ]);
   });
 });
