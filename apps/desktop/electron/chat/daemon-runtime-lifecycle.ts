@@ -275,6 +275,7 @@ export function createDaemonRuntimeLifecycle(
       },
       runtimeFingerprint,
       userDataPath: options.userDataPath,
+      webRoot: options.webRoot,
     });
     ownedDaemonProcess = ownedProcess;
     options.logger.info("daemon.spawned", {

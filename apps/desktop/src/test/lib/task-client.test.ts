@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const requestDaemon = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/daemon-client", () => ({ requestDaemon }));
+vi.mock("../../lib/daemon-events", () => ({ onDaemonAgentEvent: vi.fn() }));
 
 const { taskApi } = await import("../../lib/task-client");
 
 afterEach(() => {
   requestDaemon.mockReset();
-  Reflect.deleteProperty(window, "taskEvents");
 });
 
 describe("task client", () => {
@@ -22,7 +22,6 @@ describe("task client", () => {
         content: "Run",
       }),
     ).rejects.toThrow("unavailable");
-    expect(() => taskApi.onAgentEvent(() => {})).toThrow("unavailable");
   });
 
   it("preserves a rejected approval result from the daemon", async () => {

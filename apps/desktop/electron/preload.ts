@@ -1,5 +1,4 @@
 import type {
-  CocurdexDataChangedEvent,
   PtyActivityEvent,
   PtyDataEvent,
   PtyExitEvent,
@@ -15,21 +14,16 @@ import type {
   BrowserAnnotationEvent,
   BrowserViewBounds,
   HostBridge,
-  WorkspaceSearchDoneEvent,
-  WorkspaceSearchErrorEvent,
-  WorkspaceSearchResultEvent,
 } from "../src/lib/types";
-import { exposeTaskEvents } from "./chat/task-preload";
-
 import { chatWindowApi } from "./window/chat-window-preload";
-
-exposeTaskEvents();
 
 const hostBridge: HostBridge = {
   chatWindow: chatWindowApi,
   capabilities: {
     fileManager: true,
     nativeDirectoryDialog: true,
+    terminal: true,
+    browserView: true,
   },
   // Sandboxed preload cannot import node:os — resolve home in main.
   // Default terminal cwd when no workspace is open.
@@ -60,49 +54,6 @@ const hostBridge: HostBridge = {
     ipcRenderer.invoke("workspace:openInFileManager", rootPath),
   revealPathInFileManager: (targetPath: string) =>
     ipcRenderer.invoke("workspace:revealPath", targetPath),
-  onWorkspaceFilesChanged: (
-    listener: (event: { rootPath: string }) => void,
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: { rootPath: string },
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("workspace:filesChanged", handler);
-    return () => {
-      ipcRenderer.removeListener("workspace:filesChanged", handler);
-    };
-  },
-  onWorkspaceGitStateChanged: (
-    listener: (event: { rootPath: string }) => void,
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: { rootPath: string },
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("workspace:gitStateChanged", handler);
-    return () => {
-      ipcRenderer.removeListener("workspace:gitStateChanged", handler);
-    };
-  },
-  onDataChanged: (listener: (event: CocurdexDataChangedEvent) => void) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: CocurdexDataChangedEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("data:changed", handler);
-    return () => {
-      ipcRenderer.removeListener("data:changed", handler);
-    };
-  },
   readPdfData: (payload: { filePath: string }) =>
     ipcRenderer.invoke("pdf:read-data", payload) as Promise<string>,
   openWorkspace: () => ipcRenderer.invoke("dialog:openDirectory"),
@@ -262,51 +213,6 @@ const hostBridge: HostBridge = {
     ipcRenderer.on("pty:activity", handler);
     return () => {
       ipcRenderer.removeListener("pty:activity", handler);
-    };
-  },
-  onWorkspaceSearchResult: (
-    listener: (event: WorkspaceSearchResultEvent) => void,
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: WorkspaceSearchResultEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("search:result", handler);
-    return () => {
-      ipcRenderer.removeListener("search:result", handler);
-    };
-  },
-  onWorkspaceSearchDone: (
-    listener: (event: WorkspaceSearchDoneEvent) => void,
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: WorkspaceSearchDoneEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("search:done", handler);
-    return () => {
-      ipcRenderer.removeListener("search:done", handler);
-    };
-  },
-  onWorkspaceSearchError: (
-    listener: (event: WorkspaceSearchErrorEvent) => void,
-  ) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: WorkspaceSearchErrorEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("search:error", handler);
-    return () => {
-      ipcRenderer.removeListener("search:error", handler);
     };
   },
   getCliPathStatus: () => ipcRenderer.invoke("cli:getPathStatus"),

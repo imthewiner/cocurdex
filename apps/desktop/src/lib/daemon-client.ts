@@ -10,8 +10,10 @@ import {
   createWebSocketTransport,
   type DaemonRpcClient,
   type DaemonRpcRequestOptions,
+  type DaemonRpcSubscribeOptions,
   daemonWebSocketProtocols,
 } from "@cocurdex/rpc/client";
+import type { CocurdexDaemonEvent, DaemonEventMeta } from "@cocurdex/shared";
 import { getHostBridge } from "./host-bridge";
 
 let current: Promise<DaemonRpcClient> | null = null;
@@ -37,16 +39,15 @@ function connect(info: DaemonConnectionInfo, onDrop: () => void) {
   return createDaemonRpcClient(transport, info.token);
 }
 
+async function getConnectionInfo() {
+  const info = await getHostBridge()?.getDaemonConnection();
+  if (!info) throw new Error("The Cocurdex daemon is unavailable");
+  return info;
+}
+
 function getDaemonClient() {
   if (current) return current;
-  const bridge = getHostBridge();
-  const connection = bridge
-    ? bridge.getDaemonConnection()
-    : Promise.resolve(null);
-  const attempt = connection.then((info) => {
-    if (!info) throw new Error("The Cocurdex daemon is unavailable");
-    return connect(info, drop);
-  });
+  const attempt = getConnectionInfo().then((info) => connect(info, drop));
   const drop = () => {
     if (current === attempt) current = null;
   };
@@ -62,4 +63,19 @@ export async function requestDaemon<M extends DaemonMethod>(
 ): Promise<DaemonResultByMethod[M]> {
   const client = await getDaemonClient();
   return client.request(method, params, options);
+}
+
+export async function subscribeDaemon(
+  onEvent: (event: CocurdexDaemonEvent, meta: DaemonEventMeta) => void,
+  options: DaemonRpcSubscribeOptions,
+) {
+  const info = await getConnectionInfo();
+  const transport = createWebSocketTransport(
+    info.webSocketUrl,
+    daemonWebSocketProtocols(info.token),
+  );
+  return createDaemonRpcClient(transport, info.token).subscribe(
+    onEvent,
+    options,
+  );
 }

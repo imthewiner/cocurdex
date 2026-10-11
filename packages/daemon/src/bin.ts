@@ -111,6 +111,7 @@ function startDaemonProcess() {
     runtimeFingerprint,
     token,
     webSocketPort,
+    webRoot: process.env.COCURDEX_WEB_ROOT || undefined,
     onIdleShutdown: () => process.exit(0),
   })
     .then((daemon) => {

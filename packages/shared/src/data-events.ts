@@ -39,3 +39,21 @@ export type CocurdexDaemonEvent =
   | TeamChangedEvent
   | WorkspaceSearchDaemonEvent
   | WorkspaceWatchDaemonEvent;
+
+type NonAgentDaemonEvent = Exclude<CocurdexDaemonEvent, AgentEvent>;
+
+const nonAgentDaemonEventTypes: Record<NonAgentDaemonEvent["type"], true> = {
+  "data.changed": true,
+  "peer.message": true,
+  "scriptRun.changed": true,
+  "team.changed": true,
+  "search.result": true,
+  "search.done": true,
+  "search.error": true,
+  "workspace.filesChanged": true,
+  "workspace.gitStateChanged": true,
+};
+
+export function isAgentEvent(event: CocurdexDaemonEvent): event is AgentEvent {
+  return !Object.hasOwn(nonAgentDaemonEventTypes, event.type);
+}

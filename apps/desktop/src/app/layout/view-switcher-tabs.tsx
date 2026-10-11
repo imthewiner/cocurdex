@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui";
-import { cn } from "@/lib";
+import { cn, desktopApi } from "@/lib";
 import {
   TITLEBAR_EDITOR_TOGGLE_WIDTH,
   TITLEBAR_HEIGHT,
@@ -29,6 +29,7 @@ import {
   withTitlebarControlsInset,
 } from "./app-shell/app-shell-layout";
 import {
+  isRightPanelViewAvailable,
   type RightPanelView,
   rightPanelTabOrderAtom,
 } from "./right-editor-panel-store";
@@ -88,7 +89,11 @@ export function ViewSwitcherTabs({
   const { t } = useTranslation("editor");
   const [tabOrder, setTabOrder] = useAtom(rightPanelTabOrderAtom);
 
-  const visibleTabs = tabOrder.filter((id) => id !== "pdf" || hasPdfsOpen);
+  const visibleTabs = tabOrder.filter(
+    (id) =>
+      (id !== "pdf" || hasPdfsOpen) &&
+      isRightPanelViewAvailable(id, desktopApi.capabilities),
+  );
 
   const dragState = useRef<{
     tabId: RightPanelView;
