@@ -19,7 +19,9 @@ const daemons: DaemonProcess[] = [];
 
 afterEach(async () => {
   for (const host of hosts.splice(0)) host.dispose();
-  for (const daemon of daemons.splice(0)) await daemon.dispose();
+  const started = daemons.splice(0);
+  for (const daemon of started) await daemon.stop();
+  for (const daemon of started) await daemon.dispose();
 });
 
 function connectHost(userDataPath: string) {
