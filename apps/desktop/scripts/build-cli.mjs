@@ -82,6 +82,10 @@ const alias = {
   "@cocurdex/db": path.join(repoRoot, "packages/db/src/index.ts"),
   "@cocurdex/note-doc": path.join(repoRoot, "packages/note-doc/src/index.ts"),
   "@cocurdex/rpc/client": path.join(repoRoot, "packages/rpc/src/client.ts"),
+  "@cocurdex/rpc/method-scopes": path.join(
+    repoRoot,
+    "packages/rpc/src/method-scopes.ts",
+  ),
   "@cocurdex/rpc": path.join(repoRoot, "packages/rpc/src/index.ts"),
   "@cocurdex/shared/node": path.join(repoRoot, "packages/shared/src/node.ts"),
   "@cocurdex/shared": path.join(repoRoot, "packages/shared/src/index.ts"),

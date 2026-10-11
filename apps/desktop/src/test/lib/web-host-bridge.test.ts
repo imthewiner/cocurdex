@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { resolveWebDaemonConnection } from "../../lib/web-host-bridge";
+import { createSavedHostStore, type FetchLike } from "@cocurdex/client-runtime";
+import { describe, expect, it, vi } from "vitest";
+import {
+  resolveWebHostAccess,
+  type WebHostAccessDeps,
+} from "../../lib/web-host-bridge";
 
 function memoryStore() {
   const values = new Map<string, string>();
@@ -11,35 +15,111 @@ function memoryStore() {
   };
 }
 
-const page = { host: "127.0.0.1:53508", protocol: "http:" };
+const localPage = {
+  host: "127.0.0.1:53508",
+  origin: "http://127.0.0.1:53508",
+  protocol: "http:",
+};
 
-describe("resolveWebDaemonConnection", () => {
-  it("connects to the serving daemon with the fragment token and remembers it for reloads", () => {
-    const store = memoryStore();
-    expect(
-      resolveWebDaemonConnection({ ...page, hash: "#token=abc" }, store),
-    ).toEqual({ token: "abc", webSocketUrl: "ws://127.0.0.1:53508" });
-    expect(resolveWebDaemonConnection({ ...page, hash: "" }, store)).toEqual({
-      token: "abc",
-      webSocketUrl: "ws://127.0.0.1:53508",
+const remotePage = {
+  host: "192.168.1.20:47820",
+  origin: "http://192.168.1.20:47820",
+  protocol: "http:",
+};
+
+const pairedHost = {
+  host: { hostId: "host-1", name: "Studio" },
+  deviceId: "device-1",
+  token: "cocu_dev_a",
+  scopes: ["read"],
+};
+
+function hostResponses(
+  routes: Record<string, number>,
+): FetchLike & ReturnType<typeof vi.fn> {
+  return vi.fn(async (url: string) => {
+    const status = routes[new URL(url).pathname] ?? 404;
+    return Response.json(status === 200 ? pairedHost : {}, { status });
+  });
+}
+
+function deps(fetch?: FetchLike): WebHostAccessDeps {
+  return {
+    sessionStore: memoryStore(),
+    savedHosts: createSavedHostStore(memoryStore()),
+    fetch,
+  };
+}
+
+describe("resolveWebHostAccess", () => {
+  it("connects the loopback page with the fragment token and remembers it for reloads", async () => {
+    const access = deps();
+    await expect(
+      resolveWebHostAccess({ ...localPage, hash: "#token=abc" }, access),
+    ).resolves.toEqual({
+      kind: "local",
+      connection: { token: "abc", webSocketUrl: "ws://127.0.0.1:53508" },
     });
+    await expect(
+      resolveWebHostAccess({ ...localPage, hash: "" }, access),
+    ).resolves.toMatchObject({ kind: "local", connection: { token: "abc" } });
   });
 
-  it("prefers a fresh fragment token after a daemon restart", () => {
-    const store = memoryStore();
-    resolveWebDaemonConnection({ ...page, hash: "#token=old" }, store);
-    expect(
-      resolveWebDaemonConnection({ ...page, hash: "#token=new" }, store)?.token,
-    ).toBe("new");
+  it("exchanges a pairing link and keeps the device credential for later visits", async () => {
+    const fetch = hostResponses({ "/api/pair": 200, "/api/session": 200 });
+    const access = deps(fetch);
+
+    await expect(
+      resolveWebHostAccess({ ...remotePage, hash: "#pair=code-1" }, access),
+    ).resolves.toMatchObject({
+      kind: "device",
+      connection: {
+        token: "cocu_dev_a",
+        webSocketUrl: "ws://192.168.1.20:47820",
+      },
+    });
+    await expect(
+      resolveWebHostAccess({ ...remotePage, hash: "" }, access),
+    ).resolves.toMatchObject({ kind: "device", host: { hostId: "host-1" } });
+    expect(fetch).toHaveBeenLastCalledWith(
+      "http://192.168.1.20:47820/api/session",
+      expect.anything(),
+    );
   });
 
-  it("uses wss behind https and reports no connection without a token", () => {
-    expect(
-      resolveWebDaemonConnection(
-        { host: "example.test", protocol: "https:", hash: "#token=t" },
-        null,
-      )?.webSocketUrl,
-    ).toBe("wss://example.test");
-    expect(resolveWebDaemonConnection({ ...page, hash: "" }, null)).toBeNull();
+  it("asks to pair again and forgets the credential once the host revokes it", async () => {
+    const access = deps(
+      hostResponses({ "/api/pair": 200, "/api/session": 401 }),
+    );
+    await resolveWebHostAccess({ ...remotePage, hash: "#pair=code-1" }, access);
+
+    await expect(
+      resolveWebHostAccess({ ...remotePage, hash: "" }, access),
+    ).resolves.toEqual({ kind: "needsPairing", reason: "invalid" });
+    expect(access.savedHosts.list()).toEqual([]);
+  });
+
+  it("keeps a saved credential while the host is unreachable", async () => {
+    const access = deps(hostResponses({ "/api/pair": 200 }));
+    await resolveWebHostAccess({ ...remotePage, hash: "#pair=code-1" }, access);
+    access.fetch = async () => {
+      throw new TypeError("Failed to fetch");
+    };
+
+    await expect(
+      resolveWebHostAccess({ ...remotePage, hash: "" }, access),
+    ).resolves.toMatchObject({ kind: "device" });
+  });
+
+  it("explains why a pairing link failed", async () => {
+    await expect(
+      resolveWebHostAccess(
+        { ...remotePage, hash: "#pair=used" },
+        deps(hostResponses({ "/api/pair": 429 })),
+      ),
+    ).resolves.toEqual({ kind: "needsPairing", reason: "rateLimited" });
+    await expect(
+      resolveWebHostAccess({ ...remotePage, hash: "" }, deps()),
+    ).resolves.toEqual({ kind: "needsPairing", reason: "missing" });
   });
 });

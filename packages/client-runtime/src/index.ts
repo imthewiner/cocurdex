@@ -1,5 +1,13 @@
 export { type BackoffPolicy, backoffDelay } from "./backoff";
 export {
+  exchangeHostPairing,
+  type FetchLike,
+  HostAccessError,
+  type HostAccessFailure,
+  pairHost,
+  verifyHostCredential,
+} from "./host-access";
+export {
   createHostConnection,
   type HostCommandOptions,
   type HostConnection,
@@ -19,6 +27,13 @@ export {
   type HostRegistry,
   type HostRemovedListener,
 } from "./registry";
+export {
+  createSavedHostStore,
+  type KeyValueStorage,
+  SAVED_HOSTS_STORAGE_KEY,
+  type SavedHost,
+  type SavedHostStore,
+} from "./saved-hosts";
 export {
   type ConnectionState,
   type ConnectionStatus,

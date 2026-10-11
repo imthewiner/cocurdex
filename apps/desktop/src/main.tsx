@@ -11,7 +11,7 @@ import {
 
 import "./styles/globals.css";
 
-installWebHostBridge();
+const webHostAccess = installWebHostBridge();
 // Tag the platform before first paint so platform-conditional styling (e.g.
 // native scrollbar treatment in base.css) applies without a flash.
 applyPlatformAttribute();
@@ -37,6 +37,16 @@ async function loadApp(): Promise<ComponentType> {
   ]);
   preloadScreensWhenIdle();
   return App;
+}
+
+async function loadRoot(): Promise<ComponentType> {
+  const access = await webHostAccess;
+  if (access?.kind !== "needsPairing") return loadApp();
+  const { WebPairingScreen } = await import("./features/web-pairing");
+  const { reason } = access;
+  return function PairingRoot() {
+    return <WebPairingScreen reason={reason} />;
+  };
 }
 
 const rootElement = document.getElementById("root");
@@ -71,7 +81,7 @@ window.addEventListener("unhandledrejection", (event) => {
   });
 });
 
-void loadApp().then((App) => {
+void loadRoot().then((App) => {
   createRoot(rootElement).render(
     <StrictMode>
       <I18nextProvider i18n={i18n}>

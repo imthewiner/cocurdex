@@ -21,6 +21,7 @@ export * from "./execution-tree";
 export * from "./files";
 export * from "./git";
 export * from "./git-worktree";
+export * from "./host-access";
 export * from "./issues";
 export * from "./logging";
 export * from "./network-proxy";

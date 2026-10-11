@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./method-scopes": "./src/method-scopes.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

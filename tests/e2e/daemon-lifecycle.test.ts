@@ -19,6 +19,7 @@ describe("daemon process lifecycle", () => {
 
       const status = await requestDaemon("daemon.status", daemon.options);
       expect(status).toEqual({
+        hostId: expect.any(String),
         pid: daemon.child.pid,
         protocolVersion: DAEMON_PROTOCOL_VERSION,
         runtimeFingerprint: "e2e-runtime",

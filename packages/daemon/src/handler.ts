@@ -18,6 +18,12 @@ import {
   stageGitFiles,
   unstageGitFiles,
 } from "./git";
+import {
+  type DaemonRequestContext,
+  handleHostRequest,
+  isHostRequest,
+  LOCAL_REQUEST_CONTEXT,
+} from "./host-access";
 import { parseDaemonRequest } from "./payloads";
 import type { CocurdexDaemonService } from "./service";
 
@@ -28,12 +34,18 @@ function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
 export function handleDaemonRequest<M extends DaemonMethod>(
   service: CocurdexDaemonService,
   request: DaemonRequest<M>,
+  context?: DaemonRequestContext,
 ): Promise<DaemonResultByMethod[M]>;
 export async function handleDaemonRequest(
   service: CocurdexDaemonService,
   rawRequest: DaemonRequest,
+  context: DaemonRequestContext = LOCAL_REQUEST_CONTEXT,
 ) {
   const request = parseDaemonRequest(rawRequest);
+  await service.hostAccessReady;
+  if (isHostRequest(request)) {
+    return handleHostRequest(service.hostAccess, request, context);
+  }
   await service.acpRegistry.ready;
   switch (request.method) {
     case "daemon.status":

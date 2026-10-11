@@ -71,6 +71,10 @@ const alias = {
     __dirname,
     "../../packages/client-runtime/src/index.ts",
   ),
+  "@cocurdex/rpc/method-scopes": path.resolve(
+    __dirname,
+    "../../packages/rpc/src/method-scopes.ts",
+  ),
   "@cocurdex/rpc": path.resolve(__dirname, "../../packages/rpc/src/index.ts"),
 };
 

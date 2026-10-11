@@ -1,6 +1,7 @@
 import {
   type AgentDescriptor,
   type AgentSessionMode,
+  DEFAULT_REMOTE_ACCESS_PORT,
   DEFAULT_SCRIPT_RUN_SETTINGS,
   emptyWorktreeEnvironment,
   getAgentSessionTitleStrategy,
@@ -458,6 +459,26 @@ export const offlineApi: DesktopApi = {
     durationMs: 0,
     error: "Proxy test is unavailable outside the desktop app",
   }),
+  getHostRemoteAccess: async () => ({
+    settings: { enabled: false, port: DEFAULT_REMOTE_ACCESS_PORT },
+    listening: false,
+    addresses: [],
+    error: null,
+  }),
+  setHostRemoteAccess: async (settings) => ({
+    settings,
+    listening: false,
+    addresses: [],
+    error: null,
+  }),
+  createHostPairing: async () => {
+    throw new Error("Pairing is unavailable outside the desktop app");
+  },
+  listHostPairings: async () => [],
+  cancelHostPairing: async () => null,
+  listHostDevices: async () => [],
+  revokeHostDevice: async () => null,
+  listHostAudit: async () => [],
   listSessionMessages: async () => ({
     messages: [],
     turnStats: {},

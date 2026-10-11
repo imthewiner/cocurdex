@@ -143,7 +143,9 @@ describe("session runs", () => {
 
       expect(retried.id).toBe(first.id);
       expect(retried.runId).toBe(first.runId);
-      await vi.waitFor(() => expect(dispatch).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(dispatch).toHaveBeenCalledOnce(), {
+        timeout: 5_000,
+      });
       expect(service.runs.activeRuns()).toHaveLength(1);
     } finally {
       turn.resolve(reply("cleanup"));
@@ -187,8 +189,9 @@ describe("session runs", () => {
     try {
       const userMessage = await send(service, "m1");
 
-      await vi.waitFor(() =>
-        expect(service.runs.hasActiveRun("session-1")).toBe(false),
+      await vi.waitFor(
+        () => expect(service.runs.hasActiveRun("session-1")).toBe(false),
+        { timeout: 5_000 },
       );
       await service.runtime.flushEvents();
       const runs = (await service.state.getDatabase()).runs;

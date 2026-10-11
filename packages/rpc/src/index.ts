@@ -25,6 +25,8 @@ import type {
   CommitMessageModelSelection,
   CompatibleProviderModel,
   CreateColumnPayload,
+  CreatedHostPairing,
+  CreateHostPairingPayload,
   CreateIssueLabelPayload,
   CreateIssuePayload,
   CreateNotePayload,
@@ -50,7 +52,12 @@ import type {
   GitCommitResult,
   GitPushResult,
   GitWorktreeInfo,
+  HostAccessAuditEntry,
+  HostAccessSession,
   HostDirectoryListing,
+  HostIdentity,
+  HostPairingRecord,
+  HostRemoteAccessStatus,
   ImageAttachment,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
@@ -74,6 +81,7 @@ import type {
   NoteRecord,
   NoteSummary,
   NoteTag,
+  PairedDeviceRecord,
   PdfAnnotationsOperation,
   PdfDocumentAnnotations,
   PeerInboundPolicy,
@@ -93,6 +101,7 @@ import type {
   ProviderModelRecord,
   ProviderTemplateRecord,
   RefineSessionTitlePayload,
+  RemoteAccessSettings,
   ResolvedCommitMessageModel,
   SaveAgentRolePayload,
   SaveTeamTemplatePayload,
@@ -160,7 +169,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 26;
+export const DAEMON_PROTOCOL_VERSION = 27;
 
 export interface DaemonMetadata {
   pid: number;
@@ -179,6 +188,7 @@ export type DaemonConnectionInfo = Pick<
 >;
 
 export interface DaemonStatus {
+  hostId: string;
   pid: number;
   protocolVersion: number;
   runtimeFingerprint: string;
@@ -467,6 +477,16 @@ export type DaemonRequestPayloadByMethod = {
   "agentRole.get": { id: string };
   "agentRole.save": SaveAgentRolePayload;
   "agentRole.delete": { id: string };
+  "host.identity": undefined;
+  "host.session": undefined;
+  "host.remoteAccess.get": undefined;
+  "host.remoteAccess.set": RemoteAccessSettings;
+  "host.pairing.create": CreateHostPairingPayload;
+  "host.pairing.list": undefined;
+  "host.pairing.cancel": { pairingId: string };
+  "host.devices.list": undefined;
+  "host.devices.revoke": { deviceId: string };
+  "host.audit.list": { limit?: number };
 };
 
 export type DaemonResultByMethod = {
@@ -672,6 +692,16 @@ export type DaemonResultByMethod = {
   "agentRole.get": AgentRoleRecord | null;
   "agentRole.save": AgentRoleRecord;
   "agentRole.delete": null;
+  "host.identity": HostIdentity;
+  "host.session": HostAccessSession;
+  "host.remoteAccess.get": HostRemoteAccessStatus;
+  "host.remoteAccess.set": HostRemoteAccessStatus;
+  "host.pairing.create": CreatedHostPairing;
+  "host.pairing.list": HostPairingRecord[];
+  "host.pairing.cancel": HostPairingRecord | null;
+  "host.devices.list": PairedDeviceRecord[];
+  "host.devices.revoke": PairedDeviceRecord | null;
+  "host.audit.list": HostAccessAuditEntry[];
 };
 
 export type DaemonMethod = keyof DaemonRequestPayloadByMethod;
@@ -692,6 +722,11 @@ export const DAEMON_NO_PARAM_METHODS = {
   "app.bootstrap": true,
   "attention.list": true,
   "daemon.status": true,
+  "host.identity": true,
+  "host.session": true,
+  "host.remoteAccess.get": true,
+  "host.pairing.list": true,
+  "host.devices.list": true,
   "issue.listViews": true,
   "issue.listLabels": true,
   "issue.listLinkedSessionIds": true,
