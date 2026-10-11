@@ -18,6 +18,7 @@
       "@cocurdex/rpc/event-connection": [
         "./packages/rpc/src/event-connection.ts"
       ],
+      "@cocurdex/rpc/method-scopes": ["./packages/rpc/src/method-scopes.ts"],
       "@cocurdex/daemon": ["./packages/daemon/src/index.ts"],
       "@cocurdex/daemon/client": ["./packages/daemon/src/client.ts"],
       "@cocurdex/daemon/paths": ["./packages/daemon/src/paths.ts"],

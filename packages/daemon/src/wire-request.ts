@@ -1,5 +1,5 @@
 import type { DaemonRequest } from "@cocurdex/rpc";
-import { DAEMON_METHOD_SCOPES } from "@cocurdex/rpc";
+import { DAEMON_METHOD_SCOPES } from "@cocurdex/rpc/method-scopes";
 import { type HostPrincipal, principalHasScope } from "@cocurdex/shared";
 import type { DaemonShutdownGate } from "./daemon-shutdown-gate";
 import { handleDaemonRequest } from "./handler";

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { listHostAddresses } from "./network-addresses";
 
 describe("listHostAddresses", () => {
-  it("lists shareable LAN and Tailscale addresses, tailnet first, without loopback or link-local", () => {
+  it("lists shareable LAN and Tailscale addresses, tailnet first, without loopback, link-local, or proxy TUN addresses", () => {
     const addresses = listHostAddresses(
       {
         lo0: [{ address: "127.0.0.1", family: "IPv4", internal: true }],
@@ -12,6 +12,7 @@ describe("listHostAddresses", () => {
           { address: "2001:db8::5", family: "IPv6", internal: false },
           { address: "169.254.3.3", family: 4, internal: false },
         ],
+        utun9: [{ address: "198.18.0.1", family: "IPv4", internal: false }],
         utun4: [
           { address: "100.101.102.103", family: "IPv4", internal: false },
           { address: "fd7a:115c:a1e0::1", family: 6, internal: false },

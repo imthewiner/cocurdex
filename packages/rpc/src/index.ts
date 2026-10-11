@@ -163,7 +163,6 @@ import type {
   WorktreeSettingsSnapshot,
 } from "@cocurdex/shared";
 
-export { DAEMON_METHOD_SCOPES } from "./method-scopes.ts";
 export {
   DAEMON_WEBSOCKET_PROTOCOL,
   daemonWebSocketProtocols,

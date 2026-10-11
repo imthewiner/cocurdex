@@ -21,6 +21,11 @@ function isLinkLocal(address: string) {
   );
 }
 
+function isBenchmarkingRange(address: string) {
+  const [first, second] = address.split(".").map(Number);
+  return first === 198 && (second === 18 || second === 19);
+}
+
 function formatUrl(address: string, family: "IPv4" | "IPv6", port: number) {
   return family === "IPv6"
     ? `http://[${address}]:${port}`
@@ -40,6 +45,7 @@ export function listHostAddresses(
   for (const entries of Object.values(interfaces)) {
     for (const entry of entries ?? []) {
       if (entry.internal || isLinkLocal(entry.address)) continue;
+      if (isBenchmarkingRange(entry.address)) continue;
       if (seen.has(entry.address)) continue;
       seen.add(entry.address);
       const family = familyOf(entry);
