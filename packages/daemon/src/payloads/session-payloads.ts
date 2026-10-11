@@ -25,6 +25,8 @@ const sessionMessagePayload = z.object({
   messageId: idSchema,
 });
 
+const MAX_EXECUTION_TREE_DEPTH = 8;
+
 const runIdPayload = z.object({ runId: idSchema });
 
 const maxAgentsSchema = z.number().int().min(1).max(SCRIPT_RUN_HARD_MAX_AGENTS);
@@ -46,6 +48,17 @@ export const sessionPayloadSchemas = {
     z.object({ sessionIds: z.array(idSchema).max(500) }),
   ),
   "session.snapshot": exact<Payload<"session.snapshot">>()(sessionIdPayload),
+  "session.executionTree": exact<Payload<"session.executionTree">>()(
+    z.object({
+      sessionId: idSchema,
+      maxDepth: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_EXECUTION_TREE_DEPTH)
+        .optional(),
+    }),
+  ),
   "session.get": exact<Payload<"session.get">>()(sessionIdPayload),
   "session.configure": loose<Payload<"session.configure">>()(
     z.looseObject({ id: idSchema, workspaceId: idSchema }),
