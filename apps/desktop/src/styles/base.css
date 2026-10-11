@@ -49,6 +49,7 @@
 }
 
 :root {
+  --titlebar-height: 32px;
   --titlebar-controls-inset: calc(
     100vw -
     env(titlebar-area-x, 0px) -

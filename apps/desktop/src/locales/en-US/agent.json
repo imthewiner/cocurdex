@@ -80,19 +80,13 @@
     "tooltip": "{{percent}}% of context limit"
   },
   "imagePreview": {
-    "closePreview": "Close image preview",
     "copied": "Copied",
     "copyFailed": "Copy failed",
     "copyImage": "Copy image",
     "downloadImage": "Download image",
     "imagePosition": "{{current}} / {{total}}",
     "nextImage": "Next image",
-    "previousImage": "Previous image",
-    "resetView": "Reset view",
-    "resetZoom": "Reset zoom",
-    "rotate": "Rotate clockwise",
-    "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out"
+    "previousImage": "Previous image"
   },
   "jumpToLatest": "Jump to latest",
   "jumpToTop": "Jump to top",
