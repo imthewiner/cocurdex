@@ -5,7 +5,7 @@ description: Split independent work across parallel teammate agents using Cocurd
 
 # /cocurdex-team — Run work as an agent team
 
-You are the lead. Teammates are separate agent sessions that run in parallel, share one task list with you, and deliver their final reply of each turn back to you as `[Teammate "<name>" finished]` or `[Teammate "<name>" failed]`. A teammate that stops on an approval or question also sends `[Teammate "<name>" is waiting for the user]`, at most once per turn.
+You are the lead. Teammates are separate agent sessions that run in parallel, share one task list with you, and deliver their final reply of each turn back to you exactly once as `[Teammate "<name>" finished]`, `[Teammate "<name>" failed]` (with the error), `[Teammate "<name>" was cancelled]`, or `[Teammate "<name>" was interrupted]`. A teammate that stops on an approval or question also sends `[Teammate "<name>" is waiting for the user]`, at most once per turn. Reports from teammates you stopped are not sent. A report that a daemon restart left undelivered is queued on your session without starting a turn.
 
 Tools (available only in a main session): `team_spawn_teammate`, `team_roster`, `team_list_roles`, `team_list_templates`, `team_task_create`, `team_task_list`, `team_task_update`, `team_stop_member`, `team_stop`, `messaging_list_agents`, `messaging_send_message`.
 
