@@ -3,18 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 
 type EmitEvent = (event: CocurdexDaemonEvent, meta: DaemonEventMeta) => void;
 
-const emitters = vi.hoisted(() => [] as EmitEvent[]);
+const listeners = vi.hoisted(() => new Set<EmitEvent>());
 vi.mock("../../lib/daemon-client", () => ({
-  subscribeDaemon: vi.fn(async (onEvent: EmitEvent) => {
-    emitters.push(onEvent);
-    return {
-      close: vi.fn(),
-      epoch: "epoch-a",
-      lastSeq: null,
-      replayGap: false,
-    };
-  }),
+  onLocalHostEvent: (listener: EmitEvent) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
 }));
+
+const emit: EmitEvent = (event, meta) => {
+  for (const listener of [...listeners]) listener(event, meta);
+};
 
 const { daemonEventApi, onDaemonAgentEvent } = await import(
   "../../lib/daemon-events"
@@ -23,7 +22,7 @@ const { daemonEventApi, onDaemonAgentEvent } = await import(
 const meta = { epoch: "epoch-a", seq: 7 };
 
 describe("daemon events", () => {
-  it("routes daemon events to product and agent listeners over one subscription", async () => {
+  it("routes daemon events to product and agent listeners", () => {
     const agent = vi.fn();
     const data = vi.fn();
     const searchDone = vi.fn();
@@ -32,8 +31,6 @@ describe("daemon events", () => {
     daemonEventApi.onDataChanged(data);
     daemonEventApi.onWorkspaceSearchDone(searchDone);
     daemonEventApi.onWorkspaceFilesChanged(files);
-    await vi.waitFor(() => expect(emitters).toHaveLength(1));
-    const emit = emitters[0] as EmitEvent;
 
     emit({ type: "data.changed", areas: ["issues"] }, meta);
     emit({ type: "search.done", searchId: "s1", reason: "completed" }, meta);
@@ -64,15 +61,11 @@ describe("daemon events", () => {
     );
   });
 
-  it("stops delivering to a listener after it unsubscribes", async () => {
+  it("stops delivering to a listener after it unsubscribes", () => {
     const data = vi.fn();
     const unsubscribe = daemonEventApi.onDataChanged(data);
     unsubscribe();
-    (emitters[0] as EmitEvent)(
-      { type: "data.changed", areas: ["notes"] },
-      meta,
-    );
+    emit({ type: "data.changed", areas: ["notes"] }, meta);
     expect(data).not.toHaveBeenCalled();
-    expect(emitters).toHaveLength(1);
   });
 });

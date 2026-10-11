@@ -292,6 +292,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@cocurdex/client-runtime':
+        specifier: workspace:*
+        version: link:../../packages/client-runtime
       '@cocurdex/daemon':
         specifier: workspace:*
         version: link:../../packages/daemon
@@ -642,6 +645,19 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.13.6)(jsdom@26.1.0(supports-color@7.2.0))(vite@7.3.5(@types/node@24.13.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/client-runtime:
+    dependencies:
+      '@cocurdex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@cocurdex/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@24.13.6)(jsdom@26.1.0(supports-color@7.2.0))(vite@7.3.5(@types/node@24.13.6)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/daemon:
     dependencies:
       '@cocurdex/agent-adapters':
@@ -795,6 +811,9 @@ importers:
 
   tests/e2e:
     dependencies:
+      '@cocurdex/client-runtime':
+        specifier: workspace:*
+        version: link:../../packages/client-runtime
       '@cocurdex/daemon':
         specifier: workspace:*
         version: link:../../packages/daemon

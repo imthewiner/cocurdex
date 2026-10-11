@@ -54,7 +54,7 @@ jobs:
           run_desktop=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              .github/workflows/ci.yml|.npmrc|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|tsconfig.json|apps/cli/*|apps/desktop/*|packages/agent-adapters/*|packages/agent-core/*|packages/daemon/*|packages/db/*|packages/llm-chat/*|packages/product-skills/*|packages/rpc/*|packages/shared/*)
+              .github/workflows/ci.yml|.npmrc|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|tsconfig.json|apps/cli/*|apps/desktop/*|packages/agent-adapters/*|packages/agent-core/*|packages/client-runtime/*|packages/daemon/*|packages/db/*|packages/llm-chat/*|packages/product-skills/*|packages/rpc/*|packages/shared/*)
                 run_desktop=true
                 break
                 ;;

@@ -43,6 +43,7 @@
     "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile .tsbuildinfo"
   },
   "dependencies": {
+    "@cocurdex/client-runtime": "workspace:*",
     "@cocurdex/daemon": "workspace:*",
     "@cocurdex/note-doc": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
