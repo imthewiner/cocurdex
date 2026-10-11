@@ -690,6 +690,9 @@ importers:
       '@vscode/ripgrep':
         specifier: ^1.18.0
         version: 1.18.0
+      effect:
+        specifier: 4.0.2
+        version: 4.0.2
       simple-git:
         specifier: ^4.0.2
         version: 4.0.2(supports-color@7.2.0)
@@ -4119,6 +4122,9 @@ packages:
 
   effect@4.0.0-rc.112:
     resolution: {integrity: sha512-wXxwuh1Ywnv4cPRM3Wfa0vDwuOHnZ1TsTgHJkG9XgzND6inhBH9n1vBxhg3iIXOia/OrpmvVmd3lrD4vq6bF3A==}
+
+  effect@4.0.2:
+    resolution: {integrity: sha512-YeYnLqSFrL4+tCOXRrfNP03w8FILoF/wDl+ukraJAGzXrjcS383W7LAAvGBbLatEyktmLxRq+9xJinx7QzXW5A==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -10494,6 +10500,8 @@ snapshots:
     dependencies:
       fast-check: 4.10.2
       msgpackr: 2.1.0
+
+  effect@4.0.2: {}
 
   ejs@3.1.10:
     dependencies:
