@@ -60,6 +60,7 @@ export type {
 } from "./types";
 export { cn } from "./utils";
 export {
+  buildDevWebClientUrl,
   installWebHostBridge,
   pairThisBrowser,
   type WebHostAccess,

@@ -1,17 +1,23 @@
+import type { DaemonConnectionInfo } from "@cocurdex/rpc";
 import { buildLocalWebClientUrl } from "@cocurdex/shared";
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { SettingRow, SettingsGroup } from "@/components/app";
 import { Button } from "@/components/ui";
-import { desktopApi } from "@/lib";
+import { buildDevWebClientUrl, desktopApi } from "@/lib";
+
+function localWebClientUrl(connection: DaemonConnectionInfo) {
+  if (import.meta.env.DEV) {
+    return buildDevWebClientUrl(window.location.origin, connection);
+  }
+  return buildLocalWebClientUrl(connection.webSocketUrl, connection.token);
+}
 
 async function openLocalWebClient() {
   const connection = await desktopApi.getDaemonConnection();
   if (!connection) throw new Error("Daemon is not running");
-  await desktopApi.openExternal(
-    buildLocalWebClientUrl(connection.webSocketUrl, connection.token),
-  );
+  await desktopApi.openExternal(localWebClientUrl(connection));
 }
 
 export function LocalWebGroup() {

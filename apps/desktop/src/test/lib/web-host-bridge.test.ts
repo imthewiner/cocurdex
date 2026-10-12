@@ -1,6 +1,8 @@
 import { createSavedHostStore, type FetchLike } from "@cocurdex/client-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildDevWebClientUrl,
+  resolveDevDaemonUrl,
   resolveWebHostAccess,
   type WebHostAccessDeps,
 } from "../../lib/web-host-bridge";
@@ -121,5 +123,45 @@ describe("resolveWebHostAccess", () => {
     await expect(
       resolveWebHostAccess({ ...remotePage, hash: "" }, deps()),
     ).resolves.toEqual({ kind: "needsPairing", reason: "missing" });
+  });
+});
+
+describe("dev web client", () => {
+  const devServer = "http://localhost:5173";
+  const daemon = { token: "abc", webSocketUrl: "ws://127.0.0.1:53508" };
+
+  it("connects the dev server page to the daemon named in its link, across reloads", async () => {
+    const store = memoryStore();
+    const hash = new URL(buildDevWebClientUrl(devServer, daemon)).hash;
+
+    expect(resolveDevDaemonUrl(hash, store)).toBe("ws://127.0.0.1:53508");
+    expect(resolveDevDaemonUrl("", store)).toBe("ws://127.0.0.1:53508");
+
+    const access = {
+      ...deps(),
+      localDaemonUrl: resolveDevDaemonUrl("", store),
+    };
+    await expect(
+      resolveWebHostAccess(
+        {
+          hash,
+          host: "localhost:5173",
+          origin: devServer,
+          protocol: "http:",
+        },
+        access,
+      ),
+    ).resolves.toEqual({ kind: "local", connection: daemon });
+  });
+
+  it("ignores a daemon address that is not a loopback WebSocket", () => {
+    const store = memoryStore();
+    expect(
+      resolveDevDaemonUrl("#daemon=ws%3A%2F%2F192.168.1.20%3A47820", store),
+    ).toBeNull();
+    expect(
+      resolveDevDaemonUrl("#daemon=http%3A%2F%2F127.0.0.1%3A53508", store),
+    ).toBeNull();
+    expect(resolveDevDaemonUrl("", store)).toBeNull();
   });
 });
