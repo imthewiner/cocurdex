@@ -263,17 +263,27 @@ export class TerminalService {
   }
 
   private async terminate(terminalId: string, session: TerminalSession) {
-    await killProcessTree(session.pty.pid).catch((error: unknown) => {
-      warn("terminal.killTreeFailed", {
-        terminalId,
-        error: errorMessage(error),
+    const killTree = () =>
+      killProcessTree(session.pty.pid).catch((error: unknown) => {
+        warn("terminal.killTreeFailed", {
+          terminalId,
+          error: errorMessage(error),
+        });
       });
-    });
-    try {
-      session.pty.kill();
-    } catch (error) {
-      warn("terminal.killFailed", { terminalId, error: errorMessage(error) });
+    const killPty = () => {
+      try {
+        session.pty.kill();
+      } catch (error) {
+        warn("terminal.killFailed", { terminalId, error: errorMessage(error) });
+      }
+    };
+    if (process.platform === "win32") {
+      killPty();
+      await killTree();
+      return;
     }
+    await killTree();
+    killPty();
   }
 
   async dispose() {

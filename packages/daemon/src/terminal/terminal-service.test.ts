@@ -33,7 +33,12 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await service.dispose();
-  await rm(workspaceRoot, { recursive: true, force: true });
+  await rm(workspaceRoot, {
+    recursive: true,
+    force: true,
+    maxRetries: 20,
+    retryDelay: 100,
+  });
 });
 
 describe("TerminalService", () => {
