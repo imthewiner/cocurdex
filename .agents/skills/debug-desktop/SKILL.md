@@ -30,10 +30,19 @@ association remain explicit unknowns. Exit 0 means the requested methods exist
 and the daemon reports a matching running runtime, not that all code is current.
 
 `dev:inspect` enables CDP; it does not
-by itself prove that main/preload watch mode is enabled. Per AGENTS.md, you may
-start `pnpm --filter @cocurdex/desktop dev:inspect` yourself for simple
-verification when no debuggable app is running; do not restart or take over a
-development process that is already in use.
+by itself prove that main/preload watch mode is enabled. Per AGENTS.md, start
+or restart `pnpm --filter @cocurdex/desktop dev:inspect` yourself whenever
+verification needs it, instead of asking the user:
+
+1. Find the running dev tree with `ps -axo pid,ppid,command` (the `pnpm ...
+   dev:inspect` root and its descendants). Skip the restart and use an isolated
+   instance if an agent run in that app is in progress.
+2. Stop that tree by PID, children first, then confirm the CDP port is closed.
+3. Relaunch detached so it outlives your shell:
+   `nohup pnpm --filter @cocurdex/desktop dev:inspect > <scratchpad>/dev.log 2>&1 &`.
+4. Wait for `http://127.0.0.1:9222/json/list` in a background loop, then
+   check `getDaemonStatus().matchesRuntime` and the fingerprint.
+5. Tell the user the app restarted and where the log is.
 
 | Changed boundary | Evidence needed before testing |
 | --- | --- |
@@ -126,6 +135,37 @@ Requires `apps/desktop/out/main/main.js` (produced by `electron-vite dev` or
 started; `mkdtemp` profiles pile up otherwise. For the full manual procedure
 (main/preload rebuild + env details), see
 [references/process-verification.md](references/process-verification.md).
+
+### Choosing the user's instance or an isolated one
+
+An isolated profile starts empty: the welcome screen gates the shell, and there
+are no workspaces, sessions, or open tabs. Setting
+`cocurdex.onboarding-hidden` in localStorage and reloading did not leave the
+welcome screen; setting `onboardingEnteredAtom` through the app's default
+Jotai store did. A workspace saved through `desktopApi.saveWorkspace` did not
+appear in the sidebar, even after a reload, so views that depend on workspace
+data (PDF reader, file tree, Git) are expensive to reach there. Use the
+isolated instance for protocol checks: call the daemon route or RPC from the
+renderer origin, which exercises CORS, auth, and the real socket. Verify the
+feature UI on the user's instance.
+
+A change that spans the renderer and the daemon breaks the user's running app
+in between: Vite HMR loads the new renderer at once, while the old daemon lacks
+the new route or method. Restart dev yourself as soon as the daemon side is
+ready (see above); the restarted app spawns the rebuilt daemon. Confirm
+`getDaemonStatus().matchesRuntime` and the fingerprint before measuring. Wait
+for the port in a background loop (`curl -sf http://127.0.0.1:9222/json/list`)
+instead of polling with evals.
+
+### Measuring network in the renderer
+
+A long-running dev renderer has usually filled the default 250-entry Resource
+Timing buffer, so new requests are not recorded. Call
+`performance.setResourceTimingBufferSize(10000)` and
+`performance.clearResourceTimings()` before the action you measure. Cross-origin
+entries (the daemon's `http://127.0.0.1:<port>`) report `encodedBodySize` 0
+without `Timing-Allow-Origin`; count requests and read `responseStatus` and
+`duration` instead.
 
 For DOM/UI checks, query inside the expression (`innerText`,
 `querySelector(...).getBoundingClientRect()`, etc.). Read captured images back

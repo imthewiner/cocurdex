@@ -52,7 +52,6 @@ export const daemonProductApi: ProductRequestApi = {
   revealPathInFileManager: async (targetPath) => {
     await rpc("system.revealPath", { path: targetPath });
   },
-  readPdfBase64: (filePath) => rpc("pdf.read", { filePath }),
   resolveWorkspaceOpenPath: async (filePath) => {
     const rootPath = await rpc("workspace.resolveOpenPath", {
       path: filePath,

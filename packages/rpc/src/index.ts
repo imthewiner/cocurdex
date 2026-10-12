@@ -396,7 +396,6 @@ export type DaemonRequestPayloadByMethod = {
   "system.fontFamilies": undefined;
   "system.openDirectory": { path: string };
   "system.revealPath": { path: string };
-  "pdf.read": { filePath: string };
   "terminal.spawn": PtySpawnPayload;
   "terminal.write": PtyWritePayload;
   "terminal.resize": PtyResizePayload;
@@ -648,7 +647,6 @@ export type DaemonResultByMethod = {
   "system.fontFamilies": string[];
   "system.openDirectory": null;
   "system.revealPath": null;
-  "pdf.read": string;
   "terminal.spawn": PtySpawnResult;
   "terminal.write": null;
   "terminal.resize": null;

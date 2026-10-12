@@ -86,6 +86,7 @@ import {
   validateSubmitPreviousMessageCommand,
   workspacePathsEqual,
 } from "@cocurdex/shared";
+import { resolveAuthorizedPdfReadPath } from "@cocurdex/shared/node";
 import { AcpRegistryService } from "./acp-registry";
 import {
   AgentToolBridge,
@@ -118,7 +119,6 @@ import {
 } from "./network-proxy-settings";
 import { removeAppManagedWorktree } from "./orchestration-workspace";
 import { DaemonPdfAnnotationsService } from "./pdf-annotations";
-import { readAuthorizedPdf } from "./pdf-read";
 import { PeerMessagingService } from "./peer-messaging";
 import { DaemonProviderService } from "./provider";
 import { CodexLoginSessions } from "./provider/codex-login";
@@ -837,8 +837,11 @@ export class CocurdexDaemonService {
     return null;
   }
 
-  async readPdf(filePath: string) {
-    return readAuthorizedPdf(filePath, await this.listWorkspaceRootPaths());
+  async resolvePdfPath(filePath: string) {
+    return resolveAuthorizedPdfReadPath(
+      filePath,
+      await this.listWorkspaceRootPaths(),
+    );
   }
 
   private async listWorkspaceRootPaths() {

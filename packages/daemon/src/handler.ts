@@ -189,8 +189,6 @@ export async function handleDaemonRequest(
       return service.openDirectoryInFileManager(request.params.path);
     case "system.revealPath":
       return service.revealPathInFileManager(request.params.path);
-    case "pdf.read":
-      return service.readPdf(request.params.filePath);
     case "terminal.spawn":
       return service.terminals.spawn(request.params);
     case "terminal.write":

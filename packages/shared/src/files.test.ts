@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pathBaseName } from "./files";
+import { buildDaemonPdfUrl, pathBaseName } from "./files";
 
 describe("pathBaseName", () => {
   it("handles POSIX and Windows separators", () => {
@@ -16,5 +16,16 @@ describe("pathBaseName", () => {
   it("returns the input when there is no segment", () => {
     expect(pathBaseName("/")).toBe("/");
     expect(pathBaseName("")).toBe("");
+  });
+});
+
+describe("buildDaemonPdfUrl", () => {
+  it("maps the daemon socket origin to its HTTP origin", () => {
+    expect(buildDaemonPdfUrl("ws://127.0.0.1:53508", "/a b/c.pdf")).toBe(
+      "http://127.0.0.1:53508/files/pdf?path=%2Fa+b%2Fc.pdf",
+    );
+    expect(buildDaemonPdfUrl("wss://host.ts.net", "C:\\docs\\x.pdf")).toBe(
+      "https://host.ts.net/files/pdf?path=C%3A%5Cdocs%5Cx.pdf",
+    );
   });
 });

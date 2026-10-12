@@ -27,6 +27,7 @@ import {
   resolveRestoredPosition,
 } from "../pdf-reading-position";
 import { MAX_SCALE, MIN_SCALE, ZOOM_STEP } from "../pdf-scale";
+import type { PdfSource } from "../pdf-source";
 import {
   PDF_THUMBNAIL_MAX_EDGE,
   renderPdfPageThumbnail,
@@ -57,6 +58,8 @@ const DOCUMENT_OPTIONS = {
   cMapUrl: "/cmaps/",
   cMapPacked: true,
   standardFontDataUrl: "/standard_fonts/",
+  disableAutoFetch: true,
+  disableStream: true,
 } as const;
 
 export interface PdfFindMatches {
@@ -89,7 +92,7 @@ export interface PdfJsViewerHandle {
 }
 
 interface PdfJsViewerProps {
-  url: string;
+  source: PdfSource;
   // Position to land on after the first layout. Defaults to the document start
   // when omitted or out of range; used to restore the last reading position.
   initialPosition?: PdfReadingPosition;
@@ -156,7 +159,9 @@ function setRef<T>(ref: React.Ref<T> | undefined, value: T | null) {
 
 export const PdfJsViewer = forwardRef<PdfJsViewerHandle, PdfJsViewerProps>(
   function PdfJsViewer(props, handleRef) {
-    return <PdfJsViewerContent {...props} key={props.url} ref={handleRef} />;
+    return (
+      <PdfJsViewerContent {...props} key={props.source.url} ref={handleRef} />
+    );
   },
 );
 
@@ -174,7 +179,7 @@ function usePaintedPdfHighlights(
 const PdfJsViewerContent = forwardRef<PdfJsViewerHandle, PdfJsViewerProps>(
   function PdfJsViewer(
     {
-      url,
+      source,
       initialPosition,
       highlights = [],
       scrollContainerRef,
@@ -417,7 +422,8 @@ const PdfJsViewerContent = forwardRef<PdfJsViewerHandle, PdfJsViewerProps>(
       eventBus.on("pagerendered", handlePageRendered);
 
       const loadingTask = pdfjs.getDocument({
-        url,
+        url: source.url,
+        httpHeaders: source.httpHeaders,
         ...DOCUMENT_OPTIONS,
       });
 
