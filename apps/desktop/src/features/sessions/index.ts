@@ -62,6 +62,12 @@ export {
   isBaselineSpeedOptionValue,
   type OccupiedSessionConfigAxis,
 } from "./session-config-options";
+export {
+  ContextHandoffMarker,
+  canSwitchSessionAgent,
+  useForkSession,
+  useSwitchSessionAgent,
+} from "./session-lineage";
 export { SessionModeSubmenu } from "./session-mode-control";
 export { useSessionModeLabels } from "./session-mode-label";
 export {

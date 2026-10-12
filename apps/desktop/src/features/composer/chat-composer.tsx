@@ -306,18 +306,6 @@ const ChatComposerBound = forwardRef<ChatComposerHandle, ChatComposerProps>(
     const canSelectAgent = Boolean(onSelectAgent) && !isRunning;
     const sessionRole = useSessionRole(sessionId);
 
-    const handleSelectAgent = (nextAgent: AgentId) => {
-      if (
-        sessionModeId &&
-        !getSessionModeOptions(agents, nextAgent).some(
-          (mode) => mode.id === sessionModeId,
-        )
-      ) {
-        onSelectSessionMode?.("");
-      }
-      onSelectAgent?.(nextAgent);
-    };
-
     const sendMessage = (useOppositeFollowUpBehavior = false) => {
       if (!canSubmitNow) return;
       const version = draftVersion.current;
@@ -489,7 +477,7 @@ const ChatComposerBound = forwardRef<ChatComposerHandle, ChatComposerProps>(
           </>
         }
         value={selectedAgent}
-        onValueChange={handleSelectAgent}
+        onValueChange={(agentType) => onSelectAgent?.(agentType)}
       />
     );
 

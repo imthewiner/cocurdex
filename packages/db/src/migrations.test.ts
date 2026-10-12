@@ -1047,6 +1047,86 @@ describe("initializeDatabase", () => {
     ]);
   });
 
+  it("keys provider threads by agent from version 24 and keeps user data", () => {
+    const database = new DatabaseSync(":memory:");
+    initializeDatabase(database);
+    database.exec(`
+      DROP TABLE agent_provider_sessions;
+      DROP TABLE context_transfers;
+      ALTER TABLE runs DROP COLUMN agent_type;
+      CREATE TABLE agent_provider_sessions (
+        session_id TEXT PRIMARY KEY,
+        provider_session_id TEXT,
+        provider_state_json TEXT NOT NULL,
+        provider_version TEXT,
+        resumable INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+    `);
+    const now = "2026-10-12T00:00:00.000Z";
+    database.exec(`
+      INSERT INTO workspaces (id, name, root_paths, created_at, updated_at, last_opened_at)
+      VALUES ('w1', 'Repo', '["/repo"]', '${now}', '${now}', '${now}');
+      INSERT INTO sessions (id, workspace_id, title, agent_type, status, write_mode, created_at, updated_at)
+      VALUES ('s1', 'w1', 'Explain', 'codex', 'idle', 'read-only', '${now}', '${now}');
+      INSERT INTO messages (id, session_id, role, content, attachments_json, created_at)
+      VALUES ('m1', 's1', 'user', 'hello', '[]', '${now}');
+      INSERT INTO runs (id, session_id, trigger_message_id, status, started_at)
+      VALUES ('r1', 's1', 'm1', 'completed', '${now}');
+      INSERT INTO agent_provider_sessions (
+        session_id, provider_session_id, provider_state_json, resumable, updated_at
+      ) VALUES ('s1', 'thread-1', '{"model":"gpt"}', 1, '${now}');
+      INSERT INTO notes (id, kind, title, body_markdown, created_at, updated_at)
+      VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
+      INSERT INTO issues (id, title, workspace_id, created_at, updated_at)
+      VALUES ('i1', 'Handoff', 'w1', '${now}', '${now}');
+      PRAGMA user_version = 24;
+    `);
+
+    initializeDatabase(database);
+
+    const fresh = new DatabaseSync(":memory:");
+    initializeDatabase(fresh);
+    for (const table of [
+      "agent_provider_sessions",
+      "runs",
+      "context_transfers",
+    ]) {
+      expect(tableShape(database, table)).toEqual(tableShape(fresh, table));
+    }
+    expect(
+      database
+        .prepare(
+          "SELECT session_id, agent_type, provider_session_id, provider_state_json, resumable FROM agent_provider_sessions",
+        )
+        .all(),
+    ).toEqual([
+      {
+        session_id: "s1",
+        agent_type: "codex",
+        provider_session_id: "thread-1",
+        provider_state_json: '{"model":"gpt"}',
+        resumable: 1,
+      },
+    ]);
+    expect(database.prepare("SELECT id, agent_type FROM runs").all()).toEqual([
+      { id: "r1", agent_type: "codex" },
+    ]);
+    expect(database.prepare("SELECT content FROM messages").all()).toEqual([
+      { content: "hello" },
+    ]);
+    expect(database.prepare("SELECT title FROM sessions").all()).toEqual([
+      { title: "Explain" },
+    ]);
+    expect(database.prepare("SELECT title FROM notes").all()).toEqual([
+      { title: "Spec" },
+    ]);
+    expect(database.prepare("SELECT title FROM issues").all()).toEqual([
+      { title: "Handoff" },
+    ]);
+  });
+
   it("keeps an up-to-date database that carries a stale version marker", () => {
     const database = new DatabaseSync(":memory:");
     initializeDatabase(database);

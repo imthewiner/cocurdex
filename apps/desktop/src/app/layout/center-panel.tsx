@@ -70,6 +70,7 @@ import {
   activeSessionIdAtom,
   agentsAtom,
   applyRefinedSessionTitleAtom,
+  canSwitchSessionAgent,
   createDraftSessionAtom,
   generateLocalSessionTitle,
   getAgentDisplayLabel,
@@ -92,6 +93,7 @@ import {
   updateSessionProviderRuntimeAtom,
   updateSessionStatusAtom,
   updateSessionTitleAtom,
+  useSwitchSessionAgent,
 } from "@/features/sessions";
 import {
   activeWorkingPathAtom,
@@ -294,6 +296,7 @@ export function CenterPanel({
   const saveEditorViewSnapshot = useSetAtom(saveEditorViewSnapshotAtom);
   const setDraftWorktreePath = useSetAtom(draftWorktreePathAtom);
   const setLastSelectedAgent = useSetAtom(lastSelectedAgentAtom);
+  const switchSessionAgent = useSwitchSessionAgent();
   const markSessionMessage = useSetAtom(markSessionMessageAtom);
   const updateSessionMode = useSetAtom(updateSessionModeAtom);
   const updateSessionPermissionMode = useSetAtom(
@@ -1288,7 +1291,12 @@ export function CenterPanel({
             onSelectRuntimeMode={(modeId) => {
               void desktopApi.setSessionRuntimeMode(activeSession.id, modeId);
             }}
-            onSelectAgent={undefined}
+            onSelectAgent={
+              canSwitchSessionAgent(activeSession, activeDisplayStatus)
+                ? (agentType) =>
+                    void switchSessionAgent(activeSession.id, agentType)
+                : undefined
+            }
             onCheckPreviousMessageCheckpoint={
               handleCheckPreviousMessageCheckpoint
             }

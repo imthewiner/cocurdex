@@ -28,6 +28,7 @@ import type {
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
   CreateWorkflowPayload,
+  ForkSessionPayload,
   GetToolCallResultInput,
   GitCommitResult,
   MessageRecord,
@@ -50,6 +51,7 @@ import type {
 } from "@cocurdex/shared";
 import {
   AGENT_RUN_LIMITS_SETTING_KEY,
+  buildContextHandoffText,
   CHAT_WORKSPACE_ID,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
@@ -60,6 +62,7 @@ import {
   isToolCallId,
   isWorkspaceSearchDaemonEvent,
   isWorkspaceWatchDaemonEvent,
+  messageAgentLookup,
   newAssistantSessionId,
   normalizeAgentRoleAvatar,
   normalizeAgentRoleDescription,
@@ -70,6 +73,7 @@ import {
   parseAgentRunLimits,
   primaryWorkspaceRootPath,
   resolveSessionWorkingPath,
+  resolveStartContext,
   resolveStoredAgentRunLimits,
   toolMayMutateWorkspace,
   validateSendSessionCommand,
@@ -1512,7 +1516,10 @@ export class CocurdexDaemonService {
     await this.team.onLeadStopped(sessionId);
     await this.scriptRuns.cancelForRequester(sessionId);
 
-    const providerSession = await this.state.getProviderSession(sessionId);
+    const providerSession = await this.state.getProviderSession(
+      sessionId,
+      "opencode",
+    );
     const workspace = (await this.state.listWorkspaces()).find(
       (candidate) => candidate.id === session.workspaceId,
     );
@@ -1525,10 +1532,7 @@ export class CocurdexDaemonService {
     await this.disposeSessionRuntime(sessionId);
     this.runtime.clearSessionPlan(sessionId);
 
-    if (
-      session.agentType === "opencode" &&
-      providerSession?.providerSessionId
-    ) {
+    if (providerSession?.providerSessionId) {
       await deleteOpenCodeSession({
         providerSessionId: providerSession.providerSessionId,
       });
@@ -1540,6 +1544,127 @@ export class CocurdexDaemonService {
       workspaceRootPath,
     );
     await this.releaseSessionWorktree(session, workspace);
+  }
+
+  async forkSession(payload: ForkSessionPayload): Promise<SessionRecord> {
+    validateSessionId(payload.sessionId);
+    const source = await this.state.getSession(payload.sessionId);
+    if (!source) throw new Error(`Session ${payload.sessionId} was not found`);
+    if (isChatSession(source))
+      throw new Error("Chat sessions cannot be forked");
+    if (this.runs.hasActiveRun(source.id)) {
+      throw new Error("Wait for the session to finish before forking it");
+    }
+    const [messages, queuedInputs] = await Promise.all([
+      this.state.listMessagesBySessionId(source.id),
+      this.state.listQueuedAgentInputs(source.id),
+    ]);
+    const queuedIds = new Set(queuedInputs.map((input) => input.messageId));
+    const settled = messages.filter((message) => !queuedIds.has(message.id));
+    const throughIndex = payload.throughMessageId
+      ? settled.findIndex((message) => message.id === payload.throughMessageId)
+      : settled.length - 1;
+    if (payload.throughMessageId && throughIndex < 0) {
+      throw new Error(`Message ${payload.throughMessageId} was not found`);
+    }
+    const included = settled.slice(0, throughIndex + 1);
+    const now = new Date().toISOString();
+    const forkId = crypto.randomUUID();
+    const fork: SessionRecord = {
+      ...source,
+      id: forkId,
+      title: payload.title?.trim() || source.title,
+      sessionKind: "main",
+      parentSessionId: null,
+      parentToolCallId: null,
+      status: "idle",
+      createdAt: now,
+      updatedAt: now,
+      lastMessageAt: included.at(-1)?.createdAt ?? null,
+      archivedAt: null,
+      importedProviderSessionId: null,
+      importedAt: null,
+    };
+    const copies = included.map(
+      (message): MessageRecord => ({
+        ...message,
+        id: crypto.randomUUID(),
+        sessionId: forkId,
+        runId: null,
+        seq: undefined,
+      }),
+    );
+    const agentOf = messageAgentLookup(
+      this.state.listRunsBySessionId(source.id),
+    );
+    const sourceAgentTypes = [
+      ...new Set(
+        included.flatMap((message) => {
+          const agent = agentOf(message);
+          return agent ? [agent] : [];
+        }),
+      ),
+    ];
+    this.state.createForkedSession(fork, copies, {
+      id: crypto.randomUUID(),
+      kind: "fork",
+      sourceSessionId: source.id,
+      targetSessionId: forkId,
+      sourceMessageId: included.at(-1)?.id ?? null,
+      sourceAgentTypes:
+        sourceAgentTypes.length > 0 ? sourceAgentTypes : [source.agentType],
+      targetAgentType: null,
+      status: "pending",
+      strategy: null,
+      coveredMessageCount: 0,
+      handoffText: null,
+      consumedByMessageId: null,
+      createdAt: now,
+      consumedAt: null,
+    });
+    this.events.emit("daemon.event", {
+      type: "data.changed",
+      areas: ["agent"],
+    });
+    return fork;
+  }
+
+  async switchSessionAgent(sessionId: string, agentType: AgentId) {
+    validateSessionId(sessionId);
+    return this.sessionCommands.run(sessionId, async () => {
+      const session = await this.state.getSession(sessionId);
+      if (!session) throw new Error(`Session ${sessionId} was not found`);
+      if (session.archivedAt) {
+        throw new Error("Restore the session before switching its agent");
+      }
+      if (isChatSession(session)) {
+        throw new Error("Chat sessions cannot switch agents");
+      }
+      if (session.agentType === agentType) return session;
+      if (this.runs.hasActiveRun(sessionId)) {
+        throw new Error("Stop the session before switching its agent");
+      }
+      await this.ensureAgentAvailable(agentType);
+      const updated: SessionRecord = {
+        ...session,
+        agentType,
+        providerSnapshot: null,
+        sessionModeId: null,
+        permissionMode: undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      await this.state.saveSession(updated);
+      this.events.emit("daemon.event", {
+        type: "data.changed",
+        areas: ["agent"],
+      });
+      return updated;
+    });
+  }
+
+  listContextTransfers(sessionId: string) {
+    validateSessionId(sessionId);
+    return this.state.listContextTransfers(sessionId);
   }
 
   async updateSessionTitle(payload: UpdateSessionTitlePayload) {
@@ -1775,7 +1900,7 @@ export class CocurdexDaemonService {
     try {
       if (userMessageIndex >= 0) {
         const persistence = {
-          ...(await this.createRuntimePersistence(sessionId)),
+          ...(await this.createRuntimePersistence(context.session)),
           providerConfig: await this.providerCredentials.forSession(
             context.session,
           ),
@@ -1957,11 +2082,15 @@ export class CocurdexDaemonService {
     }
     const savedMessage = await this.state.saveUserMessage(createdMessage);
     const persistence: RuntimePersistence = {
-      ...(await this.createRuntimePersistence(sessionId)),
+      ...(await this.createRuntimePersistence(payload.session)),
       providerConfig,
     };
     if (this.stopping) throw new Error("Daemon is shutting down");
-    const run = await this.runs.start(sessionId, savedMessage.id);
+    const run = await this.runs.start(
+      sessionId,
+      savedMessage.id,
+      payload.session.agentType,
+    );
     await this.runCapacity.armDeadline(payload.session, run.runId);
     const userMessage: MessageRecord = { ...savedMessage, runId: run.runId };
     try {
@@ -2191,7 +2320,9 @@ export class CocurdexDaemonService {
         historyMessage.id === messageId ||
         !queuedMessageIds.has(historyMessage.id),
     );
-    const persistence = await this.createRuntimePersistence(sessionId);
+    const persistence = await this.createRuntimePersistence(
+      item.payload.session,
+    );
     await this.runtime.sendSessionMessage(
       {
         ...item.payload,
@@ -2390,28 +2521,22 @@ export class CocurdexDaemonService {
   }
 
   private async createRuntimePersistence(
-    sessionId: string,
+    session: Pick<SessionRecord, "id" | "agentType">,
   ): Promise<RuntimePersistence> {
-    const providerSession = await this.state.getProviderSession(sessionId);
+    const { agentType, id: sessionId } = session;
+    const providerSession = await this.state.getProviderSession(
+      sessionId,
+      agentType,
+    );
 
     return {
       providerSession,
       onProviderSessionUpdate: (nextProviderSession) => {
         if (!nextProviderSession) {
-          void this.state.clearProviderSession(sessionId);
+          void this.state.clearProviderSession(sessionId, agentType);
           return;
         }
-
-        void this.state.saveProviderSession(
-          nextProviderSession.sessionId,
-          nextProviderSession.providerSessionId,
-          JSON.parse(nextProviderSession.providerStateJson) as Record<
-            string,
-            unknown
-          >,
-          nextProviderSession.resumable,
-          nextProviderSession.providerVersion,
-        );
+        void this.state.saveProviderSession(agentType, nextProviderSession);
       },
     };
   }
@@ -2596,14 +2721,84 @@ export class CocurdexDaemonService {
       return null;
     }
 
+    const start = this.prepareStartContext(
+      payload.session,
+      userMessage,
+      history,
+      persistence,
+    );
     return this.runtime.sendSessionMessage(
       {
         ...payload,
-        content: userMessage.content,
+        content: start.content,
         attachments: userMessage.attachments,
       },
-      { ...persistence, history },
+      { ...persistence, history: start.history },
     );
+  }
+
+  private prepareStartContext(
+    session: SessionRecord,
+    userMessage: MessageRecord,
+    history: MessageRecord[],
+    persistence: RuntimePersistence,
+  ) {
+    const pending = this.state.findPendingContextTransfer(session.id);
+    const runs = this.state.listRunsBySessionId(session.id);
+    const priorMessages = history.filter(
+      (message) => message.id !== userMessage.id,
+    );
+    const resolution = resolveStartContext({
+      targetAgentType: session.agentType,
+      priorMessages,
+      runs,
+      hasProviderThread: persistence.providerSession !== null,
+      pendingFork: pending?.kind === "fork",
+    });
+    if (resolution.kind === "native") {
+      return { content: userMessage.content, history };
+    }
+    const handoffText = buildContextHandoffText({
+      transferKind: resolution.transferKind,
+      strategy: resolution.strategy,
+      messages: resolution.messages,
+      agentOf: messageAgentLookup(runs),
+    });
+    const consumedAt = new Date().toISOString();
+    const consumption = {
+      targetAgentType: session.agentType,
+      sourceAgentTypes:
+        resolution.sourceAgentTypes.length > 0
+          ? resolution.sourceAgentTypes
+          : (pending?.sourceAgentTypes ?? []),
+      strategy: resolution.strategy,
+      coveredMessageCount: resolution.messages.length,
+      handoffText,
+      consumedByMessageId: userMessage.id,
+      consumedAt,
+    };
+    if (pending && resolution.transferKind === "fork") {
+      this.state.consumeContextTransfer(pending.id, consumption);
+    } else {
+      this.state.insertContextTransfer({
+        id: crypto.randomUUID(),
+        kind: "agent_switch",
+        sourceSessionId: session.id,
+        targetSessionId: session.id,
+        sourceMessageId: priorMessages.at(-1)?.id ?? null,
+        status: "consumed",
+        createdAt: consumedAt,
+        ...consumption,
+      });
+    }
+    this.events.emit("daemon.event", {
+      type: "data.changed",
+      areas: ["agent"],
+    });
+    return {
+      content: `${handoffText}\n\n${userMessage.content}`,
+      history: resolution.freshProviderThread ? [userMessage] : history,
+    };
   }
 
   private async dispatchSteeringMessage(
@@ -2615,9 +2810,7 @@ export class CocurdexDaemonService {
       const history = await this.state.listMessagesBySessionId(
         payload.session.id,
       );
-      const persistence = await this.createRuntimePersistence(
-        payload.session.id,
-      );
+      const persistence = await this.createRuntimePersistence(payload.session);
       await this.runtime.sendSessionMessage(
         {
           ...payload,

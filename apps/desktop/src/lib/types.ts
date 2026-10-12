@@ -24,6 +24,7 @@ import type {
   CommentIssuePayload,
   CommitMessageModelSelection,
   CompatibleProviderModel,
+  ContextTransferRecord,
   CreateColumnPayload,
   CreatedHostPairing,
   CreateHostPairingPayload,
@@ -39,6 +40,7 @@ import type {
   DiagnosticsExportResult,
   DocumentAttachment,
   EditorViewRecord,
+  ForkSessionPayload,
   GetIssueDetailPayload,
   GetIssuePayload,
   GitBranchInfo,
@@ -373,6 +375,12 @@ export interface ProductApi {
   }): Promise<{ removed: boolean }>;
   listScriptRuns(requesterSessionId: string): Promise<ScriptRunRecord[]>;
   getScriptRun(runId: string): Promise<ScriptRunSnapshot>;
+  forkSession(payload: ForkSessionPayload): Promise<SessionRecord>;
+  switchSessionAgent(
+    sessionId: string,
+    agentType: AgentId,
+  ): Promise<SessionRecord>;
+  listContextTransfers(sessionId: string): Promise<ContextTransferRecord[]>;
   getSessionExecutionTree(
     sessionId: string,
   ): Promise<SessionExecutionTree | null>;

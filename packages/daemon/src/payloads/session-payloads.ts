@@ -48,6 +48,18 @@ export const sessionPayloadSchemas = {
     z.object({ sessionIds: z.array(idSchema).max(500) }),
   ),
   "session.snapshot": exact<Payload<"session.snapshot">>()(sessionIdPayload),
+  "session.fork": exact<Payload<"session.fork">>()(
+    z.object({
+      sessionId: idSchema,
+      throughMessageId: idSchema.optional(),
+      title: boundedTextSchema(500).optional(),
+    }),
+  ),
+  "session.switchAgent": exact<Payload<"session.switchAgent">>()(
+    z.object({ sessionId: idSchema, agentType: agentIdSchema }),
+  ),
+  "session.contextTransfers":
+    exact<Payload<"session.contextTransfers">>()(sessionIdPayload),
   "session.executionTree": exact<Payload<"session.executionTree">>()(
     z.object({
       sessionId: idSchema,

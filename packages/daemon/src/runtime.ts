@@ -450,8 +450,9 @@ export class AgentRuntimeManager {
     const workspaceRootPaths = payload.workspaceRootPaths ?? [
       payload.workspaceRootPath,
     ];
-    const rootsUnchanged =
+    const runtimeReusable =
       existingRuntime &&
+      existingRuntime.session.agentType === payload.session.agentType &&
       workspacePathsEqual(
         existingRuntime.workspaceRootPath,
         payload.workspaceRootPath,
@@ -461,7 +462,7 @@ export class AgentRuntimeManager {
         workspacePathsEqual(rootPath, workspaceRootPaths[index] ?? ""),
       );
 
-    if (existingRuntime && rootsUnchanged) {
+    if (existingRuntime && runtimeReusable) {
       // Replace the session reference instead of mutating it: callers and the
       // UI may hold onto the old object and rely on referential immutability.
       const updated: SessionRuntime = {

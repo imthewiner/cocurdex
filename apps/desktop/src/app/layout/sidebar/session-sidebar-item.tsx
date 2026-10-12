@@ -1,10 +1,11 @@
-import type { SessionRecord } from "@cocurdex/shared";
+import { isChatSession, type SessionRecord } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   Archive,
   ChevronDown,
   ChevronRight,
   CircleDot,
+  GitFork,
   ListTree,
   Pencil,
   SquareSplitHorizontal,
@@ -40,6 +41,7 @@ import {
   sessionsAtom,
   unreadSessionIdsAtom,
   updateSessionTitleAtom,
+  useForkSession,
 } from "@/features/sessions";
 import {
   getAgentRoles,
@@ -185,6 +187,7 @@ export function SessionSidebarItem({
   const [isRenaming, setIsRenaming] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isTreeOpen, setIsTreeOpen] = useState(false);
+  const forkSession = useForkSession();
   const [draftTitle, setDraftTitle] = useState(session.title);
   const descendantIds =
     hasChildren && !isExpanded
@@ -426,6 +429,15 @@ export function SessionSidebarItem({
               {t("sidebar.markUnread")}
             </SidebarContextMenuItem>
           ) : null}
+          {isChatSession(session) ? null : (
+            <SidebarContextMenuItem
+              disabled={session.status === "running"}
+              icon={GitFork}
+              onClick={() => void forkSession(session)}
+            >
+              {t("sidebar.fork")}
+            </SidebarContextMenuItem>
+          )}
           <SidebarContextMenuItem
             icon={ListTree}
             onClick={() => setIsTreeOpen(true)}
