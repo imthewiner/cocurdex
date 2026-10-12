@@ -122,6 +122,7 @@ export {
   selectSessionAtom,
   sessionRunStartedAtAtom,
   sessionsAtom,
+  setSessionPinnedAtom,
   supportsLivePermissionMode,
   toggleSessionCollapsedAtom,
   updateSessionModeAtom,

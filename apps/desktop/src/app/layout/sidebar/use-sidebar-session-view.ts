@@ -15,8 +15,11 @@ import {
   countActiveSessionFilters,
   filterSessionsByView,
   groupSessionsByView,
+  type SessionGroup,
+  type SessionGrouping,
   type SessionListFacts,
   sessionListViewAtom,
+  splitPinnedSessions,
 } from "@/features/sessions/session-list-view";
 import { collapsedWorkspaceIdsAtom } from "@/features/workspaces";
 import { pendingRequestSessionIdsAtom } from "./pending-request-store";
@@ -44,6 +47,20 @@ function collectAgentIds(
   return [...ids].sort((left, right) => left.localeCompare(right));
 }
 
+function resolveCollapsibleKeys(
+  grouping: SessionGrouping,
+  workspaces: readonly WorkspaceRecord[],
+  groups: readonly SessionGroup[],
+) {
+  if (grouping === "none") {
+    return [];
+  }
+  if (grouping === "workspace") {
+    return workspaces.map((workspace) => workspace.id);
+  }
+  return groups.map((group) => group.key);
+}
+
 export function useSidebarSessionView(
   workspaces: WorkspaceRecord[],
   sessions: readonly SessionRecord[],
@@ -69,18 +86,22 @@ export function useSidebarSessionView(
     () => ({ attentionIds, issueLinkedIds, unreadIds }),
     [attentionIds, issueLinkedIds, unreadIds],
   );
-  const visibleSessions = useMemo(
-    () => filterSessionsByView(workSessions, view, facts),
-    [workSessions, view, facts],
+  const { pinned: pinnedSessions, unpinned: unpinnedSessions } = useMemo(
+    () => splitPinnedSessions(workSessions),
+    [workSessions],
+  );
+  const listedSessions = useMemo(
+    () => filterSessionsByView(unpinnedSessions, view, facts),
+    [unpinnedSessions, view, facts],
   );
   const sessionsByWorkspace = useMemo(
-    () => groupByWorkspace(visibleSessions),
-    [visibleSessions],
+    () => groupByWorkspace(listedSessions),
+    [listedSessions],
   );
   const groups =
     view.grouping === "workspace"
       ? []
-      : groupSessionsByView(visibleSessions, view.grouping, facts, new Date());
+      : groupSessionsByView(listedSessions, view.grouping, facts, new Date());
   const visibleWorkspaces = filtered
     ? workspaces.filter((workspace) => sessionsByWorkspace[workspace.id])
     : workspaces;
@@ -90,10 +111,11 @@ export function useSidebarSessionView(
     [workspaces],
   );
 
-  const collapsibleKeys =
-    view.grouping === "workspace"
-      ? visibleWorkspaces.map((workspace) => workspace.id)
-      : groups.map((group) => group.key);
+  const collapsibleKeys = resolveCollapsibleKeys(
+    view.grouping,
+    visibleWorkspaces,
+    groups,
+  );
   const isCollapsed = (key: string) =>
     view.grouping === "workspace"
       ? collapsedWorkspaceIds.includes(key)
@@ -131,6 +153,7 @@ export function useSidebarSessionView(
     unreadCount: unreadIds.size,
     visibleWorkspaces,
     workspaceNames,
+    pinnedSessions,
     markAllRead: () => markSessionsVisited([...unreadIds]),
     toggleCollapseAll,
   };

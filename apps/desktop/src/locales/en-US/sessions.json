@@ -39,6 +39,21 @@
     "success": "Session archived",
     "view": "View archived"
   },
+  "archiveGroup": {
+    "action": "Archive sessions",
+    "cancel": "Cancel",
+    "confirm": "Archive",
+    "description": "Sessions in “{{group}}” move to the archive. Pinned, running, and waiting sessions are skipped. Restore them anytime from Settings > Archived sessions.",
+    "failed": "Could not archive these sessions",
+    "skipped_one": "Skipped {{count}} running or waiting session",
+    "skipped_other": "Skipped {{count}} running or waiting sessions",
+    "success_one": "Archived {{count}} session",
+    "success_other": "Archived {{count}} sessions",
+    "title_one": "Archive {{count}} session?",
+    "title_other": "Archive {{count}} sessions?",
+    "undo": "Undo",
+    "undoFailed": "Could not restore the sessions"
+  },
   "branch": {
     "branches": "Branches",
     "empty": "No matching branches.",
@@ -261,17 +276,22 @@
     "newSessionInWorkspace": "New session in {{workspaceName}}",
     "noAgentsYet": "No sessions yet",
     "pendingAttention": "Needs attention",
+    "pin": "Pin",
+    "pinFailed": "Could not update pin",
+    "pinned": "Pinned",
     "removeWorkspace": "Remove",
     "rename": "Rename",
     "renameSession": "Rename {{title}}",
     "revealInFileManager": "Reveal in file manager",
     "running": "Running",
+    "sessionsHeading": "Sessions",
     "settings": "Settings",
     "showLess": "Show less",
     "showMore_one": "Show more ({{count}} left)",
     "showMore_other": "Show more ({{count}} left)",
     "splitDown": "Open Below",
     "splitRight": "Open to the Right",
+    "unpin": "Unpin",
     "unread": "Unread",
     "view": {
       "agentFilter": "Agent",
@@ -280,6 +300,11 @@
       "clearFilters_one": "Clear filter",
       "clearFilters_other": "Clear {{count}} filters",
       "collapseAll": "Collapse all",
+      "compact": "Compact mode",
+      "direction": {
+        "asc": "Ascending",
+        "desc": "Descending"
+      },
       "environment": {
         "local": "Local",
         "worktree": "Worktree"
@@ -289,6 +314,7 @@
       "filtersLabel": "Filters",
       "grouping": {
         "agent": "Agent",
+        "none": "No grouping",
         "status": "Status",
         "updated": "Last updated",
         "workspace": "Workspace"
@@ -299,7 +325,8 @@
       "noMatches": "No matching sessions",
       "ordering": {
         "activity": "Recent activity",
-        "created": "Created time"
+        "created": "Created time",
+        "title": "Title"
       },
       "orderingLabel": "Sort by",
       "propertiesLabel": "Properties",

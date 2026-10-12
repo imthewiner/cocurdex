@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type {
   SessionEnvironment,
   SessionGrouping,
+  SessionOrderDirection,
   SessionOrdering,
   SessionProperty,
   SessionRootLimit,
@@ -18,10 +19,16 @@ export function useSessionListViewLabels() {
     status: t("sidebar.view.grouping.status"),
     updated: t("sidebar.view.grouping.updated"),
     agent: t("sidebar.view.grouping.agent"),
+    none: t("sidebar.view.grouping.none"),
   };
   const ordering: Record<SessionOrdering, string> = {
     activity: t("sidebar.view.ordering.activity"),
     created: t("sidebar.view.ordering.created"),
+    title: t("sidebar.view.ordering.title"),
+  };
+  const direction: Record<SessionOrderDirection, string> = {
+    desc: t("sidebar.view.direction.desc"),
+    asc: t("sidebar.view.direction.asc"),
   };
   const rootLimit: Record<SessionRootLimit, string> = {
     "8": t("sidebar.view.rootLimit.count", { count: 8 }),
@@ -60,6 +67,7 @@ export function useSessionListViewLabels() {
   };
 
   return {
+    direction,
     environment,
     grouping,
     ordering,

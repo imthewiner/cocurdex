@@ -129,9 +129,15 @@ export const daemonProductApi: ProductRequestApi = {
     rpc("pdf.updateAnnotations", { filePath, operation }),
   updateSessionTitle: ({ sessionId, title, expectedTitle, updatedAt }) =>
     rpc("session.updateTitle", { sessionId, title, expectedTitle, updatedAt }),
+  setSessionPinned: ({ sessionId, pinned }) =>
+    rpc("session.setPinned", { sessionId, pinned }),
   archiveSession: ({ sessionId }) => rpc("session.archive", { sessionId }),
   listArchivedSessions: () => rpc("session.listArchived"),
   restoreSession: ({ sessionId }) => rpc("session.restore", { sessionId }),
+  archiveSessions: ({ sessionIds }) =>
+    rpc("session.archiveMany", { sessionIds }),
+  restoreSessions: ({ sessionIds }) =>
+    rpc("session.restoreMany", { sessionIds }),
   deleteSession: async ({ sessionId }) => {
     await rpc("session.delete", { sessionId });
   },

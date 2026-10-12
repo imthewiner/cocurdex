@@ -250,6 +250,10 @@ export class DaemonState {
     await this.database.sessions.upsert(session);
   }
 
+  setSessionPinned(sessionId: string, pinnedAt: string | null) {
+    return this.database.sessions.setPinned(sessionId, pinnedAt);
+  }
+
   archiveSession(sessionId: string, archivedAt?: string) {
     return this.database.sessions.archive(sessionId, archivedAt);
   }

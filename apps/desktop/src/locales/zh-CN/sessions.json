@@ -39,6 +39,18 @@
     "success": "会话已归档",
     "view": "查看归档"
   },
+  "archiveGroup": {
+    "action": "归档会话",
+    "cancel": "取消",
+    "confirm": "归档",
+    "description": "「{{group}}」中的会话将移入归档，已置顶、运行中和等待处理的会话会被跳过。可随时在 设置 > 已归档会话 中恢复。",
+    "failed": "归档失败，请重试",
+    "skipped_other": "已跳过 {{count}} 个运行中或等待处理的会话",
+    "success_other": "已归档 {{count}} 个会话",
+    "title_other": "归档 {{count}} 个会话？",
+    "undo": "撤销",
+    "undoFailed": "恢复失败，请重试"
+  },
   "branch": {
     "branches": "分支",
     "empty": "没有匹配的分支。",
@@ -233,12 +245,12 @@
   },
   "sidebar": {
     "addWorkspace": "添加工作区",
-    "ageDays_other": "{{count}} 天前",
-    "ageHours_other": "{{count}} 小时前",
-    "ageMinutes_other": "{{count}} 分钟前",
-    "ageMonths_other": "{{count}} 个月前",
+    "ageDays_other": "{{count}}天",
+    "ageHours_other": "{{count}}小时",
+    "ageMinutes_other": "{{count}}分钟",
+    "ageMonths_other": "{{count}}个月",
     "ageNow": "刚刚",
-    "ageYears_other": "{{count}} 年前",
+    "ageYears_other": "{{count}}年",
     "archive": "归档",
     "collapseChildren": "折叠子会话",
     "delete": "删除",
@@ -252,16 +264,21 @@
     "newSessionInWorkspace": "在 {{workspaceName}} 中新建会话",
     "noAgentsYet": "暂无会话",
     "pendingAttention": "需要处理",
+    "pin": "置顶",
+    "pinFailed": "置顶失败",
+    "pinned": "已置顶",
     "removeWorkspace": "移除",
     "rename": "重命名",
     "renameSession": "重命名 {{title}}",
     "revealInFileManager": "在文件管理器中打开",
     "running": "运行中",
+    "sessionsHeading": "会话",
     "settings": "设置",
     "showLess": "收起",
     "showMore_other": "显示更多（剩余 {{count}}）",
     "splitDown": "分屏到下侧",
     "splitRight": "分屏到右侧",
+    "unpin": "取消置顶",
     "unread": "未读",
     "view": {
       "agentFilter": "Agent",
@@ -270,6 +287,11 @@
       "clearFilters_one": "清除筛选",
       "clearFilters_other": "清除 {{count}} 个筛选",
       "collapseAll": "全部折叠",
+      "compact": "紧凑模式",
+      "direction": {
+        "asc": "升序",
+        "desc": "降序"
+      },
       "environment": {
         "local": "本地",
         "worktree": "Worktree"
@@ -279,6 +301,7 @@
       "filtersLabel": "筛选",
       "grouping": {
         "agent": "Agent",
+        "none": "不分组",
         "status": "状态",
         "updated": "最近更新",
         "workspace": "工作区"
@@ -289,7 +312,8 @@
       "noMatches": "没有匹配的会话",
       "ordering": {
         "activity": "最近活动",
-        "created": "创建时间"
+        "created": "创建时间",
+        "title": "标题"
       },
       "orderingLabel": "排序",
       "propertiesLabel": "显示属性",

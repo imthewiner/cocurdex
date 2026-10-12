@@ -1,6 +1,12 @@
 import type { SessionRecord } from "@cocurdex/shared";
 
-export type SessionRootOrder = "activity" | "created";
+export type SessionRootOrder = "activity" | "created" | "title";
+export type SessionOrderDirection = "asc" | "desc";
+
+const titleCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
 
 export interface FlatSessionNode {
   depth: number;
@@ -51,15 +57,29 @@ function rootSortKey(
     : subtreeActivityAt(session, childrenByParent);
 }
 
+function compareRoots(
+  left: SessionRecord,
+  right: SessionRecord,
+  childrenByParent: Map<string | null, SessionRecord[]>,
+  order: SessionRootOrder,
+) {
+  if (order === "title") {
+    return titleCollator.compare(left.title, right.title);
+  }
+  return rootSortKey(left, childrenByParent, order).localeCompare(
+    rootSortKey(right, childrenByParent, order),
+  );
+}
+
 function sortRoots(
   sessions: SessionRecord[],
   childrenByParent: Map<string | null, SessionRecord[]>,
   order: SessionRootOrder,
+  direction: SessionOrderDirection,
 ) {
+  const sign = direction === "asc" ? 1 : -1;
   return [...sessions].sort((left, right) => {
-    const byKey = rootSortKey(right, childrenByParent, order).localeCompare(
-      rootSortKey(left, childrenByParent, order),
-    );
+    const byKey = compareRoots(left, right, childrenByParent, order) * sign;
     return byKey !== 0 ? byKey : right.id.localeCompare(left.id);
   });
 }
@@ -130,6 +150,7 @@ export function buildVisibleSessionTree(
   sessions: SessionRecord[],
   collapsedIds: ReadonlySet<string> = new Set(),
   order: SessionRootOrder = "activity",
+  direction: SessionOrderDirection = "desc",
 ): FlatSessionNode[] {
   const byId = new Map(sessions.map((session) => [session.id, session]));
   const childrenByParent = groupChildren(sessions);
@@ -170,6 +191,7 @@ export function buildVisibleSessionTree(
     }),
     childrenByParent,
     order,
+    direction,
   );
 
   for (const root of roots) {
@@ -180,6 +202,7 @@ export function buildVisibleSessionTree(
     sessions.filter((session) => !visited.has(session.id)),
     childrenByParent,
     order,
+    direction,
   );
   for (const orphan of orphans) {
     walk(orphan, 0);

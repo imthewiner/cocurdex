@@ -18,6 +18,7 @@ import type {
   AppBootstrapData,
   ApplyNoteDocUpdatePayload,
   AppResyncSnapshot,
+  ArchiveSessionsResult,
   CocurdexDaemonEvent,
   CodexAccountState,
   CodexLoginOutcome,
@@ -120,9 +121,11 @@ import type {
   SessionAttentionSnapshot,
   SessionConfiguration,
   SessionExecutionTree,
+  SessionIdsPayload,
   SessionMessagesResult,
   SessionObservationSnapshot,
   SessionRecord,
+  SetSessionPinnedPayload,
   SpawnTeammatePayload,
   SpawnTeamTemplatePayload,
   StartScriptRunPayload,
@@ -295,6 +298,8 @@ export type DaemonRequestPayloadByMethod = {
   "session.delete": { sessionId: string };
   "session.archive": { sessionId: string };
   "session.restore": { sessionId: string };
+  "session.archiveMany": SessionIdsPayload;
+  "session.restoreMany": SessionIdsPayload;
   "session.listArchived": undefined;
   "provider.apiKey.set": { providerId: string; apiKey: string | null };
   "provider.listTemplates": undefined;
@@ -338,6 +343,7 @@ export type DaemonRequestPayloadByMethod = {
   "codex.login.wait": { loginId: string };
   "codex.login.cancel": { loginId: string };
   "session.updateTitle": UpdateSessionTitlePayload;
+  "session.setPinned": SetSessionPinnedPayload;
   "session.refineTitle": RefineSessionTitlePayload;
   "session.listMessages": { sessionId: string };
   "session.listToolCalls": { sessionId: string };
@@ -560,6 +566,8 @@ export type DaemonResultByMethod = {
   "session.delete": null;
   "session.archive": SessionRecord | null;
   "session.restore": SessionRecord[];
+  "session.archiveMany": ArchiveSessionsResult;
+  "session.restoreMany": SessionRecord[];
   "session.listArchived": SessionRecord[];
   "provider.apiKey.set": null;
   "provider.listTemplates": ProviderTemplateRecord[];
@@ -589,6 +597,7 @@ export type DaemonResultByMethod = {
   "codex.login.wait": CodexLoginOutcome;
   "codex.login.cancel": null;
   "session.updateTitle": SessionRecord | null;
+  "session.setPinned": SessionRecord | null;
   "session.refineTitle": SessionRecord | null;
   "session.listMessages": SessionMessagesResult;
   "session.listToolCalls": AgentToolCallRecord[];

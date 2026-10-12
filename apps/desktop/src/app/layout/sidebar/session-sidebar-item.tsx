@@ -8,6 +8,8 @@ import {
   GitFork,
   ListTree,
   Pencil,
+  Pin,
+  PinOff,
   SquareSplitHorizontal,
   SquareSplitVertical,
   Trash2,
@@ -64,6 +66,7 @@ import { SidebarContextMenuItem } from "./sidebar-context-menu-item";
 import { SidebarItemTooltip } from "./sidebar-item-preview";
 import { SidebarOverflowTitle } from "./sidebar-overflow-title";
 import { SidebarRenameInput } from "./sidebar-rename-input";
+import { useToggleSessionPin } from "./use-toggle-session-pin";
 
 interface SessionSidebarItemProps {
   hasChildren?: boolean;
@@ -120,6 +123,7 @@ export function SessionSidebarItem({
   const deleteSession = useSetAtom(deleteSessionAtom);
   const openSessionInSplit = useSetAtom(openSessionInSplitAtom);
   const markSessionUnread = useSetAtom(markSessionUnreadAtom);
+  const toggleSessionPin = useToggleSessionPin();
   const resultAttention = useAtomValue(sessionResultAttentionAtom)[session.id];
   const isUnread = useAtomValue(unreadSessionIdsAtom).has(session.id);
   const permissionsBySession = useAtomValue(permissionsBySessionAtom);
@@ -163,7 +167,7 @@ export function SessionSidebarItem({
   const isChild = Boolean(session.parentSessionId);
   const activityAt = session.lastMessageAt ?? session.updatedAt;
   const metaItems = resolveSessionMetaItems(properties, {
-    roleName: selectedRole?.name,
+    role: selectedRole ?? undefined,
     session,
     workspaceName,
   });
@@ -309,7 +313,8 @@ export function SessionSidebarItem({
             <SidebarListRow
               isActive={isActive}
               className={cn(
-                isChild ? "ps-11 text-sidebar-fg-muted" : "ps-6",
+                isChild && "ps-6 text-sidebar-fg-muted",
+                !isChild && "ps-1",
                 metaItems.length > 0 && "h-auto py-1",
               )}
               onClick={hasChildren ? undefined : onSelect}
@@ -352,6 +357,14 @@ export function SessionSidebarItem({
           </ContextMenuTrigger>
         </SidebarItemTooltip>
         <ContextMenuContent className="min-w-26">
+          {isChild ? null : (
+            <SidebarContextMenuItem
+              icon={session.pinnedAt ? PinOff : Pin}
+              onClick={() => toggleSessionPin(session)}
+            >
+              {session.pinnedAt ? t("sidebar.unpin") : t("sidebar.pin")}
+            </SidebarContextMenuItem>
+          )}
           <SidebarContextMenuItem icon={Pencil} onClick={startRename}>
             {t("sidebar.rename")}
           </SidebarContextMenuItem>

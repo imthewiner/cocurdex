@@ -10,11 +10,21 @@ export const SESSION_GROUPINGS = [
   "status",
   "updated",
   "agent",
+  "none",
 ] as const;
 export type SessionGrouping = (typeof SESSION_GROUPINGS)[number];
 
-export const SESSION_ORDERINGS = ["activity", "created"] as const;
+export const SESSION_ORDERINGS = ["activity", "created", "title"] as const;
 export type SessionOrdering = (typeof SESSION_ORDERINGS)[number];
+
+export const SESSION_ORDER_DIRECTIONS = ["desc", "asc"] as const;
+export type SessionOrderDirection = (typeof SESSION_ORDER_DIRECTIONS)[number];
+
+export function defaultOrderDirection(
+  ordering: SessionOrdering,
+): SessionOrderDirection {
+  return ordering === "title" ? "asc" : "desc";
+}
 
 export const SESSION_STATUS_BUCKETS = [
   "attention",
@@ -55,7 +65,9 @@ export type SessionProperty = (typeof SESSION_PROPERTIES)[number];
 export interface SessionListView {
   grouping: SessionGrouping;
   ordering: SessionOrdering;
+  direction: SessionOrderDirection;
   rootLimit: SessionRootLimit;
+  compact: boolean;
   properties: SessionProperty[];
   statuses: SessionStatusBucket[];
   agents: AgentId[];
@@ -66,7 +78,9 @@ export interface SessionListView {
 export const DEFAULT_SESSION_LIST_VIEW: SessionListView = {
   grouping: "workspace",
   ordering: "activity",
+  direction: "desc",
   rootLimit: "8",
+  compact: false,
   properties: ["timestamp"],
   statuses: [],
   agents: [],
@@ -126,20 +140,39 @@ export function normalizeSessionListView(value: unknown): SessionListView {
       ? (value as Partial<Record<keyof SessionListView, unknown>>)
       : {};
   const defaults = DEFAULT_SESSION_LIST_VIEW;
+  const ordering = pickOne(
+    SESSION_ORDERINGS,
+    input.ordering,
+    defaults.ordering,
+  );
   return {
     grouping: pickOne(SESSION_GROUPINGS, input.grouping, defaults.grouping),
-    ordering: pickOne(SESSION_ORDERINGS, input.ordering, defaults.ordering),
+    ordering,
+    direction: pickOne(
+      SESSION_ORDER_DIRECTIONS,
+      input.direction,
+      defaultOrderDirection(ordering),
+    ),
     rootLimit: pickOne(
       SESSION_ROOT_LIMITS,
       input.rootLimit,
       defaults.rootLimit,
     ),
+    compact: input.compact === true,
     properties: pickProperties(input.properties, defaults.properties),
     statuses: pickMany(input.statuses, isOneOf(SESSION_STATUS_BUCKETS)),
     agents: pickMany(input.agents, isStoredAgentId),
     environments: pickMany(input.environments, isOneOf(SESSION_ENVIRONMENTS)),
     sources: pickMany(input.sources, isOneOf(SESSION_SOURCES)),
   };
+}
+
+const COMPACT_SESSION_PROPERTIES: readonly SessionProperty[] = ["timestamp"];
+
+export function visibleSessionProperties(
+  view: Pick<SessionListView, "compact" | "properties">,
+): readonly SessionProperty[] {
+  return view.compact ? COMPACT_SESSION_PROPERTIES : view.properties;
 }
 
 export function countActiveSessionFilters(view: SessionListView) {
@@ -155,7 +188,8 @@ export function isCustomizedSessionListView(view: SessionListView) {
   return (
     countActiveSessionFilters(view) > 0 ||
     view.grouping !== DEFAULT_SESSION_LIST_VIEW.grouping ||
-    view.ordering !== DEFAULT_SESSION_LIST_VIEW.ordering
+    view.ordering !== DEFAULT_SESSION_LIST_VIEW.ordering ||
+    view.direction !== defaultOrderDirection(view.ordering)
   );
 }
 
@@ -173,6 +207,17 @@ function groupByRoot(sessions: readonly SessionRecord[]) {
     trees.set(rootId, tree);
   }
   return { byId, trees };
+}
+
+export function splitPinnedSessions(sessions: readonly SessionRecord[]) {
+  const { byId, trees } = groupByRoot(sessions);
+  const pinned: SessionRecord[] = [];
+  const unpinned: SessionRecord[] = [];
+  for (const [rootId, tree] of trees) {
+    const target = byId.get(rootId)?.pinnedAt ? pinned : unpinned;
+    target.push(...tree);
+  }
+  return { pinned, unpinned };
 }
 
 export function sessionStatusBucket(
@@ -263,8 +308,25 @@ export function sessionUpdatedBucket(
   return "older";
 }
 
+type BucketGrouping = Exclude<SessionGrouping, "workspace" | "none">;
+
+function flatSessionGroup(sessions: readonly SessionRecord[]): SessionGroup[] {
+  if (sessions.length === 0) {
+    return [];
+  }
+  const { trees } = groupByRoot(sessions);
+  return [
+    {
+      key: "none",
+      value: "none",
+      rootCount: trees.size,
+      sessions: [...sessions],
+    },
+  ];
+}
+
 function groupValue(
-  grouping: Exclude<SessionGrouping, "workspace">,
+  grouping: BucketGrouping,
   tree: readonly SessionRecord[],
   root: SessionRecord,
   context: {
@@ -285,7 +347,7 @@ function groupValue(
   return root.agentType;
 }
 
-function groupOrder(grouping: Exclude<SessionGrouping, "workspace">) {
+function groupOrder(grouping: BucketGrouping) {
   if (grouping === "status") {
     return SESSION_STATUS_BUCKETS;
   }
@@ -301,6 +363,9 @@ export function groupSessionsByView(
   facts: SessionListFacts,
   now: Date,
 ): SessionGroup[] {
+  if (grouping === "none") {
+    return flatSessionGroup(sessions);
+  }
   const { byId, trees } = groupByRoot(sessions);
   const context = { childrenByParent: groupChildren(sessions), facts, now };
   const groups = new Map<string, SessionRecord[][]>();

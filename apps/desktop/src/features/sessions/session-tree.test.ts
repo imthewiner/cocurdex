@@ -50,6 +50,38 @@ describe("buildVisibleSessionTree", () => {
     ).toEqual(["newer", "older"]);
   });
 
+  it("orders roots by title with natural numbers in either direction", () => {
+    const sessions = [
+      session({ id: "b", title: "task 10" }),
+      session({ id: "a", title: "Task 2" }),
+      session({ id: "c", title: "alpha" }),
+    ];
+    const ids = (direction: "asc" | "desc") =>
+      buildVisibleSessionTree(sessions, new Set(), "title", direction).map(
+        (node) => node.session.id,
+      );
+
+    expect(ids("asc")).toEqual(["c", "a", "b"]);
+    expect(ids("desc")).toEqual(["b", "a", "c"]);
+  });
+
+  it("lists the oldest root first in ascending activity order", () => {
+    const older = session({
+      id: "older",
+      lastMessageAt: "2026-08-30T00:00:00.000Z",
+    });
+    const newer = session({
+      id: "newer",
+      lastMessageAt: "2026-08-31T00:00:00.000Z",
+    });
+
+    expect(
+      buildVisibleSessionTree([newer, older], new Set(), "activity", "asc").map(
+        (node) => node.session.id,
+      ),
+    ).toEqual(["older", "newer"]);
+  });
+
   it("nests subagent sessions under their parent in spawn order", () => {
     const parent = session({
       id: "parent",

@@ -25,6 +25,7 @@ import type {
   AgentRuntimeProviderConfig,
   AppBootstrapData,
   AppResyncSnapshot,
+  ArchiveSessionsResult,
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
   ContextTransferRecord,
@@ -40,6 +41,7 @@ import type {
   SendSessionCommand,
   SessionConfiguration,
   SessionRecord,
+  SetSessionPinnedPayload,
   SubmitPreviousMessageCommand,
   TurnChangeDiffRequest,
   TurnChangeFileContentRequest,
@@ -145,6 +147,7 @@ import {
   SessionRunCoordinator,
   type SessionRuntimeMessage,
   type SessionTurnOutcome,
+  selectArchivableRoots,
 } from "./session-control";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
@@ -568,6 +571,54 @@ export class CocurdexDaemonService {
     return this.sessionCommands.run(sessionId, () =>
       this.state.restoreSession(sessionId),
     );
+  }
+
+  async archiveSessions(sessionIds: string[]): Promise<ArchiveSessionsResult> {
+    sessionIds.forEach(validateSessionId);
+    const pending = this.runtime.getPendingInteractions();
+    const waitingIds = new Set(
+      [
+        ...pending.permissions,
+        ...pending.questions,
+        ...pending.planApprovals,
+      ].map((item) => item.sessionId),
+    );
+    const { rootIds, skippedCount } = selectArchivableRoots(
+      await this.state.listSessions(),
+      sessionIds,
+      (sessionId) =>
+        waitingIds.has(sessionId) ||
+        this.runs.hasActiveRun(sessionId) ||
+        this.queuedFollowUps.has(sessionId),
+    );
+    const archivedSessionIds: string[] = [];
+    for (const rootId of rootIds) {
+      if (await this.archiveSession(rootId)) {
+        archivedSessionIds.push(rootId);
+      }
+    }
+    if (archivedSessionIds.length > 0) {
+      this.events.emit("daemon.event", {
+        type: "data.changed",
+        areas: ["agent"],
+      });
+    }
+    return { archivedSessionIds, skippedCount };
+  }
+
+  async restoreSessions(sessionIds: string[]) {
+    sessionIds.forEach(validateSessionId);
+    const restored: SessionRecord[] = [];
+    for (const sessionId of new Set(sessionIds)) {
+      restored.push(...(await this.restoreSession(sessionId)));
+    }
+    if (restored.length > 0) {
+      this.events.emit("daemon.event", {
+        type: "data.changed",
+        areas: ["agent"],
+      });
+    }
+    return restored;
   }
 
   status(): CocurdexDaemonStatus {
@@ -1727,6 +1778,22 @@ export class CocurdexDaemonService {
       });
     }
     return updatedSession;
+  }
+
+  async setSessionPinned(payload: SetSessionPinnedPayload) {
+    validateSessionId(payload.sessionId);
+    const pinnedAt = payload.pinned ? new Date().toISOString() : null;
+    const session = await this.state.setSessionPinned(
+      payload.sessionId,
+      pinnedAt,
+    );
+    if (session) {
+      this.events.emit("daemon.event", {
+        type: "data.changed",
+        areas: ["agent"],
+      });
+    }
+    return session;
   }
 
   // Only replaces a title the user has not changed since the request was

@@ -928,6 +928,10 @@ export const upsertSessionAtom = atom(
       ? {
           ...incoming,
           lastMessageAt: incoming.lastMessageAt ?? existing.lastMessageAt,
+          pinnedAt:
+            incoming.pinnedAt === undefined
+              ? existing.pinnedAt
+              : incoming.pinnedAt,
         }
       : incoming;
     const next = existing
@@ -1027,6 +1031,20 @@ function removeSessionSubtree(get: Getter, set: Setter, sessionId: string) {
     }
   }
 }
+
+export const setSessionPinnedAtom = atom(
+  null,
+  (get, set, payload: { sessionId: string; pinnedAt: string | null }) => {
+    set(
+      sessionsAtom,
+      get(sessionsAtom).map((session) =>
+        session.id === payload.sessionId
+          ? { ...session, pinnedAt: payload.pinnedAt }
+          : session,
+      ),
+    );
+  },
+);
 
 export const archiveSessionAtom = atom(
   null,

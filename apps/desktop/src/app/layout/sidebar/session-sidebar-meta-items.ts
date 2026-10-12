@@ -1,15 +1,26 @@
 import type { AgentId, SessionRecord } from "@cocurdex/shared";
-import { getAgentDisplayLabel } from "@/features/sessions";
+import {
+  type AgentRoleAvatarSource,
+  getAgentDisplayLabel,
+} from "@/features/sessions";
 import type { SessionProperty } from "@/features/sessions/session-list-view";
 
 export interface SessionMetaItem {
   agentId?: AgentId;
   key: SessionProperty;
   label: string;
+  role?: AgentRoleAvatarSource;
+  showRoleAgent?: boolean;
+}
+
+interface SessionMetaRole {
+  avatar: AgentRoleAvatarSource["avatar"];
+  id: string;
+  name: string;
 }
 
 interface SessionMetaSource {
-  roleName?: string;
+  role?: SessionMetaRole;
   session: SessionRecord;
   workspaceName?: string;
 }
@@ -20,7 +31,7 @@ function worktreeName(worktreePath: string) {
 
 function resolveMetaItem(
   property: SessionProperty,
-  { roleName, session, workspaceName }: SessionMetaSource,
+  { role, session, workspaceName }: SessionMetaSource,
 ): SessionMetaItem | null {
   switch (property) {
     case "agent":
@@ -34,7 +45,13 @@ function resolveMetaItem(
       return modelName ? { key: property, label: modelName } : null;
     }
     case "role":
-      return roleName ? { key: property, label: roleName } : null;
+      return role
+        ? {
+            key: property,
+            label: role.name,
+            role: { ...role, agentId: session.agentType },
+          }
+        : null;
     case "workspace":
       return workspaceName ? { key: property, label: workspaceName } : null;
     case "worktree":
@@ -49,8 +66,17 @@ function resolveMetaItem(
 export function resolveSessionMetaItems(
   properties: readonly SessionProperty[],
   source: SessionMetaSource,
-) {
-  return properties
+): SessionMetaItem[] {
+  const items = properties
     .map((property) => resolveMetaItem(property, source))
     .filter((item): item is SessionMetaItem => item !== null);
+  const roleItem = items.find((item) => item.role);
+  if (!(roleItem && items.some((item) => item.agentId))) {
+    return items;
+  }
+  return items
+    .filter((item) => item !== roleItem)
+    .map((item) =>
+      item.agentId ? { ...roleItem, showRoleAgent: true } : item,
+    );
 }

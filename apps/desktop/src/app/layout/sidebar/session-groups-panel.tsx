@@ -1,6 +1,7 @@
 import type { AgentId } from "@cocurdex/shared";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import {
+  Archive,
   BellDot,
   CalendarDays,
   ChevronDown,
@@ -13,8 +14,12 @@ import {
   type LucideIcon,
   Zap,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
   SidebarListRow,
   SidebarMenu,
   SidebarMenuItem,
@@ -29,12 +34,25 @@ import {
   type SessionStatusBucket,
   type SessionUpdatedBucket,
 } from "@/features/sessions/session-list-view";
+import { archiveGroupRequestAtom } from "./archive-group-store";
 import { SessionFilterEmpty } from "./session-filter-empty";
+import { SidebarContextMenuItem } from "./sidebar-context-menu-item";
 import { SidebarScrollArea } from "./sidebar-scroll-area";
 import { SidebarSessionTree } from "./sidebar-session-tree";
 import { useSessionListViewLabels } from "./use-session-list-view-labels";
+import { useSidebarSectionCollapse } from "./use-sidebar-section-collapse";
 
 type ListGrouping = Exclude<SessionGrouping, "workspace">;
+
+interface SessionGroupSectionProps {
+  expanded: boolean;
+  group: SessionGroup;
+  label: string;
+  optimisticActiveSessionId: string | null;
+  workspaceNames: ReadonlyMap<string, string>;
+  onSelectSession(workspaceId: string, sessionId: string): void;
+  onToggle(): void;
+}
 
 const GROUP_ICONS: Readonly<Record<string, LucideIcon>> = {
   "status:attention": BellDot,
@@ -83,8 +101,74 @@ function SessionGroupsEmpty({ filtered }: { filtered: boolean }) {
   );
 }
 
+function SessionGroupSection({
+  expanded,
+  group,
+  label,
+  optimisticActiveSessionId,
+  workspaceNames,
+  onSelectSession,
+  onToggle,
+}: SessionGroupSectionProps) {
+  const { t } = useTranslation("sessions");
+  const requestArchive = useSetAtom(archiveGroupRequestAtom);
+  return (
+    <SidebarMenuItem className="flex flex-col gap-0.5">
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <SidebarListRow
+            variant="subtle"
+            className="px-1"
+            render={
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={onToggle}
+              />
+            }
+          >
+            <SessionGroupIcon group={group} />
+            <span className="min-w-0 flex-1 truncate text-start">{label}</span>
+            <Text
+              size="meta"
+              className="shrink-0 tabular-nums text-sidebar-fg-subtle"
+            >
+              {group.rootCount}
+            </Text>
+            {expanded ? (
+              <ChevronDown className="size-3.5 shrink-0 text-sidebar-fg-subtle" />
+            ) : (
+              <ChevronRight className="size-3.5 shrink-0 text-sidebar-fg-subtle rtl:-scale-x-100" />
+            )}
+          </SidebarListRow>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="min-w-44">
+          <SidebarContextMenuItem
+            icon={Archive}
+            onClick={() => requestArchive({ label, sessions: group.sessions })}
+          >
+            {t("archiveGroup.action")}
+          </SidebarContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      {expanded ? (
+        <SidebarSessionTree
+          emptyLabel={t("sidebar.view.noMatches")}
+          listKey={group.key}
+          onSelectSession={onSelectSession}
+          optimisticActiveSessionId={optimisticActiveSessionId}
+          sessions={group.sessions}
+          workspaceNames={workspaceNames}
+        />
+      ) : null}
+    </SidebarMenuItem>
+  );
+}
+
 interface SessionGroupsPanelProps {
   filtered: boolean;
+  hasPinnedSessions: boolean;
+  leading?: ReactNode;
   grouping: ListGrouping;
   groups: SessionGroup[];
   optimisticActiveSessionId: string | null;
@@ -94,6 +178,8 @@ interface SessionGroupsPanelProps {
 
 export function SessionGroupsPanel({
   filtered,
+  hasPinnedSessions,
+  leading,
   grouping,
   groups,
   optimisticActiveSessionId,
@@ -105,6 +191,8 @@ export function SessionGroupsPanel({
     collapsedSessionGroupKeysAtom,
   );
   const groupLabel = useGroupLabel(grouping);
+  const sessionsSection = useSidebarSectionCollapse("sessions");
+  const listedGroups = sessionsSection.collapsed ? [] : groups;
 
   const toggleGroup = (key: string) => {
     const next = new Set(collapsedKeys);
@@ -123,44 +211,15 @@ export function SessionGroupsPanel({
         }}
       >
         <SidebarMenu className="pe-3">
-          {groups.length === 0 ? (
+          {leading}
+          {!sessionsSection.collapsed &&
+          groups.length === 0 &&
+          (filtered || !hasPinnedSessions) ? (
             <SessionGroupsEmpty filtered={filtered} />
           ) : null}
-          {groups.map((group) => {
-            const expanded = !collapsedKeys.has(group.key);
-            return (
-              <SidebarMenuItem
-                className="flex flex-col gap-0.5"
-                key={group.key}
-              >
-                <SidebarListRow
-                  variant="subtle"
-                  className="px-1"
-                  render={
-                    <button
-                      type="button"
-                      aria-expanded={expanded}
-                      onClick={() => toggleGroup(group.key)}
-                    />
-                  }
-                >
-                  <SessionGroupIcon group={group} />
-                  <span className="min-w-0 flex-1 truncate text-start">
-                    {groupLabel(group)}
-                  </span>
-                  <Text
-                    size="meta"
-                    className="shrink-0 tabular-nums text-sidebar-fg-subtle"
-                  >
-                    {group.rootCount}
-                  </Text>
-                  {expanded ? (
-                    <ChevronDown className="size-3.5 shrink-0 text-sidebar-fg-subtle" />
-                  ) : (
-                    <ChevronRight className="size-3.5 shrink-0 text-sidebar-fg-subtle rtl:-scale-x-100" />
-                  )}
-                </SidebarListRow>
-                {expanded ? (
+          {grouping === "none"
+            ? listedGroups.map((group) => (
+                <SidebarMenuItem key={group.key}>
                   <SidebarSessionTree
                     emptyLabel={t("sidebar.view.noMatches")}
                     listKey={group.key}
@@ -169,10 +228,20 @@ export function SessionGroupsPanel({
                     sessions={group.sessions}
                     workspaceNames={workspaceNames}
                   />
-                ) : null}
-              </SidebarMenuItem>
-            );
-          })}
+                </SidebarMenuItem>
+              ))
+            : listedGroups.map((group) => (
+                <SessionGroupSection
+                  expanded={!collapsedKeys.has(group.key)}
+                  group={group}
+                  key={group.key}
+                  label={groupLabel(group)}
+                  onSelectSession={onSelectSession}
+                  onToggle={() => toggleGroup(group.key)}
+                  optimisticActiveSessionId={optimisticActiveSessionId}
+                  workspaceNames={workspaceNames}
+                />
+              ))}
         </SidebarMenu>
       </SidebarScrollArea>
     </TooltipProvider>

@@ -169,6 +169,12 @@ export function createSqliteSessionRepository(
         )
         .run(status, now, sessionId);
     },
+    async setPinned(sessionId, pinnedAt) {
+      database
+        .prepare("UPDATE sessions SET pinned_at = ? WHERE id = ?")
+        .run(pinnedAt, sessionId);
+      return this.getById(sessionId);
+    },
     async archive(sessionId, archivedAt) {
       const nextArchivedAt = archivedAt ?? new Date().toISOString();
       database

@@ -232,4 +232,42 @@ describe("createSqliteSessionRepository", () => {
       archivedAt: "2026-08-31T12:00:00.000Z",
     });
   });
+
+  it("keeps a pin when runtime upserts a record without pinnedAt", async () => {
+    const database = createDatabase();
+    const workspaces = createSqliteWorkspaceRepository(database);
+    const sessions = createSqliteSessionRepository(database);
+    await workspaces.upsert({
+      id: "workspace-1",
+      name: "repo",
+      rootPaths: ["/tmp/repo"],
+      createdAt: now,
+      updatedAt: now,
+      lastOpenedAt: now,
+      sortOrder: 1000,
+    });
+    const session = {
+      id: "session-1",
+      workspaceId: "workspace-1",
+      title: "Pinned",
+      agentType: "codex",
+      status: "idle",
+      writeMode: "native-write",
+      sessionModeId: null,
+      createdAt: now,
+      updatedAt: now,
+      lastMessageAt: null,
+    } as const;
+    await sessions.upsert(session);
+
+    const pinned = await sessions.setPinned("session-1", now);
+    await sessions.upsert({ ...session, status: "running" });
+
+    expect(pinned?.pinnedAt).toBe(now);
+    expect(await sessions.getById("session-1")).toMatchObject({
+      pinnedAt: now,
+      status: "running",
+    });
+    expect((await sessions.setPinned("session-1", null))?.pinnedAt).toBeNull();
+  });
 });

@@ -54,6 +54,7 @@ export function createSchemaSql() {
       updated_at TEXT NOT NULL,
       last_message_at TEXT,
       archived_at TEXT,
+      pinned_at TEXT,
       worktree_path TEXT,
       peer_inbound TEXT NOT NULL DEFAULT 'deliver',
       timeline_seq INTEGER NOT NULL DEFAULT 0,

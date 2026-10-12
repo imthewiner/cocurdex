@@ -18,6 +18,7 @@ import type {
   AppBootstrapData,
   AppResyncSnapshot,
   ArchiveSessionPayload,
+  ArchiveSessionsResult,
   BrowserAnnotation,
   BrowserTabsSnapshot,
   CocurdexDataChangedEvent,
@@ -97,8 +98,10 @@ import type {
   SearchDocumentsPayload,
   SessionAttentionSnapshot,
   SessionExecutionTree,
+  SessionIdsPayload,
   SessionMessagesResult,
   SessionRecord,
+  SetSessionPinnedPayload,
   StartScriptRunPayload,
   TeamMemberRecord,
   TeamRecord,
@@ -463,9 +466,14 @@ export interface ProductApi {
   updateSessionTitle(
     payload: UpdateSessionTitlePayload,
   ): Promise<SessionRecord | null>;
+  setSessionPinned(
+    payload: SetSessionPinnedPayload,
+  ): Promise<SessionRecord | null>;
   archiveSession(payload: ArchiveSessionPayload): Promise<SessionRecord | null>;
   listArchivedSessions(): Promise<SessionRecord[]>;
   restoreSession(payload: { sessionId: string }): Promise<SessionRecord[]>;
+  archiveSessions(payload: SessionIdsPayload): Promise<ArchiveSessionsResult>;
+  restoreSessions(payload: SessionIdsPayload): Promise<SessionRecord[]>;
   deleteSession(payload: DeleteSessionPayload): Promise<void>;
   refineSessionTitle(
     payload: RefineSessionTitlePayload,
