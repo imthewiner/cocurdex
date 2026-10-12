@@ -11,6 +11,7 @@ export const agentToolGroupIds = [
   "notes",
   "issues",
   "settings",
+  "history",
 ] as const;
 
 export type AgentToolGroupId = (typeof agentToolGroupIds)[number];

@@ -19,6 +19,7 @@ function withSkillSupport(
     ...(discoverCapabilities ? { discoverCapabilities } : {}),
     ...(discoverSessionModes ? { discoverSessionModes } : {}),
     ...(forkProviderSession ? { forkProviderSession } : {}),
+    ...(adapter.injectsContextHandoff ? { injectsContextHandoff: true } : {}),
     createSession: (payload, onEvent) =>
       adapter.createSession(payload, onEvent),
     listSlashCommands: (payload) => {

@@ -15,3 +15,8 @@ export {
   SessionRunCoordinator,
 } from "./run-coordinator";
 export { decideDelivery, decideRunOutcome } from "./run-decisions";
+export {
+  collectHandoffItems,
+  readSessionActivity,
+  type SessionActivityReader,
+} from "./session-activity";

@@ -170,6 +170,13 @@ export class CodexAppServerClient {
     return result as unknown as ThreadStartResult;
   }
 
+  async injectItems(params: {
+    threadId: string;
+    items: readonly unknown[];
+  }): Promise<void> {
+    await this.#request("thread/inject_items", params);
+  }
+
   async startTurn(params: Record<string, unknown>): Promise<TurnStartResult> {
     const result = await this.#request("turn/start", params);
 

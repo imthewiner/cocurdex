@@ -54,6 +54,7 @@ import {
   AGENT_RUN_LIMITS_SETTING_KEY,
   buildContextHandoffText,
   CHAT_WORKSPACE_ID,
+  contextHandoffBudget,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
   isAgentId,
@@ -87,6 +88,7 @@ import {
 import { AcpRegistryService } from "./acp-registry";
 import {
   AgentToolBridge,
+  registerHistoryTools,
   registerMessagingTools,
   registerScriptRunTools,
   registerSettingsTools,
@@ -129,11 +131,14 @@ import { ScriptRunModule } from "./script-run";
 import { DaemonSearchService } from "./search-service";
 import {
   applySessionConfiguration,
+  collectHandoffItems,
   decideDelivery,
   forkProviderThreads,
   RunCapacity,
   type RunHandle,
+  readSessionActivity,
   resolveRepeatedSend,
+  type SessionActivityReader,
   SessionCheckpointStore,
   SessionCommandQueue,
   type SessionExecutionContext,
@@ -367,6 +372,14 @@ export class CocurdexDaemonService {
       sendPeerMessage: (payload) => this.peerMessaging.send(payload),
     });
     registerTeamTools(this.agentTools.registry, this.team);
+    registerHistoryTools(this.agentTools.registry, {
+      readSessionActivity: (caller, sessionId) =>
+        readSessionActivity(
+          this.sessionActivityReader(),
+          caller.sessionId,
+          sessionId,
+        ),
+    });
     this.scriptRuns = new ScriptRunModule({
       repository: this.state.scriptRuns,
       getSession: (sessionId) => this.state.getSession(sessionId),
@@ -2746,7 +2759,7 @@ export class CocurdexDaemonService {
       return null;
     }
 
-    const start = this.prepareStartContext(
+    const start = await this.prepareStartContext(
       payload.session,
       userMessage,
       history,
@@ -2758,11 +2771,15 @@ export class CocurdexDaemonService {
         content: start.content,
         attachments: userMessage.attachments,
       },
-      { ...persistence, history: start.history },
+      {
+        ...persistence,
+        history: start.history,
+        contextHandoff: start.contextHandoff,
+      },
     );
   }
 
-  private prepareStartContext(
+  private async prepareStartContext(
     session: SessionRecord,
     userMessage: MessageRecord,
     history: MessageRecord[],
@@ -2784,14 +2801,36 @@ export class CocurdexDaemonService {
       if (pending?.kind === "fork") {
         this.consumeNativeFork(pending, session, userMessage, priorMessages);
       }
-      return { content: userMessage.content, history };
+      return {
+        content: userMessage.content,
+        history,
+        contextHandoff: undefined,
+      };
     }
-    const handoffText = buildContextHandoffText({
+    const sourceSessionId =
+      resolution.transferKind === "fork"
+        ? (pending?.sourceSessionId ?? null)
+        : null;
+    const items = await collectHandoffItems(this.sessionActivityReader(), {
+      targetSessionId: session.id,
+      targetAgentType: session.agentType,
+      messages: resolution.messages,
+      runs,
+      fork: sourceSessionId ? pending : null,
+    });
+    const handoff = buildContextHandoffText({
       transferKind: resolution.transferKind,
       strategy: resolution.strategy,
-      messages: resolution.messages,
-      agentOf: messageAgentLookup(runs),
+      items,
+      budget: contextHandoffBudget({
+        contextWindow: session.providerSnapshot?.modelContextWindow,
+        currentText: userMessage.content,
+        currentAttachments: userMessage.attachments,
+      }),
+      sessionId: session.id,
+      sourceSessionId,
     });
+    const handoffText = handoff.text;
     const consumedAt = new Date().toISOString();
     const consumption = {
       targetAgentType: session.agentType,
@@ -2824,8 +2863,22 @@ export class CocurdexDaemonService {
       areas: ["agent"],
     });
     return {
-      content: `${handoffText}\n\n${userMessage.content}`,
+      content: userMessage.content,
       history: resolution.freshProviderThread ? [userMessage] : history,
+      contextHandoff: {
+        text: handoff.text,
+        preamble: handoff.preamble,
+        entries: handoff.entries,
+      },
+    };
+  }
+
+  private sessionActivityReader(): SessionActivityReader {
+    return {
+      listMessages: (id) => this.state.listMessagesBySessionId(id),
+      listToolCalls: (id) => this.state.listToolCallsBySessionId(id),
+      listRuns: (id) => this.state.listRunsBySessionId(id),
+      listTransfers: (id) => this.state.listContextTransfers(id),
     };
   }
 

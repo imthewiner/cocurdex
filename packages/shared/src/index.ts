@@ -15,6 +15,7 @@ export type {
   ResolvedCommitMessageModel,
 } from "./commit-message";
 export * from "./context-compaction";
+export * from "./context-handoff";
 export * from "./context-transfer";
 export * from "./contracts";
 export * from "./data-events";

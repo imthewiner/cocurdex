@@ -47,6 +47,7 @@ import {
   acquireCodexClient,
   type CodexClientLease,
 } from "./codex-app-server-pool";
+import { prepareCodexTurnContent } from "./codex-context-handoff";
 import {
   CODEX_MCP_STARTUP_STATUS_METHOD,
   mergeCodexMcpServers,
@@ -277,6 +278,7 @@ export function createCodexAdapter(
     forkProviderSession(payload) {
       return forkCodexProviderSession(payload, acquireClient);
     },
+    injectsContextHandoff: true,
     createSession(
       payload: CreateAgentSessionPayload,
       onEvent: (event: AgentEvent) => void,
@@ -847,9 +849,22 @@ export function createCodexAdapter(
               }
             }
 
+            if (!threadId) {
+              throw new Error("Codex thread was not started");
+            }
+            const turnContent = await prepareCodexTurnContent(
+              appServerLease.client,
+              threadId,
+              messagePayload.content,
+              messagePayload.contextHandoff,
+            );
+            const turnInput =
+              turnContent === messagePayload.content
+                ? input
+                : buildInput(turnContent, messagePayload.attachments ?? []);
             const serviceTier = getCodexServiceTier(activeSnapshot);
             const promptText =
-              input.find(
+              turnInput.find(
                 (part): part is { text: string; type: "text" } =>
                   part.type === "text",
               )?.text ?? "";
@@ -872,7 +887,7 @@ export function createCodexAdapter(
             const turnEnded = waitForTurnEnd();
             const turn = await appServerLease.client.startTurn({
               threadId,
-              input,
+              input: turnInput,
               cwd: payload.workspaceRootPath,
               approvalPolicy: createCodexApprovalPolicy(
                 payload,

@@ -41,7 +41,9 @@ async function fixture() {
     async (payload, options) => {
       calls.push({
         agentType: payload.session.agentType,
-        content: payload.content,
+        content: options.contextHandoff
+          ? `${options.contextHandoff.text}\n\n${payload.content}`
+          : payload.content,
         historyIds: options.history.map((message) => message.id),
       });
       const reply: MessageRecord = {
@@ -52,6 +54,26 @@ async function fixture() {
         attachments: [],
         createdAt: new Date().toISOString(),
       };
+      const startedAt = new Date().toISOString();
+      service.runtime.emitAgentEvent({
+        type: "tool.finished",
+        sessionId: payload.session.id,
+        toolCall: {
+          id: crypto.randomUUID(),
+          sessionId: payload.session.id,
+          title: "test",
+          kind: "exec",
+          status: "failed",
+          content: [],
+          locations: [],
+          rawInput: {
+            command: `${payload.session.agentType} test ${calls.length}`,
+          },
+          rawOutput: { exitCode: 1, stdout: "1 failing" },
+          startedAt,
+          updatedAt: startedAt,
+        },
+      });
       service.runtime.emitAgentEvent({
         type: "message.completed",
         sessionId: payload.session.id,
@@ -125,7 +147,9 @@ describe("context transfers", () => {
     expect(calls[1]?.content).toMatch(
       /^<cocurdex_context_handoff kind="agent_switch" strategy="full">/,
     );
-    expect(calls[1]?.content).toContain("[Assistant (pi)]\npi answer 1");
+    expect(calls[1]?.content).toMatch(
+      /\[#\d+ Assistant \(pi\) · item=[^\]]+\]\npi answer 1/,
+    );
     expect(calls[1]?.content.endsWith("\n\nsecond")).toBe(true);
     expect(calls[1]?.historyIds).toEqual([second.id]);
 
@@ -251,7 +275,7 @@ describe("context transfers", () => {
 
     const followUp = await send(service, fork.id, "tangent");
     expect(calls[1]?.content).toMatch(/kind="fork" strategy="full"/);
-    expect(calls[1]?.content).toContain("[User]\nexplore");
+    expect(calls[1]?.content).toMatch(/\[#\d+ User · item=[^\]]+\]\nexplore/);
     expect(calls[1]?.historyIds).toEqual([followUp.id]);
     expect(service.listContextTransfers(fork.id)).toMatchObject([
       {
@@ -262,5 +286,47 @@ describe("context transfers", () => {
         consumedByMessageId: followUp.id,
       },
     ]);
+  });
+
+  it("hands foreign commands over and lets the agent read omitted history back", async () => {
+    const { service, calls } = await fixture();
+    await send(service, "session-1", "first");
+    await service.switchSessionAgent("session-1", "codex");
+    await send(service, "session-1", "second");
+    expect(calls[1]?.content).toContain("Command: pi test 1\nStatus: failed");
+    expect(calls[1]?.content).toContain("Exit code: 1");
+    expect(calls[1]?.content).not.toContain("codex test");
+
+    const caller = {
+      sessionId: "session-1",
+      sessionKind: "main" as const,
+      workspaceId: "workspace-1",
+      teamId: null,
+    };
+    const page = (await service.agentTools.registry.call(
+      caller,
+      "history_read",
+      { limit: 3 },
+    )) as { items: Array<{ text: string }>; olderBeforePosition: number };
+    expect(page.items.map((item) => item.text)).toEqual([
+      "second",
+      expect.stringContaining("Command: codex test 2"),
+      "codex answer 2",
+    ]);
+    const older = (await service.agentTools.registry.call(
+      caller,
+      "history_read",
+      { beforePosition: page.olderBeforePosition },
+    )) as { items: Array<{ text: string }> };
+    expect(older.items.map((item) => item.text)).toEqual([
+      "first",
+      expect.stringContaining("Command: pi test 1"),
+      "pi answer 1",
+    ]);
+    await expect(
+      service.agentTools.registry.call(caller, "history_read", {
+        sessionId: "elsewhere",
+      }),
+    ).rejects.toThrow("not this session");
   });
 });
