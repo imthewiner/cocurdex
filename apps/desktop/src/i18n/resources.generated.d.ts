@@ -1187,6 +1187,8 @@ export default interface Resources {
         full_one: "Handed {{count}} message from {{sources}} to {{target}}";
         full_other: "Handed {{count}} messages from {{sources}} to {{target}}";
         hide: "Hide handed-off context";
+        native_one: "Forked {{target}}'s own thread with {{count}} message";
+        native_other: "Forked {{target}}'s own thread with {{count}} messages";
         show: "Show handed-off context";
       };
       switchAgentFailed: "Could not switch the agent";

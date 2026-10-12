@@ -6,6 +6,8 @@ export type ContextTransferStatus = "pending" | "consumed";
 
 export type ContextHandoffStrategy = "full" | "delta";
 
+export type ContextTransferStrategy = ContextHandoffStrategy | "native";
+
 export interface ContextTransferRecord {
   id: string;
   kind: ContextTransferKind;
@@ -15,7 +17,7 @@ export interface ContextTransferRecord {
   sourceAgentTypes: AgentId[];
   targetAgentType: AgentId | null;
   status: ContextTransferStatus;
-  strategy: ContextHandoffStrategy | null;
+  strategy: ContextTransferStrategy | null;
   coveredMessageCount: number;
   handoffText: string | null;
   consumedByMessageId: string | null;

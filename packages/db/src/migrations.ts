@@ -12,7 +12,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 25;
+export const CURRENT_SCHEMA_VERSION = 26;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -447,6 +447,44 @@ function migrateProviderThreadsPerAgent(database: DatabaseSync): void {
   `);
 }
 
+function allowNativeContextTransfers(database: DatabaseSync): void {
+  const table = database
+    .prepare(
+      "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'context_transfers'",
+    )
+    .get() as { sql?: string } | undefined;
+  if (!table?.sql || table.sql.includes("'native'")) return;
+  database.exec(`
+    CREATE TABLE context_transfers_next (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('fork', 'agent_switch')),
+      source_session_id TEXT NOT NULL,
+      target_session_id TEXT NOT NULL,
+      source_message_id TEXT,
+      source_agent_types_json TEXT NOT NULL DEFAULT '[]',
+      target_agent_type TEXT,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'consumed')),
+      strategy TEXT CHECK (strategy IN ('full', 'delta', 'native')),
+      covered_message_count INTEGER NOT NULL DEFAULT 0,
+      handoff_text TEXT,
+      consumed_by_message_id TEXT,
+      created_at TEXT NOT NULL,
+      consumed_at TEXT,
+      FOREIGN KEY (target_session_id) REFERENCES sessions(id) ON DELETE CASCADE
+    );
+    INSERT INTO context_transfers_next SELECT
+      id, kind, source_session_id, target_session_id, source_message_id,
+      source_agent_types_json, target_agent_type, status, strategy,
+      covered_message_count, handoff_text, consumed_by_message_id,
+      created_at, consumed_at
+    FROM context_transfers;
+    DROP TABLE context_transfers;
+    ALTER TABLE context_transfers_next RENAME TO context_transfers;
+    CREATE INDEX IF NOT EXISTS idx_context_transfers_target
+      ON context_transfers(target_session_id, created_at);
+  `);
+}
+
 const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [5, migrateWorkspacesToRootPaths],
   [6, migrateCollaborationModeToSessionModeId],
@@ -468,6 +506,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [22, migrateSessionRuns],
   [23, createHostAccessTables],
   [24, migrateProviderThreadsPerAgent],
+  [25, allowNativeContextTransfers],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

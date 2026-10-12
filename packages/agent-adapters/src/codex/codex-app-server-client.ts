@@ -156,6 +156,20 @@ export class CodexAppServerClient {
     return result as unknown as ThreadStartResult;
   }
 
+  async forkThread(
+    params: Record<string, unknown>,
+  ): Promise<ThreadStartResult> {
+    const result = await this.#request("thread/fork", params);
+
+    if (!isRecord(result) || !isRecord(result.thread)) {
+      throw new Error(
+        "Codex app-server returned an invalid thread/fork result",
+      );
+    }
+
+    return result as unknown as ThreadStartResult;
+  }
+
   async startTurn(params: Record<string, unknown>): Promise<TurnStartResult> {
     const result = await this.#request("turn/start", params);
 

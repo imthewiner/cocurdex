@@ -158,6 +158,82 @@ describe("context transfers", () => {
     ).toBe("second");
   });
 
+  it("continues a fork on a natively forked provider thread", async () => {
+    const { service, calls } = await fixture();
+    const forkThread = vi
+      .spyOn(service.runtime, "forkProviderSession")
+      .mockImplementation(async (agentType, payload) => ({
+        ...payload.source,
+        sessionId: payload.targetSessionId,
+        providerSessionId: `${agentType}-forked-thread`,
+      }));
+    await send(service, "session-1", "explore");
+
+    const fork = await service.forkSession({ sessionId: "session-1" });
+    expect(forkThread).toHaveBeenCalledWith(
+      "pi",
+      expect.objectContaining({
+        targetSessionId: fork.id,
+        source: expect.objectContaining({ providerSessionId: "pi-thread" }),
+      }),
+    );
+    expect(
+      (await service.state.getProviderSession(fork.id, "pi"))
+        ?.providerSessionId,
+    ).toBe("pi-forked-thread");
+
+    await send(service, fork.id, "tangent");
+    expect(calls[1]?.content).toBe("tangent");
+    expect(calls[1]?.historyIds).toHaveLength(3);
+    expect(service.listContextTransfers(fork.id)).toMatchObject([
+      {
+        kind: "fork",
+        status: "consumed",
+        strategy: "native",
+        handoffText: null,
+        coveredMessageCount: 2,
+      },
+    ]);
+  });
+
+  it("skips native forks for threads that missed later turns", async () => {
+    const { service, calls } = await fixture();
+    const forkThread = vi
+      .spyOn(service.runtime, "forkProviderSession")
+      .mockImplementation(async (_agentType, payload) => ({
+        ...payload.source,
+        sessionId: payload.targetSessionId,
+      }));
+    await send(service, "session-1", "first");
+    await service.switchSessionAgent("session-1", "codex");
+    await send(service, "session-1", "second");
+
+    const fork = await service.forkSession({ sessionId: "session-1" });
+    expect(forkThread.mock.calls.map(([agentType]) => agentType)).toEqual([
+      "codex",
+    ]);
+
+    await service.switchSessionAgent(fork.id, "pi");
+    await send(service, fork.id, "third");
+    expect(calls[2]?.content).toMatch(/kind="fork" strategy="full"/);
+  });
+
+  it("falls back to a handoff when only part of the session is forked", async () => {
+    const { service, calls } = await fixture();
+    const forkThread = vi.spyOn(service.runtime, "forkProviderSession");
+    const first = await send(service, "session-1", "first");
+    await send(service, "session-1", "second");
+
+    const fork = await service.forkSession({
+      sessionId: "session-1",
+      throughMessageId: first.id,
+    });
+    expect(forkThread).not.toHaveBeenCalled();
+
+    await send(service, fork.id, "tangent");
+    expect(calls[2]?.content).toMatch(/kind="fork" strategy="full"/);
+  });
+
   it("forks a session lazily and resolves the transfer on first send", async () => {
     const { service, calls } = await fixture();
     await send(service, "session-1", "explore");

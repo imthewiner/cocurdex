@@ -376,6 +376,22 @@ export class AgentRuntimeManager {
     return true;
   }
 
+  async forkProviderSession(
+    agentType: AgentId,
+    payload: {
+      source: AgentProviderSessionRecord;
+      targetSessionId: string;
+      workspaceRootPath: string;
+    },
+  ): Promise<AgentProviderSessionRecord | null> {
+    const adapter = this.createAdapter(agentType);
+    if (!adapter.forkProviderSession) return null;
+    return adapter.forkProviderSession({
+      ...payload,
+      userDataPath: this.userDataPath,
+    });
+  }
+
   async listSessionSlashCommands(
     agentType: AgentId,
     workspaceRootPath: string,

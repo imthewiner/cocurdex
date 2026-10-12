@@ -119,6 +119,13 @@ export interface AgentSession {
   dispose(): void | Promise<void>;
 }
 
+export interface ForkProviderSessionPayload {
+  source: AgentProviderSessionRecord;
+  targetSessionId: string;
+  workspaceRootPath: string;
+  userDataPath?: string;
+}
+
 export interface ListSlashCommandsPayload {
   workspaceRootPath: string;
   userDataPath?: string;
@@ -141,6 +148,9 @@ export interface AgentAdapter {
     payload: CreateAgentSessionPayload,
     onEvent: (event: AgentEvent) => void,
   ): AgentSession;
+  forkProviderSession?(
+    payload: ForkProviderSessionPayload,
+  ): Promise<AgentProviderSessionRecord>;
   /** List skills available through the composer's slash-triggered picker. */
   listSlashCommands?(
     payload: ListSlashCommandsPayload,
