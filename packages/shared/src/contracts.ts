@@ -684,6 +684,7 @@ export interface RunRecord {
   error?: string | null;
   startedAt: string;
   endedAt?: string | null;
+  agentType?: AgentId | null;
 }
 
 export interface AgentToolCallLocation {

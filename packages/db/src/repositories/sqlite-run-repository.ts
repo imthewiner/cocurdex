@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { RunRecord } from "@cocurdex/shared";
+import type { AgentId, RunRecord } from "@cocurdex/shared";
 import type { SqliteRow } from "../sqlite-types";
 import type { RunRepository } from "./run-repository";
 
@@ -12,6 +12,8 @@ function mapRun(row: SqliteRow): RunRecord {
     error: typeof row.error === "string" ? row.error : null,
     startedAt: String(row.started_at),
     endedAt: typeof row.ended_at === "string" ? row.ended_at : null,
+    agentType:
+      typeof row.agent_type === "string" ? (row.agent_type as AgentId) : null,
   };
 }
 
@@ -29,8 +31,9 @@ export function createSqliteRunRepository(
       database
         .prepare(
           `INSERT INTO runs (
-             id, session_id, trigger_message_id, status, error, started_at, ended_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+             id, session_id, trigger_message_id, status, error, started_at,
+             ended_at, agent_type
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           run.id,
@@ -40,6 +43,7 @@ export function createSqliteRunRepository(
           run.error ?? null,
           run.startedAt,
           run.endedAt ?? null,
+          run.agentType ?? null,
         );
       return getById(run.id) ?? run;
     },

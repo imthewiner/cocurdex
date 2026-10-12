@@ -47,10 +47,10 @@ function setup() {
 describe("SessionRunCoordinator", () => {
   it("owns one run per session from start to completion", async () => {
     const { coordinator, rows, settled, statuses } = setup();
-    const handle = await coordinator.start("s1", "m1");
+    const handle = await coordinator.start("s1", "m1", "codex");
 
     expect(coordinator.activeRunId("s1")).toBe("run-1");
-    await expect(coordinator.start("s1", "m2")).rejects.toThrow(
+    await expect(coordinator.start("s1", "m2", "codex")).rejects.toThrow(
       "already has an active turn",
     );
 
@@ -68,7 +68,7 @@ describe("SessionRunCoordinator", () => {
 
   it("fails the run when the provider reported a terminal error", async () => {
     const { coordinator, rows, statuses } = setup();
-    const handle = await coordinator.start("s1", "m1");
+    const handle = await coordinator.start("s1", "m1", "codex");
     coordinator.noteProviderEvent({
       type: "error",
       sessionId: "s1",
@@ -92,7 +92,7 @@ describe("SessionRunCoordinator", () => {
 
   it("does not let a provider going idle end the run", async () => {
     const { coordinator } = setup();
-    await coordinator.start("s1", "m1");
+    await coordinator.start("s1", "m1", "codex");
     coordinator.noteProviderEvent({
       type: "state.changed",
       sessionId: "s1",
@@ -104,7 +104,7 @@ describe("SessionRunCoordinator", () => {
 
   it("ends a stopped run immediately and ignores its late settlement", async () => {
     const { coordinator, rows, settled, statuses } = setup();
-    const handle = await coordinator.start("s1", "m1");
+    const handle = await coordinator.start("s1", "m1", "codex");
     const waiting = coordinator.outcomeOf("s1");
 
     await coordinator.stop("s1");
@@ -114,7 +114,7 @@ describe("SessionRunCoordinator", () => {
     expect(rows.get("run-1")?.status).toBe("cancelled");
     await expect(waiting).resolves.toEqual({ status: "cancelled" });
 
-    const next = await coordinator.start("s1", "m2");
+    const next = await coordinator.start("s1", "m2", "codex");
     await expect(
       coordinator.settle(handle, { kind: "resolved", message: reply }),
     ).resolves.toEqual({ status: "cancelled" });
@@ -125,8 +125,8 @@ describe("SessionRunCoordinator", () => {
 
   it("interrupts every active run on shutdown and leaves sessions usable", async () => {
     const { coordinator, rows, statuses } = setup();
-    await coordinator.start("s1", "m1");
-    await coordinator.start("s2", "m2");
+    await coordinator.start("s1", "m1", "codex");
+    await coordinator.start("s2", "m2", "codex");
 
     await coordinator.interruptAll();
 
@@ -154,7 +154,9 @@ describe("SessionRunCoordinator", () => {
       createId: () => "run",
     });
 
-    await expect(failing.start("s1", "m1")).rejects.toThrow("disk full");
+    await expect(failing.start("s1", "m1", "codex")).rejects.toThrow(
+      "disk full",
+    );
     expect(failing.hasActiveRun("s1")).toBe(false);
     expect(coordinator.hasActiveRun("s1")).toBe(false);
   });

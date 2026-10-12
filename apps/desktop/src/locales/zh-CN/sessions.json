@@ -95,6 +95,17 @@
     "waitingPermission": "等待权限：{{title}}",
     "waitingPlanApproval": "等待计划审批"
   },
+  "lineage": {
+    "forkFailed": "无法分叉会话",
+    "handoff": {
+      "delta_other": "已将 {{sources}} 的 {{count}} 条新消息交接给 {{target}}",
+      "fork_other": "分叉会话，已将 {{count}} 条消息交接给 {{target}}",
+      "full_other": "已将 {{sources}} 的 {{count}} 条消息交接给 {{target}}",
+      "hide": "收起交接的上下文",
+      "show": "查看交接的上下文"
+    },
+    "switchAgentFailed": "无法切换 Agent"
+  },
   "modelMenu": {
     "defaultTag": "默认",
     "empty": "未找到匹配的模型。",
@@ -233,6 +244,7 @@
     "editWorkspace": "编辑工作区",
     "executionTree": "执行树",
     "expandChildren": "展开子会话",
+    "fork": "分叉会话",
     "marketplace": "市场",
     "markUnread": "标为未读",
     "newSession": "新建会话",

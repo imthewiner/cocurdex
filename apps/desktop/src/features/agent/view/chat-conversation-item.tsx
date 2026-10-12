@@ -34,6 +34,7 @@ import {
   DocumentAttachmentChips,
   ImageAttachmentCards,
 } from "@/features/composer";
+import { ContextHandoffMarker } from "@/features/sessions";
 import { useTurnChangeSet } from "@/features/turn-workspace-changes";
 import { TurnChangesCard } from "@/features/turn-workspace-changes/turn-changes-card";
 import { cn } from "@/lib";
@@ -841,6 +842,11 @@ export const ChatConversationItem = memo(function ChatConversationItem({
     );
   };
 
+  const ownPrompt =
+    conversationGroup.prompt && !conversationGroup.prompt.origin
+      ? conversationGroup.prompt
+      : null;
+
   return (
     <div className="flex flex-col gap-1.5 pb-4 px-2">
       {conversationGroup.prompt?.origin ? (
@@ -848,15 +854,19 @@ export const ChatConversationItem = memo(function ChatConversationItem({
           message={conversationGroup.prompt}
           setUserMessageRef={setUserMessageRef}
         />
-      ) : conversationGroup.prompt ? (
-        <UserPrompt
-          canEdit={!isRunning && !isLatestConversation}
-          message={conversationGroup.prompt}
-          onSubmitEdit={onSubmitPromptEdit}
-          setUserMessageRef={setUserMessageRef}
-          showActions={showMessageActions}
-          variant={promptVariant}
-        />
+      ) : null}
+      {ownPrompt ? (
+        <>
+          <ContextHandoffMarker message={ownPrompt} />
+          <UserPrompt
+            canEdit={!isRunning && !isLatestConversation}
+            message={ownPrompt}
+            onSubmitEdit={onSubmitPromptEdit}
+            setUserMessageRef={setUserMessageRef}
+            showActions={showMessageActions}
+            variant={promptVariant}
+          />
+        </>
       ) : null}
 
       {visibleItems.length > 0 || phase !== "completed" ? (

@@ -12,7 +12,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 24;
+export const CURRENT_SCHEMA_VERSION = 25;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -411,6 +411,42 @@ function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
 
+function migrateProviderThreadsPerAgent(database: DatabaseSync): void {
+  if (!hasColumn(database, "runs", "agent_type")) {
+    database.exec("ALTER TABLE runs ADD COLUMN agent_type TEXT");
+  }
+  database.exec(
+    `UPDATE runs SET agent_type = (
+       SELECT agent_type FROM sessions WHERE sessions.id = runs.session_id
+     ) WHERE agent_type IS NULL`,
+  );
+  if (hasColumn(database, "agent_provider_sessions", "agent_type")) return;
+  database.exec(`
+    CREATE TABLE agent_provider_sessions_next (
+      session_id TEXT NOT NULL,
+      agent_type TEXT NOT NULL,
+      provider_session_id TEXT,
+      provider_state_json TEXT NOT NULL,
+      provider_version TEXT,
+      resumable INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (session_id, agent_type),
+      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+    );
+    INSERT INTO agent_provider_sessions_next (
+      session_id, agent_type, provider_session_id, provider_state_json,
+      provider_version, resumable, updated_at
+    )
+    SELECT provider.session_id, sessions.agent_type, provider.provider_session_id,
+      provider.provider_state_json, provider.provider_version,
+      provider.resumable, provider.updated_at
+    FROM agent_provider_sessions AS provider
+    JOIN sessions ON sessions.id = provider.session_id;
+    DROP TABLE agent_provider_sessions;
+    ALTER TABLE agent_provider_sessions_next RENAME TO agent_provider_sessions;
+  `);
+}
+
 const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [5, migrateWorkspacesToRootPaths],
   [6, migrateCollaborationModeToSessionModeId],
@@ -431,6 +467,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [21, migrateTurnStatsStopReason],
   [22, migrateSessionRuns],
   [23, createHostAccessTables],
+  [24, migrateProviderThreadsPerAgent],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

@@ -141,7 +141,10 @@ export class DaemonWorkflowAgentTurnRunner implements WorkflowAgentTurnRunner {
       );
     }
 
-    const providerSession = await this.state.getProviderSession(sessionId);
+    const providerSession = await this.state.getProviderSession(
+      sessionId,
+      session.agentType,
+    );
     let latestIdentity: WorkflowAttemptRuntimeIdentity = {
       ...input.attempt.runtimeIdentity,
       providerSessionId: providerSession?.providerSessionId ?? null,
@@ -156,17 +159,11 @@ export class DaemonWorkflowAgentTurnRunner implements WorkflowAgentTurnRunner {
         checkpointQueue = checkpointQueue.then(async () => {
           if (nextProviderSession) {
             await this.state.saveProviderSession(
-              nextProviderSession.sessionId,
-              nextProviderSession.providerSessionId,
-              JSON.parse(nextProviderSession.providerStateJson) as Record<
-                string,
-                unknown
-              >,
-              nextProviderSession.resumable,
-              nextProviderSession.providerVersion,
+              session.agentType,
+              nextProviderSession,
             );
           } else {
-            await this.state.clearProviderSession(sessionId);
+            await this.state.clearProviderSession(sessionId, session.agentType);
           }
           latestIdentity = {
             ...latestIdentity,
@@ -195,7 +192,11 @@ export class DaemonWorkflowAgentTurnRunner implements WorkflowAgentTurnRunner {
       input.workspaceRootPath,
     ]);
 
-    const run = await this.runs.start(sessionId, userMessage.id);
+    const run = await this.runs.start(
+      sessionId,
+      userMessage.id,
+      session.agentType,
+    );
     const cancel = () => {
       void this.runs.stop(sessionId);
       void this.runtime.cancelSessionTurn(sessionId);

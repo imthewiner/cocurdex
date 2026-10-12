@@ -86,6 +86,7 @@ export function createSchemaSql() {
       error TEXT,
       started_at TEXT NOT NULL,
       ended_at TEXT,
+      agent_type TEXT,
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
       FOREIGN KEY (trigger_message_id) REFERENCES messages(id) ON DELETE CASCADE
     );
@@ -201,14 +202,37 @@ export function createSchemaSql() {
     );
 
     CREATE TABLE IF NOT EXISTS agent_provider_sessions (
-      session_id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      agent_type TEXT NOT NULL,
       provider_session_id TEXT,
       provider_state_json TEXT NOT NULL,
       provider_version TEXT,
       resumable INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL,
+      PRIMARY KEY (session_id, agent_type),
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS context_transfers (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('fork', 'agent_switch')),
+      source_session_id TEXT NOT NULL,
+      target_session_id TEXT NOT NULL,
+      source_message_id TEXT,
+      source_agent_types_json TEXT NOT NULL DEFAULT '[]',
+      target_agent_type TEXT,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'consumed')),
+      strategy TEXT CHECK (strategy IN ('full', 'delta')),
+      covered_message_count INTEGER NOT NULL DEFAULT 0,
+      handoff_text TEXT,
+      consumed_by_message_id TEXT,
+      created_at TEXT NOT NULL,
+      consumed_at TEXT,
+      FOREIGN KEY (target_session_id) REFERENCES sessions(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_context_transfers_target
+      ON context_transfers(target_session_id, created_at);
 
     CREATE TABLE IF NOT EXISTS provider_configs (
       id TEXT PRIMARY KEY,

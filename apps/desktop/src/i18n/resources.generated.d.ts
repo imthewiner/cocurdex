@@ -1177,6 +1177,20 @@ export default interface Resources {
       waitingPermission: "Waiting for permission: {{title}}";
       waitingPlanApproval: "Waiting for plan approval";
     };
+    lineage: {
+      forkFailed: "Could not fork the session";
+      handoff: {
+        delta_one: "Handed {{count}} new message from {{sources}} to {{target}}";
+        delta_other: "Handed {{count}} new messages from {{sources}} to {{target}}";
+        fork_one: "Forked with {{count}} message handed to {{target}}";
+        fork_other: "Forked with {{count}} messages handed to {{target}}";
+        full_one: "Handed {{count}} message from {{sources}} to {{target}}";
+        full_other: "Handed {{count}} messages from {{sources}} to {{target}}";
+        hide: "Hide handed-off context";
+        show: "Show handed-off context";
+      };
+      switchAgentFailed: "Could not switch the agent";
+    };
     modelMenu: {
       defaultTag: "Default";
       empty: "No matching models.";
@@ -1320,6 +1334,7 @@ export default interface Resources {
       editWorkspace: "Edit workspace";
       executionTree: "Execution tree";
       expandChildren: "Expand subagent sessions";
+      fork: "Fork session";
       markUnread: "Mark as unread";
       marketplace: "Marketplace";
       newSession: "New session";

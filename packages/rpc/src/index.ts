@@ -24,6 +24,7 @@ import type {
   CommentIssuePayload,
   CommitMessageModelSelection,
   CompatibleProviderModel,
+  ContextTransferRecord,
   CreateColumnPayload,
   CreatedHostPairing,
   CreateHostPairingPayload,
@@ -41,6 +42,7 @@ import type {
   DeleteViewPayload,
   DocumentAttachment,
   EditorViewRecord,
+  ForkSessionPayload,
   GenerateGitCommitMessagePayload,
   GetIssueDetailPayload,
   GetIssuePayload,
@@ -169,7 +171,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 27;
+export const DAEMON_PROTOCOL_VERSION = 28;
 
 export interface DaemonMetadata {
   pid: number;
@@ -265,6 +267,9 @@ export type DaemonRequestPayloadByMethod = {
   "session.list": undefined;
   "session.snapshot": { sessionId: string };
   "session.executionTree": { sessionId: string; maxDepth?: number };
+  "session.fork": ForkSessionPayload;
+  "session.switchAgent": { sessionId: string; agentType: AgentId };
+  "session.contextTransfers": { sessionId: string };
   "session.configure": SessionConfiguration;
   "session.get": { sessionId: string };
   "session.listPeers": { sessionId: string };
@@ -544,6 +549,9 @@ export type DaemonResultByMethod = {
   "scriptRun.settings.save": ScriptRunSettings;
   "session.snapshot": SessionObservationSnapshot | null;
   "session.executionTree": SessionExecutionTree | null;
+  "session.fork": SessionRecord;
+  "session.switchAgent": SessionRecord;
+  "session.contextTransfers": ContextTransferRecord[];
   "session.configure": SessionRecord;
   "session.get": SessionRecord | null;
   "session.delete": null;

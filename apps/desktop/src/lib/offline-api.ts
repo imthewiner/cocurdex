@@ -279,6 +279,13 @@ export const offlineApi: DesktopApi = {
   listManagedWorktrees: async () => [],
   removeWorktree: async () => ({ removed: true }),
   listScriptRuns: async () => [],
+  forkSession: async () => {
+    throw new Error("Forking needs the Cocurdex daemon");
+  },
+  switchSessionAgent: async () => {
+    throw new Error("Switching agents needs the Cocurdex daemon");
+  },
+  listContextTransfers: async () => [],
   getSessionExecutionTree: async () => null,
   getScriptRun: async () => {
     throw new Error("Script runs require the desktop app");

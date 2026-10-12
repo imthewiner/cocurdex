@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {
   type AgentCapabilityCacheRepository,
+  type ContextTransferConsumption,
   createCocurdexDatabase,
   type ScriptRunRepository,
   type TeamRepository,
@@ -11,11 +12,13 @@ import type {
   AgentEvent,
   AgentId,
   AgentProviderSelection,
+  AgentProviderSessionRecord,
   AgentRoleRecord,
   AgentSessionMode,
   AgentToolCallRecord,
   AgentUsageUpdatedEvent,
   AppBootstrapData,
+  ContextTransferRecord,
   EditorViewRecord,
   MessageRecord,
   PendingSettingsChangeRecord,
@@ -443,13 +446,26 @@ export class DaemonState {
       throw new Error("Session not found");
     }
 
+    const existing = await this.database.messages.listBySessionId(
+      message.sessionId,
+    );
+    const rewindIndex = existing.findIndex((item) => item.id === message.id);
+    const rewoundIds =
+      rewindIndex < 0
+        ? [message.id]
+        : existing.slice(rewindIndex).map((item) => item.id);
+
     this.database.transaction(() => {
       void this.database.toolCalls.deleteAfter(message.sessionId, message.id);
       void this.database.messages.deleteAfter(message.sessionId, message.id);
       this.database.runs.deleteByTriggerMessageIds([message.id]);
+      this.database.contextTransfers.reopenConsumedBy(
+        message.sessionId,
+        rewoundIds,
+      );
       void this.database.messages.update(message);
       if (!keepProviderSession)
-        void this.database.providerSessions.clear(message.sessionId);
+        void this.database.providerSessions.clearSession(message.sessionId);
       void this.database.sessions.upsert({
         ...session,
         status: "idle",
@@ -459,29 +475,49 @@ export class DaemonState {
     });
   }
 
-  getProviderSession(sessionId: string) {
-    return this.database.providerSessions.getBySessionId(sessionId);
+  getProviderSession(sessionId: string, agentType: AgentId) {
+    return this.database.providerSessions.get(sessionId, agentType);
   }
 
   async saveProviderSession(
-    sessionId: string,
-    providerSessionId: string | null,
-    providerState: Record<string, unknown>,
-    resumable: boolean,
-    providerVersion: string | null = null,
+    agentType: AgentId,
+    record: AgentProviderSessionRecord,
   ) {
-    await this.database.providerSessions.upsert({
-      sessionId,
-      providerSessionId,
-      providerStateJson: JSON.stringify(providerState),
-      providerVersion,
-      resumable,
-      updatedAt: new Date().toISOString(),
+    await this.database.providerSessions.upsert(agentType, record);
+  }
+
+  async clearProviderSession(sessionId: string, agentType: AgentId) {
+    await this.database.providerSessions.clear(sessionId, agentType);
+  }
+
+  createForkedSession(
+    session: SessionRecord,
+    messages: readonly MessageRecord[],
+    transfer: ContextTransferRecord,
+  ) {
+    this.database.transaction(() => {
+      void this.database.sessions.upsert(session);
+      for (const message of messages) {
+        void this.database.messages.append(message);
+      }
+      this.database.contextTransfers.insert(transfer);
     });
   }
 
-  async clearProviderSession(sessionId: string) {
-    await this.database.providerSessions.clear(sessionId);
+  listContextTransfers(sessionId: string) {
+    return this.database.contextTransfers.listByTargetSession(sessionId);
+  }
+
+  findPendingContextTransfer(sessionId: string) {
+    return this.database.contextTransfers.findPending(sessionId);
+  }
+
+  insertContextTransfer(record: ContextTransferRecord) {
+    this.database.contextTransfers.insert(record);
+  }
+
+  consumeContextTransfer(id: string, consumption: ContextTransferConsumption) {
+    this.database.contextTransfers.consume(id, consumption);
   }
 
   listProviderConfigs() {

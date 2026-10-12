@@ -41,6 +41,10 @@ import {
 } from "./script-run-commands";
 import { handleSearchCommand } from "./search-commands";
 import {
+  handleSessionLineageCommand,
+  sessionLineageUsageLines,
+} from "./session-lineage-commands";
+import {
   handleSessionTreeCommand,
   sessionTreeUsageLines,
 } from "./session-tree-command";
@@ -253,6 +257,13 @@ async function main(rawArgs: string[]) {
 
     const message = await sendSessionMessage(sessionId, prompt);
     printResult(message, parsed);
+    return;
+  }
+
+  if (
+    resource === "session" &&
+    (await handleSessionLineageCommand(action, args, parsed))
+  ) {
     return;
   }
 
@@ -485,6 +496,7 @@ function printUsage() {
       "  cocurdex session tui --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
       "  cocurdex session send <session-id> <prompt>",
       ...sessionTreeUsageLines(),
+      ...sessionLineageUsageLines(),
       "  cocurdex session peers <session-id>",
       "  cocurdex session send-peer <from-session-id> <to-session-id> <message>",
       "  cocurdex session peer-inbound <session-id> deliver|refuse",

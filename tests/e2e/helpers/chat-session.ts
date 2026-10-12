@@ -8,7 +8,7 @@ import {
 import type { DaemonProcess } from "./daemon-process";
 import type { StubLlmServer } from "./llm-stub";
 
-export async function startChatSession(
+export async function saveStubProvider(
   daemon: DaemonProcess,
   stub: StubLlmServer,
 ) {
@@ -40,6 +40,14 @@ export async function startChatSession(
     daemon.options,
   );
   await requestDaemon("provider.model.save", { model }, daemon.options);
+  return createProviderSnapshotForModel({ provider, model });
+}
+
+export async function startChatSession(
+  daemon: DaemonProcess,
+  stub: StubLlmServer,
+) {
+  const providerSnapshot = await saveStubProvider(daemon, stub);
   return requestDaemon(
     "session.configure",
     {
@@ -50,7 +58,7 @@ export async function startChatSession(
       agentType: "pi",
       writeMode: "read-only",
       sessionModeId: null,
-      providerSnapshot: createProviderSnapshotForModel({ provider, model }),
+      providerSnapshot,
     },
     daemon.options,
   );

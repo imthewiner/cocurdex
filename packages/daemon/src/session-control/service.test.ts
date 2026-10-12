@@ -293,12 +293,14 @@ describe("authoritative task commands", () => {
           createdAt,
         });
       }
-      await service.state.saveProviderSession(
-        "session-1",
-        "pi-session",
-        { sessionFile: "/tmp/pi.jsonl" },
-        true,
-      );
+      await service.state.saveProviderSession("pi", {
+        sessionId: "session-1",
+        providerSessionId: "pi-session",
+        providerStateJson: JSON.stringify({ sessionFile: "/tmp/pi.jsonl" }),
+        providerVersion: null,
+        resumable: true,
+        updatedAt: "2026-10-07T00:02:00.000Z",
+      });
       vi.spyOn(service.runtime, "sendSessionMessage").mockImplementation(
         async (payload) => ({
           id: payload.messageId ?? "reply",
@@ -324,9 +326,9 @@ describe("authoritative task commands", () => {
         revertWorkspace: false,
       });
       expect(rewind.mock.calls[0][2]).toBe(1);
-      expect(await service.state.getProviderSession("session-1")).toMatchObject(
-        { providerSessionId: "pi-session" },
-      );
+      expect(
+        await service.state.getProviderSession("session-1", "pi"),
+      ).toMatchObject({ providerSessionId: "pi-session" });
     });
 
     it("drops the native session when the agent cannot rewind", async () => {
@@ -341,7 +343,9 @@ describe("authoritative task commands", () => {
         content: "Revised",
         revertWorkspace: false,
       });
-      expect(await service.state.getProviderSession("session-1")).toBeNull();
+      expect(
+        await service.state.getProviderSession("session-1", "pi"),
+      ).toBeNull();
     });
   });
 });

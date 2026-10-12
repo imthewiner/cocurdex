@@ -1,5 +1,6 @@
 import type {
   AgentEvent,
+  AgentId,
   RunRecord,
   RunStatus,
   SessionStatus,
@@ -86,7 +87,11 @@ export class SessionRunCoordinator {
     await Promise.allSettled([...this.background]);
   }
 
-  async start(sessionId: string, triggerMessageId: string): Promise<RunHandle> {
+  async start(
+    sessionId: string,
+    triggerMessageId: string,
+    agentType: AgentId,
+  ): Promise<RunHandle> {
     if (this.active.has(sessionId)) {
       throw new Error(`Session ${sessionId} already has an active turn`);
     }
@@ -103,6 +108,7 @@ export class SessionRunCoordinator {
         error: null,
         startedAt: this.deps.now(),
         endedAt: null,
+        agentType,
       },
       controller: new AbortController(),
       providerFailure: null,

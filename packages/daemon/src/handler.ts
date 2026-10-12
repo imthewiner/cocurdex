@@ -256,6 +256,15 @@ export async function handleDaemonRequest(
         request.params.sessionId,
         request.params.maxDepth,
       );
+    case "session.fork":
+      return service.forkSession(request.params);
+    case "session.switchAgent":
+      return service.switchSessionAgent(
+        request.params.sessionId,
+        request.params.agentType,
+      );
+    case "session.contextTransfers":
+      return service.listContextTransfers(request.params.sessionId);
     case "session.configure":
       return service.saveSessionConfiguration(request.params);
     case "session.get":
