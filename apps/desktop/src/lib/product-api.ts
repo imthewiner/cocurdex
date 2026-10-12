@@ -44,6 +44,32 @@ export const daemonProductApi: ProductRequestApi = {
     await rpc("workspace.delete", { workspaceId });
   },
   listHostDirectories: (path) => rpc("fs.listDirectories", { path }),
+  getHomeDir: () => rpc("system.homeDir"),
+  listFontFamilies: () => rpc("system.fontFamilies"),
+  openWorkspaceInFileManager: async (rootPath) => {
+    await rpc("system.openDirectory", { path: rootPath });
+  },
+  revealPathInFileManager: async (targetPath) => {
+    await rpc("system.revealPath", { path: targetPath });
+  },
+  readPdfBase64: (filePath) => rpc("pdf.read", { filePath }),
+  resolveWorkspaceOpenPath: async (filePath) => {
+    const rootPath = await rpc("workspace.resolveOpenPath", {
+      path: filePath,
+      allowFile: true,
+    });
+    return rootPath ? { rootPath } : null;
+  },
+  ptySpawn: (payload) => rpc("terminal.spawn", payload),
+  ptyWrite: async (terminalId, data) => {
+    await rpc("terminal.write", { terminalId, data });
+  },
+  ptyResize: async (terminalId, cols, rows) => {
+    await rpc("terminal.resize", { terminalId, cols, rows });
+  },
+  ptyKill: async (terminalId) => {
+    await rpc("terminal.kill", { terminalId });
+  },
   listWorkspaceEntries: (rootPath) =>
     rpc("workspace.listEntries", { rootPath }),
   listWorkspaceFiles: (rootPath) => rpc("workspace.listFiles", { rootPath }),

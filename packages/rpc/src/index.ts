@@ -104,6 +104,11 @@ import type {
   ProviderListModelsResult,
   ProviderModelRecord,
   ProviderTemplateRecord,
+  PtyKillPayload,
+  PtyResizePayload,
+  PtySpawnPayload,
+  PtySpawnResult,
+  PtyWritePayload,
   RefineSessionTitlePayload,
   RemoteAccessSettings,
   ResolvedCommitMessageModel,
@@ -387,6 +392,15 @@ export type DaemonRequestPayloadByMethod = {
   "file.readText": { filePath: string };
   "file.exists": { filePath: string };
   "fs.listDirectories": { path?: string };
+  "system.homeDir": undefined;
+  "system.fontFamilies": undefined;
+  "system.openDirectory": { path: string };
+  "system.revealPath": { path: string };
+  "pdf.read": { filePath: string };
+  "terminal.spawn": PtySpawnPayload;
+  "terminal.write": PtyWritePayload;
+  "terminal.resize": PtyResizePayload;
+  "terminal.kill": PtyKillPayload;
   "search.start": WorkspaceSearchStartPayload;
   "search.cancel": { searchId: string };
   "mcp.readConfig": undefined;
@@ -630,6 +644,15 @@ export type DaemonResultByMethod = {
   "file.readText": string;
   "file.exists": boolean;
   "fs.listDirectories": HostDirectoryListing;
+  "system.homeDir": string;
+  "system.fontFamilies": string[];
+  "system.openDirectory": null;
+  "system.revealPath": null;
+  "pdf.read": string;
+  "terminal.spawn": PtySpawnResult;
+  "terminal.write": null;
+  "terminal.resize": null;
+  "terminal.kill": null;
   "search.start": null;
   "search.cancel": null;
   "mcp.readConfig": McpConfigFile;
@@ -744,6 +767,8 @@ export const DAEMON_NO_PARAM_METHODS = {
   "app.bootstrap": true,
   "attention.list": true,
   "daemon.status": true,
+  "system.fontFamilies": true,
+  "system.homeDir": true,
   "host.identity": true,
   "host.session": true,
   "host.remoteAccess.get": true,
@@ -814,7 +839,7 @@ export interface DaemonSubscribeResult {
 
 export interface DaemonEventEnvelope {
   event: CocurdexDaemonEvent;
-  seq: number;
+  seq?: number;
   type: "daemon.event";
 }
 

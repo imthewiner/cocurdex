@@ -1,11 +1,4 @@
-import type {
-  PtyActivityEvent,
-  PtyDataEvent,
-  PtyExitEvent,
-  PtySpawnPayload,
-  PtySpawnResult,
-  RendererLogPayload,
-} from "@cocurdex/shared";
+import type { RendererLogPayload } from "@cocurdex/shared";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type {
   AppUpdateChannel,
@@ -26,11 +19,6 @@ const hostBridge: HostBridge = {
     browserView: true,
     localWebClient: true,
   },
-  // Sandboxed preload cannot import node:os — resolve home in main.
-  // Default terminal cwd when no workspace is open.
-  getHomeDir: () => ipcRenderer.invoke("app:getHomeDir") as Promise<string>,
-  listFontFamilies: () =>
-    ipcRenderer.invoke("app:listFontFamilies") as Promise<string[]>,
   getAppUpdateState: () => ipcRenderer.invoke("app:update:getState"),
   checkForAppUpdate: () => ipcRenderer.invoke("app:update:check"),
   dismissAppUpdate: () => ipcRenderer.invoke("app:update:dismiss"),
@@ -51,12 +39,6 @@ const hostBridge: HostBridge = {
       ipcRenderer.removeListener("app:updateState", handler);
     };
   },
-  openWorkspaceInFileManager: (rootPath: string) =>
-    ipcRenderer.invoke("workspace:openInFileManager", rootPath),
-  revealPathInFileManager: (targetPath: string) =>
-    ipcRenderer.invoke("workspace:revealPath", targetPath),
-  readPdfData: (payload: { filePath: string }) =>
-    ipcRenderer.invoke("pdf:read-data", payload) as Promise<string>,
   openWorkspace: () => ipcRenderer.invoke("dialog:openDirectory"),
   consumePendingOpenFolder: () =>
     ipcRenderer.invoke("workspace:consumeOpenFolder") as Promise<{
@@ -71,10 +53,6 @@ const hostBridge: HostBridge = {
       return null;
     }
   },
-  resolveWorkspaceOpenPath: (filePath: string) =>
-    ipcRenderer.invoke("workspace:resolveOpenPath", filePath) as Promise<{
-      rootPath: string;
-    } | null>,
   onOpenWorkspaceFromCli: (listener: (event: { rootPath: string }) => void) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
@@ -169,53 +147,6 @@ const hostBridge: HostBridge = {
   setDiagnosticsVerbose: (enabled: boolean) =>
     ipcRenderer.invoke("diagnostics:setVerbose", enabled),
   openExternal: (url: string) => ipcRenderer.invoke("shell:openExternal", url),
-  ptySpawn: (payload: PtySpawnPayload): Promise<PtySpawnResult> =>
-    ipcRenderer.invoke("pty:spawn", payload),
-  ptyWrite: (terminalId: string, data: string) =>
-    ipcRenderer.invoke("pty:write", { terminalId, data }),
-  ptyResize: (terminalId: string, cols: number, rows: number) =>
-    ipcRenderer.invoke("pty:resize", { terminalId, cols, rows }),
-  ptyKill: (terminalId: string) =>
-    ipcRenderer.invoke("pty:kill", { terminalId }),
-  onPtyData: (listener: (event: PtyDataEvent) => void) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: PtyDataEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("pty:data", handler);
-    return () => {
-      ipcRenderer.removeListener("pty:data", handler);
-    };
-  },
-  onPtyExit: (listener: (event: PtyExitEvent) => void) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: PtyExitEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("pty:exit", handler);
-    return () => {
-      ipcRenderer.removeListener("pty:exit", handler);
-    };
-  },
-  onPtyActivity: (listener: (event: PtyActivityEvent) => void) => {
-    const handler = (
-      _event: Electron.IpcRendererEvent,
-      payload: PtyActivityEvent,
-    ) => {
-      listener(payload);
-    };
-
-    ipcRenderer.on("pty:activity", handler);
-    return () => {
-      ipcRenderer.removeListener("pty:activity", handler);
-    };
-  },
   getCliPathStatus: () => ipcRenderer.invoke("cli:getPathStatus"),
   installCliOnPath: () => ipcRenderer.invoke("cli:installOnPath"),
   uninstallCliFromPath: () => ipcRenderer.invoke("cli:uninstallFromPath"),

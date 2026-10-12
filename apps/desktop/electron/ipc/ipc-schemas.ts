@@ -8,14 +8,6 @@ import { z } from "zod";
 // could drive these handlers with arbitrary payloads. Enforce shape and string
 // constraints up front so handlers can assume well-formed input.
 
-const idSchema = z
-  .string()
-  .min(1)
-  .max(256)
-  // Allow UUIDs, slugs, and ISO-ish identifiers but reject control chars and
-  // path separators that have no legitimate place in an ID.
-  .regex(/^[A-Za-z0-9_.:@-]+$/);
-
 const filesystemPathSchema = z
   .string()
   .min(1)
@@ -26,8 +18,7 @@ const filesystemPathSchema = z
 // Only web URLs. file:// is deliberately excluded: shell.openExternal on a
 // file URL launches local files (a code-execution primitive on Windows), and
 // loading file URLs in the in-app browser view would let a compromised
-// renderer read local files. Local content flows through dedicated protocols
-// (e.g. pdf-asset) instead.
+// renderer read local files. Local content flows through daemon RPC instead.
 export const httpUrlSchema = z
   .string()
   .url()
@@ -103,28 +94,6 @@ export const schemas = {
   bounds: boundsSchema,
   visible: z.boolean(),
   enabled: z.boolean(),
-  readPdf: z.object({
-    filePath: filesystemPathSchema,
-  }),
-  ptySpawn: z.object({
-    terminalId: idSchema,
-    workspaceId: idSchema,
-    cwd: filesystemPathSchema,
-    cols: z.number().int().positive().max(1000),
-    rows: z.number().int().positive().max(1000),
-  }),
-  ptyWrite: z.object({
-    terminalId: idSchema,
-    // PTY input is opaque bytes — keep a generous cap but reject pathological
-    // pastes that could overwhelm node-pty's write buffer.
-    data: z.string().max(1_000_000),
-  }),
-  ptyResize: z.object({
-    terminalId: idSchema,
-    cols: z.number().int().positive().max(1000),
-    rows: z.number().int().positive().max(1000),
-  }),
-  ptyKill: z.object({ terminalId: idSchema }),
   // Accept #rgb / #rrggbb / #rrggbbaa hex colors — anything else risks being
   // interpreted by Electron's color parser in ways we have not vetted.
   hexColor: z

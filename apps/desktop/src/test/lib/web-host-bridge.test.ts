@@ -1,10 +1,15 @@
-import { createSavedHostStore, type FetchLike } from "@cocurdex/client-runtime";
+import {
+  createSavedHostStore,
+  type FetchLike,
+  type SavedHost,
+} from "@cocurdex/client-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildDevWebClientUrl,
   resolveDevDaemonUrl,
   resolveWebHostAccess,
   type WebHostAccessDeps,
+  webHostCapabilities,
 } from "../../lib/web-host-bridge";
 
 function memoryStore() {
@@ -163,5 +168,40 @@ describe("dev web client", () => {
       resolveDevDaemonUrl("#daemon=http%3A%2F%2F127.0.0.1%3A53508", store),
     ).toBeNull();
     expect(resolveDevDaemonUrl("", store)).toBeNull();
+  });
+});
+
+describe("webHostCapabilities", () => {
+  const connection = { token: "t", webSocketUrl: "ws://127.0.0.1:1" };
+  const device = (scopes: SavedHost["scopes"]) => ({
+    kind: "device" as const,
+    connection,
+    host: {
+      hostId: "host-1",
+      name: "Studio",
+      baseUrl: remotePage.origin,
+      deviceId: "device-1",
+      token: "cocu_dev_a",
+      scopes,
+      pairedAt: "2026-10-12T00:00:00.000Z",
+    },
+  });
+
+  it("lets the loopback page use the host terminal and file manager", () => {
+    expect(webHostCapabilities({ kind: "local", connection })).toMatchObject({
+      fileManager: true,
+      terminal: true,
+    });
+  });
+
+  it("offers a paired device the terminal only with the execute scope", () => {
+    expect(webHostCapabilities(device(["read", "execute"]))).toMatchObject({
+      fileManager: false,
+      terminal: true,
+    });
+    expect(webHostCapabilities(device(["read"]))).toMatchObject({
+      fileManager: false,
+      terminal: false,
+    });
   });
 });

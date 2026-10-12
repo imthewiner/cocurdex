@@ -5,7 +5,7 @@ export interface PtyDataBuffer {
   append(terminalId: string, workspaceId: string, data: string): void;
   /** Emit a terminal's pending data immediately (e.g. right before exit). */
   flush(terminalId: string): void;
-  /** Drop all pending data and cancel the timer (window closed). */
+  /** Drop all pending data and cancel the timer (service disposed). */
   dispose(): void;
 }
 
@@ -16,8 +16,8 @@ interface PendingData {
 
 // node-pty emits a data event per read — fast producers (builds, `cat` on a
 // large file) generate thousands of chunks per second, and forwarding each one
-// as its own webContents.send floods the IPC channel and the renderer's xterm
-// write path. Coalescing chunks into one event per terminal per tick keeps
+// as its own event floods the daemon socket and the client's xterm write
+// path. Coalescing chunks into one event per terminal per tick keeps
 // throughput high while the added latency stays below a frame.
 export function createPtyDataBuffer(
   emit: (event: PtyDataEvent) => void,

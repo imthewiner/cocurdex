@@ -1,4 +1,3 @@
-import { homedir } from "node:os";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import type { BrowserAnnotation } from "@cocurdex/shared";
@@ -31,12 +30,7 @@ import {
   setBrowserVisible,
   toggleBrowserAnnotationMode,
 } from "./browser";
-import {
-  chatDaemonOptions,
-  initializeAppState,
-  listWorkspaces,
-  setDaemonReady,
-} from "./chat";
+import { chatDaemonOptions, initializeAppState, setDaemonReady } from "./chat";
 import {
   createDaemonRuntimeClient,
   type DaemonRuntimeClient,
@@ -46,7 +40,6 @@ import {
   getBundledDaemonEntryPath,
   registerCliPathHandlers,
 } from "./cli-path";
-import { listSystemFontFamilies } from "./fonts/system-fonts";
 import { registerHandler, registerHandlerArgs, schemas } from "./ipc";
 import {
   configureLogging,
@@ -70,7 +63,6 @@ import {
   queueOpenFolder,
 } from "./open-folder";
 import { registerOssLicensesHandlers } from "./oss-licenses";
-import { getPtyService } from "./pty";
 import { denyWindowNavigation, resolveMainWindowDevTools } from "./security";
 import { applyShellEnv, resolveShellEnv } from "./shell-env";
 import { registerAppUpdateHandlers, startAppUpdater } from "./updater";
@@ -84,11 +76,6 @@ import {
   titleBarChromeOptions,
   titleBarOverlayFor,
 } from "./window";
-import {
-  buildPdfAssetUrl,
-  registerPdfProtocol,
-  resolveAuthorizedPdfReadPath,
-} from "./workspace";
 
 const MIN_WINDOW_WIDTH = 400;
 const MIN_WINDOW_HEIGHT = 520;
@@ -286,48 +273,8 @@ function createWindow() {
     });
   });
 
-  // PtyService broadcasts pty:data / pty:exit through this window's webContents.
-  getPtyService().attachWindow(window);
-  window.on("closed", () => {
-    getPtyService().dispose();
-  });
-
   void window.loadURL(rendererPageUrl());
   return window;
-}
-
-function registerWorkspaceHandlers() {
-  registerHandler(
-    ipcMain,
-    "workspace:openInFileManager",
-    schemas.rootPath,
-    async (_event, rootPath) => {
-      const error = await shell.openPath(rootPath);
-      if (error) {
-        throw new Error(error);
-      }
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "workspace:revealPath",
-    schemas.filePath,
-    async (_event, targetPath) => {
-      shell.showItemInFolder(targetPath);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "pdf:read-data",
-    schemas.readPdf,
-    async (_event, payload) => {
-      await resolveAuthorizedPdfReadPath(
-        payload.filePath,
-        await listWorkspaceRootPaths(),
-      );
-      return buildPdfAssetUrl(payload.filePath);
-    },
-  );
 }
 
 function registerBrowserHandlers() {
@@ -475,78 +422,7 @@ function registerBrowserHandlers() {
   );
 }
 
-// PTY spawn accepts a cwd path from the renderer. Tighten that boundary so a
-// compromised renderer can't drop the user into a shell rooted at /private,
-// `~/.ssh`, or anywhere outside: (1) a workspace the user has opened, or
-// (2) the user home directory (no-workspace / chat-only terminal).
-async function assertCwdIsAllowedTerminalRoot(cwd: string): Promise<void> {
-  const workspaces = await listWorkspaces();
-  const normalized = path.normalize(cwd);
-  const home = path.normalize(homedir());
-  const allowed =
-    normalized === home ||
-    workspaces.some((workspace) =>
-      workspace.rootPaths.some(
-        (rootPath) => normalized === path.normalize(rootPath),
-      ),
-    );
-  if (!allowed) {
-    throw new Error(
-      "pty:spawn rejected: cwd is not a registered workspace root or home directory",
-    );
-  }
-}
-
-// Authorization source for PDF reads: the roots the user has actually opened,
-// straight from main-process state. Never derived from renderer input.
-async function listWorkspaceRootPaths(): Promise<string[]> {
-  const workspaces = await listWorkspaces();
-  return workspaces.flatMap((workspace) => workspace.rootPaths);
-}
-
-function registerPtyHandlers() {
-  registerHandler(
-    ipcMain,
-    "pty:spawn",
-    schemas.ptySpawn,
-    async (_event, payload) => {
-      await assertCwdIsAllowedTerminalRoot(payload.cwd);
-      return getPtyService().spawn(payload);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "pty:write",
-    schemas.ptyWrite,
-    async (_event, payload) => {
-      getPtyService().write(payload.terminalId, payload.data);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "pty:resize",
-    schemas.ptyResize,
-    async (_event, payload) => {
-      getPtyService().resize(payload.terminalId, payload.cols, payload.rows);
-    },
-  );
-  registerHandler(
-    ipcMain,
-    "pty:kill",
-    schemas.ptyKill,
-    async (_event, payload) => {
-      getPtyService().kill(payload.terminalId);
-    },
-  );
-}
-
 async function shutdownAppResources() {
-  try {
-    await getPtyService().dispose();
-  } catch (error) {
-    appLogger.error("app.ptyShutdownFailed", { error });
-  }
-
   const runtimeClient = daemonRuntimeClient;
   daemonRuntimeClient = null;
   try {
@@ -604,24 +480,8 @@ process.on("unhandledRejection", (reason) => {
   app.quit();
 });
 
-// Privileges must be registered before app ready. Electron 43 / Chromium 150
-// rejects XHR/fetch from the vite origin (http://localhost:5173) to custom
-// schemes unless the scheme is secure + fetch + CORS enabled; missing flags
-// surface as "Cross origin requests are only supported for protocol schemes:
-// chrome, chrome-extension, …, http, https" and every PDF fails to open.
-protocol.registerSchemesAsPrivileged([
-  rendererScheme,
-  {
-    scheme: "pdf-asset",
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      stream: true,
-    },
-  },
-]);
+// Privileges must be registered before app ready.
+protocol.registerSchemesAsPrivileged([rendererScheme]);
 
 app
   .whenReady()
@@ -691,10 +551,7 @@ app
       },
     );
     registerRendererProtocol(rendererRootDir);
-    registerPdfProtocol(listWorkspaceRootPaths);
-    registerWorkspaceHandlers();
     registerBrowserHandlers();
-    registerPtyHandlers();
     registerLoggingHandlers();
     registerCliPathHandlers();
     registerAppUpdateHandlers();
@@ -732,9 +589,6 @@ app
     // Packaged builds: best-effort symlink/shim into ~/.local/bin (or
     // %LOCALAPPDATA%\Cocurdex\bin) so `cocurdex` is on the user PATH.
     void ensureCliOnPathBestEffort();
-    ipcMain.handle("app:getHomeDir", () => homedir());
-    // Installed font families for Appearance pickers (cached in system-fonts).
-    ipcMain.handle("app:listFontFamilies", () => listSystemFontFamilies());
     ipcMain.handle("dialog:openDirectory", async () =>
       dialog.showOpenDialog({ properties: ["openDirectory"] }),
     );
@@ -772,22 +626,6 @@ app
       const rootPath = consumePendingOpenFolder();
       return rootPath ? { rootPath } : null;
     });
-    // OS drag-and-drop: renderer has a File path via webUtils; main validates
-    // directory (or parent of a file) and remaps onto an existing workspace root.
-    registerHandler(
-      ipcMain,
-      "workspace:resolveOpenPath",
-      schemas.rootPath,
-      async (_event, folderPath) => {
-        const rootPath = await requestDaemon(
-          "workspace.resolveOpenPath",
-          { path: folderPath, allowFile: true },
-          await chatDaemonOptions(),
-        );
-        return rootPath ? { rootPath } : null;
-      },
-    );
-
     await migrateLegacyRendererStorage({
       rootDir: rendererRootDir,
       userDataPath,

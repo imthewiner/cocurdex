@@ -25,6 +25,8 @@
     "@napi-rs/keyring": "^2.1.0",
     "@vscode/ripgrep": "^1.18.0",
     "effect": "4.0.2",
+    "font-list": "^2.1.0",
+    "node-pty": "^1.1.0",
     "simple-git": "^4.0.2",
     "undici": "^8.11.2",
     "ws": "^8.22.0",

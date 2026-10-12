@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
-import { loadNativeKeyring } from "./native-module";
+import { loadNativeKeyring } from "../packaged-module";
 
 export interface CredentialVault {
   read(id: string): Promise<string | null>;

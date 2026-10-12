@@ -59,14 +59,13 @@ import {
   contextHandoffBudget,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
+  isAgentEvent,
   isAgentId,
   isAssistantSessionId,
   isChatSession,
   isChatWorkspaceId,
   isHandoffVisibleMessage,
   isToolCallId,
-  isWorkspaceSearchDaemonEvent,
-  isWorkspaceWatchDaemonEvent,
   messageAgentLookup,
   newAssistantSessionId,
   normalizeAgentRoleAvatar,
@@ -119,6 +118,7 @@ import {
 } from "./network-proxy-settings";
 import { removeAppManagedWorktree } from "./orchestration-workspace";
 import { DaemonPdfAnnotationsService } from "./pdf-annotations";
+import { readAuthorizedPdf } from "./pdf-read";
 import { PeerMessagingService } from "./peer-messaging";
 import { DaemonProviderService } from "./provider";
 import { CodexLoginSessions } from "./provider/codex-login";
@@ -151,7 +151,13 @@ import {
 } from "./session-control";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
+import {
+  listFontFamilies,
+  openDirectoryInFileManager,
+  revealPathInFileManager,
+} from "./system";
 import { TeamModule, type TeammateReportCommand } from "./team";
+import { TerminalService } from "./terminal";
 import {
   DaemonWorkflowAgentTurnRunner,
   type DecideWorkflowGateInput,
@@ -243,6 +249,7 @@ export class CocurdexDaemonService {
   private readonly workspaceWatch: WorkspaceWatchService;
   readonly runtime: AgentRuntimeManager;
   readonly searchService: DaemonSearchService;
+  readonly terminals: TerminalService;
   readonly skillsService: DaemonSkillsService;
   readonly state: DaemonState;
   readonly hostAccess: HostAccessService;
@@ -303,6 +310,10 @@ export class CocurdexDaemonService {
     this.searchService = new DaemonSearchService({
       broadcast: (event) => this.events.emit("daemon.event", event),
       canScanRoot: (rootPath) => this.scanPolicy.canScan(rootPath),
+    });
+    this.terminals = new TerminalService({
+      emit: (event) => this.events.emit("terminal.event", event),
+      listWorkspaceRootPaths: () => this.listWorkspaceRootPaths(),
     });
     this.mcpConfigService = new DaemonMcpConfigService(options.userDataPath);
     this.attachments = new DaemonAttachmentStore(options.userDataPath);
@@ -806,6 +817,33 @@ export class CocurdexDaemonService {
   // directory names only and is still gated by the daemon token.
   async listHostDirectories(directoryPath?: string) {
     return listHostDirectories(directoryPath);
+  }
+
+  homeDir() {
+    return homedir();
+  }
+
+  listFontFamilies() {
+    return listFontFamilies();
+  }
+
+  async openDirectoryInFileManager(directoryPath: string) {
+    await openDirectoryInFileManager(directoryPath);
+    return null;
+  }
+
+  async revealPathInFileManager(targetPath: string) {
+    await revealPathInFileManager(targetPath);
+    return null;
+  }
+
+  async readPdf(filePath: string) {
+    return readAuthorizedPdf(filePath, await this.listWorkspaceRootPaths());
+  }
+
+  private async listWorkspaceRootPaths() {
+    const workspaces = await this.state.listWorkspaces();
+    return workspaces.flatMap((workspace) => workspace.rootPaths);
   }
 
   async commitWorkspaceChanges(input: {
@@ -2661,6 +2699,7 @@ export class CocurdexDaemonService {
         schedulerClose,
         this.acpRegistry.ready,
         Promise.resolve().then(() => this.searchService.dispose()),
+        this.terminals.dispose(),
         Promise.resolve().then(() => this.workspaceWatch.close()),
       ]);
       await this.runs.drainBackground();
@@ -3044,15 +3083,7 @@ export function onAgentEvent(
   listener: (event: AgentEvent) => void,
 ) {
   const daemonListener = (event: CocurdexDaemonEvent) => {
-    if (
-      event.type !== "data.changed" &&
-      event.type !== "peer.message" &&
-      event.type !== "team.changed" &&
-      event.type !== "scriptRun.changed" &&
-      !isWorkspaceSearchDaemonEvent(event) &&
-      !isWorkspaceWatchDaemonEvent(event) &&
-      !("conversationId" in event)
-    ) {
+    if (isAgentEvent(event) && !("conversationId" in event)) {
       listener(event);
     }
   };

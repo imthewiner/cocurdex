@@ -1,10 +1,9 @@
 import { execFile } from "node:child_process";
 import { readlink } from "node:fs/promises";
 import { promisify } from "node:util";
-import { createLogger } from "../logging";
+import { logDaemonDiagnostic } from "../diagnostics";
 
 const execFileAsync = promisify(execFile);
-const logger = createLogger("pty-inspector");
 
 // What's running in a terminal, derived from the OS process tree. node-pty
 // exposes no foreground-process API, so we inspect the shell's descendants.
@@ -133,7 +132,9 @@ export async function inspectSessions(
   try {
     nodes = await listProcesses();
   } catch (error) {
-    logger.debug("inspect.psFailed", { error });
+    logDaemonDiagnostic("debug", "terminal.inspect.psFailed", {
+      error: String(error),
+    });
     return activities;
   }
 
