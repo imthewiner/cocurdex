@@ -26,7 +26,6 @@ export function AppShellTitlebarActions({
 
   return (
     <>
-      <NetworkProxyStatusButton />
       {isChatDetached ? null : (
         <TitlebarIconButton
           active={isRightPanelOpen}
@@ -38,6 +37,7 @@ export function AppShellTitlebarActions({
           <PanelRight className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>
       )}
+      <NetworkProxyStatusButton />
       <TitlebarIconButton
         aria-label={t("sessions:sidebar.settings")}
         cursor="default"

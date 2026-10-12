@@ -31,7 +31,7 @@ export const TITLEBAR_LEADING_RESERVE = isMacPlatform() ? 80 : 12;
 export function withTitlebarControlsInset(px: number): string {
   return `calc(${px}px + var(--titlebar-controls-inset))`;
 }
-// Square controls in the titlebar toolbar: toggle, proxy, panel, settings.
+// Square controls in the titlebar toolbar: toggle, panel, proxy, settings.
 export const TITLEBAR_CONTROL_COUNT = 4;
 export const TITLEBAR_CONTROL_SIZE = TITLEBAR_ICON_BUTTON_SIZE;
 // No trailing padding: gap-1 between pills already spaces the cluster; the
