@@ -323,7 +323,7 @@ export function ViewSwitcherTabs({
           <>
             <Separator
               orientation="vertical"
-              className="h-4 bg-editor-border"
+              className="h-4 bg-editor-border data-[orientation=vertical]:self-center"
             />
             <div className="flex items-center px-2">{trailing}</div>
           </>
