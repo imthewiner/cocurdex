@@ -50,6 +50,8 @@ The prompt must contain everything the teammate needs; it does not see your conv
 - What the final reply must contain: the format you will merge (a list of findings with file:line, a summary of changes, a JSON block). Say the reply is delivered to you automatically.
 - Whether to ask you questions through `messaging_send_message` or to decide alone.
 
+Teammates obey the `agents.runLimits` setting: a teammate past the concurrency limit waits until a slot frees, and a run past the delegated timeout fails with "Run timed out". Spawn no more teammates than the work needs; a waiting teammate is not stuck.
+
 After spawning, end your turn. Do not poll `team_task_list` in a loop; reports arrive as new messages.
 
 ## 4. Merge

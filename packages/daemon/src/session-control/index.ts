@@ -7,6 +7,7 @@ export type {
   SessionTurnOutcome,
 } from "./execution-types";
 export { MessageIdConflictError, resolveRepeatedSend } from "./repeated-send";
+export { RunCapacity } from "./run-capacity";
 export {
   type RunHandle,
   type RunStore,

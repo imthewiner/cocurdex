@@ -9,6 +9,7 @@ import type {
   AgentProviderSelection,
   AgentRateLimitsReadResult,
   AgentRoleRecord,
+  AgentRunLimits,
   AgentSessionConfigOption,
   AgentSessionMode,
   AgentSlashCommand,
@@ -171,7 +172,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 28;
+export const DAEMON_PROTOCOL_VERSION = 29;
 
 export interface DaemonMetadata {
   pid: number;
@@ -454,6 +455,8 @@ export type DaemonRequestPayloadByMethod = {
     decision: AgentPlanApprovalDecision;
   };
   "provider.listConfigs": undefined;
+  "agent.runLimits.get": undefined;
+  "agent.runLimits.set": { limits: AgentRunLimits };
   "git.commitMessageModel.get": undefined;
   "git.commitMessageModel.set": {
     selection: CommitMessageModelSelection | null;
@@ -677,6 +680,8 @@ export type DaemonResultByMethod = {
   "question.resolve": boolean;
   "planApproval.resolve": boolean;
   "provider.listConfigs": ProviderConfigRecord[];
+  "agent.runLimits.get": AgentRunLimits;
+  "agent.runLimits.set": AgentRunLimits;
   "git.commitMessageModel.get": CommitMessageModelSelection | null;
   "git.commitMessageModel.set": null;
   "git.commitMessageModel.resolve": ResolvedCommitMessageModel;
@@ -749,6 +754,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "codex.logout": true,
   "codex.login.start": true,
   "network.proxy.get": true,
+  "agent.runLimits.get": true,
   "git.commitMessageModel.get": true,
   "git.commitMessageModel.resolve": true,
   "provider.listDefaults": true,

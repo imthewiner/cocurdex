@@ -197,6 +197,8 @@ export const daemonProductApi: ProductRequestApi = {
   setCommitMessageModel: async (selection) => {
     await rpc("git.commitMessageModel.set", { selection });
   },
+  getAgentRunLimits: () => rpc("agent.runLimits.get"),
+  setAgentRunLimits: (limits) => rpc("agent.runLimits.set", { limits }),
   getNetworkProxySettings: () => rpc("network.proxy.get"),
   setNetworkProxySettings: (settings) => rpc("network.proxy.set", { settings }),
   testNetworkProxy: (settings) => rpc("network.proxy.test", { settings }),
