@@ -1,16 +1,20 @@
-import { mkdtemp, readFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   DaemonMcpConfigService,
   getMcpConfigPath,
   validateMcpConfig,
 } from "./mcp-config";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 describe("MCP configuration", () => {
   it("stores validated config in Cocurdex-owned Pi state", async () => {
-    const userDataPath = await mkdtemp(path.join(tmpdir(), "cocurdex-mcp-"));
+    const userDataPath = await tempDirs.create("cocurdex-mcp-");
     const service = new DaemonMcpConfigService(userDataPath);
     const saved = await service.saveConfig(
       '{"mcpServers":{"local":{"command":"node","args":["server.js"]}}}',
@@ -36,7 +40,7 @@ describe("MCP configuration", () => {
   });
 
   it("keeps concurrent saves intact and in request order", async () => {
-    const userDataPath = await mkdtemp(path.join(tmpdir(), "cocurdex-mcp-"));
+    const userDataPath = await tempDirs.create("cocurdex-mcp-");
     const service = new DaemonMcpConfigService(userDataPath);
 
     const [first, second] = await Promise.all([

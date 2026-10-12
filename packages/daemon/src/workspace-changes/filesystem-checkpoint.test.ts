@@ -1,12 +1,16 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { createCheckpointBlobStore } from "./blob-store";
 import { createFilesystemCheckpointAdapter } from "./filesystem-checkpoint";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 async function createWorkspace() {
-  const root = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-checkpoint-"));
+  const root = await tempDirs.create("cocurdex-fs-checkpoint-");
   await mkdir(path.join(root, "notes"), { recursive: true });
   await writeFile(path.join(root, "notes/a.md"), "one\n", "utf8");
   await writeFile(path.join(root, "notes/old.md"), "moved\n", "utf8");
@@ -17,7 +21,7 @@ async function createWorkspace() {
 describe("filesystem checkpoint adapter", () => {
   it("diffs add, modify, delete, and rename and skips Office lock files", async () => {
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,
@@ -64,7 +68,7 @@ describe("filesystem checkpoint adapter", () => {
     // Captures reuse the previous manifest as a stat cache; a stale entry
     // would hide an edit that keeps the file size.
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,
@@ -89,7 +93,7 @@ describe("filesystem checkpoint adapter", () => {
 
   it("stores identical blobs once and restores bytes exactly", async () => {
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const blobStore = createCheckpointBlobStore(userData);
     const adapter = createFilesystemCheckpointAdapter(blobStore, userData);
     const payload = Buffer.from([0, 1, 2, 3, 4]);
@@ -132,7 +136,7 @@ describe("filesystem checkpoint adapter", () => {
 
   it("uses Windows-safe manifest identifiers for punctuated session ids", async () => {
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,
@@ -157,7 +161,7 @@ describe("filesystem checkpoint adapter", () => {
 
   it("marks oversized files non-restorable and restores files under the limit", async () => {
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,
@@ -209,8 +213,8 @@ describe("filesystem checkpoint adapter", () => {
 
   it("rejects restoring through a parent symlink that escaped the workspace", async () => {
     const workspace = await createWorkspace();
-    const outside = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-out-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const outside = await tempDirs.create("cocurdex-fs-out-");
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,
@@ -234,8 +238,8 @@ describe("filesystem checkpoint adapter", () => {
 
   it("does not write through a parent swapped to an external symlink after the blob read", async () => {
     const workspace = await createWorkspace();
-    const outside = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-out-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const outside = await tempDirs.create("cocurdex-fs-out-");
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const inner = createCheckpointBlobStore(userData);
     const blobStore = {
       ...inner,
@@ -270,7 +274,7 @@ describe("filesystem checkpoint adapter", () => {
 
   it("keeps unchanged blobs stored across repeated captures", async () => {
     const workspace = await createWorkspace();
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-fs-store-"));
+    const userData = await tempDirs.create("cocurdex-fs-store-");
     const adapter = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
       userData,

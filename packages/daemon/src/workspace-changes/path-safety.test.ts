@@ -1,7 +1,7 @@
-import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   assertSafeRestorePlan,
   assertSafeWorkspaceFile,
@@ -10,6 +10,10 @@ import {
   sanitizeTurnFileChange,
   UnsafeWorkspacePathError,
 } from "./path-safety";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 describe("workspace path safety", () => {
   it("rejects traversal and absolute paths", () => {
@@ -37,8 +41,8 @@ describe("workspace path safety", () => {
   });
 
   it("rejects a missing file whose parent was replaced with an external symlink", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-path-ws-"));
-    const outside = await mkdtemp(path.join(tmpdir(), "cocurdex-path-out-"));
+    const workspace = await tempDirs.create("cocurdex-path-ws-");
+    const outside = await tempDirs.create("cocurdex-path-out-");
     await mkdir(path.join(workspace, "notes"), { recursive: true });
     await writeFile(path.join(workspace, "notes/a.md"), "inside\n", "utf8");
     const { rm } = await import("node:fs/promises");
@@ -51,7 +55,7 @@ describe("workspace path safety", () => {
   });
 
   it("rejects rename sources that escape the workspace", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-path-ws-"));
+    const workspace = await tempDirs.create("cocurdex-path-ws-");
     await expect(
       assertSafeRestorePlan(workspace, {
         path: "moved.md",

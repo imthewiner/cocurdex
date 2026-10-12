@@ -10,13 +10,15 @@ import {
   resolveWebAssetPath,
 } from "./web-assets";
 
+let parent: string;
 let root: string;
 let server: http.Server;
 let port: number;
 
 beforeAll(async () => {
-  root = await mkdtemp(path.join(os.tmpdir(), "cocurdex-web-"));
-  await mkdir(path.join(root, "assets"));
+  parent = await mkdtemp(path.join(os.tmpdir(), "cocurdex-web-"));
+  root = path.join(parent, "site");
+  await mkdir(path.join(root, "assets"), { recursive: true });
   await writeFile(path.join(root, "index.html"), "<!doctype html>app");
   await writeFile(path.join(root, "assets", "index-abc.js"), "export {}");
   await writeFile(path.join(path.dirname(root), "secret.txt"), "secret");
@@ -30,7 +32,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
-  await rm(root, { recursive: true, force: true });
+  await rm(parent, { recursive: true, force: true });
 });
 
 function get(pathname: string, host = `127.0.0.1:${port}`) {

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -200,9 +200,13 @@ describe("ids and text collection", () => {
 describe("readLicenseText", () => {
   it("reads the preferred license file from a package directory", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "cocurdex-oss-license-"));
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, "NOTICE"), "notice");
-    await writeFile(path.join(dir, "LICENSE.md"), "  MIT text  \n");
-    await expect(readLicenseText(dir)).resolves.toBe("MIT text");
+    try {
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, "NOTICE"), "notice");
+      await writeFile(path.join(dir, "LICENSE.md"), "  MIT text  \n");
+      await expect(readLicenseText(dir)).resolves.toBe("MIT text");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });

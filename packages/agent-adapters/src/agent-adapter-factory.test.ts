@@ -1,10 +1,14 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setInstalledAcpRegistryAgents } from "@cocurdex/agent-core";
 import { toAcpRegistryAgentId } from "@cocurdex/shared";
-import { afterEach, describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { createAgentAdapter } from "./agent-adapter-factory";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function installRegistryAgents(registryIds: string[]) {
   setInstalledAcpRegistryAgents(
@@ -37,7 +41,7 @@ describe("createAgentAdapter", () => {
       "opencode",
       "pi",
     ] as const;
-    const rootPath = await mkdtemp(path.join(tmpdir(), "cocurdex-adapters-"));
+    const rootPath = await tempDirs.create("cocurdex-adapters-");
     const workspaceRootPath = path.join(rootPath, "workspace");
     const skillPath = path.join(
       workspaceRootPath,

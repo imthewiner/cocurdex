@@ -1,15 +1,19 @@
-import { chmod, lstat, mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { chmod, lstat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { writeFileAtomically } from "./atomic-write";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 describe("writeFileAtomically", () => {
   it("preserves executable bits when replacing a file", async () => {
     if (process.platform === "win32") {
       return;
     }
-    const directory = await mkdtemp(path.join(tmpdir(), "cocurdex-atomic-"));
+    const directory = await tempDirs.create("cocurdex-atomic-");
     const target = path.join(directory, "tool.sh");
     await writeFile(target, "old\n", "utf8");
     await chmod(target, 0o755);
@@ -22,7 +26,7 @@ describe("writeFileAtomically", () => {
     if (process.platform === "win32") {
       return;
     }
-    const directory = await mkdtemp(path.join(tmpdir(), "cocurdex-atomic-"));
+    const directory = await tempDirs.create("cocurdex-atomic-");
     const target = path.join(directory, "secret.env");
     await writeFile(target, "old\n", { mode: 0o600 });
     await chmod(target, 0o600);
@@ -31,7 +35,7 @@ describe("writeFileAtomically", () => {
   });
 
   it("does not leave a temp file after a failed replace", async () => {
-    const directory = await mkdtemp(path.join(tmpdir(), "cocurdex-atomic-"));
+    const directory = await tempDirs.create("cocurdex-atomic-");
     const target = path.join(directory, "file.txt");
     const { mkdir, readdir } = await import("node:fs/promises");
     await mkdir(target);

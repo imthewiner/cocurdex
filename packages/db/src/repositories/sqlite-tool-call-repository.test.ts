@@ -1,18 +1,18 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AgentToolCallRecord } from "@cocurdex/shared";
-import { beforeEach, describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createCocurdexDatabase } from "../sqlite";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 type Database = ReturnType<typeof createCocurdexDatabase>;
 
 function createDatabase() {
   return createCocurdexDatabase(
-    path.join(
-      mkdtempSync(path.join(tmpdir(), "cocurdex-db-")),
-      "cocurdex.sqlite",
-    ),
+    path.join(tempDirs.createSync("cocurdex-db-"), "cocurdex.sqlite"),
   );
 }
 

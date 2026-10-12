@@ -1,11 +1,15 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { TurnChangeSet } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { createWorkspaceChangeCoordinator } from "./coordinator";
 import { createGitCheckpointAdapter } from "./git-checkpoint";
 import { runGit } from "./git-run";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function createMemoryRepository() {
   const rows = new Map<string, TurnChangeSet>();
@@ -55,7 +59,7 @@ function createMemoryRepository() {
 }
 
 async function createGitWorkspace() {
-  const root = await mkdtemp(path.join(tmpdir(), "cocurdex-scope-ws-"));
+  const root = await tempDirs.create("cocurdex-scope-ws-");
   await runGit(["init"], { cwd: root });
   await runGit(["checkout", "-b", "main"], { cwd: root, allowFailure: true });
   await writeFile(path.join(root, "readme.md"), "hello\n", "utf8");
@@ -66,7 +70,7 @@ async function createGitWorkspace() {
 
 async function createCoordinator() {
   const workspace = await createGitWorkspace();
-  const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-scope-data-"));
+  const userData = await tempDirs.create("cocurdex-scope-data-");
   const coordinator = createWorkspaceChangeCoordinator({
     userDataPath: userData,
     repository: createMemoryRepository(),

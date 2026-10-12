@@ -1,21 +1,26 @@
-import { mkdtemp, realpath, writeFile } from "node:fs/promises";
+import { realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { resolveWorkspaceOpenPath } from "./workspace-open-path";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 const allowFile = { allowFile: true };
 
 describe("resolveWorkspaceOpenPath", () => {
   it("returns the canonical directory when a folder is opened", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "cocurdex-open-dir-"));
+    const dir = await tempDirs.create("cocurdex-open-dir-");
     await expect(resolveWorkspaceOpenPath(dir, [], allowFile)).resolves.toBe(
       await realpath(dir),
     );
   });
 
   it("opens the parent directory of a file only when files are allowed", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "cocurdex-open-file-"));
+    const dir = await tempDirs.create("cocurdex-open-file-");
     const filePath = path.join(dir, "readme.md");
     await writeFile(filePath, "hi");
 
@@ -38,9 +43,7 @@ describe("resolveWorkspaceOpenPath", () => {
   });
 
   it("reuses an existing workspace rootPath for the same directory", async () => {
-    const dir = await realpath(
-      await mkdtemp(path.join(tmpdir(), "cocurdex-open-reuse-")),
-    );
+    const dir = await realpath(await tempDirs.create("cocurdex-open-reuse-"));
     const stored = `${dir}${path.sep}`;
     await expect(
       resolveWorkspaceOpenPath(dir, [stored], allowFile),

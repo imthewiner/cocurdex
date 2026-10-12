@@ -1,12 +1,16 @@
-import { mkdtemp, rename, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { captureGitCommit, createGitCheckpointAdapter } from "./git-checkpoint";
 import { runGit } from "./git-run";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 async function createGitWorkspace() {
-  const root = await mkdtemp(path.join(tmpdir(), "cocurdex-git-checkpoint-"));
+  const root = await tempDirs.create("cocurdex-git-checkpoint-");
   await runGit(["init"], { cwd: root });
   await runGit(["checkout", "-b", "main"], { cwd: root, allowFailure: true });
   await writeFile(path.join(root, "readme.md"), "hello\n", "utf8");

@@ -1,12 +1,16 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { TurnChangeSet } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { createCheckpointBlobStore } from "./blob-store";
 import { createWorkspaceChangeCoordinator } from "./coordinator";
 import { createFilesystemCheckpointAdapter } from "./filesystem-checkpoint";
 import { runGit } from "./git-run";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function createMemoryRepository() {
   const rows = new Map<string, TurnChangeSet>();
@@ -57,8 +61,8 @@ function createMemoryRepository() {
 
 describe("workspace change coordinator", () => {
   it("does not reconcile a checkpoint before its change set is published", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const innerRepository = createMemoryRepository();
     let releaseFirstUpsert: () => void = () => undefined;
@@ -122,8 +126,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("merges native evidence with host coverage and blocks conflicting undo", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "tracked.md"), "before\n", "utf8");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
@@ -201,8 +205,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("keeps the after checkpoint and reads the turn diff when the host diff fails", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const inner = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
@@ -277,8 +281,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("fills Claude-style path-only native evidence with per-file line stats", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "AccountInfo.tsx"), "one\n", "utf8");
     await writeFile(
       path.join(workspace, "useHasFreePosition.ts"),
@@ -359,8 +363,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("captures a recovery checkpoint and restores matching files", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await mkdir(path.join(workspace, "notes"), { recursive: true });
     await writeFile(path.join(workspace, "notes/a.md"), "one\n", "utf8");
     const repository = createMemoryRepository();
@@ -401,8 +405,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("finalizes interrupted turns so written files can be reviewed and undone", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const coordinator = createWorkspaceChangeCoordinator({
       userDataPath: userData,
@@ -443,8 +447,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("does not finalize the same turn twice when stop and completed race", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const coordinator = createWorkspaceChangeCoordinator({
       userDataPath: userData,
@@ -477,8 +481,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("recovers the post-turn workspace when a multi-file restore fails mid-way", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "a.md"), "a0\n", "utf8");
     await writeFile(path.join(workspace, "b.md"), "b0\n", "utf8");
     await writeFile(path.join(workspace, "c.md"), "c0\n", "utf8");
@@ -544,8 +548,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("recovers when a host adapter throws after mutating a file", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "a.md"), "a0\n", "utf8");
     await writeFile(path.join(workspace, "b.md"), "b0\n", "utf8");
     const inner = createFilesystemCheckpointAdapter(
@@ -596,8 +600,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("keeps using the recorded filesystem checkpoint after git init", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const filesystem = createFilesystemCheckpointAdapter(
       createCheckpointBlobStore(userData),
@@ -642,8 +646,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("removes session manifests and unreferenced blobs, keeping shared blobs", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "shared.md"), "same\n", "utf8");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
@@ -698,8 +702,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("does not interpret a git checkpoint as a filesystem manifest after .git is removed", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-git-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-git-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await runGit(["init"], { cwd: workspace });
     await runGit(["checkout", "-b", "main"], {
       cwd: workspace,
@@ -740,8 +744,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("keeps no row or checkpoint for a turn that ran no tool", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
@@ -769,8 +773,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("keeps no row for a tool turn that changed nothing", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
@@ -799,8 +803,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("does not attribute another session's overlapping writes to a tool turn", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "notes.md"), "before\n", "utf8");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
@@ -843,8 +847,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("keeps each overlapping session's own files when both wrote", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     await writeFile(path.join(workspace, "a.md"), "a0\n", "utf8");
     await writeFile(path.join(workspace, "b.md"), "b0\n", "utf8");
     const coordinator = createWorkspaceChangeCoordinator({
@@ -920,8 +924,8 @@ describe("workspace change coordinator", () => {
   });
 
   it("does not publish workspace dirt on a read-only turn while another session writes", async () => {
-    const workspace = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-ws-"));
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-coord-data-"));
+    const workspace = await tempDirs.create("cocurdex-coord-ws-");
+    const userData = await tempDirs.create("cocurdex-coord-data-");
     const repository = createMemoryRepository();
     const coordinator = createWorkspaceChangeCoordinator({
       userDataPath: userData,

@@ -1,17 +1,17 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { DEFAULT_VIEW_ID } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { createCocurdexDatabase } from "../sqlite";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 describe("CocurdexDatabase.search", () => {
   it("searches notes and issues through the shared FTS projection", async () => {
     const database = createCocurdexDatabase(
-      path.join(
-        mkdtempSync(path.join(tmpdir(), "cocurdex-search-")),
-        "cocurdex.sqlite",
-      ),
+      path.join(tempDirs.createSync("cocurdex-search-"), "cocurdex.sqlite"),
     );
     const note = await database.notes.create({ title: "Storage design" });
     await database.notes.update({
@@ -39,7 +39,7 @@ describe("CocurdexDatabase.search", () => {
   it("distinguishes all workspaces from unassigned records", async () => {
     const database = createCocurdexDatabase(
       path.join(
-        mkdtempSync(path.join(tmpdir(), "cocurdex-search-scope-")),
+        tempDirs.createSync("cocurdex-search-scope-"),
         "cocurdex.sqlite",
       ),
     );

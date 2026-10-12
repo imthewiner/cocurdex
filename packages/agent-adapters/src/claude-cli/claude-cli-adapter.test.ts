@@ -1,6 +1,3 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type {
   Query as ClaudeQuery,
   Options as ClaudeQueryOptions,
@@ -12,7 +9,8 @@ import type {
   AgentProviderSessionRecord,
   AgentProviderSnapshot,
 } from "@cocurdex/shared";
-import { describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { createClaudeCliAdapter } from "./claude-cli-adapter";
 import {
   buildClaudeCliEnv,
@@ -20,7 +18,11 @@ import {
 } from "./claude-cli-process";
 import { createClaudeRuntimeFingerprint } from "./claude-runtime";
 
-const testWorkspaceRoot = mkdtempSync(join(tmpdir(), "cocurdex-claude-test-"));
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
+const testWorkspaceRoot = tempDirs.createSync("cocurdex-claude-test-");
 
 describe("getClaudeCliPermissionMode", () => {
   it("enforces Claude plan permissions when the session is in plan mode", () => {
