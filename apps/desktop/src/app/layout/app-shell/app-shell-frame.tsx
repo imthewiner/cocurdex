@@ -64,7 +64,6 @@ interface AppShellFrameProps {
   activeWorkspaceRootPaths: string[];
   appearanceSettings: AppearanceSettings;
   canGoBack: boolean;
-  canGoForward: boolean;
   contentRowRef: Ref<HTMLElement>;
   effectiveRightWidth: number;
   /** Visible in the app shell (may be forced closed while editor is fullscreen). */
@@ -93,7 +92,6 @@ interface AppShellFrameProps {
   onChatLayoutModeChange(mode: ChatLayoutMode): void;
   onHideFabWhenClosedChange(hide: boolean): void;
   onGoBack(): void;
-  onGoForward(): void;
   onOpenFileFromPalette(file: WorkspaceFileEntry): void;
   onOpenSettings(): void;
   onResizeHandleMouseDown(
@@ -118,7 +116,6 @@ export function AppShellFrame({
   activeWorkspaceRootPaths,
   appearanceSettings,
   canGoBack,
-  canGoForward,
   contentRowRef,
   effectiveRightWidth,
   isLeftSidebarOpen,
@@ -140,7 +137,6 @@ export function AppShellFrame({
   onChatLayoutModeChange,
   onHideFabWhenClosedChange,
   onGoBack,
-  onGoForward,
   onOpenFileFromPalette,
   onOpenSettings,
   onResizeHandleMouseDown,
@@ -397,13 +393,11 @@ export function AppShellFrame({
             activeSection={activeSettingsSection}
             appearanceSettings={appearanceSettings}
             canGoBack={canGoBack}
-            canGoForward={canGoForward}
             chatLayoutMode={chatLayoutMode}
             hideFabWhenClosed={hideFabWhenClosed}
             isSidebarOpen={isLeftSidebarPreferredOpen}
             sidebarWidth={leftWidth}
             onGoBack={onGoBack}
-            onGoForward={onGoForward}
             languageMode={languageMode}
             notificationSettings={notificationSettings}
             onAppearanceSettingsChange={onAppearanceSettingsChange}

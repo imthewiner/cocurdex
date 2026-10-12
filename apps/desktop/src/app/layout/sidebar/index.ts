@@ -7,7 +7,7 @@ export { LeftSidebar } from "./left-sidebar";
 export {
   ResizableSidebarSlot,
   ResizeSeparator,
-  ScreenNavButtons,
+  ScreenBackButton,
   SidebarToggleButton,
 } from "./sidebar-frame";
 export { type SidebarTab, sidebarTabAtom } from "./sidebar-tab-store";
