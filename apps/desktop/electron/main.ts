@@ -722,8 +722,9 @@ app
     ipcMain.handle("daemon:getStatus", async () =>
       requireDaemonRuntimeClient().getStatus(),
     );
-    ipcMain.handle("daemon:connection", async () =>
-      requireDaemonRuntimeClient().connection(),
+    ipcMain.handle(
+      "daemon:connection",
+      async () => daemonRuntimeClient?.connection() ?? null,
     );
     ipcMain.handle("daemon:restart", async () =>
       requireDaemonRuntimeClient().restart(),
