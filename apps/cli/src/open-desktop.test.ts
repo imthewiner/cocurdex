@@ -21,19 +21,16 @@ describe("shouldHandleAsOpen", () => {
     expect(shouldHandleAsOpen("/tmp/project")).toBe(true);
   });
 
-  it("leaves known subcommands alone", () => {
-    expect(shouldHandleAsOpen("init")).toBe(false);
-    expect(shouldHandleAsOpen("issue")).toBe(false);
-    expect(shouldHandleAsOpen("note")).toBe(false);
-    expect(shouldHandleAsOpen("search")).toBe(false);
-    expect(shouldHandleAsOpen("skills")).toBe(false);
-    expect(shouldHandleAsOpen("daemon")).toBe(false);
-    expect(shouldHandleAsOpen("worktree")).toBe(false);
-    expect(shouldHandleAsOpen("workspace")).toBe(false);
-    expect(shouldHandleAsOpen("session")).toBe(false);
-    expect(shouldHandleAsOpen("provider")).toBe(false);
-    expect(shouldHandleAsOpen("role")).toBe(false);
-    expect(shouldHandleAsOpen("workflow")).toBe(false);
+  it("treats Windows paths as open only on Windows", () => {
+    expect(shouldHandleAsOpen("C:\\repo", "win32")).toBe(true);
+    expect(shouldHandleAsOpen("repo\\sub", "win32")).toBe(true);
+    expect(shouldHandleAsOpen("repo\\sub", "linux")).toBe(false);
+  });
+
+  it("leaves bare words to subcommands, including ones added later", () => {
+    for (const command of ["issue", "host", "team", "script-run", "web"]) {
+      expect(shouldHandleAsOpen(command)).toBe(false);
+    }
   });
 });
 

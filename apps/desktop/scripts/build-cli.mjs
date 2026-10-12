@@ -41,11 +41,13 @@ const codemodeWorkerEntry = path.resolve(
   piPackagePath,
   "../pi-codemode/dist/runtime/worker.js",
 );
-const cliPackageJson = JSON.parse(
-  await readFile(path.join(repoRoot, "apps/cli/package.json"), "utf8"),
+const desktopPackageJson = JSON.parse(
+  await readFile(path.join(desktopRoot, "package.json"), "utf8"),
 );
 const cliVersion =
-  typeof cliPackageJson.version === "string" ? cliPackageJson.version : "0.0.0";
+  typeof desktopPackageJson.version === "string"
+    ? desktopPackageJson.version
+    : "0.0.0";
 
 // electron-builder drops node_modules from extraResources, so the bundled
 // daemon resolves the QuickJS wasm beside itself instead of as a package.

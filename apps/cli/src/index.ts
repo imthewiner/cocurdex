@@ -22,6 +22,7 @@ import { handleIssueCommand } from "./issue-commands";
 import { handleNoteCommand } from "./note-commands";
 import {
   assertDirectory,
+  isExistingDirectory,
   openDesktopApp,
   resolveOpenFolderArg,
   shouldHandleAsOpen,
@@ -454,6 +455,15 @@ async function main(rawArgs: string[]) {
       requestDaemon("workflow.cancel", { workflowRunId }),
     );
     printWorkflow(aggregate, parsed);
+    return;
+  }
+
+  if (
+    resource &&
+    action === undefined &&
+    (await isExistingDirectory(resource))
+  ) {
+    await openDesktopApp(await assertDirectory(resource));
     return;
   }
 
