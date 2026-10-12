@@ -224,7 +224,7 @@ export function MediaPreviewDialog({
           {subtitle ? `${title} ${subtitle}` : title}
         </DialogTitle>
         <TooltipProvider>
-          <div className="app-drag flex h-8 shrink-0 items-center justify-between gap-2 border-chat-border/40 border-b pr-[calc(0.75rem+var(--titlebar-controls-inset))] pl-3 [html[data-platform=darwin]_&]:pl-20">
+          <div className="app-drag flex h-8 shrink-0 items-center justify-between gap-2 border-chat-border/40 border-b pr-[calc(0.75rem+var(--titlebar-controls-inset))] pl-3 [html[data-traffic-lights]_&]:pl-20">
             <div className="flex min-w-0 items-center gap-2">
               <Text className="block truncate text-chat-fg" size="body">
                 {title}

@@ -1,4 +1,4 @@
-import { isMacPlatform } from "@/lib/platform";
+import { hasMacTrafficLights } from "@/lib/platform";
 
 /**
  * Shared layout metrics for the app shell.
@@ -26,7 +26,7 @@ export const TITLEBAR_ICON_BUTTON_GAP = 4;
 // the edge at trafficLightPosition.x:12; 80px leaves a comfortable gap before
 // the first size-6 pill (matches the former settings `left-20` spacing).
 // Windows and Linux draw their window controls on the right instead.
-export const TITLEBAR_LEADING_RESERVE = isMacPlatform() ? 80 : 12;
+export const TITLEBAR_LEADING_RESERVE = hasMacTrafficLights() ? 80 : 12;
 
 export function withTitlebarControlsInset(px: number): string {
   return `calc(${px}px + var(--titlebar-controls-inset))`;
