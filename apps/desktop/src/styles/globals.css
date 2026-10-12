@@ -15,4 +15,4 @@
 @import "./motion.css";
 @import "./activity-timeline.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme="dark"] *));

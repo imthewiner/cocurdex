@@ -77,6 +77,22 @@ or condition wait, defaults to 10 seconds, and is capped at 60 seconds. A timeou
 does not roll back an action or cancel application work; inspect before retrying.
 Connection loss and evaluation errors stop the wait without replaying actions.
 
+### Light and dark themes
+
+`data-theme` on `<html>` is the only light/dark switch; CSS tokens and `dark:`
+utilities read it. Do not set it by hand: that skips the active preset's token
+map and the window surface color. In dev builds, preview a theme without
+touching the stored setting, then restore it:
+
+```bash
+rtk node .agents/skills/debug-desktop/scripts/cdp.mjs eval "window.__cocurdexDebug.previewTheme('dark')" --url http://localhost:5173/
+rtk node .agents/skills/debug-desktop/scripts/cdp.mjs eval "window.__cocurdexDebug.restoreTheme()" --url http://localhost:5173/
+```
+
+The hook is installed at startup, so a renderer loaded before it existed needs a
+reload. Cover both themes when a change touches colors, backgrounds, or
+transparency.
+
 ## Concurrent instances
 
 When the default CDP port (9222) is already used by another session — a
