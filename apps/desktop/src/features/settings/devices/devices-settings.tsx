@@ -7,6 +7,7 @@ import {
   PairedDevicesGroup,
   PendingPairingsGroup,
 } from "./device-lists";
+import { LocalWebGroup } from "./local-web-group";
 import { PairDeviceDialog } from "./pair-device-dialog";
 import { RemoteAccessGroup } from "./remote-access-group";
 import { useHostAccess } from "./use-host-access";
@@ -28,6 +29,7 @@ export function DevicesSettingsPanel() {
 
   return (
     <div className="settings-panel-enter flex flex-col gap-8">
+      <LocalWebGroup />
       <RemoteAccessGroup
         key={snapshot.remote.settings.port}
         status={snapshot.remote}

@@ -1,19 +1,11 @@
 import { readDaemonMetadata } from "@cocurdex/daemon/client";
+import { buildLocalWebClientUrl } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
 import type { ParsedArgs } from "./parse-args";
 
 export const webUsageLines = () => [
   "  cocurdex web [--json]                   Print the local web client URL",
 ];
-
-export function buildWebClientUrl(webSocketUrl: string, token: string) {
-  const url = new URL(webSocketUrl);
-  url.protocol = url.protocol === "wss:" ? "https:" : "http:";
-  url.pathname = "/";
-  url.search = "";
-  url.hash = new URLSearchParams({ token }).toString();
-  return url.toString();
-}
 
 async function servesWebClient(url: string) {
   try {
@@ -26,7 +18,7 @@ async function servesWebClient(url: string) {
 
 export async function handleWebCommand(parsed: ParsedArgs) {
   const metadata = await withDaemon(() => readDaemonMetadata());
-  const url = buildWebClientUrl(metadata.webSocketUrl, metadata.token);
+  const url = buildLocalWebClientUrl(metadata.webSocketUrl, metadata.token);
   if (!(await servesWebClient(url))) {
     throw new Error(
       "The running daemon does not serve the web client. Start Cocurdex from the desktop app, then retry.",

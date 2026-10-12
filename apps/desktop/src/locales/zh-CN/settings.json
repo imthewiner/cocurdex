@@ -321,6 +321,15 @@
       "revokeTitle": "吊销 {{name}}？",
       "unnamed": "未命名设备"
     },
+    "localWeb": {
+      "groupTitle": "浏览器",
+      "open": {
+        "action": "打开",
+        "description": "在这台电脑的浏览器中使用 Cocurdex，连接同样的工作区和会话。",
+        "title": "在浏览器中打开"
+      },
+      "openFailed": "无法在浏览器中打开 Cocurdex"
+    },
     "pair": {
       "create": "生成配对码",
       "createdDescription": "在另一台设备上打开链接，或输入配对码。配对码只能使用一次。",

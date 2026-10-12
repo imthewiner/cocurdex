@@ -48,6 +48,15 @@ describe("getDaemonSocketPath", () => {
     );
   });
 
+  it("rejects user data paths whose socket exceeds the platform limit", () => {
+    const deep = `/${"a".repeat(94)}`;
+    expect(() => getDaemonSocketPath(deep, "darwin")).toThrow(/103 bytes/);
+    expect(getDaemonSocketPath(deep, "linux")).toBe(`${deep}/daemon.sock`);
+    expect(() => getDaemonSocketPath(`${deep}aaaa`, "linux")).toThrow(
+      /107 bytes/,
+    );
+  });
+
   it("uses a profile-specific named pipe on Windows", () => {
     const first = getDaemonSocketPath("C:\\Users\\a\\Cocurdex", "win32");
     const second = getDaemonSocketPath("C:\\Users\\b\\Cocurdex", "win32");

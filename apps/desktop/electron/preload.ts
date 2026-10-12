@@ -24,6 +24,7 @@ const hostBridge: HostBridge = {
     nativeDirectoryDialog: true,
     terminal: true,
     browserView: true,
+    localWebClient: true,
   },
   // Sandboxed preload cannot import node:os — resolve home in main.
   // Default terminal cwd when no workspace is open.

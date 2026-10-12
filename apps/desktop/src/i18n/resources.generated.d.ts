@@ -1848,6 +1848,15 @@ export default interface Resources {
         revokedDetail: "Revoked {{time}}";
         unnamed: "Unnamed device";
       };
+      localWeb: {
+        groupTitle: "Browser";
+        open: {
+          action: "Open";
+          description: "Use Cocurdex in a browser on this computer, connected to the same workspaces and sessions.";
+          title: "Open in browser";
+        };
+        openFailed: "Could not open Cocurdex in the browser";
+      };
       pair: {
         create: "Create pairing code";
         createdDescription: "Open a link on the other device, or enter the code there. The code works once.";

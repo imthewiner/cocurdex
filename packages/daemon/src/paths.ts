@@ -48,7 +48,14 @@ export function getDaemonSocketPath(
     return `\\\\.\\pipe\\cocurdex-daemon-${profileId}`;
   }
 
-  return path.posix.join(userDataPath, "daemon.sock");
+  const socketPath = path.posix.join(userDataPath, "daemon.sock");
+  const maxBytes = platform === "linux" ? 107 : 103;
+  if (Buffer.byteLength(socketPath) > maxBytes) {
+    throw new Error(
+      `Daemon socket path is longer than ${maxBytes} bytes, the limit on ${platform}: ${socketPath}. Use a shorter ${COCURDEX_USER_DATA_PATH_ENV}.`,
+    );
+  }
+  return socketPath;
 }
 
 export function getDaemonMetadataPath(userDataPath = getDefaultUserDataPath()) {

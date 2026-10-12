@@ -214,6 +214,7 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
       nativeDirectoryDialog: false,
       terminal: false,
       browserView: false,
+      localWebClient: false,
     },
     getDaemonConnection: createConnectionResolver(access, savedHosts),
     openExternal: async (url) => {

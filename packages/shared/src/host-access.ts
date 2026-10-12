@@ -124,6 +124,15 @@ export const HOST_PAIRING_HTTP_PATH = "/api/pair";
 export const HOST_SESSION_HTTP_PATH = "/api/session";
 export const DEFAULT_REMOTE_ACCESS_PORT = 47_820;
 
+export function buildLocalWebClientUrl(webSocketUrl: string, token: string) {
+  const url = new URL(webSocketUrl);
+  url.protocol = url.protocol === "wss:" ? "https:" : "http:";
+  url.pathname = "/";
+  url.search = "";
+  url.hash = new URLSearchParams({ token }).toString();
+  return url.toString();
+}
+
 export function buildHostPairingLink(addressUrl: string, code: string) {
   const url = new URL(addressUrl);
   url.pathname = "/";

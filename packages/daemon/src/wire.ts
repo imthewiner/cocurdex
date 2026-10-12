@@ -133,7 +133,13 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     { isIncumbentServing },
   );
   const userDataPath = ownership.userDataPath;
-  const socketPath = getDaemonSocketPath(userDataPath);
+  let socketPath: string;
+  try {
+    socketPath = getDaemonSocketPath(userDataPath);
+  } catch (error) {
+    ownership.release();
+    throw error;
+  }
   const startedAt = new Date().toISOString();
   let service: CocurdexDaemonService | undefined;
   let endpoint: Awaited<ReturnType<typeof prepareDaemonEndpoint>> | undefined;
