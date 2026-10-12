@@ -305,6 +305,7 @@ export interface HostCapabilities {
   nativeDirectoryDialog: boolean;
   terminal: boolean;
   browserView: boolean;
+  localWebClient: boolean;
 }
 
 /**

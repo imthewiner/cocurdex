@@ -7,40 +7,38 @@ import { fileURLToPath } from "node:url";
 /** Flag the desktop main process recognizes for CLI folder open. */
 export const OPEN_FOLDER_FLAG = "--open-folder";
 
-const KNOWN_COMMANDS = new Set([
-  "init",
-  "issue",
-  "note",
-  "search",
-  "skills",
-  "skill",
-  "daemon",
-  "worktree",
-  "workspace",
-  "session",
-  "provider",
-  "role",
-  "workflow",
-  "open",
-  "help",
-  "version",
-  "web",
-]);
-
-export function isKnownCliCommand(resource: string | undefined): boolean {
-  return resource !== undefined && KNOWN_COMMANDS.has(resource);
+function looksLikePath(value: string, platform: NodeJS.Platform) {
+  const pathApi = platform === "win32" ? path.win32 : path.posix;
+  return (
+    value === "." ||
+    value === ".." ||
+    pathApi.isAbsolute(value) ||
+    value.includes("/") ||
+    (platform === "win32" && value.includes("\\"))
+  );
 }
 
 /**
  * True when argv should open the desktop app (optionally with a folder)
- * instead of a subcommand. Matches VS Code-style `code .` / `code`.
+ * before any subcommand is tried. Matches VS Code-style `code .` / `code`.
  */
-export function shouldHandleAsOpen(resource: string | undefined): boolean {
+export function shouldHandleAsOpen(
+  resource: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
   return (
     resource === undefined ||
     resource === "open" ||
-    !isKnownCliCommand(resource)
+    looksLikePath(resource, platform)
   );
+}
+
+export async function isExistingDirectory(folderPath: string) {
+  try {
+    return (await stat(path.resolve(folderPath))).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /**

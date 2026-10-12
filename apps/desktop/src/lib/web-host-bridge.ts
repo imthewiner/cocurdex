@@ -13,6 +13,9 @@ import { offlineApi } from "./offline-api";
 import type { HostBridge } from "./types";
 
 const TOKEN_STORAGE_KEY = "cocurdex.daemonToken";
+const DAEMON_URL_STORAGE_KEY = "cocurdex.daemonUrl";
+const DAEMON_URL_FRAGMENT_KEY = "daemon";
+const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
 export type WebPairingReason =
   | "missing"
@@ -36,6 +39,7 @@ export interface WebHostAccessDeps {
   sessionStore: KeyValueStorage | null;
   savedHosts: SavedHostStore;
   fetch?: FetchLike;
+  localDaemonUrl?: string | null;
 }
 
 function readFragment(hash: string) {
@@ -63,11 +67,55 @@ function readStoredToken(store: KeyValueStorage | null) {
   }
 }
 
-function localAccess(location: WebLocation, token: string): WebHostAccess {
+function localAccess(
+  location: WebLocation,
+  token: string,
+  daemonUrl: string | null | undefined,
+): WebHostAccess {
   return {
     kind: "local",
-    connection: { token, webSocketUrl: webSocketUrlFor(location) },
+    connection: { token, webSocketUrl: daemonUrl ?? webSocketUrlFor(location) },
   };
+}
+
+function loopbackDaemonUrl(value: string | null | undefined) {
+  if (!value) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "ws:" && url.protocol !== "wss:") return null;
+  if (!LOOPBACK_HOSTNAMES.has(url.hostname)) return null;
+  return `${url.protocol}//${url.host}`;
+}
+
+export function resolveDevDaemonUrl(
+  hash: string,
+  store: KeyValueStorage | null,
+) {
+  const offered = loopbackDaemonUrl(
+    readFragment(hash).get(DAEMON_URL_FRAGMENT_KEY),
+  );
+  try {
+    if (!offered)
+      return loopbackDaemonUrl(store?.getItem(DAEMON_URL_STORAGE_KEY));
+    store?.setItem(DAEMON_URL_STORAGE_KEY, offered);
+  } catch {}
+  return offered;
+}
+
+export function buildDevWebClientUrl(
+  pageOrigin: string,
+  connection: DaemonConnectionInfo,
+) {
+  const url = new URL("/", pageOrigin);
+  url.hash = new URLSearchParams({
+    token: connection.token,
+    [DAEMON_URL_FRAGMENT_KEY]: connection.webSocketUrl,
+  }).toString();
+  return url.toString();
 }
 
 function deviceAccess(location: WebLocation, host: SavedHost): WebHostAccess {
@@ -106,7 +154,7 @@ export async function resolveWebHostAccess(
     try {
       deps.sessionStore?.setItem(TOKEN_STORAGE_KEY, localToken);
     } catch {}
-    return localAccess(location, localToken);
+    return localAccess(location, localToken, deps.localDaemonUrl);
   }
 
   const code = nonEmpty(fragment.get("pair"));
@@ -131,7 +179,9 @@ export async function resolveWebHostAccess(
   }
 
   const storedToken = readStoredToken(deps.sessionStore);
-  if (storedToken && !pairing) return localAccess(location, storedToken);
+  if (storedToken && !pairing) {
+    return localAccess(location, storedToken, deps.localDaemonUrl);
+  }
   return { kind: "needsPairing", reason: pairing?.failure ?? "missing" };
 }
 
@@ -202,9 +252,14 @@ export function webPairingFailureReason(error: unknown) {
 export function installWebHostBridge(): Promise<WebHostAccess> | null {
   if (window.desktopApi) return null;
   const savedHosts = savedHostStore();
-  const access = resolveWebHostAccess(snapshotLocation(), {
-    sessionStore: safeStore(() => window.sessionStorage),
+  const location = snapshotLocation();
+  const sessionStore = safeStore(() => window.sessionStorage);
+  const access = resolveWebHostAccess(location, {
+    sessionStore,
     savedHosts,
+    localDaemonUrl: import.meta.env.DEV
+      ? resolveDevDaemonUrl(location.hash, sessionStore)
+      : null,
   });
   dropFragmentCredentials();
   const bridge: HostBridge = {
@@ -214,6 +269,7 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
       nativeDirectoryDialog: false,
       terminal: false,
       browserView: false,
+      localWebClient: false,
     },
     getDaemonConnection: createConnectionResolver(access, savedHosts),
     openExternal: async (url) => {

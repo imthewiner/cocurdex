@@ -31,7 +31,7 @@
 
   /* App-wide success accent, the counterpart to the preset's --destructive
    * (which has no positive twin). Fixed emerald steps like the git accents:
-   * 600 holds contrast on light surfaces, .dark swaps in 300. */
+   * 600 holds contrast on light surfaces, dark mode swaps in 300. */
   --status-success: oklch(0.596 0.145 163.225); /* emerald-600 */
 
   /* Mid-severity accent between success and --destructive, for quota meters
@@ -50,7 +50,7 @@
   --chat-surface-strong: var(--muted);
   /* Chat and editor share one canvas, so the input plane needs its own
    * separation. Light sets it as the only pure-white plane on an off-white
-   * canvas (see .dark for the lifted-fill variant). */
+   * canvas (see dark mode for the lifted-fill variant). */
   --chat-surface-input: var(--background);
   /* User bubbles are small, so a tinted fill reads as a distinct message
    * instead of haze — the opposite of the full-width composer plane. */
@@ -272,7 +272,7 @@
   );
   /* Git change accents (added / deleted / modified). Fixed hues from the
    * Tailwind palette rather than preset variables, mirroring diff colors used
-   * across tools; the 600 steps keep contrast on light surfaces, .dark below
+   * across tools; the 600 steps keep contrast on light surfaces, dark mode below
    * swaps in the 300/400 steps for dark surfaces. */
   --editor-git-added: oklch(0.596 0.145 163.225); /* emerald-600 */
   --editor-git-deleted: oklch(0.586 0.253 17.585); /* rose-600 */
@@ -374,7 +374,7 @@
  *   session/nav    --sidebar     ~0.21   (raised above canvas)
  * Preset ties --sidebar and --card both to 0.205; without an explicit sidebar
  * step the chat dock session drawer and chat body paint as one slab. */
-.dark {
+[data-theme="dark"] {
   --modal-scrim: rgb(0 0 0 / 0.4);
   /* Lifted off the near-black canvas enough to read as a separate plane. */
   --sidebar: color-mix(in srgb, var(--foreground) 7%, var(--background));

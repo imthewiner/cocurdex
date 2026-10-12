@@ -1,9 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { applyPlatformAttribute, isMacPlatform } from "@/lib/platform";
+import {
+  applyPlatformAttribute,
+  hasMacTrafficLights,
+  isMacPlatform,
+} from "@/lib/platform";
 
-function stubPlatform(value: string) {
-  vi.stubGlobal("navigator", { platform: value } as Navigator);
+const ELECTRON_USER_AGENT =
+  "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/140.0 Electron/38.0.0";
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/140.0 Safari/537.36";
+
+function stubPlatform(value: string, userAgent = BROWSER_USER_AGENT) {
+  vi.stubGlobal("navigator", { platform: value, userAgent } as Navigator);
 }
 
 describe("isMacPlatform", () => {
@@ -19,6 +28,27 @@ describe("isMacPlatform", () => {
   it("returns false on Windows", () => {
     stubPlatform("Win32");
     expect(isMacPlatform()).toBe(false);
+  });
+});
+
+describe("hasMacTrafficLights", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reserves the traffic lights in the macOS desktop app", () => {
+    stubPlatform("MacIntel", ELECTRON_USER_AGENT);
+    expect(hasMacTrafficLights()).toBe(true);
+  });
+
+  it("skips the reserve in a macOS browser tab", () => {
+    stubPlatform("MacIntel", BROWSER_USER_AGENT);
+    expect(hasMacTrafficLights()).toBe(false);
+  });
+
+  it("skips the reserve in the Windows desktop app", () => {
+    stubPlatform("Win32", ELECTRON_USER_AGENT);
+    expect(hasMacTrafficLights()).toBe(false);
   });
 });
 

@@ -18,7 +18,7 @@ export function SidebarSectionHeading({
     <button
       type="button"
       aria-expanded={!collapsed}
-      className="group/section flex items-center gap-1 px-1 py-1 text-sidebar-fg-subtle hover:text-sidebar-fg"
+      className="group/section sticky top-0 z-10 flex items-center gap-1 bg-sidebar px-1 py-1 text-sidebar-fg-subtle hover:text-sidebar-fg"
       onClick={toggle}
     >
       <Text size="meta">{children}</Text>

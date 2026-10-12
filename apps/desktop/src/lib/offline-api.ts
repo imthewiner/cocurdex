@@ -91,6 +91,7 @@ export const offlineApi: DesktopApi = {
     nativeDirectoryDialog: false,
     terminal: false,
     browserView: false,
+    localWebClient: false,
   },
   bootstrapApp: async () => ({
     workspaces: [],
