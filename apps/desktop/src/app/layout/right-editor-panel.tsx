@@ -4,7 +4,7 @@ import {
 } from "@cocurdex/shared";
 import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
 import { PanelLeft, Search } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ResizeSeparator } from "@/components/resize-separator";
 import { beginColumnResize } from "@/components/use-column-resize";
@@ -97,6 +97,7 @@ export interface RightEditorPanelProps {
   overlayInset?: number;
   onAddContextToChat?(attachment: MessageAttachment): boolean;
   onInsertTextToChat?(text: string): boolean;
+  viewSwitcherTrailing?: ReactNode;
 }
 
 export function RightEditorPanel({
@@ -106,6 +107,7 @@ export function RightEditorPanel({
   onInsertTextToChat,
   overlayInset = 0,
   reserveTrafficLights = false,
+  viewSwitcherTrailing,
 }: RightEditorPanelProps) {
   const { t } = useTranslation("editor");
   const { t: tSearch } = useTranslation("search");
@@ -315,6 +317,7 @@ export function RightEditorPanel({
         activeView={activeView}
         hasPdfsOpen={hasPdfsOpen}
         reserveTrafficLights={reserveTrafficLights}
+        trailing={viewSwitcherTrailing}
         onViewChange={(value) => {
           setActiveView(value);
           if (value === "terminal") {
