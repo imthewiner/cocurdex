@@ -127,6 +127,39 @@ started; `mkdtemp` profiles pile up otherwise. For the full manual procedure
 (main/preload rebuild + env details), see
 [references/process-verification.md](references/process-verification.md).
 
+### Choosing the user's instance or an isolated one
+
+An isolated profile starts empty: the welcome screen gates the shell, and there
+are no workspaces, sessions, or open tabs. Setting
+`cocurdex.onboarding-hidden` in localStorage and reloading did not leave the
+welcome screen; setting `onboardingEnteredAtom` through the app's default
+Jotai store did. A workspace saved through `desktopApi.saveWorkspace` did not
+appear in the sidebar, even after a reload, so views that depend on workspace
+data (PDF reader, file tree, Git) are expensive to reach there. Use the
+isolated instance for protocol checks: call the daemon route or RPC from the
+renderer origin, which exercises CORS, auth, and the real socket. Verify the
+feature UI on the user's instance.
+
+A change that spans the renderer and the daemon breaks the user's running app
+in between: Vite HMR loads the new renderer at once, while the old daemon lacks
+the new route or method. Say so as soon as the renderer edit lands, and ask the
+user to restart dev after `prepare:cli`. The restarted app spawns the rebuilt
+daemon; confirm `getDaemonStatus().matchesRuntime` and the fingerprint before
+measuring.
+
+While the user restarts, wait for the port in a background loop
+(`curl -sf http://127.0.0.1:9222/json/list`) instead of polling with evals.
+
+### Measuring network in the renderer
+
+A long-running dev renderer has usually filled the default 250-entry Resource
+Timing buffer, so new requests are not recorded. Call
+`performance.setResourceTimingBufferSize(10000)` and
+`performance.clearResourceTimings()` before the action you measure. Cross-origin
+entries (the daemon's `http://127.0.0.1:<port>`) report `encodedBodySize` 0
+without `Timing-Allow-Origin`; count requests and read `responseStatus` and
+`duration` instead.
+
 For DOM/UI checks, query inside the expression (`innerText`,
 `querySelector(...).getBoundingClientRect()`, etc.). Read captured images back
 with the image tool to verify layout.
