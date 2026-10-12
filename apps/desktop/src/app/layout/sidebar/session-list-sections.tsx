@@ -41,7 +41,7 @@ export function SessionListSections({
           )}
         </SidebarMenuItem>
       ) : null}
-      <SidebarMenuItem>
+      <SidebarMenuItem className="sticky top-0 z-10 bg-sidebar">
         <SidebarSectionHeading section="sessions">
           {t("sidebar.sessionsHeading")}
         </SidebarSectionHeading>
