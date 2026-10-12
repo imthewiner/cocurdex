@@ -1,15 +1,15 @@
 import type {
   AgentId,
-  ContextHandoffStrategy,
   ContextTransferRecord,
+  ContextTransferStrategy,
 } from "@cocurdex/shared";
 
 export interface ContextTransferConsumption {
   targetAgentType: AgentId;
   sourceAgentTypes: AgentId[];
-  strategy: ContextHandoffStrategy;
+  strategy: ContextTransferStrategy;
   coveredMessageCount: number;
-  handoffText: string;
+  handoffText: string | null;
   consumedByMessageId: string;
   consumedAt: string;
 }

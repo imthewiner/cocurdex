@@ -1127,6 +1127,86 @@ describe("initializeDatabase", () => {
     ]);
   });
 
+  it("accepts native context transfers from version 25 and keeps user data", () => {
+    const database = new DatabaseSync(":memory:");
+    initializeDatabase(database);
+    database.exec(`
+      DROP TABLE context_transfers;
+      CREATE TABLE context_transfers (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL CHECK (kind IN ('fork', 'agent_switch')),
+        source_session_id TEXT NOT NULL,
+        target_session_id TEXT NOT NULL,
+        source_message_id TEXT,
+        source_agent_types_json TEXT NOT NULL DEFAULT '[]',
+        target_agent_type TEXT,
+        status TEXT NOT NULL CHECK (status IN ('pending', 'consumed')),
+        strategy TEXT CHECK (strategy IN ('full', 'delta')),
+        covered_message_count INTEGER NOT NULL DEFAULT 0,
+        handoff_text TEXT,
+        consumed_by_message_id TEXT,
+        created_at TEXT NOT NULL,
+        consumed_at TEXT,
+        FOREIGN KEY (target_session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+    `);
+    const now = "2026-10-12T00:00:00.000Z";
+    database.exec(`
+      INSERT INTO workspaces (id, name, root_paths, created_at, updated_at, last_opened_at)
+      VALUES ('w1', 'Repo', '["/repo"]', '${now}', '${now}', '${now}');
+      INSERT INTO sessions (id, workspace_id, title, agent_type, status, write_mode, created_at, updated_at)
+      VALUES ('s1', 'w1', 'Explain', 'codex', 'idle', 'read-only', '${now}', '${now}');
+      INSERT INTO messages (id, session_id, role, content, attachments_json, created_at)
+      VALUES ('m1', 's1', 'user', 'hello', '[]', '${now}');
+      INSERT INTO context_transfers (
+        id, kind, source_session_id, target_session_id, status, strategy,
+        covered_message_count, handoff_text, created_at
+      ) VALUES ('t1', 'agent_switch', 's1', 's1', 'consumed', 'full', 1, 'handoff', '${now}');
+      INSERT INTO notes (id, kind, title, body_markdown, created_at, updated_at)
+      VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
+      INSERT INTO issues (id, title, workspace_id, created_at, updated_at)
+      VALUES ('i1', 'Handoff', 'w1', '${now}', '${now}');
+      PRAGMA user_version = 25;
+    `);
+
+    initializeDatabase(database);
+
+    database.exec(`
+      INSERT INTO context_transfers (
+        id, kind, source_session_id, target_session_id, status, strategy, created_at
+      ) VALUES ('t2', 'fork', 's1', 's1', 'consumed', 'native', '${now}');
+    `);
+    expect(
+      database
+        .prepare(
+          "SELECT id, strategy, handoff_text FROM context_transfers ORDER BY id",
+        )
+        .all(),
+    ).toEqual([
+      { id: "t1", strategy: "full", handoff_text: "handoff" },
+      { id: "t2", strategy: "native", handoff_text: null },
+    ]);
+    expect(
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE name = 'idx_context_transfers_target'",
+        )
+        .all(),
+    ).toHaveLength(1);
+    expect(database.prepare("SELECT content FROM messages").all()).toEqual([
+      { content: "hello" },
+    ]);
+    expect(database.prepare("SELECT title FROM sessions").all()).toEqual([
+      { title: "Explain" },
+    ]);
+    expect(database.prepare("SELECT title FROM notes").all()).toEqual([
+      { title: "Spec" },
+    ]);
+    expect(database.prepare("SELECT title FROM issues").all()).toEqual([
+      { title: "Handoff" },
+    ]);
+  });
+
   it("keeps an up-to-date database that carries a stale version marker", () => {
     const database = new DatabaseSync(":memory:");
     initializeDatabase(database);

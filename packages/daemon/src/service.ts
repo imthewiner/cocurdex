@@ -27,6 +27,7 @@ import type {
   AppResyncSnapshot,
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
+  ContextTransferRecord,
   CreateWorkflowPayload,
   ForkSessionPayload,
   GetToolCallResultInput,
@@ -59,6 +60,7 @@ import {
   isAssistantSessionId,
   isChatSession,
   isChatWorkspaceId,
+  isHandoffVisibleMessage,
   isToolCallId,
   isWorkspaceSearchDaemonEvent,
   isWorkspaceWatchDaemonEvent,
@@ -128,6 +130,7 @@ import { DaemonSearchService } from "./search-service";
 import {
   applySessionConfiguration,
   decideDelivery,
+  forkProviderThreads,
   RunCapacity,
   type RunHandle,
   resolveRepeatedSend,
@@ -1594,9 +1597,8 @@ export class CocurdexDaemonService {
         seq: undefined,
       }),
     );
-    const agentOf = messageAgentLookup(
-      this.state.listRunsBySessionId(source.id),
-    );
+    const runs = this.state.listRunsBySessionId(source.id);
+    const agentOf = messageAgentLookup(runs);
     const sourceAgentTypes = [
       ...new Set(
         included.flatMap((message) => {
@@ -1622,6 +1624,29 @@ export class CocurdexDaemonService {
       createdAt: now,
       consumedAt: null,
     });
+    if (included.length === settled.length) {
+      const { workspaceRootPath } = await this.getSessionExecutionContext(
+        source.id,
+      );
+      await forkProviderThreads(
+        {
+          getProviderSession: (sessionId, agentType) =>
+            this.state.getProviderSession(sessionId, agentType),
+          saveProviderSession: (agentType, record) =>
+            this.state.saveProviderSession(agentType, record),
+          forkProviderSession: (agentType, forkPayload) =>
+            this.runtime.forkProviderSession(agentType, forkPayload),
+        },
+        {
+          sourceSessionId: source.id,
+          targetSessionId: forkId,
+          workspaceRootPath,
+          agentTypes: [source.agentType, ...sourceAgentTypes],
+          messages: included,
+          runs,
+        },
+      );
+    }
     this.events.emit("daemon.event", {
       type: "data.changed",
       areas: ["agent"],
@@ -2756,6 +2781,9 @@ export class CocurdexDaemonService {
       pendingFork: pending?.kind === "fork",
     });
     if (resolution.kind === "native") {
+      if (pending?.kind === "fork") {
+        this.consumeNativeFork(pending, session, userMessage, priorMessages);
+      }
       return { content: userMessage.content, history };
     }
     const handoffText = buildContextHandoffText({
@@ -2799,6 +2827,27 @@ export class CocurdexDaemonService {
       content: `${handoffText}\n\n${userMessage.content}`,
       history: resolution.freshProviderThread ? [userMessage] : history,
     };
+  }
+
+  private consumeNativeFork(
+    transfer: ContextTransferRecord,
+    session: SessionRecord,
+    userMessage: MessageRecord,
+    priorMessages: readonly MessageRecord[],
+  ) {
+    this.state.consumeContextTransfer(transfer.id, {
+      targetAgentType: session.agentType,
+      sourceAgentTypes: transfer.sourceAgentTypes,
+      strategy: "native",
+      coveredMessageCount: priorMessages.filter(isHandoffVisibleMessage).length,
+      handoffText: null,
+      consumedByMessageId: userMessage.id,
+      consumedAt: new Date().toISOString(),
+    });
+    this.events.emit("daemon.event", {
+      type: "data.changed",
+      areas: ["agent"],
+    });
   }
 
   private async dispatchSteeringMessage(

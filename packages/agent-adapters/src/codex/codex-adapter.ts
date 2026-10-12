@@ -63,6 +63,7 @@ import {
 import { parseCodexRateLimits } from "./codex-rate-limits";
 import { getCodexReasoningEffortLabel } from "./codex-reasoning-effort";
 import { CodexSubagentRouter } from "./codex-subagent-router";
+import { forkCodexProviderSession } from "./codex-thread-fork";
 import { createCodexTurnStream } from "./codex-turn-stream";
 
 const descriptor = getAgentDescriptor("codex");
@@ -272,6 +273,9 @@ export function createCodexAdapter(
   return {
     getDescriptor() {
       return descriptor;
+    },
+    forkProviderSession(payload) {
+      return forkCodexProviderSession(payload, acquireClient);
     },
     createSession(
       payload: CreateAgentSessionPayload,

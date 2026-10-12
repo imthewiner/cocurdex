@@ -222,7 +222,7 @@ export function createSchemaSql() {
       source_agent_types_json TEXT NOT NULL DEFAULT '[]',
       target_agent_type TEXT,
       status TEXT NOT NULL CHECK (status IN ('pending', 'consumed')),
-      strategy TEXT CHECK (strategy IN ('full', 'delta')),
+      strategy TEXT CHECK (strategy IN ('full', 'delta', 'native')),
       covered_message_count INTEGER NOT NULL DEFAULT 0,
       handoff_text TEXT,
       consumed_by_message_id TEXT,

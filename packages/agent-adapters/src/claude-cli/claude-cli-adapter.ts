@@ -2,6 +2,7 @@ import { statSync } from "node:fs";
 import {
   type Query as ClaudeQuery,
   type Options as ClaudeQueryOptions,
+  forkSession as claudeForkSession,
   getSessionInfo as claudeGetSessionInfo,
   query as claudeQuery,
   type GetSessionInfoOptions,
@@ -64,6 +65,10 @@ import {
   hasSameMcpServerStatuses,
   readClaudeRuntimeFingerprint,
 } from "./claude-runtime";
+import {
+  type ClaudeForkSession,
+  forkClaudeProviderSession,
+} from "./claude-session-fork";
 import { readClaudeNativeSessionTitle } from "./claude-session-title";
 
 const descriptor = getAgentDescriptor("claude-agent");
@@ -116,6 +121,7 @@ interface ClaudeCliAdapterDependencies {
     options?: GetSessionInfoOptions,
   ) => Promise<SDKSessionInfo | undefined>;
   lookupExecutable?: (command: string) => Promise<string | null>;
+  forkSession?: ClaudeForkSession;
 }
 
 function readProviderState(providerStateJson: string | undefined) {
@@ -233,6 +239,7 @@ export function createClaudeCliAdapter(
   const createQuery =
     dependencies.createQuery ?? ((input) => claudeQuery(input));
   const getSessionInfo = dependencies.getSessionInfo ?? claudeGetSessionInfo;
+  const forkSession = dependencies.forkSession ?? claudeForkSession;
 
   return {
     getDescriptor() {
@@ -240,6 +247,13 @@ export function createClaudeCliAdapter(
     },
     discoverCapabilities({ executablePath }) {
       return discoverClaudeCliCapabilities(executablePath);
+    },
+    forkProviderSession(payload) {
+      return forkClaudeProviderSession(
+        payload,
+        forkSession,
+        CLAUDE_PROVIDER_VERSION,
+      );
     },
     createSession(
       payload: CreateAgentSessionPayload,

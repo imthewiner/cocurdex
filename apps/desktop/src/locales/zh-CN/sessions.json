@@ -102,6 +102,7 @@
       "fork_other": "分叉会话，已将 {{count}} 条消息交接给 {{target}}",
       "full_other": "已将 {{sources}} 的 {{count}} 条消息交接给 {{target}}",
       "hide": "收起交接的上下文",
+      "native_other": "沿用 {{target}} 的原生会话分叉，包含 {{count}} 条消息",
       "show": "查看交接的上下文"
     },
     "switchAgentFailed": "无法切换 Agent"
