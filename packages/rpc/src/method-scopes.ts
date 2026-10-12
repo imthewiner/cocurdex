@@ -80,7 +80,6 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "file.readText": "files.read",
   "file.exists": "files.read",
   "fs.listDirectories": "files.read",
-  "pdf.read": "files.read",
   "search.start": "files.read",
   "search.cancel": "files.read",
   "git.listBranches": "files.read",

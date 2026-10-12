@@ -50,7 +50,7 @@ function browserSignals(): PlatformSignals {
   };
 }
 
-async function resolveLocalEndpoint() {
+export async function resolveLocalDaemonConnection() {
   const info = await getHostBridge()?.getDaemonConnection();
   if (!info) throw new Error("The Cocurdex daemon is unavailable");
   return info;
@@ -59,7 +59,10 @@ async function resolveLocalEndpoint() {
 export function getLocalHost() {
   return getHostRegistry().register({
     hostId: LOCAL_HOST_ID,
-    platform: { ...browserSignals(), resolveEndpoint: resolveLocalEndpoint },
+    platform: {
+      ...browserSignals(),
+      resolveEndpoint: resolveLocalDaemonConnection,
+    },
   });
 }
 

@@ -13,7 +13,6 @@ describe("desktopApi", () => {
     expect(typeof desktopApi.archiveSession).toBe("function");
     expect(typeof desktopApi.deleteSession).toBe("function");
     expect(typeof desktopApi.listProviderTemplates).toBe("function");
-    expect(typeof desktopApi.readPdfBase64).toBe("function");
   });
 
   it("uses the preload bridge when it becomes available after module load", async () => {

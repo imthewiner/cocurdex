@@ -15,6 +15,7 @@ import {
   isAllowedRemoteOrigin,
   type RemoteServer,
 } from "./host-access";
+import { createPdfHttpHandler, isPdfHttpRequest } from "./pdf-http";
 import { createWebAssetHandler } from "./web-assets";
 import {
   attachDaemonWebSocketServer,
@@ -29,6 +30,7 @@ export interface RemoteServerFactoryOptions {
   hostAccess: HostAccessService;
   machineName: string;
   webRoot?: string;
+  resolvePdfPath(filePath: string): Promise<string>;
   onWebSocket(socket: WebSocket, request: http.IncomingMessage): void;
 }
 
@@ -65,6 +67,13 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot, isAllowedHost)
     : undefined;
+  const pdfHandler = createPdfHttpHandler({
+    remote: true,
+    isAllowedRequest: (request) =>
+      isAllowedRemoteOrigin(request.headers.origin, request.headers.host),
+    resolvePrincipal: (token) => options.hostAccess.resolve(token),
+    resolvePdfPath: options.resolvePdfPath,
+  });
 
   const handleRequest = async (
     request: http.IncomingMessage,
@@ -81,6 +90,10 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     }
     if (pathname === HOST_SESSION_HTTP_PATH) {
       sessionHandler(request, response);
+      return;
+    }
+    if (isPdfHttpRequest(request)) {
+      await pdfHandler(request, response);
       return;
     }
     if (isAgentToolHttpRequest(request) || !webAssetHandler) {

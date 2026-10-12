@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   exact,
-  filePathPayload,
   filesystemPathSchema,
   idSchema,
   type Payload,
@@ -18,7 +17,6 @@ const pathPayload = z.object({ path: filesystemPathSchema });
 export const systemPayloadSchemas: PayloadSchemas = {
   "system.openDirectory": exact<Payload<"system.openDirectory">>()(pathPayload),
   "system.revealPath": exact<Payload<"system.revealPath">>()(pathPayload),
-  "pdf.read": exact<Payload<"pdf.read">>()(filePathPayload),
   "terminal.spawn": exact<Payload<"terminal.spawn">>()(
     z.object({
       terminalId: idSchema,

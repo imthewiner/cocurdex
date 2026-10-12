@@ -30,10 +30,14 @@ import {
   getDaemonMetadataPath,
   getDaemonSocketPath,
 } from "./paths";
+import { createPdfHttpHandler, isPdfHttpRequest } from "./pdf-http";
 import { createDaemonReceiptStore } from "./rpc-receipts";
 import { CocurdexDaemonService } from "./service";
-import { createWebAssetHandler } from "./web-assets";
-import { authorizeDaemonWebSocket } from "./websocket-auth";
+import { createWebAssetHandler, isLoopbackHostHeader } from "./web-assets";
+import {
+  authorizeDaemonWebSocket,
+  isAllowedWebSocketOrigin,
+} from "./websocket-auth";
 import { createRemoteServerFactory } from "./wire-remote";
 import { handleDaemonWireMessage } from "./wire-request";
 import {
@@ -280,10 +284,23 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   let agentToolHandler:
     | ReturnType<typeof createAgentToolHttpHandler>
     | undefined;
+  let pdfHandler: ReturnType<typeof createPdfHttpHandler> | undefined;
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot)
     : undefined;
   const httpServer = http.createServer((request, response) => {
+    if (isPdfHttpRequest(request)) {
+      if (!ready || !pdfHandler) {
+        response.writeHead(503);
+        response.end();
+        return;
+      }
+      void pdfHandler(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(500);
+        response.end();
+      });
+      return;
+    }
     if (!isAgentToolHttpRequest(request)) {
       if (!webAssetHandler) {
         response.writeHead(404);
@@ -396,10 +413,20 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     });
     const hostAccess = service.hostAccess;
     agentToolHandler = createAgentToolHttpHandler(service.agentTools);
+    const resolvePdfPath = service.resolvePdfPath.bind(service);
+    pdfHandler = createPdfHttpHandler({
+      remote: false,
+      isAllowedRequest: (request) =>
+        isLoopbackHostHeader(request.headers.host) &&
+        isAllowedWebSocketOrigin(request.headers.origin),
+      resolvePrincipal: (token) => hostAccess.resolve(token),
+      resolvePdfPath,
+    });
     remoteListener = createRemoteAccessListener(
       createRemoteServerFactory({
         hostAccess,
         machineName: os.hostname(),
+        resolvePdfPath,
         webRoot: options.webRoot,
         onWebSocket: (socket, request) =>
           attachWebSocketConnection(socket, {

@@ -362,7 +362,6 @@ export interface ProductApi {
   listFontFamilies(): Promise<string[]>;
   openWorkspaceInFileManager(rootPath: string): Promise<void>;
   revealPathInFileManager(targetPath: string): Promise<void>;
-  readPdfBase64(filePath: string): Promise<string>;
   resolveWorkspaceOpenPath(
     filePath: string,
   ): Promise<{ rootPath: string } | null>;

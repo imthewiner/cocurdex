@@ -5,6 +5,8 @@
 - Use English for code, documentation, and commit messages.
 - macOS, Windows, and Linux are equally supported release platforms. Design, implement, and verify every change for all three; see [Cross-platform](#cross-platform).
 - Fix root causes in the design, data model, API, or control flow, and remove obsolete internal paths. Released contracts — persisted data, settings, and the `cocurdex` CLI commands, flags, and output that scripts and product skills depend on — change only additively or with a migration. Add other compatibility layers only when explicitly requested.
+- Every client — the Electron desktop app, the web client, and the planned mobile app — must keep functional correctness, user experience, performance, and memory use at the same bar. Do not trade one for another: a change that works but buffers whole files, duplicates large payloads across processes, blocks a shared connection, or regresses first paint is not done. Move large or binary data by streaming with on-demand reads (for example HTTP `Range`), not as base64 or whole-file RPC payloads, and measure size, latency, and peak memory on realistic inputs before and after.
+- Write only code and tests. Do not write documentation in any form: no READMEs, design docs, ADRs, glossaries, guides, code comments (`//`, block comments, JSX comments), or JSDoc. Express intent through naming, types, structure, and tests. Tool-required directives and agent instruction files (`AGENTS.md`, skills) are the only exceptions.
 - Prefer the latest stable dependencies. Use prerelease or deprecated versions only when explicitly requested or required for compatibility.
 - Verify current information, versions, API behavior, platform limits, troubleshooting, configuration, and third-party tooling against official documentation, repositories, release notes, or standards before drawing conclusions or changing code. Prefer current official sources when sources conflict and explain the choice. If verification is unavailable, state the uncertainty and limit conclusions to local evidence. Verify advice with cost, risk, or long-term maintenance implications.
 
@@ -93,7 +95,6 @@ The user verifies UI/UX changes locally. After implementation and required check
 - Do not bypass boundaries with `packages/*/src/*`, `apps/*/src/*`, deep relative paths, or internal file imports. Add missing public exports instead.
 - Avoid long lines and nested ternaries. Use named values, helpers, `if`, or lookup tables for complex branches.
 - Before editing a code file over 400 lines, prefer extracting cohesive components, hooks, utilities, or fixtures unless that reduces clarity or expands scope. Markdown files are exempt.
-- Do not add or expand code comments (`//`, block comments, JSX comments, or JSDoc). Express intent through naming, types, structure, and tests. Tool-required directives are the only exception.
 - Desktop-specific rules (barrels, lazy loading, UI components, appearance tokens, React hooks, Fast Refresh) live in `apps/desktop/AGENTS.md`.
 
 ## Product knowledge and skills
@@ -103,4 +104,3 @@ The user verifies UI/UX changes locally. After implementation and required check
 - Manage issues (list, show, create, move, delete, views) through `@cocurdex/cli` using `cocurdex issue ...`. Never invent IDs or manually rewrite status.
 - Distribute skills from `packages/product-skills` through Settings > Skills or `cocurdex skills install --scope project|global`; do not auto-install. This repository symlinks `.agents/skills/cocurdex-*` and `.claude/skills/cocurdex-*` to that source; never commit installed copies.
 - Product skills are part of the CLI contract. When a change adds, renames, or removes a `cocurdex` CLI command, flag, output field, or the daemon capability behind it, update the affected `packages/product-skills/skills/cocurdex-*` in the same PR. When adding a daemon capability agents should use, decide whether it needs a CLI command and skill coverage.
-- Code is the single source of truth. Do not add design docs, ADRs, or glossaries to the repository; derive documentation from code when needed.

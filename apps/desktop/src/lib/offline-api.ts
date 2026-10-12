@@ -371,7 +371,6 @@ export const offlineApi: DesktopApi = {
     width: payload.width,
   }),
   readImageAttachmentDataUrl: async () => "",
-  readPdfBase64: async () => "",
   loadPdfAnnotations: async () => ({ bookmarks: [], highlights: [] }),
   updatePdfAnnotations: async () => ({ bookmarks: [], highlights: [] }),
   updateSessionTitle: async () => null,
