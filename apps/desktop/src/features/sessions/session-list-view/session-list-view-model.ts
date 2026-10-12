@@ -42,11 +42,21 @@ export type SessionUpdatedBucket = (typeof SESSION_UPDATED_BUCKETS)[number];
 export const SESSION_ROOT_LIMITS = ["8", "20", "all"] as const;
 export type SessionRootLimit = (typeof SESSION_ROOT_LIMITS)[number];
 
+export const SESSION_PROPERTIES = [
+  "timestamp",
+  "agent",
+  "model",
+  "role",
+  "workspace",
+  "worktree",
+] as const;
+export type SessionProperty = (typeof SESSION_PROPERTIES)[number];
+
 export interface SessionListView {
   grouping: SessionGrouping;
   ordering: SessionOrdering;
   rootLimit: SessionRootLimit;
-  showTimestamps: boolean;
+  properties: SessionProperty[];
   statuses: SessionStatusBucket[];
   agents: AgentId[];
   environments: SessionEnvironment[];
@@ -57,7 +67,7 @@ export const DEFAULT_SESSION_LIST_VIEW: SessionListView = {
   grouping: "workspace",
   ordering: "activity",
   rootLimit: "8",
-  showTimestamps: true,
+  properties: ["timestamp"],
   statuses: [],
   agents: [],
   environments: [],
@@ -103,6 +113,13 @@ function isOneOf<T extends string>(options: readonly T[]) {
   return (item: unknown): item is T => options.includes(item as T);
 }
 
+function pickProperties(value: unknown, fallback: SessionProperty[]) {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+  return SESSION_PROPERTIES.filter((property) => value.includes(property));
+}
+
 export function normalizeSessionListView(value: unknown): SessionListView {
   const input =
     value && typeof value === "object"
@@ -117,10 +134,7 @@ export function normalizeSessionListView(value: unknown): SessionListView {
       input.rootLimit,
       defaults.rootLimit,
     ),
-    showTimestamps:
-      typeof input.showTimestamps === "boolean"
-        ? input.showTimestamps
-        : defaults.showTimestamps,
+    properties: pickProperties(input.properties, defaults.properties),
     statuses: pickMany(input.statuses, isOneOf(SESSION_STATUS_BUCKETS)),
     agents: pickMany(input.agents, isStoredAgentId),
     environments: pickMany(input.environments, isOneOf(SESSION_ENVIRONMENTS)),

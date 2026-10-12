@@ -59,6 +59,22 @@ describe("normalizeSessionListView", () => {
       rootLimit: "all",
     });
   });
+
+  it("shows only timestamps until properties are chosen", () => {
+    expect(normalizeSessionListView(null).properties).toEqual(["timestamp"]);
+  });
+
+  it("keeps an explicitly empty property selection", () => {
+    expect(normalizeSessionListView({ properties: [] }).properties).toEqual([]);
+  });
+
+  it("keeps known properties in display order", () => {
+    expect(
+      normalizeSessionListView({
+        properties: ["worktree", "bogus", "agent", "agent", "timestamp"],
+      }).properties,
+    ).toEqual(["timestamp", "agent", "worktree"]);
+  });
 });
 
 describe("filterSessionsByView", () => {

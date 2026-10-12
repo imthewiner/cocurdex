@@ -89,7 +89,7 @@ export function SidebarSessionTree({
               }
               onToggleExpand={() => toggleSessionCollapsed(node.session.id)}
               session={node.session}
-              showTimestamp={view.showTimestamps}
+              properties={view.properties}
               workspaceName={workspaceNames?.get(node.session.workspaceId)}
             />
           </SidebarMenuSubItem>

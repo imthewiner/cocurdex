@@ -1384,6 +1384,15 @@ export default interface Resources {
           created: "Created time";
         };
         orderingLabel: "Sort by";
+        propertiesLabel: "Properties";
+        property: {
+          agent: "Agent";
+          model: "Model";
+          role: "Role";
+          timestamp: "Last activity";
+          workspace: "Workspace";
+          worktree: "Worktree";
+        };
         rootLimit: {
           all: "All";
           count_one: "{{count}} session";
@@ -1391,7 +1400,6 @@ export default interface Resources {
         };
         rootLimitLabel: "Sessions per group";
         showLabel: "Show";
-        showTimestamps: "Show timestamps";
         source: {
           created: "Created here";
           imported: "Imported";

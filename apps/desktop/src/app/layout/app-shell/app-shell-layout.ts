@@ -66,8 +66,13 @@ export const TITLEBAR_EDITOR_TOGGLE_WIDTH =
 export const TITLEBAR_PANE_HEADER_START_INSET =
   TITLEBAR_TOOLBAR_MIN_WIDTH + TITLEBAR_ICON_BUTTON_GAP;
 
+export const MIN_SIDEBAR_CONTENT_WIDTH = 200;
+
 /** Minimum sidebar width; never narrower than the titlebar toolbar. */
-export const MIN_LEFT = TITLEBAR_TOOLBAR_MIN_WIDTH;
+export const MIN_LEFT = Math.max(
+  TITLEBAR_TOOLBAR_MIN_WIDTH,
+  MIN_SIDEBAR_CONTENT_WIDTH,
+);
 
 /**
  * Absolute max for the session/left sidebar. Layout remaining-space clamp can

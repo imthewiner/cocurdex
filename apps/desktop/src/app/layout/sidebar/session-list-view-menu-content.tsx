@@ -9,14 +9,18 @@ import {
   ChevronsUpDown,
   CircleDot,
   Clock,
+  Cpu,
   Eye,
   Folder,
+  GitBranch,
   Inbox,
   LayoutList,
+  ListChecks,
   type LucideIcon,
   Monitor,
   Sparkles,
   SquareDashed,
+  UserRound,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -38,11 +42,13 @@ import {
   SESSION_ENVIRONMENTS,
   SESSION_GROUPINGS,
   SESSION_ORDERINGS,
+  SESSION_PROPERTIES,
   SESSION_ROOT_LIMITS,
   SESSION_SOURCES,
   SESSION_STATUS_BUCKETS,
   type SessionGrouping,
   type SessionListView,
+  type SessionProperty,
   sessionListViewAtom,
 } from "@/features/sessions/session-list-view";
 import { openSettings } from "@/features/settings";
@@ -54,6 +60,15 @@ const GROUPING_ICONS: Record<SessionGrouping, LucideIcon> = {
   status: SquareDashed,
   updated: Clock,
   agent: Sparkles,
+};
+
+const PROPERTY_ICONS: Record<SessionProperty, LucideIcon> = {
+  timestamp: Clock,
+  agent: Sparkles,
+  model: Cpu,
+  role: UserRound,
+  workspace: Folder,
+  worktree: GitBranch,
 };
 
 type MultiFilterKey = "statuses" | "agents" | "environments" | "sources";
@@ -209,13 +224,42 @@ export function SessionListViewMenuContent({
               value={view.rootLimit}
             />
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={view.showTimestamps}
-            onCheckedChange={(checked) => setView({ showTimestamps: checked })}
-          >
-            {t("sidebar.view.showTimestamps")}
-          </DropdownMenuCheckboxItem>
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <ListChecks />
+          <span className="flex-1 truncate">
+            {t("sidebar.view.propertiesLabel")}
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            {view.properties.length}
+          </span>
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="min-w-40">
+          {SESSION_PROPERTIES.map((property) => {
+            const Icon = PROPERTY_ICONS[property];
+            return (
+              <DropdownMenuCheckboxItem
+                checked={view.properties.includes(property)}
+                key={property}
+                onCheckedChange={(checked) =>
+                  setView({
+                    properties: SESSION_PROPERTIES.filter((item) =>
+                      item === property
+                        ? checked
+                        : view.properties.includes(item),
+                    ),
+                  })
+                }
+              >
+                <Icon />
+                <span className="min-w-0 flex-1 truncate">
+                  {labels.property[property]}
+                </span>
+              </DropdownMenuCheckboxItem>
+            );
+          })}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
       <DropdownMenuSeparator />

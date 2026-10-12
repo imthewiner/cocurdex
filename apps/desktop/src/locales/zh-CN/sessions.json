@@ -292,6 +292,15 @@
         "created": "创建时间"
       },
       "orderingLabel": "排序",
+      "propertiesLabel": "显示属性",
+      "property": {
+        "agent": "Agent",
+        "model": "模型",
+        "role": "角色",
+        "timestamp": "最近活动时间",
+        "workspace": "工作区",
+        "worktree": "Worktree"
+      },
       "rootLimit": {
         "all": "全部",
         "count_one": "{{count}} 个会话",
@@ -299,7 +308,6 @@
       },
       "rootLimitLabel": "每组显示会话数",
       "showLabel": "显示",
-      "showTimestamps": "显示时间",
       "source": {
         "created": "本地新建",
         "imported": "导入",

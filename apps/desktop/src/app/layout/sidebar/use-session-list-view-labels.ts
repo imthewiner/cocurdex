@@ -3,6 +3,7 @@ import type {
   SessionEnvironment,
   SessionGrouping,
   SessionOrdering,
+  SessionProperty,
   SessionRootLimit,
   SessionSource,
   SessionStatusBucket,
@@ -49,11 +50,20 @@ export function useSessionListViewLabels() {
     imported: t("sidebar.view.source.imported"),
     issue: t("sidebar.view.source.issue"),
   };
+  const property: Record<SessionProperty, string> = {
+    timestamp: t("sidebar.view.property.timestamp"),
+    agent: t("sidebar.view.property.agent"),
+    model: t("sidebar.view.property.model"),
+    role: t("sidebar.view.property.role"),
+    workspace: t("sidebar.view.property.workspace"),
+    worktree: t("sidebar.view.property.worktree"),
+  };
 
   return {
     environment,
     grouping,
     ordering,
+    property,
     rootLimit,
     source,
     status,

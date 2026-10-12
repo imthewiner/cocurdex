@@ -7,8 +7,11 @@ import {
   SidebarMenuItem,
   TooltipProvider,
 } from "@/components/ui";
+import type { SessionProperty } from "@/features/sessions/session-list-view";
 import { SessionSidebarItem } from "./session-sidebar-item";
 import { SidebarScrollArea } from "./sidebar-scroll-area";
+
+const CHAT_SESSION_PROPERTIES: readonly SessionProperty[] = ["timestamp"];
 
 interface ChatSessionsPanelProps {
   activeSessionId: string | null;
@@ -48,6 +51,7 @@ export function ChatSessionsPanel({
               <SessionSidebarItem
                 isActive={session.id === activeSessionId}
                 onSelect={() => onSelectSession(session.id)}
+                properties={CHAT_SESSION_PROPERTIES}
                 session={session}
               />
             </SidebarMenuItem>

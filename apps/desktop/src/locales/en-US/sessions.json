@@ -302,6 +302,15 @@
         "created": "Created time"
       },
       "orderingLabel": "Sort by",
+      "propertiesLabel": "Properties",
+      "property": {
+        "agent": "Agent",
+        "model": "Model",
+        "role": "Role",
+        "timestamp": "Last activity",
+        "workspace": "Workspace",
+        "worktree": "Worktree"
+      },
       "rootLimit": {
         "all": "All",
         "count_one": "{{count}} session",
@@ -309,7 +318,6 @@
       },
       "rootLimitLabel": "Sessions per group",
       "showLabel": "Show",
-      "showTimestamps": "Show timestamps",
       "source": {
         "created": "Created here",
         "imported": "Imported",

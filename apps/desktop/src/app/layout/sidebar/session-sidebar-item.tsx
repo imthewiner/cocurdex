@@ -12,17 +12,20 @@ import {
   SquareSplitVertical,
   Trash2,
 } from "lucide-react";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { CocurdexMark } from "@/components/cocurdex-mark";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuSeparator,
   ContextMenuTrigger,
   SidebarListRow,
-  Text,
 } from "@/components/ui";
 import { permissionsBySessionAtom } from "@/features/agent/permission";
 import { questionsBySessionAtom } from "@/features/agent/question";
@@ -48,13 +51,19 @@ import {
   subscribeAgentRoles,
   useAgentRoleSummary,
 } from "@/features/sessions/agent-role";
+import type { SessionProperty } from "@/features/sessions/session-list-view";
 import { openSettings } from "@/features/settings";
 import { cn, desktopApi, logRendererDiagnostic } from "@/lib";
+import { SessionSidebarMeta } from "./session-sidebar-meta";
+import {
+  resolveSessionMetaItems,
+  type SessionMetaItem,
+} from "./session-sidebar-meta-items";
+import { SessionTrailing } from "./session-sidebar-trailing";
 import { SidebarContextMenuItem } from "./sidebar-context-menu-item";
 import { SidebarItemTooltip } from "./sidebar-item-preview";
 import { SidebarOverflowTitle } from "./sidebar-overflow-title";
 import { SidebarRenameInput } from "./sidebar-rename-input";
-import { useCompactAgeLabel } from "./use-compact-age-label";
 
 interface SessionSidebarItemProps {
   hasChildren?: boolean;
@@ -62,95 +71,37 @@ interface SessionSidebarItemProps {
   isExpanded?: boolean;
   onSelect(): void;
   onToggleExpand?(): void;
+  properties: readonly SessionProperty[];
   session: SessionRecord;
-  showTimestamp?: boolean;
   workspaceName?: string;
 }
 
-function SessionStatusIndicator({
-  needsAttention,
-  isRunning,
+function SessionRowBody({
+  metaItems,
+  title,
+  trailing,
 }: {
-  isRunning: boolean;
-  needsAttention: boolean;
+  metaItems: readonly SessionMetaItem[];
+  title: string;
+  trailing: ReactNode;
 }) {
-  const { t } = useTranslation("sessions");
-
-  if (!(needsAttention || isRunning)) {
-    return null;
+  if (metaItems.length === 0) {
+    return (
+      <>
+        <SidebarOverflowTitle>{title}</SidebarOverflowTitle>
+        {trailing}
+      </>
+    );
   }
-
   return (
-    <span className="flex size-4 shrink-0 items-center justify-center">
-      {needsAttention ? (
-        <span
-          className="sidebar-activity-dot size-1.5 rounded-full text-chat-status-pending-fg"
-          role="img"
-          aria-label={t("sidebar.pendingAttention")}
-        />
-      ) : (
-        <span aria-label={t("sidebar.running")} role="img">
-          <CocurdexMark className="size-4" motion="working" />
-        </span>
-      )}
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span className="flex min-w-0 items-center gap-1.5">
+        <SidebarOverflowTitle>{title}</SidebarOverflowTitle>
+        {trailing}
+      </span>
+      <SessionSidebarMeta items={metaItems} />
     </span>
   );
-}
-
-function SessionAgeLabel({ timestamp }: { timestamp: string }) {
-  const label = useCompactAgeLabel(timestamp);
-  return (
-    <Text
-      size="meta"
-      className="shrink-0 text-sidebar-fg-subtle tabular-nums @max-[13rem]/sidebar:hidden"
-    >
-      {label}
-    </Text>
-  );
-}
-
-function SessionUnreadDot() {
-  const { t } = useTranslation("sessions");
-
-  return (
-    <span
-      className="size-1.5 shrink-0 rounded-full bg-sidebar-primary"
-      role="img"
-      aria-label={t("sidebar.unread")}
-    />
-  );
-}
-
-function SessionTrailing({
-  isRunning,
-  isUnread,
-  needsAttention,
-  showTimestamp,
-  timestamp,
-}: {
-  isRunning: boolean;
-  isUnread: boolean;
-  needsAttention: boolean;
-  showTimestamp: boolean;
-  timestamp: string;
-}) {
-  if (needsAttention || isRunning) {
-    return (
-      <SessionStatusIndicator
-        isRunning={isRunning}
-        needsAttention={needsAttention}
-      />
-    );
-  }
-  if (isUnread) {
-    return (
-      <span className="flex shrink-0 items-center gap-1.5">
-        <SessionUnreadDot />
-        {showTimestamp ? <SessionAgeLabel timestamp={timestamp} /> : null}
-      </span>
-    );
-  }
-  return showTimestamp ? <SessionAgeLabel timestamp={timestamp} /> : null;
 }
 
 export function SessionSidebarItem({
@@ -159,8 +110,8 @@ export function SessionSidebarItem({
   isExpanded = true,
   onSelect,
   onToggleExpand,
+  properties,
   session,
-  showTimestamp = true,
   workspaceName,
 }: SessionSidebarItemProps) {
   const { t } = useTranslation("sessions");
@@ -211,6 +162,26 @@ export function SessionSidebarItem({
   );
   const isChild = Boolean(session.parentSessionId);
   const activityAt = session.lastMessageAt ?? session.updatedAt;
+  const metaItems = resolveSessionMetaItems(properties, {
+    roleName: selectedRole?.name,
+    session,
+    workspaceName,
+  });
+  const rowBody = (
+    <SessionRowBody
+      metaItems={metaItems}
+      title={session.title}
+      trailing={
+        <SessionTrailing
+          isRunning={isRunning}
+          isUnread={isUnread && !isActive}
+          needsAttention={needsAttention}
+          showTimestamp={properties.includes("timestamp")}
+          timestamp={activityAt}
+        />
+      }
+    />
+  );
   const renameInputRef = useCallback((node: HTMLInputElement | null) => {
     node?.focus();
     node?.select();
@@ -337,7 +308,10 @@ export function SessionSidebarItem({
           <ContextMenuTrigger asChild>
             <SidebarListRow
               isActive={isActive}
-              className={cn(isChild ? "ps-11 text-sidebar-fg-muted" : "ps-6")}
+              className={cn(
+                isChild ? "ps-11 text-sidebar-fg-muted" : "ps-6",
+                metaItems.length > 0 && "h-auto py-1",
+              )}
               onClick={hasChildren ? undefined : onSelect}
               render={hasChildren ? undefined : <button type="button" />}
             >
@@ -369,26 +343,10 @@ export function SessionSidebarItem({
                   className="flex min-w-0 flex-1 items-center gap-1.5 text-start"
                   onClick={onSelect}
                 >
-                  <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
-                  <SessionTrailing
-                    isRunning={isRunning}
-                    isUnread={isUnread && !isActive}
-                    needsAttention={needsAttention}
-                    showTimestamp={showTimestamp}
-                    timestamp={activityAt}
-                  />
+                  {rowBody}
                 </button>
               ) : (
-                <>
-                  <SidebarOverflowTitle>{session.title}</SidebarOverflowTitle>
-                  <SessionTrailing
-                    isRunning={isRunning}
-                    isUnread={isUnread && !isActive}
-                    needsAttention={needsAttention}
-                    showTimestamp={showTimestamp}
-                    timestamp={activityAt}
-                  />
-                </>
+                rowBody
               )}
             </SidebarListRow>
           </ContextMenuTrigger>
