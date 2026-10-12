@@ -1,10 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  buildPdfAssetUrl,
-  parsePdfAssetUrl,
-  resolvePdfReadPath,
-} from "./pdf-read-service";
+import { resolvePdfReadPath } from "./node";
 
 const WORKSPACE_ROOT = path.resolve("/workspace/project");
 const OTHER_ROOT = path.resolve("/workspace/other");
@@ -57,24 +53,5 @@ describe("resolvePdfReadPath", () => {
   it("rejects a non-PDF file", () => {
     const target = path.join(WORKSPACE_ROOT, "notes.txt");
     expect(() => resolvePdfReadPath(target, ROOTS)).toThrow(/not a PDF/);
-  });
-});
-
-describe("buildPdfAssetUrl / parsePdfAssetUrl", () => {
-  it("round-trips a simple path", () => {
-    const url = buildPdfAssetUrl("/workspace/doc.pdf");
-    expect(parsePdfAssetUrl(url)).toBe("/workspace/doc.pdf");
-  });
-
-  it("round-trips paths with special characters", () => {
-    const filePath = "/workspace/文档/报告 2024.pdf";
-    const url = buildPdfAssetUrl(filePath);
-    expect(parsePdfAssetUrl(url)).toBe(filePath);
-  });
-
-  it("throws on a URL missing the file parameter", () => {
-    expect(() => parsePdfAssetUrl("pdf-asset://workspace")).toThrow(
-      /missing file/,
-    );
   });
 });

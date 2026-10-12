@@ -358,6 +358,21 @@ export interface ProductApi {
    * native directory dialog is available). Paths are daemon-host absolute.
    */
   listHostDirectories(path?: string): Promise<HostDirectoryListing>;
+  getHomeDir(): Promise<string>;
+  listFontFamilies(): Promise<string[]>;
+  openWorkspaceInFileManager(rootPath: string): Promise<void>;
+  revealPathInFileManager(targetPath: string): Promise<void>;
+  readPdfBase64(filePath: string): Promise<string>;
+  resolveWorkspaceOpenPath(
+    filePath: string,
+  ): Promise<{ rootPath: string } | null>;
+  ptySpawn(payload: PtySpawnPayload): Promise<PtySpawnResult>;
+  ptyWrite(terminalId: string, data: string): Promise<void>;
+  ptyResize(terminalId: string, cols: number, rows: number): Promise<void>;
+  ptyKill(terminalId: string): Promise<void>;
+  onPtyData(listener: (event: PtyDataEvent) => void): () => void;
+  onPtyExit(listener: (event: PtyExitEvent) => void): () => void;
+  onPtyActivity(listener: (event: PtyActivityEvent) => void): () => void;
   listWorkspaceEntries(rootPath: string): Promise<WorkspaceEntry[]>;
   listWorkspaceFiles(rootPath: string): Promise<WorkspaceFileEntry[]>;
   listGitBranches(rootPath: string): Promise<GitBranchInfo[]>;
@@ -668,21 +683,14 @@ export interface ProductApi {
 
 /**
  * Host-only surface (Electron): OS integration the daemon contract does not
- * cover — native dialogs, file-manager reveal, PTY, BrowserView, fonts,
- * updates, CLI install, renderer logging, and daemon process management. Absent
+ * cover — native dialogs, BrowserView, updates, CLI install, renderer
+ * logging, and daemon process management. Absent
  * on clients without a local host; gate features on
  * {@link HostApi.capabilities} instead of calling blindly.
  */
 export interface HostApi {
   readonly chatWindow: ChatWindowApi;
   readonly capabilities: HostCapabilities;
-  /** Absolute user home directory (default terminal cwd without a workspace). */
-  getHomeDir(): Promise<string>;
-  /**
-   * Installed font family names from the OS (for Appearance font pickers).
-   * Empty array when enumeration fails — renderer uses a curated fallback list.
-   */
-  listFontFamilies(): Promise<string[]>;
   getAppUpdateState(): Promise<AppUpdateState>;
   checkForAppUpdate(): Promise<AppUpdateState>;
   dismissAppUpdate(): Promise<AppUpdateState>;
@@ -697,11 +705,6 @@ export interface HostApi {
   getDaemonStatus(): Promise<DaemonRuntimeStatus>;
   restartDaemon(): Promise<DaemonRuntimeStatus>;
   getDaemonConnection(): Promise<DaemonConnectionInfo | null>;
-  openWorkspaceInFileManager(rootPath: string): Promise<void>;
-  // Reveal a specific file or directory in the OS file manager, highlighting it
-  // within its parent folder (vs. openWorkspaceInFileManager which opens a dir).
-  revealPathInFileManager(targetPath: string): Promise<void>;
-  readPdfData(payload: { filePath: string }): Promise<string>;
   openWorkspace(): Promise<{
     canceled: boolean;
     filePaths: string[];
@@ -713,13 +716,6 @@ export interface HostApi {
    * Returns null when the path cannot be resolved.
    */
   getPathForFile(file: File): string | null;
-  /**
-   * Validate a local path as a workspace root (directory, or parent of a file).
-   * Returns null when the path is missing or unusable.
-   */
-  resolveWorkspaceOpenPath(
-    filePath: string,
-  ): Promise<{ rootPath: string } | null>;
   /** Second-instance / live CLI folder open while the app is running. */
   onOpenWorkspaceFromCli(
     listener: (event: { rootPath: string }) => void,
@@ -764,13 +760,6 @@ export interface HostApi {
   getDiagnosticsVerbose(): Promise<boolean>;
   setDiagnosticsVerbose(enabled: boolean): Promise<boolean>;
   openExternal(url: string): Promise<void>;
-  ptySpawn(payload: PtySpawnPayload): Promise<PtySpawnResult>;
-  ptyWrite(terminalId: string, data: string): Promise<void>;
-  ptyResize(terminalId: string, cols: number, rows: number): Promise<void>;
-  ptyKill(terminalId: string): Promise<void>;
-  onPtyData(listener: (event: PtyDataEvent) => void): () => void;
-  onPtyExit(listener: (event: PtyExitEvent) => void): () => void;
-  onPtyActivity(listener: (event: PtyActivityEvent) => void): () => void;
 }
 
 export type ProductEventApi = Pick<
@@ -781,6 +770,9 @@ export type ProductEventApi = Pick<
   | "onWorkspaceSearchResult"
   | "onWorkspaceSearchDone"
   | "onWorkspaceSearchError"
+  | "onPtyData"
+  | "onPtyExit"
+  | "onPtyActivity"
 >;
 
 export type ProductRequestApi = Omit<ProductApi, keyof ProductEventApi>;

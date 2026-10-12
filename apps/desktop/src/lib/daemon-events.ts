@@ -58,4 +58,10 @@ export const daemonEventApi: ProductEventApi = {
     "search.error",
     ({ message, searchId }) => ({ message, searchId }),
   ),
+  onPtyData: onEventType("terminal.data", ({ type: _type, ...event }) => event),
+  onPtyExit: onEventType("terminal.exit", ({ type: _type, ...event }) => event),
+  onPtyActivity: onEventType(
+    "terminal.activity",
+    ({ type: _type, ...event }) => event,
+  ),
 };

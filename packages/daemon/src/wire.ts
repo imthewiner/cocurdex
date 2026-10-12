@@ -6,7 +6,12 @@ import net from "node:net";
 import os from "node:os";
 import type { DaemonEventEnvelope, DaemonMetadata } from "@cocurdex/rpc";
 import { DAEMON_PROTOCOL_VERSION } from "@cocurdex/rpc";
-import { AGENT_TOOL_HTTP_PATH, type HostPrincipal } from "@cocurdex/shared";
+import {
+  AGENT_TOOL_HTTP_PATH,
+  type HostPrincipal,
+  principalHasScope,
+  type TerminalDaemonEvent,
+} from "@cocurdex/shared";
 import type { WebSocket, WebSocketServer } from "ws";
 import {
   createAgentToolHttpHandler,
@@ -149,6 +154,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   const connections = new Map<DaemonConnection, Set<string>>();
   const eventJournal = createDaemonEventJournal();
   const eventSubscribers = new Set<(entry: DaemonEventJournalEntry) => void>();
+  const terminalSubscribers = new Set<(event: TerminalDaemonEvent) => void>();
   const receipts = createDaemonReceiptStore();
   const attachConnection = (
     connection: DaemonConnection,
@@ -176,10 +182,23 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       if (!subscribedToDaemonEvents) return;
       sendEvent(entry);
     };
+    const terminalListener = (event: TerminalDaemonEvent) => {
+      send({ event, type: "daemon.event" } satisfies DaemonEventEnvelope);
+    };
+    let principal: HostPrincipal | null = null;
+    let releaseTerminalClient: (() => void) | null = null;
+    const subscribeToTerminals = () => {
+      if (releaseTerminalClient || !principal) return;
+      if (!principalHasScope(principal, "execute")) return;
+      terminalSubscribers.add(terminalListener);
+      releaseTerminalClient = activeService.terminals.retainClient();
+    };
     eventSubscribers.add(eventListener);
     connection.onClose(() => {
       connections.delete(connection);
       eventSubscribers.delete(eventListener);
+      terminalSubscribers.delete(terminalListener);
+      releaseTerminalClient?.();
     });
     const runtime = {
       service: activeService,
@@ -193,8 +212,11 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     const requestConnection = {
       ...transport,
       send,
-      onPrincipal: (principal: HostPrincipal) => {
-        if (principal.kind === "device") deviceIds.add(principal.deviceId);
+      onPrincipal: (requestPrincipal: HostPrincipal) => {
+        principal = requestPrincipal;
+        if (requestPrincipal.kind === "device") {
+          deviceIds.add(requestPrincipal.deviceId);
+        }
       },
       subscribe: (afterSeq: number | undefined, requestEpoch?: string) => {
         // Replay first, then go live: this block is synchronous, so no live
@@ -210,6 +232,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
           sendEvent(entry);
         }
         subscribedToDaemonEvents = true;
+        subscribeToTerminals();
         return {
           epoch: startedAt,
           replayGap: crossEpoch || replay.hasGap,
@@ -397,6 +420,11 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       );
       for (const subscriber of eventSubscribers) {
         subscriber(entry);
+      }
+    });
+    service.events.on("terminal.event", (event: TerminalDaemonEvent) => {
+      for (const subscriber of terminalSubscribers) {
+        subscriber(event);
       }
     });
     service.bindEventSeqProvider(() => eventJournal.currentSeq());

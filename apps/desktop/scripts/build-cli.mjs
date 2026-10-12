@@ -185,7 +185,7 @@ await build({
   },
   ssr: {
     noExternal: true,
-    external: ["@napi-rs/keyring"],
+    external: ["@napi-rs/keyring", "font-list", "node-pty"],
   },
 });
 

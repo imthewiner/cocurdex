@@ -233,6 +233,10 @@ async function inspectAsar(asarPath) {
       if (typeof daemonKeyring.AsyncEntry !== "function") {
         throw new Error("Packaged daemon keyring native module did not load");
       }
+      const daemonPty = mainRequire("node-pty");
+      if (typeof daemonPty.spawn !== "function") {
+        throw new Error("Packaged daemon node-pty native module did not load");
+      }
       const piPackageDir = path.join(
         asarPath,
         "node_modules",

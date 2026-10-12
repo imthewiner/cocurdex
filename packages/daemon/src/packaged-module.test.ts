@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
-import { loadNativeKeyring } from "./native-module";
+import { loadNativeKeyring } from "./packaged-module";
 
 const directories: string[] = [];
 

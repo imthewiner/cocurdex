@@ -181,6 +181,31 @@ export async function handleDaemonRequest(
       return service.workspaceFileExists(request.params.filePath);
     case "fs.listDirectories":
       return service.listHostDirectories(request.params.path);
+    case "system.homeDir":
+      return service.homeDir();
+    case "system.fontFamilies":
+      return service.listFontFamilies();
+    case "system.openDirectory":
+      return service.openDirectoryInFileManager(request.params.path);
+    case "system.revealPath":
+      return service.revealPathInFileManager(request.params.path);
+    case "pdf.read":
+      return service.readPdf(request.params.filePath);
+    case "terminal.spawn":
+      return service.terminals.spawn(request.params);
+    case "terminal.write":
+      service.terminals.write(request.params.terminalId, request.params.data);
+      return null;
+    case "terminal.resize":
+      service.terminals.resize(
+        request.params.terminalId,
+        request.params.cols,
+        request.params.rows,
+      );
+      return null;
+    case "terminal.kill":
+      service.terminals.kill(request.params.terminalId);
+      return null;
     case "search.start":
       await service.searchService.start(request.params);
       return null;

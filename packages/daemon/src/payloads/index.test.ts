@@ -112,4 +112,35 @@ describe("parseDaemonRequest", () => {
     const original = request("workflow.start", { workflowRunId: "run-1" });
     expect(parseDaemonRequest(original)).toBe(original);
   });
+  it("bounds terminal sessions to absolute directories and sane sizes", () => {
+    const spawn = {
+      terminalId: "terminal-1",
+      workspaceId: "ws-1",
+      cwd: workspaceRoot,
+      cols: 80,
+      rows: 24,
+    };
+    expect(parse("terminal.spawn", spawn)).not.toThrow();
+    expect(parse("terminal.spawn", { ...spawn, cwd: "relative" })).toThrow(
+      /Invalid terminal\.spawn payload/,
+    );
+    expect(parse("terminal.spawn", { ...spawn, cols: 0 })).toThrow();
+    expect(parse("terminal.spawn", { ...spawn, rows: 5000 })).toThrow();
+    expect(
+      parse("terminal.spawn", { ...spawn, workspaceId: "../escape" }),
+    ).toThrow();
+    expect(
+      parse("terminal.resize", { terminalId: "t", cols: 80.5, rows: 24 }),
+    ).toThrow();
+    expect(parse("terminal.kill", {})).toThrow();
+  });
+
+  it("accepts terminal input up to the paste cap", () => {
+    expect(
+      parse("terminal.write", { terminalId: "t", data: "echo 你好\n" }),
+    ).not.toThrow();
+    expect(
+      parse("terminal.write", { terminalId: "t", data: "x".repeat(1_000_001) }),
+    ).toThrow(/Invalid terminal\.write payload/);
+  });
 });

@@ -84,6 +84,44 @@ describe("startDaemonServer", () => {
       await daemon.close();
     }
   });
+  it("streams terminal output live without journaling it for replay", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cd-term-"));
+    temporaryDirectories.push(userDataPath);
+    const daemon = await startDaemonServer({
+      runtimeFingerprint: "test",
+      token: "test",
+      userDataPath,
+    });
+    const output = {
+      type: "terminal.data",
+      terminalId: "terminal-1",
+      workspaceId: "ws-1",
+      data: "hello",
+    };
+    try {
+      const live = vi.fn();
+      const subscription = await subscribeDaemonEvents(live, { userDataPath });
+      daemon.service.events.emit("terminal.event", output);
+      await vi.waitFor(
+        () =>
+          expect(live).toHaveBeenCalledWith(
+            output,
+            expect.objectContaining({ seq: null }),
+          ),
+        { timeout: 5_000 },
+      );
+      subscription.close();
+      const replayed = vi.fn();
+      const resumed = await subscribeDaemonEvents(replayed, {
+        afterSeq: 0,
+        userDataPath,
+      });
+      resumed.close();
+      expect(replayed).not.toHaveBeenCalled();
+    } finally {
+      await daemon.close();
+    }
+  });
   it("replays journaled events to a subscriber resuming after a sequence", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cd-replay-"));
     temporaryDirectories.push(userDataPath);

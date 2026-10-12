@@ -1,6 +1,3 @@
-import { requestDaemon } from "@cocurdex/daemon/client";
-import type { WorkspaceRecord } from "@cocurdex/shared";
-
 let daemonUserDataPath: string | null = null;
 // Resolves once the runtime client has the daemon up. The window is created
 // without waiting for that (so the renderer boots in parallel), which means
@@ -27,9 +24,4 @@ export function initializeAppState(userDataPath: string) {
 
 export function setDaemonReady(ready: Promise<unknown>) {
   daemonReady = ready.catch(() => undefined);
-}
-
-export async function listWorkspaces(): Promise<WorkspaceRecord[]> {
-  await daemonReady;
-  return requestDaemon("workspace.list", daemonOptions());
 }

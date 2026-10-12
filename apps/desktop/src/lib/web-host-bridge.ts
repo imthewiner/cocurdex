@@ -10,7 +10,7 @@ import {
 } from "@cocurdex/client-runtime";
 import type { DaemonConnectionInfo } from "@cocurdex/rpc";
 import { offlineApi } from "./offline-api";
-import type { HostBridge } from "./types";
+import type { HostBridge, HostCapabilities } from "./types";
 
 const TOKEN_STORAGE_KEY = "cocurdex.daemonToken";
 const DAEMON_URL_STORAGE_KEY = "cocurdex.daemonUrl";
@@ -249,6 +249,20 @@ export function webPairingFailureReason(error: unknown) {
   return failureReason(error);
 }
 
+export function webHostCapabilities(access: WebHostAccess): HostCapabilities {
+  const local = access.kind === "local";
+  const terminal =
+    local ||
+    (access.kind === "device" && access.host.scopes.includes("execute"));
+  return {
+    fileManager: local,
+    nativeDirectoryDialog: false,
+    terminal,
+    browserView: false,
+    localWebClient: false,
+  };
+}
+
 export function installWebHostBridge(): Promise<WebHostAccess> | null {
   if (window.desktopApi) return null;
   const savedHosts = savedHostStore();
@@ -277,5 +291,11 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
     },
   };
   window.desktopApi = bridge;
-  return access;
+  return access.then((resolved) => {
+    window.desktopApi = {
+      ...bridge,
+      capabilities: webHostCapabilities(resolved),
+    };
+    return resolved;
+  });
 }

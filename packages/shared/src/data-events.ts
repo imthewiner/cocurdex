@@ -2,6 +2,7 @@ import type { AgentEvent } from "./contracts";
 import type { PeerMessageEvent } from "./peer-messaging";
 import type { ScriptRunChangedEvent } from "./script-run";
 import type { TeamChangedEvent } from "./team";
+import type { TerminalDaemonEvent } from "./terminal";
 import type { WorkspaceSearchDaemonEvent } from "./workspace-search";
 import type { WorkspaceWatchDaemonEvent } from "./workspace-watch";
 
@@ -37,6 +38,7 @@ export type CocurdexDaemonEvent =
   | PeerMessageEvent
   | ScriptRunChangedEvent
   | TeamChangedEvent
+  | TerminalDaemonEvent
   | WorkspaceSearchDaemonEvent
   | WorkspaceWatchDaemonEvent;
 
@@ -50,6 +52,9 @@ const nonAgentDaemonEventTypes: Record<NonAgentDaemonEvent["type"], true> = {
   "search.result": true,
   "search.done": true,
   "search.error": true,
+  "terminal.data": true,
+  "terminal.exit": true,
+  "terminal.activity": true,
   "workspace.filesChanged": true,
   "workspace.gitStateChanged": true,
 };

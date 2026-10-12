@@ -13,14 +13,7 @@ describe("desktopApi", () => {
     expect(typeof desktopApi.archiveSession).toBe("function");
     expect(typeof desktopApi.deleteSession).toBe("function");
     expect(typeof desktopApi.listProviderTemplates).toBe("function");
-    expect(typeof desktopApi.readPdfData).toBe("function");
-  });
-
-  it("readPdfData fallback resolves to a string", async () => {
-    const result = await desktopApi.readPdfData({
-      filePath: "/workspace/doc.pdf",
-    });
-    expect(typeof result).toBe("string");
+    expect(typeof desktopApi.readPdfBase64).toBe("function");
   });
 
   it("uses the preload bridge when it becomes available after module load", async () => {
@@ -29,19 +22,13 @@ describe("desktopApi", () => {
     Reflect.deleteProperty(window, "desktopApi");
 
     const { desktopApi: loadedBeforeBridge } = await import("@/lib/ipc");
-    const bridgeReadPdfData = vi.fn().mockResolvedValue("pdf-asset://doc.pdf");
+    const bridgeOpenExternal = vi.fn().mockResolvedValue(undefined);
     window.desktopApi = {
-      readPdfData: bridgeReadPdfData,
+      openExternal: bridgeOpenExternal,
     } as unknown as DesktopApi;
 
-    await expect(
-      loadedBeforeBridge.readPdfData({
-        filePath: "/workspace/doc.pdf",
-      }),
-    ).resolves.toEqual("pdf-asset://doc.pdf");
-    expect(bridgeReadPdfData).toHaveBeenCalledWith({
-      filePath: "/workspace/doc.pdf",
-    });
+    await loadedBeforeBridge.openExternal("https://example.com");
+    expect(bridgeOpenExternal).toHaveBeenCalledWith("https://example.com");
 
     if (originalDesktopApi) {
       window.desktopApi = originalDesktopApi;
