@@ -13,7 +13,7 @@ against an older API. A successful bundle build does not update an existing
 process by itself.
 
 For daemon changes, run `rtk pnpm --filter @cocurdex/desktop prepare:cli`. Restart
-the intended daemon only when doing so will not interrupt unrelated work. Check
+the dev app yourself (see SKILL.md) unless an agent run in it is in progress. Check
 `window.desktopApi.getDaemonStatus()` for `matchesRuntime`, both fingerprints,
 PID, and socket path. Record those before trusting a persistence test.
 

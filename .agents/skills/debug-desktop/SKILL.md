@@ -30,10 +30,19 @@ association remain explicit unknowns. Exit 0 means the requested methods exist
 and the daemon reports a matching running runtime, not that all code is current.
 
 `dev:inspect` enables CDP; it does not
-by itself prove that main/preload watch mode is enabled. Per AGENTS.md, you may
-start `pnpm --filter @cocurdex/desktop dev:inspect` yourself for simple
-verification when no debuggable app is running; do not restart or take over a
-development process that is already in use.
+by itself prove that main/preload watch mode is enabled. Per AGENTS.md, start
+or restart `pnpm --filter @cocurdex/desktop dev:inspect` yourself whenever
+verification needs it, instead of asking the user:
+
+1. Find the running dev tree with `ps -axo pid,ppid,command` (the `pnpm ...
+   dev:inspect` root and its descendants). Skip the restart and use an isolated
+   instance if an agent run in that app is in progress.
+2. Stop that tree by PID, children first, then confirm the CDP port is closed.
+3. Relaunch detached so it outlives your shell:
+   `nohup pnpm --filter @cocurdex/desktop dev:inspect > <scratchpad>/dev.log 2>&1 &`.
+4. Wait for `http://127.0.0.1:9222/json/list` in a background loop, then
+   check `getDaemonStatus().matchesRuntime` and the fingerprint.
+5. Tell the user the app restarted and where the log is.
 
 | Changed boundary | Evidence needed before testing |
 | --- | --- |
@@ -142,13 +151,11 @@ feature UI on the user's instance.
 
 A change that spans the renderer and the daemon breaks the user's running app
 in between: Vite HMR loads the new renderer at once, while the old daemon lacks
-the new route or method. Say so as soon as the renderer edit lands, and ask the
-user to restart dev after `prepare:cli`. The restarted app spawns the rebuilt
-daemon; confirm `getDaemonStatus().matchesRuntime` and the fingerprint before
-measuring.
-
-While the user restarts, wait for the port in a background loop
-(`curl -sf http://127.0.0.1:9222/json/list`) instead of polling with evals.
+the new route or method. Restart dev yourself as soon as the daemon side is
+ready (see above); the restarted app spawns the rebuilt daemon. Confirm
+`getDaemonStatus().matchesRuntime` and the fingerprint before measuring. Wait
+for the port in a background loop (`curl -sf http://127.0.0.1:9222/json/list`)
+instead of polling with evals.
 
 ### Measuring network in the renderer
 
