@@ -28,6 +28,7 @@ interface AppShellContentProps {
   isRightPanelMaximized: boolean;
   isPanelFullWidth: boolean;
   isRightPanelCompact: boolean;
+  rightPanelActions: ReactNode;
   rightWidth: number;
   appearanceSettings: AppearanceSettings;
   splitChatNode: ReactNode;
@@ -51,6 +52,7 @@ export function AppShellContent({
   isRightPanelMaximized,
   isPanelFullWidth,
   isRightPanelCompact,
+  rightPanelActions,
   rightWidth,
   appearanceSettings,
   splitChatNode,
@@ -123,6 +125,7 @@ export function AppShellContent({
               onInsertTextToChat={onInsertTextToChat}
               overlayInset={editorOverlayInset}
               reserveTrafficLights={isPanelFullWidth}
+              viewSwitcherTrailing={rightPanelActions}
             />
           </div>
         </div>

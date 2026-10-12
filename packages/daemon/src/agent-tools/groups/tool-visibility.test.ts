@@ -1,6 +1,7 @@
 import type { AgentToolCallerContext } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
 import { AgentToolRegistry } from "../tool-registry";
+import { registerHistoryTools } from "./history";
 import { registerMessagingTools } from "./messaging";
 import { registerScriptRunTools } from "./script-run";
 import { registerSettingsTools } from "./settings";
@@ -17,6 +18,7 @@ function registry() {
     new Proxy({}, { get: () => unused }) as TeamToolDependencies,
   );
   registerScriptRunTools(tools, { create: unused });
+  registerHistoryTools(tools, { readSessionActivity: unused });
   registerSettingsTools(tools, {
     getWorktreeEnvironment: unused,
     proposeWorktreeEnvironment: unused,
@@ -55,5 +57,10 @@ describe("agent tool visibility", () => {
     expect(toolNames("teammate")).not.toContain("settings_propose");
     expect(toolNames("teammate")).not.toContain("settings_get");
     expect(toolNames("subagent")).not.toContain("settings_list");
+  });
+
+  it("lets main sessions and teammates read their own history back", () => {
+    expect(toolNames("main")).toContain("history_read");
+    expect(toolNames("teammate")).toContain("history_read");
   });
 });

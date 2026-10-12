@@ -72,9 +72,21 @@ export interface CreateAgentSessionPayload {
   ): Promise<AgentPlanApprovalDecision>;
 }
 
+export interface AgentContextHandoffEntry {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface AgentContextHandoff {
+  text: string;
+  preamble: string;
+  entries: AgentContextHandoffEntry[];
+}
+
 export interface SendAgentMessagePayload {
   messageId?: string;
   content: string;
+  contextHandoff?: AgentContextHandoff;
   attachments?: MessageAttachment[];
   history: MessageRecord[];
   thinkingLevel?: AgentThinkingLevel;
@@ -151,6 +163,7 @@ export interface AgentAdapter {
   forkProviderSession?(
     payload: ForkProviderSessionPayload,
   ): Promise<AgentProviderSessionRecord>;
+  injectsContextHandoff?: boolean;
   /** List skills available through the composer's slash-triggered picker. */
   listSlashCommands?(
     payload: ListSlashCommandsPayload,

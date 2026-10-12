@@ -12,7 +12,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 26;
+export const CURRENT_SCHEMA_VERSION = 27;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -407,6 +407,12 @@ function migrateSessionRuns(database: DatabaseSync): void {
   }
 }
 
+function addSessionPins(database: DatabaseSync): void {
+  if (!hasColumn(database, "sessions", "pinned_at")) {
+    database.exec("ALTER TABLE sessions ADD COLUMN pinned_at TEXT");
+  }
+}
+
 function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
@@ -507,6 +513,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [23, createHostAccessTables],
   [24, migrateProviderThreadsPerAgent],
   [25, allowNativeContextTransfers],
+  [26, addSessionPins],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

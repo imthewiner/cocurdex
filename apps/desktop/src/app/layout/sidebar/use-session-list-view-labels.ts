@@ -2,7 +2,9 @@ import { useTranslation } from "react-i18next";
 import type {
   SessionEnvironment,
   SessionGrouping,
+  SessionOrderDirection,
   SessionOrdering,
+  SessionProperty,
   SessionRootLimit,
   SessionSource,
   SessionStatusBucket,
@@ -17,10 +19,16 @@ export function useSessionListViewLabels() {
     status: t("sidebar.view.grouping.status"),
     updated: t("sidebar.view.grouping.updated"),
     agent: t("sidebar.view.grouping.agent"),
+    none: t("sidebar.view.grouping.none"),
   };
   const ordering: Record<SessionOrdering, string> = {
     activity: t("sidebar.view.ordering.activity"),
     created: t("sidebar.view.ordering.created"),
+    title: t("sidebar.view.ordering.title"),
+  };
+  const direction: Record<SessionOrderDirection, string> = {
+    desc: t("sidebar.view.direction.desc"),
+    asc: t("sidebar.view.direction.asc"),
   };
   const rootLimit: Record<SessionRootLimit, string> = {
     "8": t("sidebar.view.rootLimit.count", { count: 8 }),
@@ -49,11 +57,21 @@ export function useSessionListViewLabels() {
     imported: t("sidebar.view.source.imported"),
     issue: t("sidebar.view.source.issue"),
   };
+  const property: Record<SessionProperty, string> = {
+    timestamp: t("sidebar.view.property.timestamp"),
+    agent: t("sidebar.view.property.agent"),
+    model: t("sidebar.view.property.model"),
+    role: t("sidebar.view.property.role"),
+    workspace: t("sidebar.view.property.workspace"),
+    worktree: t("sidebar.view.property.worktree"),
+  };
 
   return {
+    direction,
     environment,
     grouping,
     ordering,
+    property,
     rootLimit,
     source,
     status,

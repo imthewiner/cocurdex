@@ -1,6 +1,7 @@
 import { createAgentAdapter } from "@cocurdex/agent-adapters";
 import type {
   AgentAdapter,
+  AgentContextHandoff,
   AgentSession,
   RuntimeProviderConfig,
 } from "@cocurdex/agent-core";
@@ -46,6 +47,17 @@ interface SessionRuntime {
   workspaceRootPath: string;
   workspaceRootPaths: string[];
   runtime: AgentSession;
+  injectsContextHandoff: boolean;
+}
+
+function deliverContextHandoff(
+  content: string,
+  handoff: AgentContextHandoff | undefined,
+  injects: boolean,
+) {
+  if (!handoff) return { content };
+  if (injects) return { content, contextHandoff: handoff };
+  return { content: `${handoff.text}\n\n${content}` };
 }
 
 interface PendingPermission {
@@ -546,6 +558,7 @@ export class AgentRuntimeManager {
       workspaceRootPath: payload.workspaceRootPath,
       workspaceRootPaths,
       runtime: createdRuntime,
+      injectsContextHandoff: adapter.injectsContextHandoff === true,
     };
 
     this.sessionRuntimes.set(payload.session.id, nextRuntime);
@@ -554,7 +567,10 @@ export class AgentRuntimeManager {
 
   async sendSessionMessage(
     payload: SessionRuntimeMessage,
-    options: RuntimePersistence & { history: MessageRecord[] },
+    options: RuntimePersistence & {
+      history: MessageRecord[];
+      contextHandoff?: AgentContextHandoff;
+    },
   ) {
     const isSteering = payload.delivery === "steer-active-run";
     if (this.activeTurnTrackers.has(payload.session.id) && !isSteering) {
@@ -611,7 +627,11 @@ export class AgentRuntimeManager {
       const sessionRuntime = this.ensureSessionRuntime(payload, options);
       const message = await sessionRuntime.runtime.sendMessage({
         messageId: payload.messageId,
-        content: payload.content,
+        ...deliverContextHandoff(
+          payload.content,
+          options.contextHandoff,
+          sessionRuntime.injectsContextHandoff,
+        ),
         attachments: payload.attachments,
         history: options.history,
         thinkingLevel: payload.thinkingLevel,

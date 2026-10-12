@@ -15,7 +15,9 @@ import {
 } from "@/features/sessions";
 import {
   resolveRootLimit,
+  type SessionRootLimit,
   sessionListViewAtom,
+  visibleSessionProperties,
 } from "@/features/sessions/session-list-view";
 import { pendingRequestSessionIdsAtom } from "./pending-request-store";
 import {
@@ -27,6 +29,7 @@ import { SessionSidebarItem } from "./session-sidebar-item";
 
 interface SidebarSessionTreeProps {
   emptyLabel: string;
+  rootLimit?: SessionRootLimit;
   listKey: string;
   optimisticActiveSessionId: string | null;
   sessions: SessionRecord[];
@@ -36,6 +39,7 @@ interface SidebarSessionTreeProps {
 
 export function SidebarSessionTree({
   emptyLabel,
+  rootLimit: rootLimitOverride,
   listKey,
   optimisticActiveSessionId,
   sessions,
@@ -51,10 +55,16 @@ export function SidebarSessionTree({
   const showMoreSessions = useSetAtom(showMoreSessionsAtom);
   const resetSessionRootLimit = useSetAtom(resetSessionRootLimitAtom);
   const sessionTree = useMemo(
-    () => buildVisibleSessionTree(sessions, collapsedSessionIds, view.ordering),
-    [sessions, collapsedSessionIds, view.ordering],
+    () =>
+      buildVisibleSessionTree(
+        sessions,
+        collapsedSessionIds,
+        view.ordering,
+        view.direction,
+      ),
+    [sessions, collapsedSessionIds, view.ordering, view.direction],
   );
-  const baseLimit = resolveRootLimit(view.rootLimit);
+  const baseLimit = resolveRootLimit(rootLimitOverride ?? view.rootLimit);
   const rootLimit = sessionRootLimits[listKey] ?? baseLimit;
   const limitedTree = limitSessionTreeRoots(
     sessionTree,
@@ -74,7 +84,7 @@ export function SidebarSessionTree({
   return (
     <SidebarMenuSub className="ms-0 ps-0">
       {sessions.length === 0 ? (
-        <div className="ps-6 pe-2 py-1 text-meta text-sidebar-fg-subtle">
+        <div className="ps-1 pe-2 py-1 text-meta text-sidebar-fg-subtle">
           {emptyLabel}
         </div>
       ) : (
@@ -89,7 +99,7 @@ export function SidebarSessionTree({
               }
               onToggleExpand={() => toggleSessionCollapsed(node.session.id)}
               session={node.session}
-              showTimestamp={view.showTimestamps}
+              properties={visibleSessionProperties(view)}
               workspaceName={workspaceNames?.get(node.session.workspaceId)}
             />
           </SidebarMenuSubItem>
@@ -97,7 +107,7 @@ export function SidebarSessionTree({
       )}
       {limitedTree.hiddenRootCount > 0 || canShowLess ? (
         <SidebarMenuSubItem>
-          <SidebarListRow className="gap-3 ps-6 text-meta text-sidebar-fg-subtle">
+          <SidebarListRow className="gap-3 ps-1 text-meta text-sidebar-fg-subtle">
             {limitedTree.hiddenRootCount > 0 ? (
               <button
                 type="button"

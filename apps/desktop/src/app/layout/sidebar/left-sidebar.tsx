@@ -38,8 +38,10 @@ import {
 } from "@/lib";
 import { isDetachedChatWindow } from "../chat-window/chat-window-state";
 import { searchPaletteOpenAtom } from "../search-palette/search-palette-store";
+import { ArchiveGroupDialog } from "./archive-group-dialog";
 import { ChatSessionsPanel } from "./chat-sessions-panel";
 import { SessionGroupsPanel } from "./session-groups-panel";
+import { SessionListSections } from "./session-list-sections";
 import { SessionListViewMenu } from "./session-list-view-menu";
 import { type SidebarTab, sidebarTabAtom } from "./sidebar-tab-store";
 import { useSidebarSessionView } from "./use-sidebar-session-view";
@@ -216,6 +218,14 @@ export function LeftSidebar({
     defaultValue: "Add workspace",
   });
   const searchLabel = t("search:openSearch");
+  const listSections = (
+    <SessionListSections
+      onSelectSession={handleSelectSession}
+      optimisticActiveSessionId={optimisticActiveSessionId}
+      sessions={sessionView.pinnedSessions}
+      workspaceNames={sessionView.workspaceNames}
+    />
+  );
 
   return (
     <SidebarShell>
@@ -315,6 +325,7 @@ export function LeftSidebar({
           >
             {sessionView.grouping === "workspace" ? (
               <WorkspacesPanel
+                leading={listSections}
                 activeWorkspaceId={activeWorkspaceId}
                 collapsedWorkspaceIds={collapsedWorkspaceIds}
                 filtered={sessionView.filtered}
@@ -337,6 +348,8 @@ export function LeftSidebar({
               />
             ) : (
               <SessionGroupsPanel
+                hasPinnedSessions={sessionView.pinnedSessions.length > 0}
+                leading={listSections}
                 filtered={sessionView.filtered}
                 grouping={sessionView.grouping}
                 groups={sessionView.groups}
@@ -362,6 +375,7 @@ export function LeftSidebar({
           </TabsContent>
         </Tabs>
       </div>
+      <ArchiveGroupDialog />
     </SidebarShell>
   );
 }

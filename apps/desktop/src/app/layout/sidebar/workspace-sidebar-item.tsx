@@ -2,8 +2,8 @@ import type { SessionRecord, WorkspaceRecord } from "@cocurdex/shared";
 import { primaryWorkspaceRootPath } from "@cocurdex/shared";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useAtomValue } from "jotai";
-import { FolderOpen, Pencil, SquarePen, Trash2 } from "lucide-react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { Archive, FolderOpen, Pencil, SquarePen, Trash2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { workspaceIconFor } from "@/features/workspaces";
 import { cn, desktopApi } from "@/lib";
+import { archiveGroupRequestAtom } from "./archive-group-store";
 import { pendingRequestSessionIdsAtom } from "./pending-request-store";
 import { SidebarContextMenuItem } from "./sidebar-context-menu-item";
 import { WorkspaceItemTooltip } from "./sidebar-item-preview";
@@ -55,6 +56,7 @@ export function WorkspaceSidebarItem({
 }: WorkspaceSidebarItemProps) {
   const { t } = useTranslation("sessions");
   const pendingRequestSessionIds = useAtomValue(pendingRequestSessionIdsAtom);
+  const requestArchive = useSetAtom(archiveGroupRequestAtom);
   const isRunning =
     !expanded && sessions.some((session) => session.status === "running");
   const needsAttention =
@@ -158,6 +160,13 @@ export function WorkspaceSidebarItem({
             onClick={() => onEditWorkspace(workspace.id)}
           >
             {t("sidebar.editWorkspace", { defaultValue: "Edit workspace" })}
+          </SidebarContextMenuItem>
+          <SidebarContextMenuItem
+            disabled={sessions.length === 0}
+            icon={Archive}
+            onClick={() => requestArchive({ label: workspace.name, sessions })}
+          >
+            {t("archiveGroup.action")}
           </SidebarContextMenuItem>
           <ContextMenuSeparator />
           <SidebarContextMenuItem

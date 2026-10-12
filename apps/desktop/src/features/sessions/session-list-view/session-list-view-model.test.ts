@@ -7,6 +7,8 @@ import {
   normalizeSessionListView,
   type SessionListFacts,
   sessionUpdatedBucket,
+  splitPinnedSessions,
+  visibleSessionProperties,
 } from "./session-list-view-model";
 
 function session(
@@ -58,6 +60,28 @@ describe("normalizeSessionListView", () => {
       statuses: ["running"],
       rootLimit: "all",
     });
+  });
+
+  it("shows only timestamps until properties are chosen", () => {
+    expect(normalizeSessionListView(null).properties).toEqual(["timestamp"]);
+  });
+
+  it("keeps an explicitly empty property selection", () => {
+    expect(normalizeSessionListView({ properties: [] }).properties).toEqual([]);
+  });
+
+  it("starts outside compact mode and keeps a stored compact choice", () => {
+    expect(normalizeSessionListView(null).compact).toBe(false);
+    expect(normalizeSessionListView({ compact: true }).compact).toBe(true);
+    expect(normalizeSessionListView({ compact: "yes" }).compact).toBe(false);
+  });
+
+  it("keeps known properties in display order", () => {
+    expect(
+      normalizeSessionListView({
+        properties: ["worktree", "bogus", "agent", "agent", "timestamp"],
+      }).properties,
+    ).toEqual(["timestamp", "agent", "worktree"]);
   });
 });
 
@@ -148,6 +172,30 @@ describe("groupSessionsByView", () => {
       "codex",
     ]);
   });
+
+  it("keeps every session in one flat group without grouping", () => {
+    const groups = groupSessionsByView(
+      [
+        session({ id: "root", workspaceId: "workspace-1" }),
+        session({ id: "child", parentSessionId: "root" }),
+        session({ id: "other", workspaceId: "workspace-2" }),
+      ],
+      "none",
+      noFacts,
+      new Date(),
+    );
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.rootCount).toBe(2);
+    expect(groups[0]?.sessions.map((item) => item.id)).toEqual([
+      "root",
+      "child",
+      "other",
+    ]);
+  });
+
+  it("returns no flat group when nothing matches", () => {
+    expect(groupSessionsByView([], "none", noFacts, new Date())).toEqual([]);
+  });
 });
 
 describe("sessionUpdatedBucket", () => {
@@ -160,5 +208,54 @@ describe("sessionUpdatedBucket", () => {
     [new Date(2026, 9, 1, 23), "older"],
   ])("puts %s in %s", (activityAt, bucket) => {
     expect(sessionUpdatedBucket(activityAt.toISOString(), now)).toBe(bucket);
+  });
+});
+
+describe("splitPinnedSessions", () => {
+  it("moves a pinned root together with its subtree", () => {
+    const { pinned, unpinned } = splitPinnedSessions([
+      session({ id: "pinned", pinnedAt: "2026-10-12T00:00:00.000Z" }),
+      session({ id: "pinned-child", parentSessionId: "pinned" }),
+      session({ id: "plain" }),
+      session({ id: "plain-child", parentSessionId: "plain" }),
+    ]);
+    expect(pinned.map((item) => item.id)).toEqual(["pinned", "pinned-child"]);
+    expect(unpinned.map((item) => item.id)).toEqual(["plain", "plain-child"]);
+  });
+
+  it("ignores a pin on a child whose root is not pinned", () => {
+    const { pinned } = splitPinnedSessions([
+      session({ id: "root" }),
+      session({
+        id: "child",
+        parentSessionId: "root",
+        pinnedAt: "2026-10-12T00:00:00.000Z",
+      }),
+    ]);
+    expect(pinned).toEqual([]);
+  });
+});
+
+describe("visibleSessionProperties", () => {
+  const properties = ["timestamp", "agent", "model"] as const;
+
+  it("shows only the timestamp in compact mode", () => {
+    expect(
+      visibleSessionProperties({
+        ...DEFAULT_SESSION_LIST_VIEW,
+        compact: true,
+        properties: [...properties],
+      }),
+    ).toEqual(["timestamp"]);
+  });
+
+  it("restores the chosen properties when compact mode is off", () => {
+    expect(
+      visibleSessionProperties({
+        ...DEFAULT_SESSION_LIST_VIEW,
+        compact: false,
+        properties: [...properties],
+      }),
+    ).toEqual(["timestamp", "agent", "model"]);
   });
 });

@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, PanelLeft } from "lucide-react";
+import { ArrowLeft, PanelLeft } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { ResizeSeparator } from "@/components/resize-separator";
 import { cn } from "@/lib";
@@ -10,50 +10,26 @@ import {
 export { ResizeSeparator } from "@/components/resize-separator";
 export { TitlebarButton, TitlebarIconButton } from "../titlebar-icon-button";
 
-/**
- * Browser-style back/forward arrows used in the app and settings titlebars to
- * move through the screen history. Buttons disable at the ends of the history.
- * Arrows are directional, so they mirror horizontally under RTL
- * (`rtl:-scale-x-100`) to keep "back" pointing toward the start edge.
- */
-export function ScreenNavButtons({
-  backLabel,
+export function ScreenBackButton({
   canGoBack,
-  canGoForward,
-  forwardLabel,
+  label,
   onGoBack,
-  onGoForward,
 }: {
-  backLabel: string;
   canGoBack: boolean;
-  canGoForward: boolean;
-  forwardLabel: string;
+  label: string;
   onGoBack(): void;
-  onGoForward(): void;
 }) {
   return (
-    <>
-      <TitlebarIconButton
-        aria-label={backLabel}
-        disabled={!canGoBack}
-        tooltip={backLabel}
-        onClick={onGoBack}
-      >
-        <ArrowLeft
-          className={cn(TITLEBAR_ICON_GLYPH_CLASS, "rtl:-scale-x-100")}
-        />
-      </TitlebarIconButton>
-      <TitlebarIconButton
-        aria-label={forwardLabel}
-        disabled={!canGoForward}
-        tooltip={forwardLabel}
-        onClick={onGoForward}
-      >
-        <ArrowRight
-          className={cn(TITLEBAR_ICON_GLYPH_CLASS, "rtl:-scale-x-100")}
-        />
-      </TitlebarIconButton>
-    </>
+    <TitlebarIconButton
+      aria-label={label}
+      disabled={!canGoBack}
+      tooltip={label}
+      onClick={onGoBack}
+    >
+      <ArrowLeft
+        className={cn(TITLEBAR_ICON_GLYPH_CLASS, "rtl:-scale-x-100")}
+      />
+    </TitlebarIconButton>
   );
 }
 

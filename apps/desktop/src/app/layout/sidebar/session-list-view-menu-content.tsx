@@ -3,20 +3,28 @@ import { useAtom, useSetAtom } from "jotai";
 import {
   Archive,
   ArrowDownUp,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
   Bot,
   CheckCheck,
   ChevronsDownUp,
   ChevronsUpDown,
   CircleDot,
   Clock,
+  Cpu,
   Eye,
   Folder,
+  GitBranch,
   Inbox,
   LayoutList,
+  List,
+  ListChecks,
   type LucideIcon,
+  Minimize2,
   Monitor,
   Sparkles,
   SquareDashed,
+  UserRound,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -35,14 +43,19 @@ import {
 import { AgentIcon, getAgentDisplayLabel } from "@/features/sessions";
 import {
   countActiveSessionFilters,
+  defaultOrderDirection,
   SESSION_ENVIRONMENTS,
   SESSION_GROUPINGS,
+  SESSION_ORDER_DIRECTIONS,
   SESSION_ORDERINGS,
+  SESSION_PROPERTIES,
   SESSION_ROOT_LIMITS,
   SESSION_SOURCES,
   SESSION_STATUS_BUCKETS,
   type SessionGrouping,
   type SessionListView,
+  type SessionOrderDirection,
+  type SessionProperty,
   sessionListViewAtom,
 } from "@/features/sessions/session-list-view";
 import { openSettings } from "@/features/settings";
@@ -54,6 +67,26 @@ const GROUPING_ICONS: Record<SessionGrouping, LucideIcon> = {
   status: SquareDashed,
   updated: Clock,
   agent: Sparkles,
+  none: List,
+};
+
+const DIRECTION_ICONS: Record<SessionOrderDirection, LucideIcon> = {
+  asc: ArrowUpNarrowWide,
+  desc: ArrowDownWideNarrow,
+};
+
+function DirectionIcon({ direction }: { direction: SessionOrderDirection }) {
+  const Icon = DIRECTION_ICONS[direction];
+  return <Icon />;
+}
+
+const PROPERTY_ICONS: Record<SessionProperty, LucideIcon> = {
+  timestamp: Clock,
+  agent: Sparkles,
+  model: Cpu,
+  role: UserRound,
+  workspace: Folder,
+  worktree: GitBranch,
 };
 
 type MultiFilterKey = "statuses" | "agents" | "environments" | "sources";
@@ -174,14 +207,30 @@ export function SessionListViewMenuContent({
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="min-w-40">
           <AppDropdownRadioList
-            onValueChange={(value) =>
-              setView({ ordering: value as SessionListView["ordering"] })
-            }
+            onValueChange={(value) => {
+              const ordering = value as SessionListView["ordering"];
+              setView({
+                ordering,
+                direction: defaultOrderDirection(ordering),
+              });
+            }}
             options={SESSION_ORDERINGS.map((ordering) => ({
               value: ordering,
               label: labels.ordering[ordering],
             }))}
             value={view.ordering}
+          />
+          <DropdownMenuSeparator />
+          <AppDropdownRadioList
+            onValueChange={(value) =>
+              setView({ direction: value as SessionListView["direction"] })
+            }
+            options={SESSION_ORDER_DIRECTIONS.map((direction) => ({
+              value: direction,
+              label: labels.direction[direction],
+              icon: <DirectionIcon direction={direction} />,
+            }))}
+            value={view.direction}
           />
         </DropdownMenuSubContent>
       </DropdownMenuSub>
@@ -209,15 +258,54 @@ export function SessionListViewMenuContent({
               value={view.rootLimit}
             />
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={view.showTimestamps}
-            onCheckedChange={(checked) => setView({ showTimestamps: checked })}
-          >
-            {t("sidebar.view.showTimestamps")}
-          </DropdownMenuCheckboxItem>
         </DropdownMenuSubContent>
       </DropdownMenuSub>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <ListChecks />
+          <span className="flex-1 truncate">
+            {t("sidebar.view.propertiesLabel")}
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            {view.properties.length}
+          </span>
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="min-w-40">
+          {SESSION_PROPERTIES.map((property) => {
+            const Icon = PROPERTY_ICONS[property];
+            return (
+              <DropdownMenuCheckboxItem
+                checked={view.properties.includes(property)}
+                key={property}
+                onCheckedChange={(checked) =>
+                  setView({
+                    compact: false,
+                    properties: SESSION_PROPERTIES.filter((item) =>
+                      item === property
+                        ? checked
+                        : view.properties.includes(item),
+                    ),
+                  })
+                }
+              >
+                <Icon />
+                <span className="min-w-0 flex-1 truncate">
+                  {labels.property[property]}
+                </span>
+              </DropdownMenuCheckboxItem>
+            );
+          })}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+      <DropdownMenuCheckboxItem
+        checked={view.compact}
+        onCheckedChange={(checked) => setView({ compact: checked })}
+      >
+        <Minimize2 />
+        <span className="min-w-0 flex-1 truncate">
+          {t("sidebar.view.compact")}
+        </span>
+      </DropdownMenuCheckboxItem>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuLabel>{t("sidebar.view.filtersLabel")}</DropdownMenuLabel>
@@ -287,7 +375,10 @@ export function SessionListViewMenuContent({
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={onToggleCollapseAll}>
+      <DropdownMenuItem
+        disabled={view.grouping === "none"}
+        onClick={onToggleCollapseAll}
+      >
         {allCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}
         {allCollapsed
           ? t("sidebar.view.expandAll")

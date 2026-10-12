@@ -65,6 +65,44 @@ function runtimeSessionStub(): AgentSession {
 }
 
 describe("AgentRuntimeManager", () => {
+  it.each([
+    [false, "HANDOFF\n\nhello", undefined],
+    [true, "hello", "HANDOFF"],
+  ])(
+    "delivers a context handoff natively only to adapters that inject it (injects=%s)",
+    async (injects, content, injectedText) => {
+      const sendMessage = vi.fn(
+        async (): Promise<MessageRecord> => ({
+          id: "reply",
+          sessionId: "session-1",
+          role: "assistant",
+          content: "ok",
+          attachments: [],
+          createdAt: "2026-07-24T00:00:01.000Z",
+        }),
+      );
+      const manager = new AgentRuntimeManager({
+        broadcastAgentEvent: vi.fn(),
+        createAdapter: () => ({
+          ...createAdapter({ dispose: vi.fn(), sendMessage, stop: vi.fn() }),
+          injectsContextHandoff: injects,
+        }),
+      });
+      await manager.sendSessionMessage(createPayload(), {
+        ...createPersistence(),
+        history: [],
+        contextHandoff: { text: "HANDOFF", preamble: "p", entries: [] },
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ content }),
+      );
+      const [[sent]] = sendMessage.mock.calls as unknown as [
+        [{ contextHandoff?: { text: string } }],
+      ];
+      expect(sent.contextHandoff?.text).toBe(injectedText);
+    },
+  );
+
   it("generates a title through the owned session runtime", async () => {
     const generateTitle = vi.fn(async () => "Runtime title");
     const runtimeSession: AgentSession = {

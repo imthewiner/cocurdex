@@ -25,6 +25,10 @@ const sessionMessagePayload = z.object({
   messageId: idSchema,
 });
 
+const sessionIdsPayload = z.object({
+  sessionIds: z.array(idSchema).max(5000),
+});
+
 const MAX_EXECUTION_TREE_DEPTH = 8;
 
 const runIdPayload = z.object({ runId: idSchema });
@@ -78,6 +82,10 @@ export const sessionPayloadSchemas = {
   "session.delete": exact<Payload<"session.delete">>()(sessionIdPayload),
   "session.archive": exact<Payload<"session.archive">>()(sessionIdPayload),
   "session.restore": exact<Payload<"session.restore">>()(sessionIdPayload),
+  "session.archiveMany":
+    exact<Payload<"session.archiveMany">>()(sessionIdsPayload),
+  "session.restoreMany":
+    exact<Payload<"session.restoreMany">>()(sessionIdsPayload),
   "session.stop": exact<Payload<"session.stop">>()(sessionIdPayload),
   "session.resumeQueued":
     exact<Payload<"session.resumeQueued">>()(sessionIdPayload),
@@ -94,6 +102,9 @@ export const sessionPayloadSchemas = {
       expectedTitle: z.string().max(2000).nullish(),
       updatedAt: z.string().max(64).optional(),
     }),
+  ),
+  "session.setPinned": exact<Payload<"session.setPinned">>()(
+    z.object({ sessionId: idSchema, pinned: z.boolean() }),
   ),
   "session.refineTitle": exact<Payload<"session.refineTitle">>()(
     z.object({

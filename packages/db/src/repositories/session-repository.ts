@@ -18,6 +18,10 @@ export interface SessionRepository {
     sessionId: string,
     status: SessionRecord["status"],
   ): Promise<void>;
+  setPinned(
+    sessionId: string,
+    pinnedAt: string | null,
+  ): Promise<SessionRecord | null>;
   archive(
     sessionId: string,
     archivedAt?: string,

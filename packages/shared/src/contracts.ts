@@ -313,6 +313,7 @@ export interface SessionRecord {
   updatedAt: string;
   lastMessageAt: string | null;
   archivedAt?: string | null;
+  pinnedAt?: string | null;
   providerSnapshot?: AgentProviderSnapshot | null;
   worktreePath?: string | null;
   peerInbound?: "deliver" | "refuse";
@@ -1328,6 +1329,20 @@ export interface UpdateSessionTitlePayload {
   title: string;
   expectedTitle?: string | null;
   updatedAt?: string;
+}
+
+export interface SetSessionPinnedPayload {
+  sessionId: string;
+  pinned: boolean;
+}
+
+export interface SessionIdsPayload {
+  sessionIds: string[];
+}
+
+export interface ArchiveSessionsResult {
+  archivedSessionIds: string[];
+  skippedCount: number;
 }
 
 export interface ArchiveSessionPayload {

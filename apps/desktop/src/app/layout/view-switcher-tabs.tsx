@@ -9,9 +9,10 @@ import {
   NotebookPen,
   TerminalSquare,
 } from "lucide-react";
-import { useCallback, useRef } from "react";
+import { type ReactNode, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Separator,
   ToggleGroup,
   ToggleGroupItem,
   Tooltip,
@@ -21,12 +22,10 @@ import {
 } from "@/components/ui";
 import { cn, desktopApi } from "@/lib";
 import {
-  TITLEBAR_EDITOR_TOGGLE_WIDTH,
   TITLEBAR_HEIGHT,
   TITLEBAR_ICON_BUTTON_GAP,
   TITLEBAR_ICON_BUTTON_SIZE,
   TITLEBAR_LEADING_RESERVE,
-  withTitlebarControlsInset,
 } from "./app-shell/app-shell-layout";
 import {
   isRightPanelViewAvailable,
@@ -78,6 +77,7 @@ interface ViewSwitcherTabsProps {
   hasPdfsOpen: boolean;
   onViewChange: (view: RightPanelView) => void;
   reserveTrafficLights?: boolean;
+  trailing?: ReactNode;
 }
 
 export function ViewSwitcherTabs({
@@ -85,6 +85,7 @@ export function ViewSwitcherTabs({
   hasPdfsOpen,
   onViewChange,
   reserveTrafficLights = false,
+  trailing,
 }: ViewSwitcherTabsProps) {
   const { t } = useTranslation("editor");
   const [tabOrder, setTabOrder] = useAtom(rightPanelTabOrderAtom);
@@ -318,20 +319,23 @@ export function ViewSwitcherTabs({
             );
           })}
         </ToggleGroup>
+        {trailing ? (
+          <>
+            <Separator
+              orientation="vertical"
+              className="h-4 bg-editor-border data-[orientation=vertical]:self-center"
+            />
+            <div className="flex items-center px-2">{trailing}</div>
+          </>
+        ) : null}
         <div
           aria-hidden
           className="app-drag min-h-0 min-w-0 flex-1 self-stretch"
         />
-        {/*
-          Matches titlebar-editor-toggle-region (size-6 pills + gap-1 + px-3).
-          app-no-drag so the absolute toggles stay clickable.
-        */}
         <div
           aria-hidden
           className="app-no-drag shrink-0 self-stretch"
-          style={{
-            width: withTitlebarControlsInset(TITLEBAR_EDITOR_TOGGLE_WIDTH),
-          }}
+          style={{ width: "var(--titlebar-controls-inset)" }}
         />
       </div>
     </TooltipProvider>

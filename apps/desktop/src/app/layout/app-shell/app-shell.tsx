@@ -90,7 +90,6 @@ export function AppShell() {
   const [screenIndex, setScreenIndex] = useState(0);
   const activeScreen = screenHistory[screenIndex];
   const canGoBack = screenIndex > 0;
-  const canGoForward = screenIndex < screenHistory.length - 1;
   // First sidebar item (常规 / General); deep links may override via openSettings.
   const [activeSettingsSection, setActiveSettingsSection] =
     useState<SettingsSectionId>("general");
@@ -360,12 +359,6 @@ export function AppShell() {
     }
   };
 
-  const goForwardScreen = () => {
-    if (canGoForward) {
-      setScreenIndex((index) => index + 1);
-    }
-  };
-
   // Optional section: gear icon reopens the last section; empty states pass
   // "providers" (etc.) to land on the right pane. Guard with typeof so a
   // React click event is never treated as a section id (onClick={openSettings}).
@@ -468,7 +461,6 @@ export function AppShell() {
       activeWorkspaceRootPaths={activeWorkspaceRootPaths}
       appearanceSettings={appearanceSettings}
       canGoBack={canGoBack}
-      canGoForward={canGoForward}
       contentRowRef={contentRowCallbackRef}
       isRightPanelCompact={isRightPanelCompact}
       effectiveRightWidth={effectiveRightWidth}
@@ -487,7 +479,6 @@ export function AppShell() {
       chatLayoutMode={chatLayoutMode}
       hideFabWhenClosed={hideFabWhenClosed}
       onGoBack={goBackScreen}
-      onGoForward={goForwardScreen}
       onAppearanceSettingsChange={handleAppearanceSettingsChange}
       onChatLayoutModeChange={applyChatLayoutMode}
       onHideFabWhenClosedChange={handleHideFabWhenClosedChange}

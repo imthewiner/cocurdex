@@ -74,6 +74,7 @@ export function mapSession(row: SqliteRow): SessionRecord {
     lastMessageAt:
       typeof row.last_message_at === "string" ? row.last_message_at : null,
     archivedAt: toNullableString(row.archived_at),
+    pinnedAt: toNullableString(row.pinned_at),
     providerSnapshot: parseJson<AgentProviderSnapshot | null>(
       row.provider_snapshot_json,
       null,

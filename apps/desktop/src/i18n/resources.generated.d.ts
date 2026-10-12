@@ -1121,6 +1121,21 @@ export default interface Resources {
       success: "Session archived";
       view: "View archived";
     };
+    archiveGroup: {
+      action: "Archive sessions";
+      cancel: "Cancel";
+      confirm: "Archive";
+      description: "Sessions in “{{group}}” move to the archive. Pinned, running, and waiting sessions are skipped. Restore them anytime from Settings > Archived sessions.";
+      failed: "Could not archive these sessions";
+      skipped_one: "Skipped {{count}} running or waiting session";
+      skipped_other: "Skipped {{count}} running or waiting sessions";
+      success_one: "Archived {{count}} session";
+      success_other: "Archived {{count}} sessions";
+      title_one: "Archive {{count}} session?";
+      title_other: "Archive {{count}} sessions?";
+      undo: "Undo";
+      undoFailed: "Could not restore the sessions";
+    };
     branch: {
       branches: "Branches";
       empty: "No matching branches.";
@@ -1343,17 +1358,22 @@ export default interface Resources {
       newSessionInWorkspace: "New session in {{workspaceName}}";
       noAgentsYet: "No sessions yet";
       pendingAttention: "Needs attention";
+      pin: "Pin";
+      pinFailed: "Could not update pin";
+      pinned: "Pinned";
       removeWorkspace: "Remove";
       rename: "Rename";
       renameSession: "Rename {{title}}";
       revealInFileManager: "Reveal in file manager";
       running: "Running";
+      sessionsHeading: "Sessions";
       settings: "Settings";
       showLess: "Show less";
       showMore_one: "Show more ({{count}} left)";
       showMore_other: "Show more ({{count}} left)";
       splitDown: "Open Below";
       splitRight: "Open to the Right";
+      unpin: "Unpin";
       unread: "Unread";
       view: {
         agentFilter: "Agent";
@@ -1362,6 +1382,11 @@ export default interface Resources {
         clearFilters_one: "Clear filter";
         clearFilters_other: "Clear {{count}} filters";
         collapseAll: "Collapse all";
+        compact: "Compact mode";
+        direction: {
+          asc: "Ascending";
+          desc: "Descending";
+        };
         environment: {
           local: "Local";
           worktree: "Worktree";
@@ -1371,6 +1396,7 @@ export default interface Resources {
         filtersLabel: "Filters";
         grouping: {
           agent: "Agent";
+          none: "No grouping";
           status: "Status";
           updated: "Last updated";
           workspace: "Workspace";
@@ -1382,8 +1408,18 @@ export default interface Resources {
         ordering: {
           activity: "Recent activity";
           created: "Created time";
+          title: "Title";
         };
         orderingLabel: "Sort by";
+        propertiesLabel: "Properties";
+        property: {
+          agent: "Agent";
+          model: "Model";
+          role: "Role";
+          timestamp: "Last activity";
+          workspace: "Workspace";
+          worktree: "Worktree";
+        };
         rootLimit: {
           all: "All";
           count_one: "{{count}} session";
@@ -1391,7 +1427,6 @@ export default interface Resources {
         };
         rootLimitLabel: "Sessions per group";
         showLabel: "Show";
-        showTimestamps: "Show timestamps";
         source: {
           created: "Created here";
           imported: "Imported";

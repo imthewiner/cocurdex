@@ -1,3 +1,4 @@
+export { selectArchivableRoots } from "./archive-selection";
 export { SessionCheckpointStore } from "./checkpoints";
 export { SessionCommandQueue } from "./commands";
 export { applySessionConfiguration } from "./configuration";
@@ -15,3 +16,8 @@ export {
   SessionRunCoordinator,
 } from "./run-coordinator";
 export { decideDelivery, decideRunOutcome } from "./run-decisions";
+export {
+  collectHandoffItems,
+  readSessionActivity,
+  type SessionActivityReader,
+} from "./session-activity";

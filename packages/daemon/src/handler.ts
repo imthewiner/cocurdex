@@ -412,6 +412,10 @@ export async function handleDaemonRequest(
       return service.archiveSession(request.params.sessionId);
     case "session.restore":
       return service.restoreSession(request.params.sessionId);
+    case "session.archiveMany":
+      return service.archiveSessions(request.params.sessionIds);
+    case "session.restoreMany":
+      return service.restoreSessions(request.params.sessionIds);
     case "session.listArchived":
       return service.state.listArchivedSessions();
     case "session.delete":
@@ -419,6 +423,8 @@ export async function handleDaemonRequest(
       return null;
     case "session.updateTitle":
       return service.updateSessionTitle(request.params);
+    case "session.setPinned":
+      return service.setSessionPinned(request.params);
     case "session.refineTitle":
       return service.refineSessionTitle(request.params);
     case "session.listMessages":

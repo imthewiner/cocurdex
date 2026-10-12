@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSetAtom } from "jotai";
 import { Folder } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { SidebarMenu, TooltipProvider } from "@/components/ui";
 import {
   EditWorkspaceDialog,
@@ -24,12 +24,14 @@ import {
 } from "@/features/workspaces";
 import { SessionFilterEmpty } from "./session-filter-empty";
 import { SidebarScrollArea } from "./sidebar-scroll-area";
+import { useSidebarSectionCollapse } from "./use-sidebar-section-collapse";
 import { WorkspaceSidebarItem } from "./workspace-sidebar-item";
 
 interface WorkspacesPanelProps {
   activeWorkspaceId: string | null;
   collapsedWorkspaceIds: string[];
   filtered: boolean;
+  leading?: ReactNode;
   optimisticActiveSessionId: string | null;
   sessionsByWorkspace: Record<string, SessionRecord[]>;
   workspaces: WorkspaceRecord[];
@@ -46,6 +48,7 @@ export function WorkspacesPanel({
   activeWorkspaceId,
   collapsedWorkspaceIds,
   filtered,
+  leading,
   optimisticActiveSessionId,
   sessionsByWorkspace,
   workspaces,
@@ -68,6 +71,8 @@ export function WorkspacesPanel({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+  const sessionsSection = useSidebarSectionCollapse("sessions");
+  const listedWorkspaces = sessionsSection.collapsed ? [] : workspaces;
   const workspaceIds = useMemo(
     () => workspaces.map((workspace) => workspace.id),
     [workspaces],
@@ -112,14 +117,17 @@ export function WorkspacesPanel({
           }}
         >
           <SidebarMenu className="pe-3">
-            {filtered && workspaces.length === 0 ? (
+            {leading}
+            {filtered &&
+            !sessionsSection.collapsed &&
+            workspaces.length === 0 ? (
               <SessionFilterEmpty className="px-1 py-1 text-meta text-sidebar-fg-subtle" />
             ) : null}
             <SortableContext
               items={workspaceIds}
               strategy={verticalListSortingStrategy}
             >
-              {workspaces.map((workspace) => (
+              {listedWorkspaces.map((workspace) => (
                 <WorkspaceSidebarItem
                   activeWorkspaceId={activeWorkspaceId}
                   expanded={!collapsedWorkspaceIds.includes(workspace.id)}

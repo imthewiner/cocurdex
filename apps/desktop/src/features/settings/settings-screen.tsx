@@ -10,7 +10,7 @@ import type { SettingsSectionId } from "@/app/layout/app-shell/app-shell-types";
 import type { ChatLayoutMode } from "@/app/layout/chat-layout-preference";
 import {
   ResizableSidebarSlot,
-  ScreenNavButtons,
+  ScreenBackButton,
   SidebarToggleButton,
 } from "@/app/layout/sidebar/sidebar-frame";
 import { SettingRow, SettingsGroup } from "@/components";
@@ -55,7 +55,6 @@ export interface SettingsScreenProps {
   activeSection: SettingsSectionId;
   appearanceSettings: AppearanceSettings;
   canGoBack: boolean;
-  canGoForward: boolean;
   chatLayoutMode: ChatLayoutMode;
   hideFabWhenClosed: boolean;
   languageMode: LanguageMode;
@@ -63,7 +62,6 @@ export interface SettingsScreenProps {
   isSidebarOpen: boolean;
   sidebarWidth?: number;
   onGoBack(): void;
-  onGoForward(): void;
   onAppearanceSettingsChange(settings: AppearanceSettings): void;
   onChatLayoutModeChange(mode: ChatLayoutMode): void;
   onHideFabWhenClosedChange(hide: boolean): void;
@@ -252,7 +250,6 @@ export function SettingsScreen({
   activeSection,
   appearanceSettings,
   canGoBack,
-  canGoForward,
   chatLayoutMode,
   hideFabWhenClosed,
   isSidebarOpen,
@@ -260,7 +257,6 @@ export function SettingsScreen({
   notificationSettings,
   sidebarWidth,
   onGoBack,
-  onGoForward,
   onAppearanceSettingsChange,
   onChatLayoutModeChange,
   onHideFabWhenClosedChange,
@@ -399,13 +395,10 @@ export function SettingsScreen({
             ariaLabel={t("editor:actions.toggleSidebar")}
             onToggle={onToggleSidebar}
           />
-          <ScreenNavButtons
-            backLabel={t("editor:actions.goBack")}
+          <ScreenBackButton
             canGoBack={canGoBack}
-            canGoForward={canGoForward}
-            forwardLabel={t("editor:actions.goForward")}
+            label={t("editor:actions.goBack")}
             onGoBack={onGoBack}
-            onGoForward={onGoForward}
           />
         </div>
       </div>

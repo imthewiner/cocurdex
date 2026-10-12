@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildContextHandoffText,
-  messageAgentLookup,
-  resolveStartContext,
-  type StartContextRun,
-} from "./context-transfer";
+import { resolveStartContext, type StartContextRun } from "./context-transfer";
 import type { AgentId, MessageRecord } from "./contracts";
 
 let clock = 0;
@@ -131,38 +126,5 @@ describe("resolveStartContext", () => {
     expect(
       result.kind === "handoff" && result.messages.map((item) => item.id),
     ).toEqual(["c1", "c3"]);
-  });
-});
-
-describe("buildContextHandoffText", () => {
-  it("labels speakers by the agent that produced each reply", () => {
-    const { priorMessages, runs } = history(turn(1, "codex"));
-    const text = buildContextHandoffText({
-      transferKind: "agent_switch",
-      strategy: "full",
-      messages: priorMessages,
-      agentOf: messageAgentLookup(runs),
-    });
-    expect(text).toContain('<cocurdex_context_handoff kind="agent_switch"');
-    expect(text).toContain("[User]\nquestion 1");
-    expect(text).toContain("[Assistant (codex)]\nanswer 1");
-  });
-
-  it("keeps the newest messages when the transcript exceeds the budget", () => {
-    const messages = [
-      message("m1", "user", "a".repeat(50)),
-      message("m2", "user", "b".repeat(50)),
-      message("m3", "user", "c".repeat(50)),
-    ];
-    const text = buildContextHandoffText({
-      transferKind: "fork",
-      strategy: "full",
-      messages,
-      agentOf: () => null,
-      limits: { maxMessageChars: 40, maxTotalChars: 170 },
-    });
-    expect(text).toContain("[1 earlier messages omitted]");
-    expect(text).not.toContain("aaaa");
-    expect(text).toContain("more characters omitted");
   });
 });
