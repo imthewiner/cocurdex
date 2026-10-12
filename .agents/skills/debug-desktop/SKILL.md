@@ -102,52 +102,53 @@ The hook is installed at startup, so a renderer loaded before it existed needs a
 reload. Cover both themes when a change touches colors, backgrounds, or
 transparency.
 
-## Concurrent instances
+## Concurrent instances and scenarios
 
-When the default CDP port (9222) is already used by another session — a
-user-run app or another agent — start your own isolated instance instead of
-sharing its connection:
+Other worktrees and agents may be testing at the same time. For anything that
+does not need the user's real data, use an isolated instance through the
+scenario launcher in `tests/scenarios/lib` rather than the user's app on 9222:
 
 ```bash
-rtk node .agents/skills/debug-desktop/scripts/cdp.mjs launch
-rtk node .agents/skills/debug-desktop/scripts/cdp.mjs targets --port 9223
-rtk node .agents/skills/debug-desktop/scripts/cdp.mjs stop --user-data /tmp/cocurdex-debug-XXXX
+rtk node tests/scenarios/pdf-reader.mjs                 # isolated instance + fixture
+rtk node tests/scenarios/pdf-reader.mjs --fixture book  # another fixture
+rtk node tests/scenarios/pdf-reader.mjs --keep          # leave it running, prints pid/port/paths
+rtk node tests/scenarios/stop-instance.mjs --pid <pid> --user-data <path> --workspace <path>
+rtk node tests/scenarios/pdf-reader.mjs --port 9222 --pdf <path in a user workspace>
 ```
 
-`launch` picks a free port (9223+ by default, `--port` to pin), creates a
-temporary userData profile, copies the renderer URL from the sibling instance
-on `--from-port` (or `--renderer-url`), and spawns Electron against the
-existing `out/main/main.js` bundle. It returns `{ pid, port, userDataPath, ... }`
-once CDP is accepting connections; pass that port via `--port` on every
-subsequent command. `stop` SIGTERMs the recorded pid and removes the profile —
-it refuses directories without the `debug-instance.json` marker, so it cannot
-delete the user's real profile.
+`launchIsolatedInstance` creates a short `mkdtemp(os.tmpdir(), "cocu-")`
+profile, picks a free CDP port, runs this checkout's own `electron-vite dev`
+(Vite moves to the next free port), parses the renderer URL from the log, and
+waits for the CDP target. `openScenarioApp` copies fixtures into a temporary
+workspace, saves it through `daemonProductApi.saveWorkspace`
+(`/src/lib/product-api.ts`; `window.desktopApi` has no `saveWorkspace`), and
+reloads: the onboarding gate is decided at bootstrap from the workspace and
+provider lists, so a workspace saved before the reload skips the welcome
+screen. Stopping kills the recorded PID tree and waits for every process to
+exit before removing the profile; the log is kept only when the run fails.
+Three instances, two isolated plus one attached to 9222, ran the PDF scenario
+in parallel without interference.
 
-A distinct `COCURDEX_USER_DATA_PATH` is mandatory, not optional: the
-single-instance lock and `daemon.sock` both live under the userData profile, so
-a second instance sharing `Cocurdex-dev` exits immediately. The isolated
-profile means an empty database, no sessions, and no provider auth — use it to
-verify rendering, layout, and IPC on seeded or empty state. To inspect the
-user's live session data you still attach to their instance read-only.
+Lessons from building it:
 
-Requires `apps/desktop/out/main/main.js` (produced by `electron-vite dev` or
-`build`). Cap concurrent debug instances at 5 and always `stop` the ones you
-started; `mkdtemp` profiles pile up otherwise. For the full manual procedure
-(main/preload rebuild + env details), see
-[references/process-verification.md](references/process-verification.md).
+- Keep the profile path short. On macOS a socket path over 103 bytes makes the
+  daemon refuse to start, and the desktop app only reports "Timed out waiting
+  for the Cocurdex daemon"; a scratchpad-based profile path is too long.
+- Do not borrow another instance's renderer URL (`cdp.mjs launch` copies it
+  from `--from-port`): across worktrees that runs another checkout's code.
+- Find instance processes by PID tree, not by grepping the profile path. The
+  Electron main process command line (`Electron .`) does not contain it, and
+  the daemon runs in its own process group, so a group or path kill leaves the
+  main process and the daemon behind, and the main process respawns helpers.
+- After a reload, wait for the UI control you need before clicking it; the
+  right panel starts closed in a new profile (`editor:actions.openEditorPanel`).
+- `bootstrapWorkspaces` drops open PDFs outside the renderer's workspaces, and
+  `openPdfReaderAtom` does not open a closed right panel.
 
-### Choosing the user's instance or an isolated one
-
-An isolated profile starts empty: the welcome screen gates the shell, and there
-are no workspaces, sessions, or open tabs. Setting
-`cocurdex.onboarding-hidden` in localStorage and reloading did not leave the
-welcome screen; setting `onboardingEnteredAtom` through the app's default
-Jotai store did. A workspace saved through `desktopApi.saveWorkspace` did not
-appear in the sidebar, even after a reload, so views that depend on workspace
-data (PDF reader, file tree, Git) are expensive to reach there. Use the
-isolated instance for protocol checks: call the daemon route or RPC from the
-renderer origin, which exercises CORS, auth, and the real socket. Verify the
-feature UI on the user's instance.
+`cdp.mjs launch` remains for a quick second Electron against an already built
+`out/main/main.js` in the same checkout. A distinct `COCURDEX_USER_DATA_PATH`
+is mandatory either way: the single-instance lock and `daemon.sock` live under
+the userData profile.
 
 A change that spans the renderer and the daemon breaks the user's running app
 in between: Vite HMR loads the new renderer at once, while the old daemon lacks
