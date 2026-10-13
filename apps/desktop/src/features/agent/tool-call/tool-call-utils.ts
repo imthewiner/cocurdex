@@ -375,7 +375,7 @@ function sanitizeCommand(command: string) {
   return command.replace(/\s+/g, " ").trim();
 }
 
-function unwrapShellCommand(command: string) {
+export function unwrapShellCommand(command: string) {
   const normalized = sanitizeCommand(command);
   const shellMatch = normalized.match(
     /^(?:\/(?:usr\/)?bin\/)?(?:zsh|bash|sh)\s+-l?c\s+(["'])([\s\S]+)\1$/,

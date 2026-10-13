@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AppShellTitlebarActions } from "./app-shell-titlebar-actions";
 import { RightPanelWindowActions } from "./right-panel-window-actions";
 
@@ -50,10 +50,12 @@ describe("AppShellTitlebarActions", () => {
 });
 
 describe("RightPanelWindowActions", () => {
-  it("offers fullscreen and docking for a side-by-side editor", () => {
+  it("offers fullscreen, docking, and closing for a side-by-side editor", () => {
+    const onCloseRightPanel = vi.fn();
     render(
       <RightPanelWindowActions
         isRightPanelMaximized={false}
+        onCloseRightPanel={onCloseRightPanel}
         onToggleRightPanelMaximize={() => {}}
       />,
     );
@@ -61,13 +63,16 @@ describe("RightPanelWindowActions", () => {
     expect(
       screen.getByRole("button", { name: "Enter full screen" }),
     ).toBeVisible();
-    expect(screen.getAllByRole("button")).toHaveLength(2);
+    expect(screen.getAllByRole("button")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Close editor panel" }));
+    expect(onCloseRightPanel).toHaveBeenCalledOnce();
   });
 
-  it("offers only exiting fullscreen for a maximized editor", () => {
+  it("offers exiting fullscreen and closing for a maximized editor", () => {
     render(
       <RightPanelWindowActions
         isRightPanelMaximized
+        onCloseRightPanel={() => {}}
         onToggleRightPanelMaximize={() => {}}
       />,
     );
@@ -75,6 +80,9 @@ describe("RightPanelWindowActions", () => {
     expect(
       screen.getByRole("button", { name: "Exit full screen" }),
     ).toBeVisible();
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "Close editor panel" }),
+    ).toBeVisible();
+    expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 });
