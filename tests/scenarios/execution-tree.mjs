@@ -227,15 +227,11 @@ runScenario("execution-tree", {
     [
       "long-commands-stay-inside-dialog",
       async ({ session }) => {
-        const label = await session.run(() =>
-          window.__scenario.t("sessions:executionTree.issuesOnly"),
-        );
-        const layout = await session.run((label) => {
+        const layout = await session.run(() => {
           const dialog = document.querySelector('[role="dialog"]');
           const bounds = dialog.getBoundingClientRect();
-          const toggle = [...dialog.querySelectorAll("button")].find(
-            (button) => button.innerText.trim() === label,
-          );
+          const toggle = dialog.querySelector('[role="switch"]');
+          const firstRow = dialog.querySelector("li").getBoundingClientRect();
           const overflowing = [...dialog.querySelectorAll("li button")]
             .filter((button) => {
               const rect = button.getBoundingClientRect();
@@ -248,10 +244,11 @@ runScenario("execution-tree", {
             toggleInside: Boolean(
               toggleRect &&
                 toggleRect.left >= bounds.left &&
-                toggleRect.right <= bounds.right,
+                toggleRect.right <= bounds.right &&
+                toggleRect.bottom <= firstRow.top,
             ),
           };
-        }, label);
+        });
         check(
           layout.overflowing.length === 0,
           "rows overflow the dialog",
@@ -259,6 +256,21 @@ runScenario("execution-tree", {
         );
         check(layout.toggleInside, "issues-only toggle is off-screen", layout);
         return layout;
+      },
+    ],
+    [
+      "session-row-shows-agent-icon-and-name",
+      async ({ session }) => {
+        const row = await session.run(() => {
+          const button = document.querySelector('[role="dialog"] li button');
+          return {
+            text: button.innerText.replace(/\s+/g, " ").trim(),
+            icons: button.querySelectorAll("svg, img").length,
+          };
+        });
+        check(row.text.endsWith("Codex"), "agent display name missing", row);
+        check(row.icons >= 2, "agent icon missing", row);
+        return row;
       },
     ],
     [
@@ -305,16 +317,14 @@ runScenario("execution-tree", {
     [
       "issues-only-filter",
       async ({ session }) => {
-        const label = await session.run(() =>
-          window.__scenario.t("sessions:executionTree.issuesOnly"),
-        );
-        await session.run((label) => {
-          const toggle = [
-            ...document.querySelectorAll('[role="dialog"] button'),
-          ].find((button) => button.innerText.trim() === label);
+        const clicked = await session.run(() => {
+          const toggle = document.querySelector(
+            '[role="dialog"] [role="switch"]',
+          );
           toggle?.click();
           return Boolean(toggle);
-        }, label);
+        });
+        check(clicked, "issues-only switch missing");
         await session.run(() => window.__scenario.sleep(200));
         const tree = await readTree(session);
         check(
