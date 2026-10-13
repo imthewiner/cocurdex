@@ -225,7 +225,7 @@ function ExecutionTreeBody({
     });
 
   return (
-    <div className="flex min-h-0 flex-col gap-2">
+    <div className="flex min-h-0 min-w-0 flex-col gap-2">
       <div className="flex justify-end">
         <Toggle
           onPressedChange={(issuesOnly) => setView({ ...view, issuesOnly })}
