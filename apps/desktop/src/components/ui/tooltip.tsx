@@ -4,7 +4,7 @@ import type * as React from "react";
 import { asChildToRender } from "@/components/ui/_as-child-render";
 import { cn } from "@/lib/utils";
 
-const TOOLTIP_DELAY_MS = 500;
+export const TOOLTIP_DELAY_MS = 500;
 
 function TooltipProvider({
   delay = TOOLTIP_DELAY_MS,

@@ -6,6 +6,8 @@ import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 const UI_TIMEOUT_MS = 30_000;
 const TOOLTIP_DELAY_MS = 900;
 const MULTI_FOLDER_WORKSPACE_ID = "fixture-acme-suite";
+const PREVIEW_EARLY_MS = 150;
+const MAX_ARROW_PRESSES = 6;
 
 const args = readScenarioArgs();
 if (args.port) {
@@ -29,6 +31,23 @@ async function workspaceTrigger(session) {
       insideTooltip: Boolean(trigger.closest('[data-slot="tooltip-trigger"]')),
     };
   });
+}
+
+function previewOpen(session) {
+  return session.run(() =>
+    Boolean(document.querySelector('[data-slot="tooltip-content"][data-open]')),
+  );
+}
+
+async function pressKey(session, key, keyCode) {
+  for (const type of ["keyDown", "keyUp"]) {
+    await session.send("Input.dispatchKeyEvent", {
+      type,
+      key,
+      code: key,
+      windowsVirtualKeyCode: keyCode,
+    });
+  }
 }
 
 async function clickAt(session, point) {
@@ -138,6 +157,11 @@ runScenario("workspace-picker", {
           type: "mouseMoved",
           ...option.point,
         });
+        await delay(PREVIEW_EARLY_MS);
+        check(
+          !(await previewOpen(session)),
+          "preview opened before the hover delay",
+        );
         await session.waitUntil(
           () => {
             const panel = document.querySelector(
@@ -197,6 +221,52 @@ runScenario("workspace-picker", {
           UI_TIMEOUT_MS,
         );
         return { lines };
+      },
+    ],
+    [
+      "keyboard highlight previews a multi-folder option at once",
+      async ({ session, workspaceName }) => {
+        await pressKey(session, "Escape", 27);
+        await session.waitUntil(
+          () => !document.querySelector('[data-slot="combobox-item"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const trigger = await workspaceTrigger(session);
+        await clickAt(session, trigger);
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: trigger.x,
+          y: trigger.y + 200,
+        });
+        await session.waitUntil(
+          () => Boolean(document.querySelector('[data-slot="combobox-item"]')),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        let highlighted = null;
+        for (let press = 0; press < MAX_ARROW_PRESSES; press += 1) {
+          await pressKey(session, "ArrowDown", 40);
+          highlighted = await session.run(
+            () =>
+              document
+                .querySelector('[data-slot="combobox-item"][data-highlighted]')
+                ?.innerText.trim() ?? null,
+          );
+          if (highlighted === workspaceName) break;
+        }
+        check(
+          highlighted === workspaceName,
+          "arrow keys did not reach the multi-folder option",
+          highlighted,
+        );
+        await delay(PREVIEW_EARLY_MS);
+        check(
+          await previewOpen(session),
+          "keyboard highlight did not open the preview at once",
+        );
+        await pressKey(session, "Escape", 27);
+        return {};
       },
     ],
     [

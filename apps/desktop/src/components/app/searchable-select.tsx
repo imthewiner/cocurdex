@@ -1,3 +1,4 @@
+import type { ComboboxRootHighlightEventDetails } from "@base-ui/react/combobox";
 import type {
   ComponentProps,
   CSSProperties,
@@ -17,7 +18,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { Tooltip } from "@/components/ui/tooltip";
+import { TOOLTIP_DELAY_MS, Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib";
 import {
   type AppDropdownTriggerAppearance,
@@ -191,21 +192,53 @@ export function AppSearchableSelect({
   }, [options]);
 
   const popupRef = useRef<HTMLDivElement>(null);
+  const previewTimerRef = useRef<number | null>(null);
+  const previewWarmRef = useRef(false);
   const [preview, setPreview] = useState<HighlightedPreview | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const showPreview = (item: SelectItem | undefined) => {
+  const cancelPendingPreview = () => {
+    if (previewTimerRef.current !== null) {
+      window.clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+  };
+
+  const openPreview = (content: ReactNode) => {
+    requestAnimationFrame(() => {
+      const anchor = highlightedItem(popupRef.current);
+      if (!anchor) return;
+      previewWarmRef.current = true;
+      setPreview({ content, anchor });
+      setPreviewOpen(true);
+    });
+  };
+
+  const showPreview = (
+    item: SelectItem | undefined,
+    details: ComboboxRootHighlightEventDetails,
+  ) => {
+    cancelPendingPreview();
     const content = item?.preview;
     if (!content) {
       setPreviewOpen(false);
       return;
     }
-    requestAnimationFrame(() => {
-      const anchor = highlightedItem(popupRef.current);
-      if (!anchor) return;
-      setPreview({ content, anchor });
-      setPreviewOpen(true);
-    });
+    if (details.reason === "keyboard" || previewWarmRef.current) {
+      openPreview(content);
+      return;
+    }
+    setPreviewOpen(false);
+    previewTimerRef.current = window.setTimeout(() => {
+      previewTimerRef.current = null;
+      openPreview(content);
+    }, TOOLTIP_DELAY_MS);
+  };
+
+  const resetPreview = () => {
+    cancelPendingPreview();
+    previewWarmRef.current = false;
+    setPreviewOpen(false);
   };
 
   const resolvedTriggerLabel =
@@ -224,7 +257,7 @@ export function AppSearchableSelect({
       }}
       onItemHighlighted={showPreview}
       onOpenChange={(open) => {
-        if (!open) setPreviewOpen(false);
+        if (!open) resetPreview();
       }}
     >
       <ComboboxTrigger
