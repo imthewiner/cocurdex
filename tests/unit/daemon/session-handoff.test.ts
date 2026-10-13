@@ -1,12 +1,12 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { createAgentRegistry } from "@cocurdex/agent-core";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
 import type { AgentId, MessageRecord } from "@cocurdex/shared";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 const cleanup: Array<() => Promise<void>> = [];
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 afterEach(async () => {
   for (const dispose of cleanup.splice(0).reverse()) await dispose();
 });
@@ -18,14 +18,13 @@ interface DispatchCall {
 }
 
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), "cocurdex-handoff-"));
+  const root = await tempDirs.create("cocurdex-handoff-");
   const service = new CocurdexDaemonService({
     userDataPath: root,
     runtimeFingerprint: "test",
   });
   cleanup.push(async () => {
     await service.shutdown();
-    await rm(root, { force: true, recursive: true });
   });
   const registry = createAgentRegistry().list();
   vi.spyOn(service, "listAgents").mockResolvedValue(
@@ -129,9 +128,8 @@ async function send(
     messageId: crypto.randomUUID(),
     content,
   });
-  await vi.waitFor(async () => {
-    expect(await service.waitForSessionTurn(sessionId)).toBeNull();
-  });
+  await service.waitForSessionTurn(sessionId);
+  expect(service.runs.hasActiveRun(sessionId)).toBe(false);
   return message;
 }
 
