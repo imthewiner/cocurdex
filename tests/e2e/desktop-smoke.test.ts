@@ -9,6 +9,7 @@ import { createTempDirs } from "@cocurdex/shared/testing";
 import {
   type ElectronApplication,
   _electron as electron,
+  type Page,
 } from "@playwright/test";
 import { afterAll, describe, expect, it } from "vitest";
 import { repoRoot, sleep, waitFor } from "./helpers/daemon-process";
@@ -52,6 +53,19 @@ const packagedCandidates: Record<string, string[]> = {
   linux: [path.join(releaseRoot, "linux-unpacked", "Cocurdex")],
 };
 const tempDirs = createTempDirs();
+const RENDER_TIMEOUT_MS = 20_000;
+const RENDERED_TEXT = "document.body.innerText.trim().length > 0";
+
+async function writeArtifacts(window: Page, report: Record<string, unknown>) {
+  const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+  if (!artifacts) return;
+  await mkdir(artifacts, { recursive: true });
+  await window.screenshot({ path: path.join(artifacts, "desktop-smoke.png") });
+  await writeFile(
+    path.join(artifacts, "desktop-smoke.json"),
+    JSON.stringify(report, null, 2),
+  );
+}
 
 describe("desktop app boot", () => {
   let userDataPath = "";
@@ -169,20 +183,17 @@ describe("desktop app boot", () => {
     const afterWebSocket = await requestDaemon("daemon.status", { metadata });
     expect(afterWebSocket.pid).toBe(metadata.pid);
 
-    await window.locator("body").waitFor({ state: "visible" });
-    expect(await window.locator("body").innerText()).not.toBe("");
-    await sleep(500);
-    const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
-    if (artifacts) {
-      await mkdir(artifacts, { recursive: true });
-      await window.screenshot({
-        path: path.join(artifacts, "desktop-smoke.png"),
-      });
-      await writeFile(
-        path.join(artifacts, "desktop-smoke.json"),
-        JSON.stringify({ packaged, pageErrors, daemonPid }, null, 2),
+    const rendered = await window
+      .waitForFunction(RENDERED_TEXT, null, {
+        timeout: RENDER_TIMEOUT_MS,
+      })
+      .then(
+        () => true,
+        () => false,
       );
-    }
+    await sleep(500);
+    await writeArtifacts(window, { packaged, pageErrors, daemonPid, rendered });
+    expect(rendered).toBe(true);
     expect(pageErrors).toEqual([]);
   });
 });
