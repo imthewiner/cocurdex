@@ -191,13 +191,10 @@ function WorkspaceOptionIcon({ workspace }: { workspace: WorkspaceRecord }) {
 }
 
 function WorkspaceOptionRoots({ paths }: { paths: string[] }) {
-  return paths.map((path) => {
-    const { name, parent } = splitWorkspacePath(path);
-    return (
-      <span className="block truncate" key={path} title={path}>
-        <span className="text-foreground">{name}</span>
-        {parent ? <span className="ms-1.5">{parent}</span> : null}
-      </span>
-    );
-  });
+  const names = paths.map((path) => splitWorkspacePath(path).name);
+  return (
+    <span className="block truncate" title={paths.join("\n")}>
+      {names.join(" · ")}
+    </span>
+  );
 }

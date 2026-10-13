@@ -118,13 +118,9 @@ runScenario("workspace-picker", {
           "option title is not the workspace name",
           lines,
         );
-        const [, ...rootLines] = lines;
         check(
-          rootLines.length === folderNames.length &&
-            folderNames.every((name, index) =>
-              rootLines[index].startsWith(name),
-            ),
-          "option does not list every folder name-first",
+          lines.length === 2 && lines[1] === folderNames.join(" · "),
+          "option does not list every folder on one line",
           { lines, folderNames },
         );
         return { lines };
