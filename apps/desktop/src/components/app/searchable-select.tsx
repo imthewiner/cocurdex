@@ -234,14 +234,14 @@ export function AppSearchableSelect({
           showTrigger={false}
         />
         <ComboboxEmpty>{emptyText}</ComboboxEmpty>
-        <ComboboxList className="grid">
+        <ComboboxList className="grid grid-cols-1">
           {(entry: SelectItem | SelectGroup) => {
             if (entry && typeof entry === "object" && "items" in entry) {
               const group = entry as SelectGroup;
               return (
                 <ComboboxGroup
                   key={group.value || "default"}
-                  className="grid"
+                  className="grid grid-cols-1"
                   items={group.items}
                 >
                   {group.value ? (

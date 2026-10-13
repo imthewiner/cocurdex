@@ -8,17 +8,13 @@ const SAMPLE_MS = 400;
 
 const args = readScenarioArgs();
 
-async function workspaceTriggerCenter(session) {
+async function menuTriggerCenter(session) {
   return session.run(async () => {
-    const label = await window.__scenario.t("sessions:workspace.workspace");
-    const trigger = [
-      ...document.querySelectorAll('[data-slot="combobox-trigger"]'),
-    ].find(
-      (element) =>
-        element.getAttribute("aria-label") === label &&
-        element.closest('[data-slot="tooltip-trigger"]'),
-    );
-    if (!trigger) throw new Error(`No workspace trigger labelled ${label}`);
+    const label = await window.__scenario.t("sessions:sidebar.view.menu");
+    const trigger = window.__scenario.byLabel(label);
+    if (!trigger?.matches('[data-slot="tooltip-trigger"][aria-haspopup]')) {
+      throw new Error(`No tooltip trigger with a popup labelled ${label}`);
+    }
     const rect = trigger.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   });
@@ -81,24 +77,15 @@ async function pressEscape(session) {
 runScenario("tooltip-dismiss", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
-    const newSessionLabel = await session.run(() =>
-      window.__scenario.t("sessions:sidebar.newSession"),
+    const label = await session.run(() =>
+      window.__scenario.t("sessions:sidebar.view.menu"),
     );
     await session.waitUntil(
-      (label) => Boolean(window.__scenario.byLabel(label)),
-      newSessionLabel,
+      (text) => Boolean(window.__scenario.byLabel(text)),
+      label,
       UI_TIMEOUT_MS,
     );
-    await session.run((label) => {
-      window.__scenario.byLabel(label).click();
-      return true;
-    }, newSessionLabel);
-    await session.waitUntil(
-      () => Boolean(document.querySelector('[data-slot="combobox-trigger"]')),
-      null,
-      UI_TIMEOUT_MS,
-    );
-    return { point: await workspaceTriggerCenter(session) };
+    return { point: await menuTriggerCenter(session) };
   },
   steps: [
     [

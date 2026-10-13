@@ -14,8 +14,7 @@ import { Button } from "@/components/ui";
 import { cn } from "@/lib";
 import { workspaceIconFor } from "./workspace-icon";
 import { sortWorkspacesByLastOpenedAtDesc } from "./workspace-order";
-import { compactWorkspacePath } from "./workspace-path";
-import { WorkspaceRootsTooltip } from "./workspace-roots-preview";
+import { compactWorkspacePath, splitWorkspacePath } from "./workspace-path";
 
 const OPEN_FOLDER_VALUE = "__open_folder__";
 
@@ -77,9 +76,19 @@ export function WorkspacePicker({
     () => [
       ...recentWorkspaces.map((workspace) => {
         const missing = (workspace.missingRootPaths?.length ?? 0) > 0;
+        const multiRoot = workspace.rootPaths.length > 1;
         return {
           value: workspace.id,
-          label: compactWorkspacePath(primaryWorkspaceRootPath(workspace)),
+          label: multiRoot
+            ? workspace.name
+            : compactWorkspacePath(primaryWorkspaceRootPath(workspace)),
+          ...(multiRoot
+            ? {
+                description: (
+                  <WorkspaceOptionRoots paths={workspace.rootPaths} />
+                ),
+              }
+            : {}),
           keywords: `${workspace.name} ${workspace.rootPaths.join(" ")}`,
           group: "recents",
           groupLabel: t("workspace.recents"),
@@ -136,49 +145,59 @@ export function WorkspacePicker({
     : Folder;
 
   return (
-    <WorkspaceRootsTooltip side="bottom" workspace={activeWorkspace}>
-      <AppSearchableSelect
-        align={align}
-        appearance={appearance}
-        emptyText={t("workspace.empty")}
-        options={options}
-        searchPlaceholder={t("workspace.workspace")}
-        side={side}
-        trigger={trigger}
-        triggerAriaLabel={triggerAriaLabel ?? t("workspace.workspace")}
-        triggerClassName={triggerClass}
-        showChevron={showChevron}
-        triggerLabel={
-          triggerLabel ?? (
-            <span className="flex min-w-0 items-center gap-1.5">
-              <ActiveWorkspaceIcon className="size-3.5 shrink-0" />
-              <span className="truncate">
-                {workspaceName ?? t("workspace.enterWorkspace")}
-              </span>
+    <AppSearchableSelect
+      align={align}
+      appearance={appearance}
+      emptyText={t("workspace.empty")}
+      options={options}
+      searchPlaceholder={t("workspace.workspace")}
+      side={side}
+      trigger={trigger}
+      triggerAriaLabel={triggerAriaLabel ?? t("workspace.workspace")}
+      triggerClassName={triggerClass}
+      showChevron={showChevron}
+      triggerLabel={
+        triggerLabel ?? (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <ActiveWorkspaceIcon className="size-3.5 shrink-0" />
+            <span className="truncate">
+              {workspaceName ?? t("workspace.enterWorkspace")}
             </span>
-          )
+          </span>
+        )
+      }
+      value={activeWorkspaceId ?? ""}
+      onValueChange={(next) => {
+        if (next === OPEN_FOLDER_VALUE) {
+          onOpenWorkspace?.();
+          return;
         }
-        value={activeWorkspaceId ?? ""}
-        onValueChange={(next) => {
-          if (next === OPEN_FOLDER_VALUE) {
-            onOpenWorkspace?.();
-            return;
-          }
-          const selected = recentWorkspaces.find(
-            (workspace) => workspace.id === next,
-          );
-          if ((selected?.missingRootPaths?.length ?? 0) > 0) {
-            onRelocateWorkspace?.(next);
-            return;
-          }
-          onSelectWorkspace?.(next);
-        }}
-      />
-    </WorkspaceRootsTooltip>
+        const selected = recentWorkspaces.find(
+          (workspace) => workspace.id === next,
+        );
+        if ((selected?.missingRootPaths?.length ?? 0) > 0) {
+          onRelocateWorkspace?.(next);
+          return;
+        }
+        onSelectWorkspace?.(next);
+      }}
+    />
   );
 }
 
 function WorkspaceOptionIcon({ workspace }: { workspace: WorkspaceRecord }) {
   const Icon = workspaceIconFor(workspace);
   return <Icon className="size-3.5" />;
+}
+
+function WorkspaceOptionRoots({ paths }: { paths: string[] }) {
+  return paths.map((path) => {
+    const { name, parent } = splitWorkspacePath(path);
+    return (
+      <span className="block truncate" key={path} title={path}>
+        <span className="text-foreground">{name}</span>
+        {parent ? <span className="ms-1.5">{parent}</span> : null}
+      </span>
+    );
+  });
 }
