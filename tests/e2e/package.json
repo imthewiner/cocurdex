@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "fixture:db": "node --import tsx fixture-db/cli.ts"
   },
   "dependencies": {
     "@cocurdex/client-runtime": "workspace:*",
@@ -17,6 +18,7 @@
     "@modelcontextprotocol/sdk": "1.31.0",
     "@playwright/test": "^1.52.0",
     "@types/node": "^24.13.6",
+    "tsx": "^4.23.15",
     "vitest": "^4.1.11"
   }
 }

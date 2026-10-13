@@ -31,5 +31,5 @@
       "@cocurdex/product-skills": ["../../packages/product-skills/src/index.ts"]
     }
   },
-  "include": ["src", "electron", "vitest.config.ts"]
+  "include": ["src", "electron"]
 }

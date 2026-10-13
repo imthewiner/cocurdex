@@ -73,6 +73,7 @@ export function readScenarioArgs(extraOptions = {}) {
     options: {
       port: { type: "string" },
       keep: { type: "boolean", default: false },
+      "fixture-db": { type: "boolean", default: false },
       url: { type: "string", default: DEFAULT_URL },
       ...extraOptions,
     },

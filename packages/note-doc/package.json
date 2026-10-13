@@ -4,11 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./bytes": "./src/bytes.ts"
+    "./bytes": "./src/bytes.ts",
+    "./internal/*": "./src/*.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -25,7 +25,6 @@
     "yjs": "^13.6.33"
   },
   "devDependencies": {
-    "@types/node": "^24.13.6",
-    "vitest": "^4.1.11"
+    "@types/node": "^24.13.6"
   }
 }

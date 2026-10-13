@@ -5,15 +5,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./node": "./src/node.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./internal/*": "./src/*.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^24.13.6",
-    "vitest": "^4.1.11"
+    "@types/node": "^24.13.6"
   }
 }

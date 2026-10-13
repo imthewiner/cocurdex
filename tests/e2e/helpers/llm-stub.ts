@@ -12,8 +12,20 @@ export interface StubLlmRequest {
   body: Record<string, unknown>;
 }
 
+export interface StubToolCall {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface StubTurn {
+  text?: string[];
+  toolCalls?: StubToolCall[];
+  intervalMs?: number;
+}
+
 export type StubLlmPlan =
   | { kind: "stream"; chunks: string[]; intervalMs?: number }
+  | { kind: "script"; turns: StubTurn[] }
   | { kind: "hang" }
   | { kind: "fail"; status: number; message: string };
 
@@ -65,6 +77,7 @@ export async function startStubLlmServer(): Promise<StubLlmServer> {
   const requests: StubLlmRequest[] = [];
   const waiters: ((request: StubLlmRequest) => void)[] = [];
   let consumed = 0;
+  let toolCallCount = 0;
   const state: { plan: StubLlmPlan } = { plan: { kind: "hang" } };
 
   const server: Server = createServer((request, response) => {
@@ -97,21 +110,63 @@ export async function startStubLlmServer(): Promise<StubLlmServer> {
       return;
     }
 
+    const turn = nextTurn(plan);
+    if (!turn) {
+      response.writeHead(500, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({ error: { message: "Stub script exhausted" } }),
+      );
+      return;
+    }
+    await streamTurn(response, turn);
+  }
+
+  function nextTurn(plan: StubLlmPlan): StubTurn | undefined {
+    if (plan.kind === "stream") {
+      return { text: plan.chunks, intervalMs: plan.intervalMs };
+    }
+    if (plan.kind === "script") return plan.turns.shift();
+    return undefined;
+  }
+
+  async function streamTurn(response: ServerResponse, turn: StubTurn) {
     response.writeHead(200, {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
       connection: "keep-alive",
     });
     response.write(sseChunk({ role: "assistant", content: "" }, null));
-    for (const text of plan.chunks) {
+    for (const text of turn.text ?? []) {
       if (response.destroyed) return;
       response.write(sseChunk({ content: text }, null));
-      if (plan.intervalMs) {
-        await new Promise((resolve) => setTimeout(resolve, plan.intervalMs));
+      if (turn.intervalMs) {
+        await new Promise((resolve) => setTimeout(resolve, turn.intervalMs));
       }
     }
     if (response.destroyed) return;
-    response.write(sseChunk({}, "stop"));
+    const toolCalls = turn.toolCalls ?? [];
+    toolCalls.forEach((toolCall, index) => {
+      toolCallCount += 1;
+      response.write(
+        sseChunk(
+          {
+            tool_calls: [
+              {
+                index,
+                id: `call_e2e_${toolCallCount}`,
+                type: "function",
+                function: {
+                  name: toolCall.name,
+                  arguments: JSON.stringify(toolCall.arguments),
+                },
+              },
+            ],
+          },
+          null,
+        ),
+      );
+    });
+    response.write(sseChunk({}, toolCalls.length > 0 ? "tool_calls" : "stop"));
     response.write(sseUsage());
     response.end("data: [DONE]\n\n");
   }

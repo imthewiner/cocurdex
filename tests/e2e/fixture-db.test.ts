@@ -1,0 +1,157 @@
+import path from "node:path";
+import { requestDaemon } from "@cocurdex/daemon/client";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { type InstalledFixture, installFixtureDb } from "./fixture-db/install";
+import {
+  FIXTURE_ISSUES,
+  FIXTURE_NOTES,
+  FIXTURE_WORKSPACE_ID,
+} from "./fixture-db/recipe";
+import {
+  findSensitiveText,
+  scanForSensitiveData,
+} from "./fixture-db/sensitive-data";
+import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
+
+const tempDirs = createTempDirs();
+let fixture: InstalledFixture;
+let userDataPath: string;
+let daemon: DaemonProcess;
+
+beforeAll(async () => {
+  const root = await tempDirs.create("cfx-");
+  userDataPath = path.join(root, "u");
+  fixture = await installFixtureDb({
+    userDataPath,
+    workspaceParent: path.join(root, "w"),
+  });
+}, 120_000);
+
+afterAll(async () => {
+  await daemon?.stop();
+  await tempDirs.cleanup();
+});
+
+describe("sensitive data scanner", () => {
+  it("flags home paths, foreign emails, and credential shapes", () => {
+    const rules = findSensitiveText(
+      "sample",
+      [
+        "/Users/someone/project",
+        "C:\\Users\\someone\\project",
+        "dev@company.io",
+        "sk-abcdefghijklmnopqrstu",
+        "ghp_abcdefghijklmnopqrstuvwxyz",
+        "xoxb-1234567890-abc",
+        "AKIAABCDEFGHIJKLMNOP",
+        "-----BEGIN OPENSSH PRIVATE KEY-----",
+        "Authorization: Bearer abc.def.ghi.jkl",
+      ].join("\n"),
+    ).map((finding) => finding.rule);
+    expect(new Set(rules)).toEqual(
+      new Set([
+        "posix home path",
+        "windows home path",
+        "email",
+        "openai key",
+        "github token",
+        "slack token",
+        "aws access key",
+        "private key",
+        "bearer token",
+      ]),
+    );
+  });
+
+  it("allows reserved example domains and the stub credentials", () => {
+    expect(
+      findSensitiveText(
+        "sample",
+        "fixture@example.invalid Bearer e2e-key /fixture/w/acme-shop",
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("fixture database", () => {
+  it("contains no machine paths, identities, or credentials", async () => {
+    expect(await scanForSensitiveData(userDataPath)).toEqual([]);
+  });
+
+  it("opens in a fresh daemon with every seeded record", async () => {
+    daemon = await spawnDaemon({ userDataPath });
+    const [workspace] = (
+      await requestDaemon("workspace.list", daemon.options)
+    ).filter((candidate) => candidate.id === FIXTURE_WORKSPACE_ID);
+    const relinked = await requestDaemon(
+      "workspace.save",
+      { workspace: { ...workspace, rootPaths: [fixture.workspacePath] } },
+      daemon.options,
+    );
+    expect(relinked.missingRootPaths).toEqual([]);
+
+    const sessions = await requestDaemon("session.list", daemon.options);
+    const archived = await requestDaemon(
+      "session.listArchived",
+      daemon.options,
+    );
+    expect(
+      [...sessions, ...archived].map((session) => session.id).sort(),
+    ).toEqual([...fixture.sessionIds].sort());
+    expect(archived.map((session) => session.id)).toEqual([
+      "fixture-session-old-spike",
+    ]);
+    expect(
+      sessions.find((session) => session.id === "fixture-session-discounts")
+        ?.pinnedAt,
+    ).toBeTruthy();
+
+    const toolCalls = await requestDaemon(
+      "session.listToolCalls",
+      { sessionId: "fixture-session-discounts" },
+      daemon.options,
+    );
+    expect(toolCalls.map((call) => [call.title, call.status])).toEqual([
+      ["read", "completed"],
+      ["read", "completed"],
+      ["write", "completed"],
+      ["read", "completed"],
+    ]);
+    const failed = await requestDaemon(
+      "session.listToolCalls",
+      { sessionId: "fixture-session-checkout-bug" },
+      daemon.options,
+    );
+    expect(failed.map((call) => call.status)).toEqual(["failed"]);
+
+    const { messages } = await requestDaemon(
+      "session.listMessages",
+      { sessionId: "fixture-session-discounts" },
+      daemon.options,
+    );
+    expect(
+      messages.filter((message) => message.role === "user").map((m) => m.id),
+    ).toEqual(["fixture-message-discounts-1", "fixture-message-discounts-2"]);
+
+    const notes = await requestDaemon("note.list", daemon.options);
+    expect(notes.map((note) => note.title).sort()).toEqual(
+      FIXTURE_NOTES.map((note) => note.title).sort(),
+    );
+
+    const [view] = await requestDaemon("issue.listViews", daemon.options);
+    const board = await requestDaemon(
+      "issue.loadView",
+      { viewId: view?.id ?? "" },
+      daemon.options,
+    );
+    expect(board?.issues.map((issue) => issue.title).sort()).toEqual(
+      FIXTURE_ISSUES.map((issue) => issue.title).sort(),
+    );
+    expect(board?.labels.map((label) => label.name).sort()).toEqual([
+      "bug",
+      "checkout",
+      "feature",
+    ]);
+  });
+});
