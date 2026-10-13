@@ -31,6 +31,18 @@ async function workspaceTrigger(session) {
   });
 }
 
+async function clickAt(session, point) {
+  for (const type of ["mousePressed", "mouseReleased"]) {
+    await session.send("Input.dispatchMouseEvent", {
+      type,
+      button: "left",
+      clickCount: 1,
+      x: point.x,
+      y: point.y,
+    });
+  }
+}
+
 runScenario("workspace-picker", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session, fixtureDb }) => {
@@ -84,22 +96,10 @@ runScenario("workspace-picker", {
       },
     ],
     [
-      "the dropdown lists every folder of a multi-folder workspace",
+      "a multi-folder option stays one line and previews its folders on highlight",
       async ({ session, workspaceName, folderNames }) => {
         const trigger = await workspaceTrigger(session);
-        for (const type of ["mousePressed", "mouseReleased"]) {
-          await session.send("Input.dispatchMouseEvent", {
-            type,
-            button: "left",
-            clickCount: 1,
-            x: trigger.x,
-            y: trigger.y,
-          });
-        }
-        const findOptionText = (name) =>
-          [...document.querySelectorAll('[data-slot="combobox-item"]')]
-            .map((item) => item.innerText)
-            .find((text) => text.includes(name)) ?? null;
+        await clickAt(session, trigger);
         await session.waitUntil(
           (name) =>
             [...document.querySelectorAll('[data-slot="combobox-item"]')].some(
@@ -108,20 +108,88 @@ runScenario("workspace-picker", {
           workspaceName,
           UI_TIMEOUT_MS,
         );
-        const optionText = await session.run(findOptionText, workspaceName);
-        const lines = String(optionText)
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
+        const option = await session.run((name) => {
+          const items = [
+            ...document.querySelectorAll('[data-slot="combobox-item"]'),
+          ];
+          const item = items.find((element) =>
+            element.innerText.includes(name),
+          );
+          const other = items.find((element) => element !== item);
+          const center = (element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            };
+          };
+          return {
+            text: item.innerText.trim(),
+            point: center(item),
+            otherPoint: center(other),
+          };
+        }, workspaceName);
         check(
-          lines[0] === workspaceName,
-          "option title is not the workspace name",
-          lines,
+          option.text === workspaceName,
+          "multi-folder option is not a single line",
+          option.text,
         );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...option.point,
+        });
+        await session.waitUntil(
+          () =>
+            Boolean(document.querySelector('[data-slot="combobox-preview"]')),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const preview = await session.run(async () => {
+          const panel = document.querySelector(
+            '[data-slot="combobox-preview"]',
+          );
+          const popup = document.querySelector(
+            '[data-slot="combobox-content"]',
+          );
+          return {
+            lines: panel.innerText
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean),
+            primaryLabel: await window.__scenario.t(
+              "sessions:workspace.rootsPrimary",
+            ),
+            additionalLabel: await window.__scenario.t(
+              "sessions:workspace.rootsAdditional",
+            ),
+            beside:
+              panel.getBoundingClientRect().left >=
+              popup.getBoundingClientRect().right,
+          };
+        });
+        const [primaryName, ...additionalNames] = folderNames;
+        const { lines } = preview;
+        const primaryIndex = lines.indexOf(preview.primaryLabel);
+        const additionalIndex = lines.indexOf(preview.additionalLabel);
+        check(preview.beside, "preview is not beside the popup", preview);
         check(
-          lines.length === 2 && lines[1] === folderNames.join(" · "),
-          "option does not list every folder on one line",
+          primaryIndex >= 0 &&
+            lines[primaryIndex + 1]?.startsWith(primaryName) &&
+            additionalIndex > primaryIndex &&
+            additionalNames.every((name, index) =>
+              lines[additionalIndex + 1 + index]?.startsWith(name),
+            ),
+          "preview does not mark the primary folder and list the others",
           { lines, folderNames },
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...option.otherPoint,
+        });
+        await session.waitUntil(
+          () => !document.querySelector('[data-slot="combobox-preview"]'),
+          null,
+          UI_TIMEOUT_MS,
         );
         return { lines };
       },

@@ -4,7 +4,7 @@ import type {
   ReactElement,
   ReactNode,
 } from "react";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Combobox,
   ComboboxCollection,
@@ -34,6 +34,7 @@ export interface AppSearchableSelectOption {
   icon?: ReactNode;
   description?: ReactNode;
   trailing?: ReactNode;
+  preview?: ReactNode;
   disabled?: boolean;
   /** Optional style on the label span (e.g. font-family previews). */
   labelStyle?: CSSProperties;
@@ -73,6 +74,20 @@ export interface AppSearchableSelectProps {
 }
 
 type SelectItem = AppSearchableSelectOption;
+
+type HighlightedPreview = {
+  content: ReactNode;
+  top: number;
+};
+
+function highlightedItemTop(popup: HTMLElement | null): number | null {
+  const item = popup?.querySelector("[data-highlighted]");
+  const positioner = popup?.parentElement;
+  if (!item || !positioner) return null;
+  return (
+    item.getBoundingClientRect().top - positioner.getBoundingClientRect().top
+  );
+}
 
 type SelectGroup = {
   value: string;
@@ -178,6 +193,21 @@ export function AppSearchableSelect({
     });
   }, [options]);
 
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<HighlightedPreview | null>(null);
+
+  const showPreview = (item: SelectItem | undefined) => {
+    const content = item?.preview;
+    if (!content) {
+      setPreview(null);
+      return;
+    }
+    requestAnimationFrame(() => {
+      const top = highlightedItemTop(popupRef.current);
+      setPreview(top === null ? null : { content, top });
+    });
+  };
+
   const resolvedTriggerLabel =
     triggerLabel ?? selected?.label ?? searchPlaceholder ?? "";
 
@@ -191,6 +221,10 @@ export function AppSearchableSelect({
       onValueChange={(next) => {
         // null/undefined when cleared; map back to our string value API.
         onValueChange(next?.value ?? "");
+      }}
+      onItemHighlighted={showPreview}
+      onOpenChange={(open) => {
+        if (!open) setPreview(null);
       }}
     >
       <ComboboxTrigger
@@ -224,6 +258,18 @@ export function AppSearchableSelect({
         )}
       </ComboboxTrigger>
       <ComboboxContent
+        ref={popupRef}
+        aside={
+          preview ? (
+            <div
+              data-slot="combobox-preview"
+              className="pointer-events-none absolute start-full ms-1 w-72 rounded-card bg-popover px-3 py-2 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+              style={{ top: preview.top }}
+            >
+              {preview.content}
+            </div>
+          ) : null
+        }
         align={align}
         className={cn("rounded-control!", contentClassName)}
         side={side}

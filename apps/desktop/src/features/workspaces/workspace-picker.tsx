@@ -14,7 +14,8 @@ import { Button } from "@/components/ui";
 import { cn } from "@/lib";
 import { workspaceIconFor } from "./workspace-icon";
 import { sortWorkspacesByLastOpenedAtDesc } from "./workspace-order";
-import { compactWorkspacePath, splitWorkspacePath } from "./workspace-path";
+import { compactWorkspacePath } from "./workspace-path";
+import { WorkspaceRootsPreview } from "./workspace-roots-preview";
 
 const OPEN_FOLDER_VALUE = "__open_folder__";
 
@@ -83,11 +84,7 @@ export function WorkspacePicker({
             ? workspace.name
             : compactWorkspacePath(primaryWorkspaceRootPath(workspace)),
           ...(multiRoot
-            ? {
-                description: (
-                  <WorkspaceOptionRoots paths={workspace.rootPaths} />
-                ),
-              }
+            ? { preview: <WorkspaceRootsPreview workspace={workspace} /> }
             : {}),
           keywords: `${workspace.name} ${workspace.rootPaths.join(" ")}`,
           group: "recents",
@@ -188,13 +185,4 @@ export function WorkspacePicker({
 function WorkspaceOptionIcon({ workspace }: { workspace: WorkspaceRecord }) {
   const Icon = workspaceIconFor(workspace);
   return <Icon className="size-3.5" />;
-}
-
-function WorkspaceOptionRoots({ paths }: { paths: string[] }) {
-  const names = paths.map((path) => splitWorkspacePath(path).name);
-  return (
-    <span className="block truncate" title={paths.join("\n")}>
-      {names.join(" · ")}
-    </span>
-  );
 }
