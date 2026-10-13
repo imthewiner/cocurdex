@@ -220,7 +220,7 @@ export function AppSearchableSelect({
   ) => {
     cancelPendingPreview();
     const content = item?.preview;
-    if (!content) {
+    if (!content || details.reason === "none") {
       setPreviewOpen(false);
       return;
     }
