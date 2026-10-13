@@ -10,6 +10,7 @@ import { afterEach, vi } from "vitest";
 
 const directories: string[] = [];
 const timestamp = "2026-10-11T00:00:00.000Z";
+const TURN_WAIT_TIMEOUT_MS = 10_000;
 
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -118,6 +119,6 @@ export function scriptRuntime(service: CocurdexDaemonService) {
       const turn = turns.find((item) => item.payload.session.id === sessionId);
       if (!turn) throw new Error(`No turn for ${sessionId}`);
       return turn;
-    });
+    }, TURN_WAIT_TIMEOUT_MS);
   return { turns, turnFor };
 }

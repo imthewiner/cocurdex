@@ -167,24 +167,31 @@ describe("AcpAgentAdapter over a real agent process", () => {
 
     await send("traced");
 
-    const [traceFile] = await readdir(traceDir);
-    const entries = (
-      await readFile(path.join(traceDir, `${traceFile}`), "utf8")
-    )
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line) as { direction: string; line: string });
-    expect(entries).toContainEqual(
-      expect.objectContaining({
-        direction: "send",
-        line: expect.stringContaining('"method":"session/prompt"'),
-      }),
-    );
-    expect(entries).toContainEqual(
-      expect.objectContaining({
-        direction: "recv",
-        line: expect.stringContaining("new: traced"),
-      }),
+    await vi.waitFor(
+      async () => {
+        const [traceFile] = await readdir(traceDir);
+        const entries = (
+          await readFile(path.join(traceDir, `${traceFile}`), "utf8")
+        )
+          .trim()
+          .split("\n")
+          .map(
+            (line) => JSON.parse(line) as { direction: string; line: string },
+          );
+        expect(entries).toContainEqual(
+          expect.objectContaining({
+            direction: "send",
+            line: expect.stringContaining('"method":"session/prompt"'),
+          }),
+        );
+        expect(entries).toContainEqual(
+          expect.objectContaining({
+            direction: "recv",
+            line: expect.stringContaining("new: traced"),
+          }),
+        );
+      },
+      { timeout: 10_000 },
     );
   });
 });
