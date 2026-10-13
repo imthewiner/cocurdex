@@ -1,5 +1,6 @@
 import {
   type AppUpdateState,
+  appUpdateEventForError,
   createInitialAppUpdateState,
   githubReleaseNotesUrl,
   isUpdateReadyPromptVisible,
@@ -222,5 +223,45 @@ describe("reduceAppUpdateState", () => {
     expect(
       reduceAppUpdateState(state, { type: "set-channel", channel: "stable" }),
     ).toBe(state);
+  });
+});
+
+function updaterError(message: string, code?: string): Error {
+  return Object.assign(new Error(message), code ? { code } : {});
+}
+
+describe("appUpdateEventForError", () => {
+  it("treats a release whose update metadata is not uploaded yet as no update", () => {
+    const error = updaterError(
+      "Cannot find latest-mac.yml in the latest release artifacts",
+      "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",
+    );
+    expect(appUpdateEventForError(error)).toEqual({ type: "not-available" });
+  });
+
+  it("reports other updater failures as errors", () => {
+    const error = updaterError("net::ERR_INTERNET_DISCONNECTED");
+    expect(appUpdateEventForError(error)).toEqual({
+      type: "error",
+      message: "net::ERR_INTERNET_DISCONNECTED",
+    });
+  });
+
+  it("reports non-Error values as errors", () => {
+    expect(appUpdateEventForError("boom")).toEqual({
+      type: "error",
+      message: "boom",
+    });
+  });
+
+  it("leaves a checking state idle while a release is still publishing", () => {
+    const checking = packagedState({ channel: "test", status: "checking" });
+    const error = updaterError(
+      "Cannot find beta-mac.yml",
+      "ERR_UPDATER_CHANNEL_FILE_NOT_FOUND",
+    );
+    expect(
+      reduceAppUpdateState(checking, appUpdateEventForError(error)),
+    ).toMatchObject({ errorMessage: null, status: "idle" });
   });
 });

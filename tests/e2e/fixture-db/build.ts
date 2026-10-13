@@ -25,7 +25,9 @@ import {
   FIXTURE_SESSIONS,
   FIXTURE_WORKSPACE_ID,
   FIXTURE_WORKSPACE_NAME,
+  FIXTURE_WORKSPACES,
   type FixtureSession,
+  type FixtureWorkspace,
 } from "./recipe";
 import { materializeFixtureWorkspace } from "./workspace";
 
@@ -37,20 +39,25 @@ export const FIXTURE_MANIFEST_FILENAME = "fixture.json";
 export interface FixtureManifest {
   workspaceId: string;
   workspaceName: string;
+  workspaces: FixtureWorkspace[];
   sessionIds: string[];
   noteCount: number;
   issueCount: number;
 }
 
-function workspaceRecord(rootPath: string): WorkspaceRecord {
+function workspaceRecord(
+  workspace: FixtureWorkspace,
+  rootPaths: string[],
+  sortOrder: number,
+): WorkspaceRecord {
   return {
-    id: FIXTURE_WORKSPACE_ID,
-    name: FIXTURE_WORKSPACE_NAME,
-    rootPaths: [rootPath],
+    id: workspace.id,
+    name: workspace.name,
+    rootPaths,
     createdAt: FIXTURE_CREATED_AT,
     updatedAt: FIXTURE_CREATED_AT,
     lastOpenedAt: FIXTURE_CREATED_AT,
-    sortOrder: 0,
+    sortOrder,
   };
 }
 
@@ -268,9 +275,7 @@ async function removeMachineAgents(daemon: DaemonProcess) {
 export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
   const scratch = mkdtempSync(path.join(tmpdir(), "cfx-"));
   const userDataPath = path.join(scratch, "u");
-  const workspacePath = await materializeFixtureWorkspace(
-    path.join(scratch, "w", FIXTURE_WORKSPACE_NAME),
-  );
+  const workspaceParent = path.join(scratch, "w");
   const stub = await startStubLlmServer();
   const daemon = await spawnDaemon({ userDataPath });
   const events: CocurdexDaemonEvent[] = [];
@@ -279,11 +284,17 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
     daemon.options,
   );
   try {
-    await requestDaemon(
-      "workspace.save",
-      { workspace: workspaceRecord(workspacePath) },
-      daemon.options,
-    );
+    for (const [index, workspace] of FIXTURE_WORKSPACES.entries()) {
+      const rootPaths = await materializeFixtureWorkspace(
+        workspace,
+        workspaceParent,
+      );
+      await requestDaemon(
+        "workspace.save",
+        { workspace: workspaceRecord(workspace, rootPaths, index * 1000) },
+        daemon.options,
+      );
+    }
     for (const session of FIXTURE_SESSIONS) {
       await seedSession(daemon, stub, events, session);
     }
@@ -303,6 +314,7 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
     const manifest: FixtureManifest = {
       workspaceId: FIXTURE_WORKSPACE_ID,
       workspaceName: FIXTURE_WORKSPACE_NAME,
+      workspaces: FIXTURE_WORKSPACES,
       sessionIds: FIXTURE_SESSIONS.map((session) => session.id),
       noteCount: FIXTURE_NOTES.length,
       issueCount: FIXTURE_ISSUES.length,

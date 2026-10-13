@@ -2,6 +2,26 @@ import type { StubTurn } from "../helpers/llm-stub";
 
 export const FIXTURE_WORKSPACE_ID = "fixture-acme-shop";
 export const FIXTURE_WORKSPACE_NAME = "acme-shop";
+export const FIXTURE_MULTI_FOLDER_WORKSPACE_ID = "fixture-acme-suite";
+
+export interface FixtureWorkspace {
+  id: string;
+  name: string;
+  folders: string[];
+}
+
+export const FIXTURE_WORKSPACES: FixtureWorkspace[] = [
+  {
+    id: FIXTURE_WORKSPACE_ID,
+    name: FIXTURE_WORKSPACE_NAME,
+    folders: ["acme-shop"],
+  },
+  {
+    id: FIXTURE_MULTI_FOLDER_WORKSPACE_ID,
+    name: "acme-suite",
+    folders: ["acme-web", "acme-docs"],
+  },
+];
 
 export interface FixtureTurn {
   messageId: string;

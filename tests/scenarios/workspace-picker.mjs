@@ -1,0 +1,366 @@
+import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+import { openScenarioApp } from "./lib/app.mjs";
+import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+
+const UI_TIMEOUT_MS = 30_000;
+const TOOLTIP_DELAY_MS = 900;
+const MULTI_FOLDER_WORKSPACE_ID = "fixture-acme-suite";
+const PREVIEW_EARLY_MS = 150;
+const UNPROMPTED_PREVIEW_WAIT_MS = 800;
+const MAX_ARROW_PRESSES = 6;
+
+const args = readScenarioArgs();
+if (args.port) {
+  console.error(
+    "workspace-picker runs only on an isolated instance; omit --port",
+  );
+  process.exit(2);
+}
+
+async function workspaceTrigger(session) {
+  return session.run(async () => {
+    const label = await window.__scenario.t("sessions:workspace.workspace");
+    const trigger = [
+      ...document.querySelectorAll('[data-slot="combobox-trigger"]'),
+    ].find((element) => element.getAttribute("aria-label") === label);
+    if (!trigger) throw new Error(`No workspace trigger labelled ${label}`);
+    const rect = trigger.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+      insideTooltip: Boolean(trigger.closest('[data-slot="tooltip-trigger"]')),
+    };
+  });
+}
+
+function previewOpen(session) {
+  return session.run(() =>
+    Boolean(document.querySelector('[data-slot="tooltip-content"][data-open]')),
+  );
+}
+
+async function pressKey(session, key, keyCode) {
+  for (const type of ["keyDown", "keyUp"]) {
+    await session.send("Input.dispatchKeyEvent", {
+      type,
+      key,
+      code: key,
+      windowsVirtualKeyCode: keyCode,
+    });
+  }
+}
+
+async function clickAt(session, point) {
+  await session.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x: point.x,
+    y: point.y,
+  });
+  for (const [type, buttons] of [
+    ["mousePressed", 1],
+    ["mouseReleased", 0],
+  ]) {
+    await session.send("Input.dispatchMouseEvent", {
+      type,
+      button: "left",
+      buttons,
+      clickCount: 1,
+      x: point.x,
+      y: point.y,
+    });
+  }
+}
+
+runScenario("workspace-picker", {
+  open: () => openScenarioApp(args, { fixtureDb: true }),
+  setup: async ({ session, fixtureDb }) => {
+    check(fixtureDb, "fixture database was not installed");
+    const suite = fixtureDb.installedWorkspaces.find(
+      (workspace) => workspace.id === MULTI_FOLDER_WORKSPACE_ID,
+    );
+    check(suite, "fixture database lacks the multi-folder workspace");
+    const newSessionLabel = await session.run(() =>
+      window.__scenario.t("sessions:sidebar.newSession"),
+    );
+    await session.waitUntil(
+      (label) => Boolean(window.__scenario.byLabel(label)),
+      newSessionLabel,
+      UI_TIMEOUT_MS,
+    );
+    await session.run((label) => {
+      window.__scenario.byLabel(label).click();
+      return true;
+    }, newSessionLabel);
+    await session.waitUntil(
+      () => Boolean(document.querySelector('[data-slot="combobox-trigger"]')),
+      null,
+      UI_TIMEOUT_MS,
+    );
+    return {
+      workspaceName: suite.name,
+      folderNames: suite.rootPaths.map((rootPath) => path.basename(rootPath)),
+    };
+  },
+  steps: [
+    [
+      "hovering the picker shows no tooltip",
+      async ({ session }) => {
+        const trigger = await workspaceTrigger(session);
+        check(
+          !trigger.insideTooltip,
+          "workspace picker is wrapped in a tooltip",
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: trigger.x,
+          y: trigger.y,
+        });
+        await delay(TOOLTIP_DELAY_MS);
+        const tooltipOpen = await session.run(() =>
+          Boolean(document.querySelector('[data-slot="tooltip-content"]')),
+        );
+        check(!tooltipOpen, "tooltip opened on the workspace picker");
+        return {};
+      },
+    ],
+    [
+      "a multi-folder option stays one line and previews its folders on highlight",
+      async ({ session, workspaceName, folderNames }) => {
+        const trigger = await workspaceTrigger(session);
+        await clickAt(session, trigger);
+        await session.waitUntil(
+          (name) =>
+            [...document.querySelectorAll('[data-slot="combobox-item"]')].some(
+              (item) => item.innerText.includes(name),
+            ),
+          workspaceName,
+          UI_TIMEOUT_MS,
+        );
+        const option = await session.run((name) => {
+          const items = [
+            ...document.querySelectorAll('[data-slot="combobox-item"]'),
+          ];
+          const item = items.find((element) =>
+            element.innerText.includes(name),
+          );
+          const other = items.find((element) => element !== item);
+          const center = (element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            };
+          };
+          return {
+            text: item.innerText.trim(),
+            point: center(item),
+            otherPoint: center(other),
+          };
+        }, workspaceName);
+        check(
+          option.text === workspaceName,
+          "multi-folder option is not a single line",
+          option.text,
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...option.point,
+        });
+        await delay(PREVIEW_EARLY_MS);
+        check(
+          !(await previewOpen(session)),
+          "preview opened before the hover delay",
+        );
+        await session.waitUntil(
+          () => {
+            const panel = document.querySelector(
+              '[data-slot="tooltip-content"][data-open]',
+            );
+            return Boolean(panel) && panel.getAnimations().length === 0;
+          },
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const preview = await session.run(async () => {
+          const panel = document.querySelector(
+            '[data-slot="tooltip-content"][data-open]',
+          );
+          const popup = document.querySelector(
+            '[data-slot="combobox-content"]',
+          );
+          return {
+            lines: panel.innerText
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean),
+            primaryLabel: await window.__scenario.t(
+              "sessions:workspace.rootsPrimary",
+            ),
+            additionalLabel: await window.__scenario.t(
+              "sessions:workspace.rootsAdditional",
+            ),
+            beside:
+              panel.getBoundingClientRect().left >=
+              popup.getBoundingClientRect().right,
+          };
+        });
+        const [primaryName, ...additionalNames] = folderNames;
+        const { lines } = preview;
+        const primaryIndex = lines.indexOf(preview.primaryLabel);
+        const additionalIndex = lines.indexOf(preview.additionalLabel);
+        check(preview.beside, "preview is not beside the popup", preview);
+        check(
+          primaryIndex >= 0 &&
+            lines[primaryIndex + 1]?.startsWith(primaryName) &&
+            additionalIndex > primaryIndex &&
+            additionalNames.every((name, index) =>
+              lines[additionalIndex + 1 + index]?.startsWith(name),
+            ),
+          "preview does not mark the primary folder and list the others",
+          { lines, folderNames },
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...option.otherPoint,
+        });
+        await session.waitUntil(
+          () =>
+            !document.querySelector('[data-slot="tooltip-content"][data-open]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        return { lines };
+      },
+    ],
+    [
+      "keyboard highlight previews a multi-folder option at once",
+      async ({ session, workspaceName }) => {
+        await pressKey(session, "Escape", 27);
+        await session.waitUntil(
+          () => !document.querySelector('[data-slot="combobox-item"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const trigger = await workspaceTrigger(session);
+        await clickAt(session, trigger);
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: trigger.x,
+          y: trigger.y + 200,
+        });
+        await session.waitUntil(
+          () => Boolean(document.querySelector('[data-slot="combobox-item"]')),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        let highlighted = null;
+        for (let press = 0; press < MAX_ARROW_PRESSES; press += 1) {
+          await pressKey(session, "ArrowDown", 40);
+          highlighted = await session.run(
+            () =>
+              document
+                .querySelector('[data-slot="combobox-item"][data-highlighted]')
+                ?.innerText.trim() ?? null,
+          );
+          if (highlighted === workspaceName) break;
+        }
+        check(
+          highlighted === workspaceName,
+          "arrow keys did not reach the multi-folder option",
+          highlighted,
+        );
+        await delay(PREVIEW_EARLY_MS);
+        check(
+          await previewOpen(session),
+          "keyboard highlight did not open the preview at once",
+        );
+        await pressKey(session, "Escape", 27);
+        return {};
+      },
+    ],
+    [
+      "reopening with the multi-folder workspace selected shows no preview",
+      async ({ session, workspaceName }) => {
+        const trigger = await workspaceTrigger(session);
+        await clickAt(session, trigger);
+        await session.waitUntil(
+          (name) =>
+            [...document.querySelectorAll('[data-slot="combobox-item"]')].some(
+              (item) => item.innerText.trim() === name,
+            ),
+          workspaceName,
+          UI_TIMEOUT_MS,
+        );
+        await session.waitUntil(
+          () =>
+            document
+              .querySelector('[data-slot="combobox-content"]')
+              ?.getAnimations().length === 0,
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const option = await session.run((name) => {
+          const item = [
+            ...document.querySelectorAll('[data-slot="combobox-item"]'),
+          ].find((element) => element.innerText.trim() === name);
+          const rect = item.getBoundingClientRect();
+          return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          };
+        }, workspaceName);
+        await clickAt(session, option);
+        await session.waitUntil(
+          () => !document.querySelector('[data-slot="combobox-item"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const reopened = await workspaceTrigger(session);
+        await clickAt(session, reopened);
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: reopened.x,
+          y: reopened.y + 200,
+        });
+        await session.waitUntil(
+          () =>
+            Boolean(
+              document.querySelector(
+                '[data-slot="combobox-item"][data-selected]',
+              ),
+            ),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const selected = await session.run(
+          () =>
+            document
+              .querySelector('[data-slot="combobox-item"][data-selected]')
+              ?.innerText.trim() ?? null,
+        );
+        check(
+          selected === workspaceName,
+          "multi-folder workspace is not selected",
+          selected,
+        );
+        await delay(UNPROMPTED_PREVIEW_WAIT_MS);
+        check(
+          !(await previewOpen(session)),
+          "preview opened without hover or arrow keys",
+        );
+        await pressKey(session, "Escape", 27);
+        return {};
+      },
+    ],
+    [
+      "renderer has no errors",
+      async ({ session }) => {
+        const errors = await session.run(() => window.__scenario.errors);
+        check(errors.length === 0, "renderer errors", errors);
+        return {};
+      },
+    ],
+  ],
+  teardown: async () => ({}),
+});

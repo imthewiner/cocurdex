@@ -10,8 +10,15 @@ import {
 } from "./build";
 import { materializeFixtureWorkspace } from "./workspace";
 
+export interface InstalledFixtureWorkspace {
+  id: string;
+  name: string;
+  rootPaths: string[];
+}
+
 export interface InstalledFixture extends FixtureManifest {
   workspacePath: string;
+  installedWorkspaces: InstalledFixtureWorkspace[];
 }
 
 export async function installFixtureDb(input: {
@@ -29,10 +36,27 @@ export async function installFixtureDb(input: {
       path.join(built, DATABASE_FILENAME),
       path.join(input.userDataPath, DATABASE_FILENAME),
     );
-    const workspacePath = await materializeFixtureWorkspace(
-      path.join(input.workspaceParent, manifest.workspaceName),
+    const installedWorkspaces: InstalledFixtureWorkspace[] = [];
+    for (const workspace of manifest.workspaces) {
+      installedWorkspaces.push({
+        id: workspace.id,
+        name: workspace.name,
+        rootPaths: await materializeFixtureWorkspace(
+          workspace,
+          input.workspaceParent,
+        ),
+      });
+    }
+    const primary = installedWorkspaces.find(
+      (workspace) => workspace.id === manifest.workspaceId,
     );
-    return { ...manifest, workspacePath };
+    if (!primary)
+      throw new Error("Fixture manifest lacks its primary workspace");
+    return {
+      ...manifest,
+      workspacePath: primary.rootPaths[0],
+      installedWorkspaces,
+    };
   } finally {
     await rm(built, { recursive: true, force: true });
   }

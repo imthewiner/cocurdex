@@ -94,6 +94,7 @@ export async function openAppSession({ port, url }) {
     run: (fn, arg) => evaluate(client, invocation(fn, arg), EVAL_TIMEOUT_MS),
     waitUntil: (fn, arg, timeout = 15_000) =>
       waitFor(client, invocation(fn, arg), timeout, WAIT_INTERVAL_MS),
+    send: (method, params) => client.send(method, params, EVAL_TIMEOUT_MS),
     async reload() {
       const previousOrigin = await evaluate(
         client,

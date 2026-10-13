@@ -84,7 +84,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
       - name: Test
-        run: pnpm test
+        run: pnpm -r --no-bail --if-present --filter "!@cocurdex/e2e" test
+      - name: Test e2e
+        if: ${{ !cancelled() }}
+        run: pnpm --filter @cocurdex/e2e test
       - name: Check design tokens
         run: pnpm lint:design-tokens
       - name: Check theme parity

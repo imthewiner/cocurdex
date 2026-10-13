@@ -8,6 +8,7 @@ export {
   AppDropdownTriggerButton,
   AppDropdownTriggerLabel,
   AppGitBranchLabel,
+  AppPreviewCardTooltipContent,
   AppSearchableSelect,
   type AppSearchableSelectOption,
   AppSelect,
