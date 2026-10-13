@@ -1,13 +1,17 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createUnifiedDiff, type TurnChangeSet } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import type { HostCheckpoint, HostCheckpointAdapter } from "./checkpoint";
 import {
   readTurnChangeDiff,
   readTurnChangeFileContent,
 } from "./coordinator-file-content";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function changeSet(overrides: Partial<TurnChangeSet> = {}): TurnChangeSet {
   return {
@@ -52,7 +56,7 @@ function unusedAdapter(): HostCheckpointAdapter {
 }
 
 async function createWorkspaceFile(content: string) {
-  const root = await mkdtemp(path.join(tmpdir(), "cocurdex-turn-content-"));
+  const root = await tempDirs.create("cocurdex-turn-content-");
   await writeFile(path.join(root, "notes.md"), content, "utf8");
   return root;
 }

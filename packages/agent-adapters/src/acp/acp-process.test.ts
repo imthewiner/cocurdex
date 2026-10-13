@@ -1,13 +1,17 @@
-import { mkdtemp, readdir, readFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AgentSession } from "@cocurdex/agent-core";
 import type { AgentDescriptor, AgentEvent } from "@cocurdex/shared";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { grokBuildPlanApprovalRequest } from "../grok-build/grok-build-plan-approval";
 import { AcpAgentAdapter } from "./acp-agent-adapter";
 import { ACP_TRACE_DIR_ENV } from "./acp-trace";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 const FAKE_AGENT_PATH = fileURLToPath(
   new URL("../../test-fixtures/fake-acp-agent.mjs", import.meta.url),
@@ -157,7 +161,7 @@ describe("AcpAgentAdapter over a real agent process", () => {
   });
 
   it("records both directions of the wire when tracing is enabled", async () => {
-    const traceDir = await mkdtemp(path.join(tmpdir(), "cocurdex-acp-trace-"));
+    const traceDir = await tempDirs.create("cocurdex-acp-trace-");
     vi.stubEnv(ACP_TRACE_DIR_ENV, traceDir);
     const { send } = startSession();
 

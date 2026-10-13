@@ -1,8 +1,12 @@
-import { mkdtemp, readFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { DaemonAttachmentStore } from "./attachment-store";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 const PNG_BYTES = Buffer.from("png-bytes");
 
@@ -22,7 +26,7 @@ describe("DaemonAttachmentStore", () => {
   let userDataPath: string;
 
   beforeEach(async () => {
-    userDataPath = await mkdtemp(path.join(tmpdir(), "cocurdex-attachments-"));
+    userDataPath = await tempDirs.create("cocurdex-attachments-");
     store = new DaemonAttachmentStore(userDataPath);
   });
 

@@ -1,0 +1,185 @@
+import { parseArgs } from "node:util";
+import {
+  connect,
+  evaluate,
+  readEndpoint,
+  selectTarget,
+  waitFor,
+} from "../../../.agents/skills/debug-desktop/scripts/cdp-client.mjs";
+
+export const DEFAULT_URL = "http://localhost:5173/";
+const EVAL_TIMEOUT_MS = 30_000;
+const RELOAD_TIMEOUT_MS = 60_000;
+const RELOAD_POLL_TIMEOUT_MS = 2_000;
+const WAIT_INTERVAL_MS = 100;
+
+const PAGE_HELPERS = `(() => {
+  if (window.__scenario) return true;
+  const errors = [];
+  window.addEventListener("error", (event) => errors.push(String(event.message)));
+  window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
+  const depCache = new Map();
+  const dep = async (modulePath, name) => {
+    const key = modulePath + "|" + name;
+    if (!depCache.has(key)) {
+      const source = await (await fetch(modulePath)).text();
+      const pattern = new RegExp('from "(/node_modules/\\\\.vite/deps/' + name + '\\\\.js[^"]*)"');
+      const match = pattern.exec(source);
+      if (!match) throw new Error("Cannot find dependency " + name + " in " + modulePath);
+      depCache.set(key, await import(match[1]));
+    }
+    return depCache.get(key);
+  };
+  window.__scenario = {
+    errors,
+    dep,
+    async t(key, options) {
+      const i18next = await dep("/src/i18n/index.ts", "i18next");
+      return i18next.default.t(key, options);
+    },
+    async store(modulePath) {
+      const jotai = await dep(modulePath, "jotai");
+      return jotai.getDefaultStore();
+    },
+    resetRequests() {
+      performance.setResourceTimingBufferSize(20000);
+      performance.clearResourceTimings();
+    },
+    requests(fragment) {
+      return performance.getEntriesByType("resource").filter((entry) => entry.name.includes(fragment));
+    },
+    setInput(element, value) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+      setter.call(element, value);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    pressEnter(element) {
+      for (const type of ["keydown", "keyup"]) {
+        element.dispatchEvent(new KeyboardEvent(type, { key: "Enter", code: "Enter", bubbles: true }));
+      }
+    },
+    byLabel(label) {
+      return document.querySelector('[aria-label="' + CSS.escape(label) + '"]');
+    },
+    sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    },
+  };
+  return true;
+})()`;
+
+export function readScenarioArgs(extraOptions = {}) {
+  const { values } = parseArgs({
+    options: {
+      port: { type: "string" },
+      keep: { type: "boolean", default: false },
+      url: { type: "string", default: DEFAULT_URL },
+      ...extraOptions,
+    },
+  });
+  return values;
+}
+
+function invocation(fn, arg) {
+  return `(${fn.toString()})(${JSON.stringify(arg ?? null)})`;
+}
+
+export async function openAppSession({ port, url }) {
+  const base = `http://127.0.0.1:${port}`;
+  const targets = await readEndpoint(base, "/json/list", 5_000);
+  const client = await connect(selectTarget(targets, { url }), 10_000);
+  await evaluate(client, PAGE_HELPERS, EVAL_TIMEOUT_MS);
+  return {
+    run: (fn, arg) => evaluate(client, invocation(fn, arg), EVAL_TIMEOUT_MS),
+    waitUntil: (fn, arg, timeout = 15_000) =>
+      waitFor(client, invocation(fn, arg), timeout, WAIT_INTERVAL_MS),
+    async reload() {
+      const previousOrigin = await evaluate(
+        client,
+        "performance.timeOrigin",
+        EVAL_TIMEOUT_MS,
+      );
+      await client.send("Page.reload", {}, EVAL_TIMEOUT_MS);
+      const deadline = Date.now() + RELOAD_TIMEOUT_MS;
+      const loaded = `performance.timeOrigin !== ${previousOrigin} && document.readyState === "complete" && Boolean(window.desktopApi)`;
+      while (Date.now() < deadline) {
+        try {
+          if (await evaluate(client, loaded, RELOAD_POLL_TIMEOUT_MS)) {
+            await evaluate(client, PAGE_HELPERS, EVAL_TIMEOUT_MS);
+            return;
+          }
+        } catch {}
+        await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL_MS));
+      }
+      throw new Error(`Page did not reload within ${RELOAD_TIMEOUT_MS}ms`);
+    },
+    close: () => client.close(),
+  };
+}
+
+export class ScenarioFailure extends Error {}
+
+export function check(condition, message, details) {
+  if (!condition) {
+    throw new ScenarioFailure(
+      details ? `${message}: ${JSON.stringify(details)}` : message,
+    );
+  }
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function runScenario(name, { open, setup, steps, teardown }) {
+  const report = { scenario: name, passed: true, steps: [] };
+  let opened;
+  let context;
+  try {
+    opened = await open();
+    context = { ...opened, ...(await setup(opened)) };
+    for (const [stepName, step] of steps) {
+      const startedAt = Date.now();
+      try {
+        const details = await step(context);
+        report.steps.push({
+          step: stepName,
+          ok: true,
+          ms: Date.now() - startedAt,
+          ...details,
+        });
+      } catch (error) {
+        report.passed = false;
+        report.steps.push({
+          step: stepName,
+          ok: false,
+          ms: Date.now() - startedAt,
+          error: errorMessage(error),
+        });
+        break;
+      }
+    }
+  } catch (error) {
+    report.passed = false;
+    report.setupError = errorMessage(error);
+  } finally {
+    if (context) {
+      try {
+        report.teardown = await teardown(context);
+      } catch (error) {
+        report.passed = false;
+        report.teardownError = errorMessage(error);
+      }
+    }
+    if (opened) {
+      try {
+        await opened.close({ passed: report.passed });
+      } catch (error) {
+        report.passed = false;
+        report.closeError = errorMessage(error);
+      }
+    }
+  }
+  console.log(JSON.stringify(report, null, 2));
+  process.exit(report.passed ? 0 : 1);
+}

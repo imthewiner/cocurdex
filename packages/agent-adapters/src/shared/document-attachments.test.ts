@@ -1,16 +1,19 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import path from "node:path";
 import type { DocumentAttachment } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { buildAcpPrompt } from "../acp/acp-mappers";
 import { buildClaudeUserContent } from "../claude-shared/claude-user-content";
 import { buildInput } from "../codex/codex-app-server-events";
 import { buildPromptInput } from "../opencode/opencode-events";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 function createDocumentAttachment(): DocumentAttachment {
-  const directory = path.join(tmpdir(), "cocurdex-test-documents");
-  mkdirSync(directory, { recursive: true });
+  const directory = tempDirs.createSync("cocurdex-test-documents-");
   const filePath = path.join(directory, "sample.pdf");
   writeFileSync(filePath, Buffer.from("%PDF-1.7\ntest-document"));
 

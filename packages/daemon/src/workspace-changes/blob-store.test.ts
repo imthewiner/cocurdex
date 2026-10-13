@@ -1,16 +1,20 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   createCheckpointBlobStore,
   getTurnWorkspaceChangesRoot,
 } from "./blob-store";
 import { hashBuffer } from "./hash";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 describe("checkpoint blob store", () => {
   it("counts identical content only once", async () => {
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-blobs-"));
+    const userData = await tempDirs.create("cocurdex-blobs-");
     const store = createCheckpointBlobStore(userData);
     const bytes = Buffer.from("shared-bytes");
     const first = await store.put(bytes);
@@ -23,7 +27,7 @@ describe("checkpoint blob store", () => {
   });
 
   it("allocates concurrent duplicate writes only once", async () => {
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-blobs-"));
+    const userData = await tempDirs.create("cocurdex-blobs-");
     const store = createCheckpointBlobStore(userData);
     const bytes = Buffer.from("race-bytes");
     const results = await Promise.all([store.put(bytes), store.put(bytes)]);
@@ -39,7 +43,7 @@ describe("checkpoint blob store", () => {
   });
 
   it("rejects and repairs a truncated blob at a content-addressed path", async () => {
-    const userData = await mkdtemp(path.join(tmpdir(), "cocurdex-blobs-"));
+    const userData = await tempDirs.create("cocurdex-blobs-");
     const store = createCheckpointBlobStore(userData);
     const bytes = Buffer.from("complete-checkpoint-content");
     const hash = hashBuffer(bytes);

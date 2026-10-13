@@ -1,16 +1,17 @@
-import { existsSync, mkdtempSync, readdirSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { COCURDEX_APPLICATION_ID, CURRENT_SCHEMA_VERSION } from "./migrations";
 import { createCocurdexDatabase } from "./sqlite";
 
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
 function databasePath() {
-  return path.join(
-    mkdtempSync(path.join(tmpdir(), "cocurdex-db-")),
-    "cocurdex.sqlite",
-  );
+  return path.join(tempDirs.createSync("cocurdex-db-"), "cocurdex.sqlite");
 }
 
 function preMigrationSnapshots(target: string) {

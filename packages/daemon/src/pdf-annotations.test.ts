@@ -1,11 +1,15 @@
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import {
   DaemonPdfAnnotationsService,
   pdfAnnotationsStorageKey,
 } from "./pdf-annotations";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function createService(userDataPath: string, workspaceRootPath: string) {
   return new DaemonPdfAnnotationsService(userDataPath, async () => [
@@ -15,12 +19,8 @@ function createService(userDataPath: string, workspaceRootPath: string) {
 
 describe("pdf annotations storage", () => {
   it("round-trips bookmarks and highlights under userData", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
 
     const filePath = path.join(workspaceRootPath, "papers", "paper.pdf");
@@ -68,12 +68,8 @@ describe("pdf annotations storage", () => {
   });
 
   it("returns empty annotations when no file exists", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
 
     await expect(
@@ -82,12 +78,8 @@ describe("pdf annotations storage", () => {
   });
 
   it("deletes the storage file when annotations become empty", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
 
     const filePath = path.join(workspaceRootPath, "doc.pdf");
@@ -117,12 +109,8 @@ describe("pdf annotations storage", () => {
   });
 
   it("rejects files outside registered workspace roots", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
 
     await expect(
@@ -131,12 +119,8 @@ describe("pdf annotations storage", () => {
   });
 
   it("rejects non-PDF files", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
 
     await expect(
@@ -145,12 +129,8 @@ describe("pdf annotations storage", () => {
   });
 
   it("keeps every concurrent mutation instead of the last snapshot", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
     const service = createService(userDataPath, workspaceRootPath);
     const filePath = path.join(workspaceRootPath, "doc.pdf");
     const highlight = (id: string) => ({
@@ -188,13 +168,9 @@ describe("pdf annotations storage", () => {
   });
 
   it("rejects a PDF that reaches outside the workspace via symlink", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
-    const outsideDir = await mkdtemp(path.join(tmpdir(), "cocurdex-outside-"));
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const workspaceRootPath = await tempDirs.create("cocurdex-pdf-workspace-");
+    const outsideDir = await tempDirs.create("cocurdex-outside-");
     await writeFile(path.join(outsideDir, "secret.pdf"), "%PDF-1.4\n", "utf8");
     await symlink(outsideDir, path.join(workspaceRootPath, "linked"), "dir");
     const service = createService(userDataPath, workspaceRootPath);
@@ -207,14 +183,10 @@ describe("pdf annotations storage", () => {
   });
 
   it("accepts a file when the workspace root itself is a symlink", async () => {
-    const userDataPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-annotations-"),
-    );
-    const realRoot = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-pdf-workspace-"),
-    );
+    const userDataPath = await tempDirs.create("cocurdex-pdf-annotations-");
+    const realRoot = await tempDirs.create("cocurdex-pdf-workspace-");
     const linkedRoot = path.join(
-      await mkdtemp(path.join(tmpdir(), "cocurdex-link-")),
+      await tempDirs.create("cocurdex-link-"),
       "root",
     );
     await symlink(realRoot, linkedRoot, "dir");

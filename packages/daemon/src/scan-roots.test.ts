@@ -1,9 +1,13 @@
-import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { createWorkspaceScanPolicy } from "./scan-roots";
 import type { DaemonState } from "./state";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function stateWithRoots(workspaceRootPaths: string[]) {
   return {
@@ -16,9 +20,7 @@ function stateWithRoots(workspaceRootPaths: string[]) {
 
 describe("workspace scan policy", () => {
   it("allows files inside a registered workspace and rejects others", async () => {
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-scan-"),
-    );
+    const workspaceRootPath = await tempDirs.create("cocurdex-scan-");
     const filePath = path.join(workspaceRootPath, "src", "app.ts");
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, "x", "utf8");
@@ -36,10 +38,8 @@ describe("workspace scan policy", () => {
   });
 
   it("rejects files escaping the workspace through a symlink", async () => {
-    const workspaceRootPath = await mkdtemp(
-      path.join(tmpdir(), "cocurdex-scan-"),
-    );
-    const outsideDir = await mkdtemp(path.join(tmpdir(), "cocurdex-outside-"));
+    const workspaceRootPath = await tempDirs.create("cocurdex-scan-");
+    const outsideDir = await tempDirs.create("cocurdex-outside-");
     const escaped = path.join(outsideDir, "secret.txt");
     await writeFile(escaped, "x", "utf8");
     await symlink(outsideDir, path.join(workspaceRootPath, "linked"), "dir");

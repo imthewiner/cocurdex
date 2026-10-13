@@ -1,6 +1,3 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import {
   applyMarkdownToNoteDoc,
   decodeNoteDocBytes,
@@ -8,16 +5,21 @@ import {
   noteDocStateVector,
 } from "@cocurdex/note-doc";
 import type { DaemonRequest } from "@cocurdex/rpc";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import * as Y from "yjs";
 import { handleDaemonRequest } from "./handler";
 import { CocurdexDaemonService } from "./service";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 describe("daemon data RPC", () => {
   it("rejects malformed note payloads before touching storage", async () => {
     const service = new CocurdexDaemonService({
       runtimeFingerprint: "test-runtime",
-      userDataPath: mkdtempSync(path.join(tmpdir(), "cocurdex-daemon-bad-")),
+      userDataPath: tempDirs.createSync("cocurdex-daemon-bad-"),
     });
     const request = (params: unknown) =>
       handleDaemonRequest<"note.create">(service, {
@@ -45,7 +47,7 @@ describe("daemon data RPC", () => {
   it("owns note mutations and emits database change events", async () => {
     const service = new CocurdexDaemonService({
       runtimeFingerprint: "test-runtime",
-      userDataPath: mkdtempSync(path.join(tmpdir(), "cocurdex-daemon-data-")),
+      userDataPath: tempDirs.createSync("cocurdex-daemon-data-"),
     });
     const events: unknown[] = [];
     service.events.on("daemon.event", (event) => events.push(event));
@@ -79,7 +81,7 @@ describe("daemon data RPC", () => {
   it("syncs note docs over the wire and only signals real changes", async () => {
     const service = new CocurdexDaemonService({
       runtimeFingerprint: "test-runtime",
-      userDataPath: mkdtempSync(path.join(tmpdir(), "cocurdex-daemon-doc-")),
+      userDataPath: tempDirs.createSync("cocurdex-daemon-doc-"),
     });
     const note = await handleDaemonRequest<"note.create">(service, {
       id: "1",
@@ -123,7 +125,7 @@ describe("daemon data RPC", () => {
   it("serves issue detail by identifier and ignores unknown attached issues", async () => {
     const service = new CocurdexDaemonService({
       runtimeFingerprint: "test-runtime",
-      userDataPath: mkdtempSync(path.join(tmpdir(), "cocurdex-daemon-issue-")),
+      userDataPath: tempDirs.createSync("cocurdex-daemon-issue-"),
     });
     const events: unknown[] = [];
     await handleDaemonRequest<"issue.create">(service, {

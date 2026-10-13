@@ -1,12 +1,14 @@
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { DaemonSkillsService } from "./skills-service";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 describe("DaemonSkillsService authorization", () => {
   it("rejects project-scoped operations on unregistered roots", async () => {
-    const sourceRoot = await mkdtemp(path.join(tmpdir(), "cocurdex-skills-"));
+    const sourceRoot = await tempDirs.create("cocurdex-skills-");
     const service = new DaemonSkillsService(sourceRoot, async () => false);
 
     await expect(
@@ -21,7 +23,7 @@ describe("DaemonSkillsService authorization", () => {
   });
 
   it("does not require a workspace root for global scope", async () => {
-    const sourceRoot = await mkdtemp(path.join(tmpdir(), "cocurdex-skills-"));
+    const sourceRoot = await tempDirs.create("cocurdex-skills-");
     const service = new DaemonSkillsService(sourceRoot, async () => false);
 
     await expect(

@@ -1,8 +1,12 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import { listAgentSkills } from "./skill-catalog";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 async function writeSkill(
   rootPath: string,
@@ -21,7 +25,7 @@ async function writeSkill(
 
 describe("listAgentSkills", () => {
   it("discovers standard skills and maps native invocation syntax", async () => {
-    const rootPath = await mkdtemp(path.join(tmpdir(), "cocurdex-skills-"));
+    const rootPath = await tempDirs.create("cocurdex-skills-");
     const homePath = path.join(rootPath, "home");
     const workspaceRootPath = path.join(rootPath, "workspace");
     await writeSkill(
@@ -54,7 +58,7 @@ describe("listAgentSkills", () => {
   });
 
   it("discovers skills nested below an agent-owned root", async () => {
-    const rootPath = await mkdtemp(path.join(tmpdir(), "cocurdex-skills-"));
+    const rootPath = await tempDirs.create("cocurdex-skills-");
     const homePath = path.join(rootPath, "home");
     const workspaceRootPath = path.join(rootPath, "workspace");
     await writeSkill(
@@ -75,7 +79,7 @@ describe("listAgentSkills", () => {
   });
 
   it("lets an agent-specific workspace skill override a global standard skill", async () => {
-    const rootPath = await mkdtemp(path.join(tmpdir(), "cocurdex-skills-"));
+    const rootPath = await tempDirs.create("cocurdex-skills-");
     const homePath = path.join(rootPath, "home");
     const workspaceRootPath = path.join(rootPath, "workspace");
     await writeSkill(

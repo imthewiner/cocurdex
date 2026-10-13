@@ -1,12 +1,16 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleIssueCommand } from "./issue-commands";
 import { handleNoteCommand } from "./note-commands";
 import { parseArgs } from "./parse-args";
 import { handleSearchCommand } from "./search-commands";
 import { handleWorktreeCommand } from "./worktree-commands";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 const requestMock = vi.hoisted(() => vi.fn());
 
@@ -33,7 +37,7 @@ describe("data commands", () => {
   });
 
   it("creates a note with a body file in one request", async () => {
-    const directory = mkdtempSync(path.join(tmpdir(), "cocurdex-cli-note-"));
+    const directory = tempDirs.createSync("cocurdex-cli-note-");
     const bodyFile = path.join(directory, "spec.md");
     writeFileSync(bodyFile, "# Spec\n\n| a | b |\n", "utf8");
     requestMock.mockResolvedValue({ id: "note-id", kind: "note" });

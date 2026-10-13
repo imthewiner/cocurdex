@@ -1,21 +1,33 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   createAgentRegistry,
   setInstalledAcpRegistryAgents,
 } from "@cocurdex/agent-core";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { AcpRegistryEntry } from "./acp-registry-catalog";
 import { resolveInstalledCommand } from "./acp-registry-install";
 import {
   ACP_REGISTRY_AGENTS_SETTING_KEY,
   AcpRegistryService,
 } from "./acp-registry-service";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 const noLocalCli = async () => null;
 
@@ -82,7 +94,7 @@ describe("AcpRegistryService", () => {
   let archiveSha: string;
 
   beforeEach(async () => {
-    userDataPath = await mkdtemp(path.join(tmpdir(), "cocurdex-acp-registry-"));
+    userDataPath = await tempDirs.create("cocurdex-acp-registry-");
     const source = path.join(userDataPath, "source");
     await mkdir(path.join(source, "bin"), { recursive: true });
     await writeFile(path.join(source, "bin", "demo"), "#!/bin/sh\n");

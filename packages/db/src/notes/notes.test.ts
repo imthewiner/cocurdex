@@ -1,4 +1,3 @@
-import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -6,9 +5,14 @@ import {
   noteDocStateVector,
   noteDocToMarkdown,
 } from "@cocurdex/note-doc";
-import { describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
 import * as Y from "yjs";
 import { createCocurdexDatabase } from "../sqlite";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
 
 function editorUpdate(state: Uint8Array, markdown: string): Uint8Array {
   const before = noteDocStateVector(state);
@@ -17,10 +21,7 @@ function editorUpdate(state: Uint8Array, markdown: string): Uint8Array {
 
 function createTestDatabase() {
   return createCocurdexDatabase(
-    path.join(
-      mkdtempSync(path.join(tmpdir(), "cocurdex-notes-")),
-      "cocurdex.sqlite",
-    ),
+    path.join(tempDirs.createSync("cocurdex-notes-"), "cocurdex.sqlite"),
   );
 }
 

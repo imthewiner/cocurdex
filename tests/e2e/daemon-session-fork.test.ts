@@ -117,6 +117,7 @@ describe("session fork over the real socket", () => {
       subscription.close();
       await daemon.dispose();
       await stub.close();
+      await repo.dispose();
     }
   });
 });
