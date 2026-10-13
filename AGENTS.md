@@ -31,6 +31,8 @@ Do not open a new branch unless it is necessary. Unrelated follow-up fixes found
 
 Land changes through a branch and a pull request: push, open the PR, watch its checks and review threads, then merge with `gh pr merge --merge`. Clear every review thread first — fix it, or reply with a reason and then resolve it. Docs, skills, and tooling changes take this path with no version bump and no tag; only an explicit release request bumps `apps/desktop/package.json` and pushes a `v<version>` tag. See `.agents/skills/desktop-release`.
 
+CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/` and `.claude/`, and the desktop `version` field. When every job passes, it records that fingerprint, and a later run with the same fingerprint (in the same PR, or on `main`) skips the checks. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
+
 ## Architecture: daemon, host, and clients
 
 Reusable product capabilities belong in `packages/daemon`, exposed through `@cocurdex/rpc`. Ask: would a browser client need this capability through the daemon? If yes, use daemon RPC; desktop-only host APIs use Electron IPC.
