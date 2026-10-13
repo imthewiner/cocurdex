@@ -59,6 +59,7 @@ type TooltipContentProps = React.ComponentProps<
   collisionAvoidance?: React.ComponentProps<
     typeof TooltipPrimitive.Positioner
   >["collisionAvoidance"];
+  anchor?: React.ComponentProps<typeof TooltipPrimitive.Positioner>["anchor"];
 };
 
 function TooltipContent({
@@ -67,6 +68,7 @@ function TooltipContent({
   side,
   align,
   alignOffset,
+  anchor,
   children,
   collisionAvoidance,
   collisionBoundary,
@@ -80,6 +82,7 @@ function TooltipContent({
         side={side}
         align={align}
         alignOffset={alignOffset}
+        anchor={anchor}
         collisionAvoidance={collisionAvoidance}
         collisionBoundary={collisionBoundary}
         // Tooltips must stay above popup layers (popover/combobox/select all

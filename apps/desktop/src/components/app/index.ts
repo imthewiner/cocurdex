@@ -19,6 +19,7 @@ export {
   type AppDropdownRadioSection,
 } from "./dropdown-radio";
 export { AppGitBranchLabel } from "./git-branch-label";
+export { AppPreviewCardTooltipContent } from "./preview-card-tooltip";
 export {
   AppSearchableSelect,
   type AppSearchableSelectOption,

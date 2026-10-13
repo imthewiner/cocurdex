@@ -139,14 +139,18 @@ runScenario("workspace-picker", {
           ...option.point,
         });
         await session.waitUntil(
-          () =>
-            Boolean(document.querySelector('[data-slot="combobox-preview"]')),
+          () => {
+            const panel = document.querySelector(
+              '[data-slot="tooltip-content"][data-open]',
+            );
+            return Boolean(panel) && panel.getAnimations().length === 0;
+          },
           null,
           UI_TIMEOUT_MS,
         );
         const preview = await session.run(async () => {
           const panel = document.querySelector(
-            '[data-slot="combobox-preview"]',
+            '[data-slot="tooltip-content"][data-open]',
           );
           const popup = document.querySelector(
             '[data-slot="combobox-content"]',
@@ -187,7 +191,8 @@ runScenario("workspace-picker", {
           ...option.otherPoint,
         });
         await session.waitUntil(
-          () => !document.querySelector('[data-slot="combobox-preview"]'),
+          () =>
+            !document.querySelector('[data-slot="tooltip-content"][data-open]'),
           null,
           UI_TIMEOUT_MS,
         );

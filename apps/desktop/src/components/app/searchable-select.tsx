@@ -17,12 +17,14 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib";
 import {
   type AppDropdownTriggerAppearance,
   AppDropdownTriggerButton,
   AppDropdownTriggerLabel,
 } from "./dropdown";
+import { AppPreviewCardTooltipContent } from "./preview-card-tooltip";
 
 /** One row in a searchable single-select list. */
 export interface AppSearchableSelectOption {
@@ -77,16 +79,11 @@ type SelectItem = AppSearchableSelectOption;
 
 type HighlightedPreview = {
   content: ReactNode;
-  top: number;
+  anchor: Element;
 };
 
-function highlightedItemTop(popup: HTMLElement | null): number | null {
-  const item = popup?.querySelector("[data-highlighted]");
-  const positioner = popup?.parentElement;
-  if (!item || !positioner) return null;
-  return (
-    item.getBoundingClientRect().top - positioner.getBoundingClientRect().top
-  );
+function highlightedItem(popup: HTMLElement | null): Element | null {
+  return popup?.querySelector("[data-highlighted]") ?? null;
 }
 
 type SelectGroup = {
@@ -195,16 +192,19 @@ export function AppSearchableSelect({
 
   const popupRef = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<HighlightedPreview | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const showPreview = (item: SelectItem | undefined) => {
     const content = item?.preview;
     if (!content) {
-      setPreview(null);
+      setPreviewOpen(false);
       return;
     }
     requestAnimationFrame(() => {
-      const top = highlightedItemTop(popupRef.current);
-      setPreview(top === null ? null : { content, top });
+      const anchor = highlightedItem(popupRef.current);
+      if (!anchor) return;
+      setPreview({ content, anchor });
+      setPreviewOpen(true);
     });
   };
 
@@ -224,7 +224,7 @@ export function AppSearchableSelect({
       }}
       onItemHighlighted={showPreview}
       onOpenChange={(open) => {
-        if (!open) setPreview(null);
+        if (!open) setPreviewOpen(false);
       }}
     >
       <ComboboxTrigger
@@ -259,17 +259,6 @@ export function AppSearchableSelect({
       </ComboboxTrigger>
       <ComboboxContent
         ref={popupRef}
-        aside={
-          preview ? (
-            <div
-              data-slot="combobox-preview"
-              className="pointer-events-none absolute start-full ms-1 w-72 rounded-card bg-popover px-3 py-2 text-popover-foreground shadow-md ring-1 ring-foreground/10"
-              style={{ top: preview.top }}
-            >
-              {preview.content}
-            </div>
-          ) : null
-        }
         align={align}
         className={cn("rounded-control!", contentClassName)}
         side={side}
@@ -307,6 +296,11 @@ export function AppSearchableSelect({
         </ComboboxList>
         {footer}
       </ComboboxContent>
+      <Tooltip open={previewOpen && preview !== null}>
+        <AppPreviewCardTooltipContent anchor={preview?.anchor}>
+          {preview?.content}
+        </AppPreviewCardTooltipContent>
+      </Tooltip>
     </Combobox>
   );
 }
