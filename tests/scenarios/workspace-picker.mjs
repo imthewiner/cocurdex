@@ -359,6 +359,61 @@ runScenario("workspace-picker", {
       },
     ],
     [
+      "the sidebar preview lists folders without repeating the name",
+      async ({ session, workspaceName }) => {
+        const row = await session.run((name) => {
+          const button = [
+            ...document.querySelectorAll(
+              '[data-slot="sidebar-menu-item"] button',
+            ),
+          ].find((element) => element.innerText.trim() === name);
+          if (!button) return null;
+          const rect = button.getBoundingClientRect();
+          return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          };
+        }, workspaceName);
+        check(row, "sidebar lacks the multi-folder workspace row");
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...row,
+        });
+        await session.waitUntil(
+          () =>
+            Boolean(
+              document.querySelector(
+                '[data-slot="tooltip-content"][data-open]',
+              ),
+            ),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const preview = await session.run(async () => ({
+          lines: document
+            .querySelector('[data-slot="tooltip-content"][data-open]')
+            .innerText.split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean),
+          primaryLabel: await window.__scenario.t(
+            "sessions:workspace.rootsPrimary",
+          ),
+        }));
+        check(
+          preview.lines[0] === preview.primaryLabel &&
+            !preview.lines.includes(workspaceName),
+          "sidebar preview repeats the workspace name",
+          preview,
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: row.x + 600,
+          y: row.y,
+        });
+        return { lines: preview.lines };
+      },
+    ],
+    [
       "renderer has no errors",
       async ({ session }) => {
         const errors = await session.run(() => window.__scenario.errors);

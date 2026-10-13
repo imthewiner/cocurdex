@@ -1,10 +1,11 @@
 import type { WorkspaceRecord } from "@cocurdex/shared";
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui";
-import { compactWorkspacePath, splitWorkspacePath } from "./workspace-path";
+import { AppPreviewCardTooltipContent } from "@/components/app";
+import { Text, Tooltip, TooltipTrigger } from "@/components/ui";
+import { splitWorkspacePath } from "./workspace-path";
 
-type WorkspaceRoots = Pick<WorkspaceRecord, "name" | "rootPaths">;
+type WorkspaceRoots = Pick<WorkspaceRecord, "rootPaths">;
 
 function WorkspaceRootRow({ path }: { path: string }) {
   const { name, parent } = splitWorkspacePath(path);
@@ -41,53 +42,25 @@ function WorkspaceRootGroup({
 }
 
 export function WorkspaceRootsPreview({
-  showName = true,
   workspace,
 }: {
-  showName?: boolean;
   workspace: WorkspaceRoots;
 }) {
   const { t } = useTranslation("sessions");
   const [primaryPath, ...additionalPaths] = workspace.rootPaths;
 
-  if (additionalPaths.length > 0) {
-    return (
-      <div className="flex w-full min-w-0 flex-col gap-2.5">
-        {showName ? (
-          <Text
-            size="body"
-            weight="medium"
-            className="min-w-0 whitespace-normal"
-          >
-            {workspace.name}
-          </Text>
-        ) : null}
-        <div className="flex min-w-0 flex-col gap-2">
-          <WorkspaceRootGroup
-            label={t("workspace.rootsPrimary")}
-            paths={[primaryPath]}
-          />
-          <WorkspaceRootGroup
-            label={t("workspace.rootsAdditional")}
-            paths={additionalPaths}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1">
-      {showName ? (
-        <Text size="body" className="min-w-0 whitespace-normal">
-          {workspace.name}
-        </Text>
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <WorkspaceRootGroup
+        label={t("workspace.rootsPrimary")}
+        paths={[primaryPath]}
+      />
+      {additionalPaths.length > 0 ? (
+        <WorkspaceRootGroup
+          label={t("workspace.rootsAdditional")}
+          paths={additionalPaths}
+        />
       ) : null}
-      {workspace.rootPaths.map((path) => (
-        <Text className="min-w-0 break-all" key={path} size="meta" tone="muted">
-          {compactWorkspacePath(path)}
-        </Text>
-      ))}
     </div>
   );
 }
@@ -110,15 +83,9 @@ export function WorkspaceRootsTooltip({
       <TooltipTrigger asChild>
         <span className="flex min-w-0">{children}</span>
       </TooltipTrigger>
-      <TooltipContent
-        align="start"
-        hideArrow
-        side={side}
-        sideOffset={6}
-        className="min-w-0 max-w-72 flex-col items-stretch gap-1 rounded-card bg-popover px-3 py-2 text-start text-body text-popover-foreground shadow-md ring-1 ring-foreground/10"
-      >
+      <AppPreviewCardTooltipContent align="start" side={side} sideOffset={6}>
         <WorkspaceRootsPreview workspace={workspace} />
-      </TooltipContent>
+      </AppPreviewCardTooltipContent>
     </Tooltip>
   );
 }
