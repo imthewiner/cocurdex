@@ -170,6 +170,13 @@ jobs:
         run: xvfb-run -a pnpm --filter @cocurdex/e2e test:desktop
         env:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
+      - name: Configure Electron sandbox
+        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
+        working-directory: apps/desktop
+        run: |
+          sandbox="$(node -p "require('node:path').join(require('node:path').dirname(require.resolve('electron')), 'dist', 'chrome-sandbox')")"
+          sudo chown root:root "$sandbox"
+          sudo chmod 4755 "$sandbox"
       - name: Test desktop UI scenarios
         if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
         run: xvfb-run -a pnpm test:ui

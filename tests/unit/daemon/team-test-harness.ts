@@ -1,30 +1,22 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { createAgentRegistry } from "@cocurdex/agent-core";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
 import type { SessionRuntimeMessage } from "@cocurdex/daemon/internal/session-control/index";
 import type { MessageRecord } from "@cocurdex/shared";
 import { sessionConfiguration } from "@cocurdex/shared";
+import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterEach, vi } from "vitest";
 
-const directories: string[] = [];
+const tempDirs = createTempDirs();
 const timestamp = "2026-10-11T00:00:00.000Z";
 const TURN_WAIT_TIMEOUT_MS = 10_000;
 
 afterEach(async () => {
   vi.restoreAllMocks();
-  await Promise.all(
-    directories
-      .splice(0)
-      .map((directory) => rm(directory, { force: true, recursive: true })),
-  );
+  await tempDirs.cleanup();
 });
 
 export async function createService(userDataPath?: string) {
-  const root =
-    userDataPath ?? (await mkdtemp(path.join(tmpdir(), "cocurdex-team-")));
-  if (!userDataPath) directories.push(root);
+  const root = userDataPath ?? (await tempDirs.create("cocurdex-team-"));
   const service = new CocurdexDaemonService({
     runtimeFingerprint: "test",
     userDataPath: root,
