@@ -2438,11 +2438,11 @@ export class CocurdexDaemonService {
       throw new Error(`Queued message ${messageId} was not found`);
     }
 
-    const message = await this.state.getMessageById(messageId);
+    const queuedMessage = await this.state.getMessageById(messageId);
     if (
-      !message ||
-      message.sessionId !== sessionId ||
-      message.role !== "user"
+      !queuedMessage ||
+      queuedMessage.sessionId !== sessionId ||
+      queuedMessage.role !== "user"
     ) {
       throw new Error(`Queued message ${messageId} was not found`);
     }
@@ -2454,6 +2454,10 @@ export class CocurdexDaemonService {
       throw new Error(`${agent.label} does not support steering active turns.`);
     }
 
+    const message = await this.state.moveSteeredMessageToEnd(
+      queuedMessage,
+      this.runs.activeRunId(sessionId),
+    );
     const [messages, queuedInputs] = await Promise.all([
       this.state.listMessagesBySessionId(sessionId),
       this.state.listQueuedAgentInputs(sessionId),

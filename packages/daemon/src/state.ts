@@ -332,6 +332,22 @@ export class DaemonState {
     return this.database.messages.moveToEnd(messageId, sessionId);
   }
 
+  async moveSteeredMessageToEnd(
+    message: MessageRecord,
+    runId: string | null,
+  ): Promise<MessageRecord> {
+    let moved: Promise<number | null> = Promise.resolve(null);
+    this.database.transaction(() => {
+      moved = this.database.messages.moveToEnd(message.id, message.sessionId);
+      if (runId) void this.database.messages.assignRun(message.id, runId);
+    });
+    const seq = await moved;
+    return withMessageSeq(
+      runId ? { ...message, runId } : message,
+      seq ?? message.seq,
+    );
+  }
+
   async startRun(run: RunRecord): Promise<RunRecord> {
     return this.database.transaction(() => {
       const started = this.database.runs.insert(run);
