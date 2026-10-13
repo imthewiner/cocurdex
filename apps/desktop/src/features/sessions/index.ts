@@ -21,7 +21,6 @@ export {
 export { AgentSelect } from "./agent-select";
 export { buildAgentSelectOptions } from "./agent-select-options";
 export { applyRuntimeSessionModesAtom } from "./agent-session-modes-sync";
-export { ExecutionTreeDialog } from "./execution-tree";
 export { PermissionModeSubmenu } from "./permission-mode-submenu";
 export {
   bootstrapProviderModelsAtom,

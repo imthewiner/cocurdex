@@ -1181,14 +1181,26 @@ export default interface Resources {
     };
     defaultTitle: "New {{agentLabel}} session";
     executionTree: {
-      description: "Runs, tool calls, subagents, and pending approvals for this session. Select a session to open it.";
+      description: "Runs, tool calls, subagents, and pending approvals for this session. Select a session to open it, or a tool call to see its output.";
+      failedCount_one: "{{count}} failed";
+      failedCount_other: "{{count}} failed";
+      issuesOnly: "Issues only";
       limited: "Subagent {{name}} is not observable: its provider reports no events for it.";
+      noIssues: "No failed tool calls or pending approvals.";
+      noOutput: "No output was recorded.";
+      omittedLines_one: "{{count}} earlier line hidden";
+      omittedLines_other: "{{count}} earlier lines hidden";
+      outputUnavailable: "The output could not be loaded.";
       planProgress: "Plan {{done}}/{{total}}";
       run: "Run started {{time}}";
       title: "Execution tree";
+      toolCount_one: "{{count}} tool call";
+      toolCount_other: "{{count}} tool calls";
       truncated: "Deeper sessions are not shown.";
       unavailable: "The execution tree is unavailable for this session.";
       waitingAnswer: "Waiting for an answer: {{question}}";
+      waitingCount_one: "{{count}} waiting";
+      waitingCount_other: "{{count}} waiting";
       waitingPermission: "Waiting for permission: {{title}}";
       waitingPlanApproval: "Waiting for plan approval";
     };
