@@ -1,7 +1,7 @@
 import type { ExecutionInteraction } from "@cocurdex/shared";
 import { useSetAtom } from "jotai";
 import { ChevronDown, ChevronRight, Hand, ListTree } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -10,10 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
   EmptyState,
+  Label,
+  Switch,
   Text,
-  Toggle,
 } from "@/components/ui";
-import { selectSessionAtom } from "@/features/sessions";
+import {
+  AgentIconLabel,
+  getAgentDisplayLabel,
+  selectSessionAtom,
+} from "@/features/sessions";
 import { formatDurationMs } from "../view/chat-activity-state";
 import { getRunDurationMs } from "./execution-tree-output";
 import {
@@ -81,7 +86,9 @@ function SessionRowContent({
         </Text>
       ) : null}
       <Text className="shrink-0" size="meta" tone="muted">
-        {session.agentType}
+        <AgentIconLabel agentId={session.agentType}>
+          {getAgentDisplayLabel(session.agentType)}
+        </AgentIconLabel>
       </Text>
     </button>
   );
@@ -188,18 +195,45 @@ function RowContent({
   );
 }
 
+function IssuesOnlySwitch({
+  checked,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  onCheckedChange(checked: boolean): void;
+}) {
+  const { t } = useTranslation("sessions");
+  const switchId = useId();
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <Switch
+        checked={checked}
+        id={switchId}
+        onCheckedChange={onCheckedChange}
+        size="sm"
+      />
+      <Label htmlFor={switchId}>
+        <Text size="meta" tone="muted">
+          {t("executionTree.issuesOnly")}
+        </Text>
+      </Label>
+    </div>
+  );
+}
+
 function ExecutionTreeBody({
   sessionId,
+  view,
+  onChangeView,
   onOpenSession,
 }: {
   sessionId: string;
+  view: ExecutionTreeView;
+  onChangeView(view: ExecutionTreeView): void;
   onOpenSession(sessionId: string): void;
 }) {
   const { t } = useTranslation("sessions");
   const state = useExecutionTree(sessionId);
-  const [view, setView] = useState<ExecutionTreeView>(
-    DEFAULT_EXECUTION_TREE_VIEW,
-  );
 
   if (state.status === "loading") return null;
   if (state.status === "error" || !state.tree) {
@@ -215,7 +249,7 @@ function ExecutionTreeBody({
   const rows = flattenExecutionTree(state.tree, view);
   const hasIssueRows = rows.some((row) => row.kind !== "session");
   const toggleRun = (row: RunRow) =>
-    setView({
+    onChangeView({
       ...view,
       runExpansion: toggleRunExpansion(
         view.runExpansion,
@@ -226,16 +260,6 @@ function ExecutionTreeBody({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-col gap-2">
-      <div className="flex justify-end">
-        <Toggle
-          onPressedChange={(issuesOnly) => setView({ ...view, issuesOnly })}
-          pressed={view.issuesOnly}
-          size="sm"
-          variant="outline"
-        >
-          {t("executionTree.issuesOnly")}
-        </Toggle>
-      </div>
       {view.issuesOnly && !hasIssueRows ? (
         <Text className="px-1 py-2" size="meta" tone="muted">
           {t("executionTree.noIssues")}
@@ -265,17 +289,28 @@ export function ExecutionTreeDialog({
 }: ExecutionTreeDialogProps) {
   const { t } = useTranslation("sessions");
   const selectSession = useSetAtom(selectSessionAtom);
+  const [view, setView] = useState<ExecutionTreeView>(
+    DEFAULT_EXECUTION_TREE_VIEW,
+  );
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent size="wide">
-        <DialogHeader>
-          <DialogTitle>{t("executionTree.title")}</DialogTitle>
-          <DialogDescription>
-            {t("executionTree.description")}
-          </DialogDescription>
-        </DialogHeader>
+        <div className="flex min-w-0 items-end gap-4 pe-8">
+          <DialogHeader className="min-w-0 flex-1">
+            <DialogTitle>{t("executionTree.title")}</DialogTitle>
+            <DialogDescription>
+              {t("executionTree.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <IssuesOnlySwitch
+            checked={view.issuesOnly}
+            onCheckedChange={(issuesOnly) => setView({ ...view, issuesOnly })}
+          />
+        </div>
         <ExecutionTreeBody
+          onChangeView={setView}
+          view={view}
           onOpenSession={(id) => {
             selectSession(id);
             onClose();
