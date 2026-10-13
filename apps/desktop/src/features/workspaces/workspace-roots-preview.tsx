@@ -41,8 +41,10 @@ function WorkspaceRootGroup({
 }
 
 export function WorkspaceRootsPreview({
+  showName = true,
   workspace,
 }: {
+  showName?: boolean;
   workspace: WorkspaceRoots;
 }) {
   const { t } = useTranslation("sessions");
@@ -51,9 +53,15 @@ export function WorkspaceRootsPreview({
   if (additionalPaths.length > 0) {
     return (
       <div className="flex w-full min-w-0 flex-col gap-2.5">
-        <Text size="body" weight="medium" className="min-w-0 whitespace-normal">
-          {workspace.name}
-        </Text>
+        {showName ? (
+          <Text
+            size="body"
+            weight="medium"
+            className="min-w-0 whitespace-normal"
+          >
+            {workspace.name}
+          </Text>
+        ) : null}
         <div className="flex min-w-0 flex-col gap-2">
           <WorkspaceRootGroup
             label={t("workspace.rootsPrimary")}
@@ -70,9 +78,11 @@ export function WorkspaceRootsPreview({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-1">
-      <Text size="body" className="min-w-0 whitespace-normal">
-        {workspace.name}
-      </Text>
+      {showName ? (
+        <Text size="body" className="min-w-0 whitespace-normal">
+          {workspace.name}
+        </Text>
+      ) : null}
       {workspace.rootPaths.map((path) => (
         <Text className="min-w-0 break-all" key={path} size="meta" tone="muted">
           {compactWorkspacePath(path)}

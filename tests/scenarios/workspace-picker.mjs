@@ -211,6 +211,11 @@ runScenario("workspace-picker", {
         const additionalIndex = lines.indexOf(preview.additionalLabel);
         check(preview.beside, "preview is not beside the popup", preview);
         check(
+          lines[0] === preview.primaryLabel,
+          "preview repeats the hovered workspace name",
+          { lines, workspaceName },
+        );
+        check(
           primaryIndex >= 0 &&
             lines[primaryIndex + 1]?.startsWith(primaryName) &&
             additionalIndex > primaryIndex &&

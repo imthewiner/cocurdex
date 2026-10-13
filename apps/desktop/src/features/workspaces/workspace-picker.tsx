@@ -84,7 +84,14 @@ export function WorkspacePicker({
             ? workspace.name
             : compactWorkspacePath(primaryWorkspaceRootPath(workspace)),
           ...(multiRoot
-            ? { preview: <WorkspaceRootsPreview workspace={workspace} /> }
+            ? {
+                preview: (
+                  <WorkspaceRootsPreview
+                    showName={false}
+                    workspace={workspace}
+                  />
+                ),
+              }
             : {}),
           keywords: `${workspace.name} ${workspace.rootPaths.join(" ")}`,
           group: "recents",
