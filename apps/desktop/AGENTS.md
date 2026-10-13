@@ -2,6 +2,8 @@
 
 Rules for `apps/desktop`, in addition to the repository root `AGENTS.md`.
 
+`apps/desktop/src` is the renderer for both the Electron app and the web client, which the daemon serves (`packages/daemon/src/web-assets.ts`) behind `lib/web-host-bridge.ts`. Every UI rule below applies to both hosts.
+
 ## Public entries, heavy dependencies, and cycles
 
 Barrels are external interfaces, never an internal bus. Files within the same domain, including siblings exported by one barrel, import each other directly with relative paths.
@@ -36,6 +38,45 @@ Prefer semantic tokens, CSS mappings, wrappers, small caller styles, and composi
 - Set dialog size through `DialogContent`'s `size` (`default`, `compact`, `wide`), without caller overrides for width, padding, or radius.
 - Support RTL with logical layout, spacing, positioning, corners, icon direction, and text alignment. Use physical `left`/`right` only when the behavior is physically directional.
 - Prefer `lucide-react`. Use explicit, consistent `size-3.5`, `size-4`, or `size-5` within a row or context. Conditionally render status icons; do not reserve them with `opacity-0`.
+
+### Same scenario, same solution
+
+A scenario the app already handles somewhere must look and behave the same everywhere it appears. Before building UI for a scenario, find where the app already solves it (confirming a destructive action, inline rename, row actions, empty or error states, status display, settings toggles, pickers) and reuse that component and interaction.
+
+- Keep the same concept identical across views: icon, wording, action order and placement, hover and focus states, confirmation behavior, and keyboard handling (Enter submits, Escape cancels, focus returns to the trigger).
+- When two places already diverge for the same scenario, unify them in the same change instead of adding a third variant. Promote the shared version to `components/app` when it is used across features.
+
+### Choose controls by meaning
+
+Pick a component for what the control does, not for how it looks. A `Button` performs an action; it is not a default building block for anything clickable.
+
+| Intent | Component |
+| --- | --- |
+| Perform an action | `Button`; icon-only actions use `IconButton` with an `aria-label` and a `Tooltip` |
+| Turn a setting on or off immediately | `Switch` |
+| Include an item in a set, or multi-select | `Checkbox` |
+| Pressed state of a tool or view mode | `Toggle` / `ToggleGroup` |
+| Switch between sibling views in one area | `Tabs` |
+| Choose one value | See [Selectors](#selectors) |
+| Several actions behind one trigger | `DropdownMenu`; right-click uses `ContextMenu` with the same items |
+| Show or hide a section | `Collapsible` |
+| Confirm a destructive action | `AppConfirmDialog` |
+| Selectable row in a sidebar or list | `SidebarListRow` with `SidebarListRowActions` |
+| Status or category label | `Badge` |
+| Supplementary text on hover | `Tooltip`; rich previews use `HoverCard` |
+| Transient feedback after an action | toast through `sonner` |
+
+- Never put `onClick` on a `div` or `span`, never style a `Button` to imitate a tab, switch, checkbox, or link, and never nest interactive elements (a button inside a button or a row trigger).
+- Keep the role and state that come with the chosen component (`aria-checked`, `aria-pressed`, `aria-selected`, `aria-expanded`) and give every control an accessible name. Assistive technology and the role-based scenario locators in `tests/scenarios/lib/locate.mjs` both depend on them.
+
+### Desktop and web parity
+
+The same screen must look and behave the same in the Electron app and the web client. Hosts differ only in `HostCapabilities` (`desktopApi.capabilities`), never in layout, components, or wording for the same scenario.
+
+- Gate host-only features on a capability (`fileManager`, `nativeDirectoryDialog`, `terminal`, `browserView`), not on platform or user-agent checks. When a capability is missing, hide the entry or use the documented daemon fallback (for example `fs.listDirectories` instead of a native directory picker); do not show a control that fails when used.
+- Do not call Electron-only APIs from shared UI without a capability check, and do not add a capability for something the daemon can provide to every client.
+- Account for browser constraints: shortcuts the browser reserves (such as Cmd/Ctrl+W, Cmd/Ctrl+T, Cmd/Ctrl+N) need an alternative, text and files go through web APIs with permission handling, and layouts must work at the narrower widths a browser tab allows.
+- Verify user-facing changes in both hosts: the desktop app over CDP and the web client in a browser.
 
 ### Appearance tokens
 
