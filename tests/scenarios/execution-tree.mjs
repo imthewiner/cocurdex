@@ -9,6 +9,11 @@ const FAILED_OUTPUT_LINES = 30;
 const PANEL_OPEN_TIMEOUT_MS = 60_000;
 const SHELL_READY_TIMEOUT_MS = 60_000;
 
+const LONG_PATHS = Array.from(
+  { length: 8 },
+  (_, index) => `packages/db/src/repositories/sqlite-repository-${index}.ts`,
+).join(" ");
+
 const args = readScenarioArgs();
 
 function toolCall(id, title, status, startedAt, updatedAt) {
@@ -80,6 +85,13 @@ const EXECUTION_TREE = {
           "failed",
           "2026-10-13T03:15:10.000Z",
           "2026-10-13T03:15:12.500Z",
+        ),
+        toolCall(
+          "tool-latest-long",
+          `/bin/zsh -lc 'rg -n "moveToEnd|assignRun|transaction" ${LONG_PATHS}'`,
+          "completed",
+          "2026-10-13T03:15:12.600Z",
+          "2026-10-13T03:15:12.900Z",
         ),
         toolCall(
           "tool-latest-running",
@@ -210,6 +222,43 @@ runScenario("execution-tree", {
           tree.rows,
         );
         return { rows: tree.rows.length };
+      },
+    ],
+    [
+      "long-commands-stay-inside-dialog",
+      async ({ session }) => {
+        const label = await session.run(() =>
+          window.__scenario.t("sessions:executionTree.issuesOnly"),
+        );
+        const layout = await session.run((label) => {
+          const dialog = document.querySelector('[role="dialog"]');
+          const bounds = dialog.getBoundingClientRect();
+          const toggle = [...dialog.querySelectorAll("button")].find(
+            (button) => button.innerText.trim() === label,
+          );
+          const overflowing = [...dialog.querySelectorAll("li button")]
+            .filter((button) => {
+              const rect = button.getBoundingClientRect();
+              return rect.right > bounds.right + 0.5;
+            })
+            .map((button) => button.innerText.trim());
+          const toggleRect = toggle?.getBoundingClientRect();
+          return {
+            overflowing,
+            toggleInside: Boolean(
+              toggleRect &&
+                toggleRect.left >= bounds.left &&
+                toggleRect.right <= bounds.right,
+            ),
+          };
+        }, label);
+        check(
+          layout.overflowing.length === 0,
+          "rows overflow the dialog",
+          layout,
+        );
+        check(layout.toggleInside, "issues-only toggle is off-screen", layout);
+        return layout;
       },
     ],
     [

@@ -119,7 +119,7 @@ export function SidebarItemTooltip({
 
 interface WorkspaceItemTooltipProps {
   children: ReactElement;
-  workspace: Pick<WorkspaceRecord, "name" | "rootPaths">;
+  workspace: Pick<WorkspaceRecord, "rootPaths">;
 }
 
 export function WorkspaceItemTooltip({

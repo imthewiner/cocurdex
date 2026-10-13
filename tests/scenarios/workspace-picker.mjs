@@ -211,6 +211,11 @@ runScenario("workspace-picker", {
         const additionalIndex = lines.indexOf(preview.additionalLabel);
         check(preview.beside, "preview is not beside the popup", preview);
         check(
+          lines[0] === preview.primaryLabel,
+          "preview repeats the hovered workspace name",
+          { lines, workspaceName },
+        );
+        check(
           primaryIndex >= 0 &&
             lines[primaryIndex + 1]?.startsWith(primaryName) &&
             additionalIndex > primaryIndex &&
@@ -351,6 +356,61 @@ runScenario("workspace-picker", {
         );
         await pressKey(session, "Escape", 27);
         return {};
+      },
+    ],
+    [
+      "the sidebar preview lists folders without repeating the name",
+      async ({ session, workspaceName }) => {
+        const row = await session.run((name) => {
+          const button = [
+            ...document.querySelectorAll(
+              '[data-slot="sidebar-menu-item"] button',
+            ),
+          ].find((element) => element.innerText.trim() === name);
+          if (!button) return null;
+          const rect = button.getBoundingClientRect();
+          return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+          };
+        }, workspaceName);
+        check(row, "sidebar lacks the multi-folder workspace row");
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...row,
+        });
+        await session.waitUntil(
+          () =>
+            Boolean(
+              document.querySelector(
+                '[data-slot="tooltip-content"][data-open]',
+              ),
+            ),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const preview = await session.run(async () => ({
+          lines: document
+            .querySelector('[data-slot="tooltip-content"][data-open]')
+            .innerText.split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean),
+          primaryLabel: await window.__scenario.t(
+            "sessions:workspace.rootsPrimary",
+          ),
+        }));
+        check(
+          preview.lines[0] === preview.primaryLabel &&
+            !preview.lines.includes(workspaceName),
+          "sidebar preview repeats the workspace name",
+          preview,
+        );
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: row.x + 600,
+          y: row.y,
+        });
+        return { lines: preview.lines };
       },
     ],
     [
