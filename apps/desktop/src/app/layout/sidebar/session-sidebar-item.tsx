@@ -29,6 +29,7 @@ import {
   ContextMenuTrigger,
   SidebarListRow,
 } from "@/components/ui";
+import { ExecutionTreeDialog } from "@/features/agent/execution-tree";
 import { permissionsBySessionAtom } from "@/features/agent/permission";
 import { questionsBySessionAtom } from "@/features/agent/question";
 import {
@@ -36,7 +37,6 @@ import {
   canMarkSessionUnread,
   collectSessionSubtreeIds,
   deleteSessionAtom,
-  ExecutionTreeDialog,
   focusedPaneCanSplitDownAtom,
   focusedPaneCanSplitRightAtom,
   getAgentDisplayLabel,

@@ -354,6 +354,7 @@ export function AppShellFrame({
                 <RightPanelWindowActions
                   isRightPanelMaximized={isRightPanelMaximized}
                   onToggleRightPanelMaximize={onToggleRightPanelMaximize}
+                  onCloseRightPanel={onToggleRightPanel}
                 />
               )
             }
