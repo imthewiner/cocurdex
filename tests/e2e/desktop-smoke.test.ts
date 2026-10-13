@@ -1,10 +1,11 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { killProcessTree } from "@cocurdex/agent-adapters";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { getDaemonMetadataPath } from "@cocurdex/daemon/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
+import { createTempDirs } from "@cocurdex/shared/testing";
 import {
   type ElectronApplication,
   _electron as electron,
@@ -26,30 +27,72 @@ function resolveElectronExecutable() {
   return path.join(electronPackageDir, "dist", relative);
 }
 
-const buildReady =
-  existsSync(mainEntry) &&
-  existsSync(rendererEntry) &&
-  existsSync(daemonBundle) &&
-  existsSync(path.join(electronPackageDir, "path.txt"));
+const packaged = process.env.COCURDEX_DESKTOP_PACKAGED === "1";
+const releaseRoot = path.join(desktopRoot, "release");
+const packagedCandidates: Record<string, string[]> = {
+  darwin: [
+    path.join(
+      releaseRoot,
+      `mac-${process.arch}`,
+      "Cocurdex.app",
+      "Contents",
+      "MacOS",
+      "Cocurdex",
+    ),
+    path.join(
+      releaseRoot,
+      "mac",
+      "Cocurdex.app",
+      "Contents",
+      "MacOS",
+      "Cocurdex",
+    ),
+  ],
+  win32: [path.join(releaseRoot, "win-unpacked", "Cocurdex.exe")],
+  linux: [path.join(releaseRoot, "linux-unpacked", "Cocurdex")],
+};
+const tempDirs = createTempDirs();
 
-describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
+describe("desktop app boot", () => {
   let userDataPath = "";
   let app: ElectronApplication | undefined;
+  let daemonPid: number | undefined;
 
   afterAll(async () => {
-    await app?.close();
-    if (userDataPath) {
-      await rm(userDataPath, {
-        recursive: true,
-        force: true,
-        maxRetries: 10,
-        retryDelay: 200,
-      });
+    const failures: unknown[] = [];
+    try {
+      await app?.close();
+    } catch (error) {
+      failures.push(error);
     }
+    if (daemonPid) {
+      try {
+        process.kill(daemonPid, 0);
+        await killProcessTree(daemonPid);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ESRCH")
+          failures.push(error);
+      }
+    }
+    await tempDirs.cleanup();
+    if (failures.length)
+      throw new AggregateError(failures, "Desktop cleanup failed");
   });
 
   it("boots a window and spawns a live daemon", async () => {
-    userDataPath = mkdtempSync(path.join(tmpdir(), "cocurdex-e2e-desktop-"));
+    const executablePath = packaged
+      ? packagedCandidates[process.platform]?.find((candidate) =>
+          existsSync(candidate),
+        )
+      : resolveElectronExecutable();
+    if (!executablePath) throw new Error("Missing packaged desktop executable");
+    if (!packaged) {
+      for (const required of [mainEntry, rendererEntry, daemonBundle]) {
+        if (!existsSync(required))
+          throw new Error(`Missing desktop build output: ${required}`);
+      }
+    }
+    userDataPath = tempDirs.createSync("cocu-smoke-");
     const env: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env)) {
       if (value !== undefined) env[key] = value;
@@ -59,8 +102,8 @@ describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
     env.TZ = "UTC";
     delete env.ELECTRON_RUN_AS_NODE;
     app = await electron.launch({
-      executablePath: resolveElectronExecutable(),
-      args: [desktopRoot, "--no-sandbox"],
+      executablePath,
+      args: packaged ? ["--no-sandbox"] : [desktopRoot, "--no-sandbox"],
       env,
     });
 
@@ -73,6 +116,7 @@ describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
     const metadata = JSON.parse(
       readFileSync(metadataPath, "utf8"),
     ) as DaemonMetadata;
+    daemonPid = metadata.pid;
     expect(metadata.pid).toBeGreaterThan(0);
     expect(metadata.token).toBeTruthy();
 
@@ -83,6 +127,8 @@ describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
     const title = "Renderer WebSocket note ".repeat(4);
     const window = app.windows().find((candidate) => !candidate.isClosed());
     if (!window) throw new Error("No open desktop window");
+    if (window !== page)
+      window.on("pageerror", (error) => pageErrors.push(error.message));
     const created = await window.evaluate(async (noteTitle) => {
       const api = (
         globalThis as unknown as {
@@ -123,7 +169,20 @@ describe.skipIf(!buildReady)("desktop app boot (built output)", () => {
     const afterWebSocket = await requestDaemon("daemon.status", { metadata });
     expect(afterWebSocket.pid).toBe(metadata.pid);
 
-    await sleep(2_000);
+    await window.locator("body").waitFor({ state: "visible" });
+    expect(await window.locator("body").innerText()).not.toBe("");
+    await sleep(500);
+    const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+    if (artifacts) {
+      await mkdir(artifacts, { recursive: true });
+      await window.screenshot({
+        path: path.join(artifacts, "desktop-smoke.png"),
+      });
+      await writeFile(
+        path.join(artifacts, "desktop-smoke.json"),
+        JSON.stringify({ packaged, pageErrors, daemonPid }, null, 2),
+      );
+    }
     expect(pageErrors).toEqual([]);
   });
 });

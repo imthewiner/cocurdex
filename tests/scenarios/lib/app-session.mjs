@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { parseArgs } from "node:util";
 import {
   connect,
@@ -89,6 +91,9 @@ export async function openAppSession({ port, url }) {
   const base = `http://127.0.0.1:${port}`;
   const targets = await readEndpoint(base, "/json/list", 5_000);
   const client = await connect(selectTarget(targets, { url }), 10_000);
+  await client.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: PAGE_HELPERS,
+  });
   await evaluate(client, PAGE_HELPERS, EVAL_TIMEOUT_MS);
   return {
     run: (fn, arg) => evaluate(client, invocation(fn, arg), EVAL_TIMEOUT_MS),
@@ -165,6 +170,21 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
     report.passed = false;
     report.setupError = errorMessage(error);
   } finally {
+    const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+    if (!report.passed && opened?.session && artifacts) {
+      try {
+        await mkdir(artifacts, { recursive: true });
+        const screenshot = await opened.session.send("Page.captureScreenshot", {
+          format: "png",
+        });
+        await writeFile(
+          path.join(artifacts, `${name}.png`),
+          Buffer.from(screenshot.result.data, "base64"),
+        );
+      } catch (error) {
+        report.screenshotError = errorMessage(error);
+      }
+    }
     if (context) {
       try {
         report.teardown = await teardown(context);
@@ -181,6 +201,14 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
         report.closeError = errorMessage(error);
       }
     }
+  }
+  const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+  if (artifacts) {
+    await mkdir(artifacts, { recursive: true });
+    await writeFile(
+      path.join(artifacts, `${name}.json`),
+      JSON.stringify(report, null, 2),
+    );
   }
   console.log(JSON.stringify(report, null, 2));
   process.exit(report.passed ? 0 : 1);

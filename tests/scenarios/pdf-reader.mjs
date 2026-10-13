@@ -2,6 +2,7 @@ import path from "node:path";
 import { PDF_FIXTURES } from "./fixtures/index.mjs";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { openWorkspaceFile } from "./lib/file-tree.mjs";
 
 const PDF_REQUEST_FRAGMENT = "/files/pdf";
 const PDF_STORE_MODULE = "/src/features/pdf-reader/pdf-reader-store.ts";
@@ -207,7 +208,7 @@ runScenario("pdf-reader", {
     await ensureEditorPanelOpen(session);
     const initial = await readViewerState(session, fileName);
     await resetRequests(session);
-    await openPdf(session, pdfPath);
+    await openWorkspaceFile(session, fileName);
     await session.waitUntil(
       () => document.querySelectorAll(".pdfViewer canvas").length > 0,
       null,

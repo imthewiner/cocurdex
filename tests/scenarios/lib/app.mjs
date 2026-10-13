@@ -76,16 +76,22 @@ export async function openScenarioApp(
     await mkdtemp(path.join(os.tmpdir(), "cocu-ws-")),
   );
   let fixtureDbInstall = null;
-  const instance = await launchIsolatedInstance({
-    prepareUserData: fixtureDb
-      ? async (userDataPath) => {
-          fixtureDbInstall = await installFixtureDb(
-            userDataPath,
-            workspaceRoot,
-          );
-        }
-      : undefined,
-  });
+  let instance;
+  try {
+    instance = await launchIsolatedInstance({
+      prepareUserData: fixtureDb
+        ? async (userDataPath) => {
+            fixtureDbInstall = await installFixtureDb(
+              userDataPath,
+              workspaceRoot,
+            );
+          }
+        : undefined,
+    });
+  } catch (error) {
+    await rm(workspaceRoot, { recursive: true, force: true });
+    throw error;
+  }
   const files = {};
   let session;
   const close = async ({ passed = false } = {}) => {
@@ -104,9 +110,12 @@ export async function openScenarioApp(
       );
       return;
     }
-    await instance.stop({ keepLog: !passed });
-    if (!passed) console.error(`Isolated instance log: ${instance.logPath}`);
-    await rm(workspaceRoot, { recursive: true, force: true });
+    try {
+      await instance.stop({ keepLog: !passed });
+      if (!passed) console.error(`Isolated instance log: ${instance.logPath}`);
+    } finally {
+      await rm(workspaceRoot, { recursive: true, force: true });
+    }
   };
   try {
     for (const fixture of fixtures) {
