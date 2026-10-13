@@ -69,6 +69,16 @@ Pick a component for what the control does, not for how it looks. A `Button` per
 - Never put `onClick` on a `div` or `span`, never style a `Button` to imitate a tab, switch, checkbox, or link, and never nest interactive elements (a button inside a button or a row trigger).
 - Keep the role and state that come with the chosen component (`aria-checked`, `aria-pressed`, `aria-selected`, `aria-expanded`) and give every control an accessible name. Assistive technology and the role-based scenario locators in `tests/scenarios/lib/locate.mjs` both depend on them.
 
+### Built for automation
+
+Agents and scenario scripts drive this UI through the accessibility tree and the DOM, so key elements must be easy to find without knowing the DOM structure. Treat findability as part of a component's contract, like its props.
+
+- Give every interactive element a role and a unique, stable accessible name within its region: visible text, `aria-label` for icon-only controls, `aria-labelledby` for regions, dialogs, lists, and panels. Names come from i18n keys, so tests resolve them with `t()` instead of hardcoding copy.
+- Mark rows and items that represent product entities with their domain id (`data-session-id`, `data-issue-id`, `data-note-id`, `data-item-path`), so a locator can target one entity regardless of title, sorting, or virtualization.
+- Expose meaningful state through ARIA (`aria-selected`, `aria-expanded`, `aria-checked`, `aria-busy`, `aria-invalid`) or `data-state`, so tests wait for state instead of sleeping or inspecting classes.
+- Use `data-testid` only for elements with no role, name, or domain id, such as canvases and drag surfaces. Never rely on class names, DOM depth, or element order.
+- A new screen or flow is not done until a scenario in `tests/scenarios` can reach its key controls through `lib/locate.mjs`; when it cannot, fix the component rather than the locator.
+
 ### Desktop and web parity
 
 The same screen must look and behave the same in the Electron app and the web client. Hosts differ only in `HostCapabilities` (`desktopApi.capabilities`), never in layout, components, or wording for the same scenario.
