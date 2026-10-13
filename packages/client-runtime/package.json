@@ -3,18 +3,16 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./internal/*": "./src/*.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*"
   },
-  "devDependencies": {
-    "vitest": "^4.1.11"
-  }
+  "devDependencies": {}
 }

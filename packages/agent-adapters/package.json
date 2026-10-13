@@ -5,11 +5,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./desktop-provider": "./src/desktop-provider.ts",
-    "./provider-auth": "./src/provider-auth.ts"
+    "./provider-auth": "./src/provider-auth.ts",
+    "./internal/*": "./src/*.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^24.13.6",
-    "vitest": "^4.1.11"
+    "@types/node": "^24.13.6"
   }
 }

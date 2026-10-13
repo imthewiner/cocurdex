@@ -1,0 +1,30 @@
+{
+  "name": "@cocurdex/unit-daemon",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@cocurdex/agent-adapters": "workspace:*",
+    "@cocurdex/agent-core": "workspace:*",
+    "@cocurdex/daemon": "workspace:*",
+    "@cocurdex/db": "workspace:*",
+    "@cocurdex/note-doc": "workspace:*",
+    "@cocurdex/rpc": "workspace:*",
+    "@cocurdex/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "@napi-rs/keyring": "^2.1.0",
+    "@types/node": "^24.13.6",
+    "@types/ws": "^8.18.2",
+    "effect": "4.0.2",
+    "simple-git": "^4.0.2",
+    "tsx": "^4.23.15",
+    "vitest": "^4.1.11",
+    "ws": "^8.22.0",
+    "yjs": "^13.6.33"
+  }
+}

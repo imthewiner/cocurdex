@@ -41,7 +41,33 @@
                     "importNames": ["lazy", "Suspense"],
                     "message": "Use lazyComponent from @/lib: React delays the first reveal after a Suspense fallback by 300 ms."
                   }
-                }
+                },
+                "patterns": [
+                  {
+                    "group": ["@cocurdex/*/internal/*"],
+                    "message": "Internal subpaths exist only for tests in tests/unit; import the package public entry."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/**", "packages/**", "!apps/desktop/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@cocurdex/*/internal/*"],
+                    "message": "Internal subpaths exist only for tests in tests/unit; import the package public entry."
+                  }
+                ]
               }
             }
           }

@@ -29,7 +29,24 @@
       "@cocurdex/note-doc/bytes": ["./packages/note-doc/src/bytes.ts"],
       "@cocurdex/note-doc": ["./packages/note-doc/src/index.ts"],
       "@cocurdex/product-skills": ["./packages/product-skills/src/index.ts"],
-      "@cocurdex/api": ["./apps/api/src/index.ts"]
+      "@cocurdex/api": ["./apps/api/src/index.ts"],
+      "@cocurdex/agent-adapters/internal/*": [
+        "./packages/agent-adapters/src/*"
+      ],
+      "@cocurdex/agent-core/internal/*": ["./packages/agent-core/src/*"],
+      "@cocurdex/client-runtime/internal/*": [
+        "./packages/client-runtime/src/*"
+      ],
+      "@cocurdex/daemon/internal/*": ["./packages/daemon/src/*"],
+      "@cocurdex/db/internal/*": ["./packages/db/src/*"],
+      "@cocurdex/note-doc/internal/*": ["./packages/note-doc/src/*"],
+      "@cocurdex/product-skills/internal/*": [
+        "./packages/product-skills/src/*"
+      ],
+      "@cocurdex/rpc/internal/*": ["./packages/rpc/src/*"],
+      "@cocurdex/shared/internal/*": ["./packages/shared/src/*"],
+      "@cocurdex/cli/internal/*": ["./apps/cli/src/*"],
+      "@cocurdex/api/internal/*": ["./apps/api/src/*"]
     }
   }
 }

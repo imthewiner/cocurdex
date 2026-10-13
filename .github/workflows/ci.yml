@@ -54,7 +54,7 @@ jobs:
           run_desktop=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              .github/workflows/ci.yml|.npmrc|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|tsconfig.json|apps/cli/*|apps/desktop/*|packages/agent-adapters/*|packages/agent-core/*|packages/client-runtime/*|packages/daemon/*|packages/db/*|packages/llm-chat/*|packages/product-skills/*|packages/rpc/*|packages/shared/*)
+              .github/workflows/ci.yml|.npmrc|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|tsconfig.json|apps/cli/*|apps/desktop/*|packages/agent-adapters/*|packages/agent-core/*|packages/client-runtime/*|packages/daemon/*|packages/db/*|packages/llm-chat/*|packages/product-skills/*|packages/rpc/*|packages/shared/*|tests/*)
                 run_desktop=true
                 break
                 ;;
@@ -140,10 +140,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck desktop
         if: needs.changes.outputs.run_desktop == 'true'
-        run: pnpm --filter @cocurdex/desktop typecheck
+        run: pnpm --filter @cocurdex/desktop --filter @cocurdex/unit-desktop typecheck
       - name: Test desktop
         if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
-        run: pnpm --filter @cocurdex/desktop test
+        run: pnpm --filter @cocurdex/unit-desktop test
       - name: Test all packages including e2e
         if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
         run: pnpm -r --no-bail --if-present test
