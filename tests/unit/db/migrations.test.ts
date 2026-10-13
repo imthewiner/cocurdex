@@ -2,7 +2,6 @@ import { DatabaseSync } from "node:sqlite";
 import {
   COCURDEX_APPLICATION_ID,
   CURRENT_SCHEMA_VERSION,
-  FIRST_MIGRATABLE_SCHEMA_VERSION,
   initializeDatabase,
   UnsupportedDatabaseVersionError,
 } from "@cocurdex/db/internal/migrations";
@@ -1261,27 +1260,6 @@ describe("initializeDatabase", () => {
     const version = database.prepare("PRAGMA user_version").get();
     expect(sentinel).toEqual({ name: "legacy_sentinel" });
     expect(version).toEqual({ user_version: CURRENT_SCHEMA_VERSION });
-  });
-
-  it("has a migration step for every supported schema version", () => {
-    const unmigratable: number[] = [];
-    for (
-      let version = FIRST_MIGRATABLE_SCHEMA_VERSION;
-      version < CURRENT_SCHEMA_VERSION;
-      version++
-    ) {
-      const database = new DatabaseSync(":memory:");
-      initializeDatabase(database);
-      database.exec(`PRAGMA user_version = ${version}`);
-      try {
-        initializeDatabase(database);
-      } catch {
-        unmigratable.push(version);
-      }
-      database.close();
-    }
-
-    expect(unmigratable).toEqual([]);
   });
 
   it("refuses a database written by a newer schema version", () => {

@@ -25,7 +25,8 @@
     "lint:design-tokens": "node ./scripts/lint-design-tokens.mjs",
     "lint:theme-parity": "node ./scripts/lint-theme-parity.mjs",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test:ui": "node tests/scenarios/run.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

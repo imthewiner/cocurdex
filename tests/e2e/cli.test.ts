@@ -1,11 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { getDaemonMetadataPath } from "@cocurdex/daemon/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
 import { DAEMON_PROTOCOL_VERSION } from "@cocurdex/rpc";
+import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runCli } from "./helpers/cli";
 import {
@@ -14,6 +13,9 @@ import {
   spawnDaemon,
   waitFor,
 } from "./helpers/daemon-process";
+
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
 interface NoteJson {
   id: string;
@@ -151,9 +153,7 @@ describe("cocurdex CLI against a running daemon", () => {
 
 describe("cocurdex CLI daemon auto-start", () => {
   it("starts the daemon itself when none is running", async () => {
-    const userDataPath = mkdtempSync(
-      path.join(tmpdir(), "cocurdex-e2e-autostart-"),
-    );
+    const userDataPath = tempDirs.createSync("cocurdex-e2e-autostart-");
     try {
       const result = await runCli(["daemon", "status", "--json"], {
         userDataPath,

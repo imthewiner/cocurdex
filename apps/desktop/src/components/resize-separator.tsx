@@ -15,14 +15,14 @@ export type ResizeSeparatorPosition =
   | "absolute-end";
 
 export function ResizeSeparator({
-  ariaLabel = "Resize panel",
+  ariaLabel,
   testId,
   onMouseDown,
   position = "relative",
   className,
   style,
 }: {
-  ariaLabel?: string;
+  ariaLabel: string;
   testId?: string;
   onMouseDown(event: MouseEvent): void;
   position?: ResizeSeparatorPosition;

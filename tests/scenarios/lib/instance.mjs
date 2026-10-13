@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import net from "node:net";
 import os from "node:os";
@@ -124,6 +124,10 @@ function waitForRendererUrl(child, logStream) {
       clearTimeout(timer);
       reject(new Error(`electron-vite dev exited early with code ${code}`));
     });
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
   });
 }
 
@@ -148,6 +152,8 @@ export async function stopIsolatedInstance(pid, userDataPath) {
 }
 
 export async function launchIsolatedInstance({ prepareUserData } = {}) {
+  const viteBin = electronViteBin();
+  const port = await freePort();
   const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cocu-"));
   try {
     await prepareUserData?.(userDataPath);
@@ -155,10 +161,9 @@ export async function launchIsolatedInstance({ prepareUserData } = {}) {
     await rm(userDataPath, { recursive: true, force: true });
     throw error;
   }
-  const port = await freePort();
   const logPath = `${userDataPath}.log`;
   const logStream = createWriteStream(logPath);
-  const child = spawn(process.execPath, [electronViteBin(), "dev"], {
+  const child = spawn(process.execPath, [viteBin, "dev"], {
     cwd: DESKTOP_DIR,
     env: {
       ...process.env,
@@ -172,6 +177,11 @@ export async function launchIsolatedInstance({ prepareUserData } = {}) {
     child.stderr.removeAllListeners("data");
     logStream.end();
     await stopIsolatedInstance(child.pid, userDataPath);
+    const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+    if (keepLog && artifacts) {
+      await mkdir(artifacts, { recursive: true });
+      await copyFile(logPath, path.join(artifacts, path.basename(logPath)));
+    }
     if (!keepLog) await rm(logPath, { force: true });
   };
   try {

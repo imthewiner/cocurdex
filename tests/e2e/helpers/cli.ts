@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { repoRoot, sleep } from "./daemon-process";
+import { killProcessTree } from "@cocurdex/agent-adapters";
+import { repoRoot } from "./daemon-process";
 
 const cliPackageDir = path.join(repoRoot, "apps", "cli");
 const cliBinPath = path.join(cliPackageDir, "bin", "cocurdex.mjs");
@@ -43,12 +44,15 @@ export async function runCli(
     child.once("error", () => resolve(null));
     child.once("exit", (code) => resolve(code));
   });
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const code = await Promise.race([
     exited,
-    sleep(CLI_TIMEOUT_MS).then(() => "timeout" as const),
-  ]);
+    new Promise<"timeout">((resolve) => {
+      timer = setTimeout(() => resolve("timeout"), CLI_TIMEOUT_MS);
+    }),
+  ]).finally(() => clearTimeout(timer));
   if (code === "timeout") {
-    child.kill("SIGKILL");
+    if (child.pid) await killProcessTree(child.pid);
     await exited;
     throw new Error(`cocurdex ${args.join(" ")} timed out`);
   }

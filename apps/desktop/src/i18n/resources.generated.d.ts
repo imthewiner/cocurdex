@@ -529,8 +529,10 @@ export default interface Resources {
       pinChatDockNeedsSpace: "The window is too narrow to dock chat. Widen it and try again.";
       preview: "Preview";
       resizeChat: "Resize chat";
+      resizeEditorPanel: "Resize editor panel";
       resizeExplorer: "Resize explorer panel";
       resizeSessionList: "Resize session list";
+      resizeSidebar: "Resize sidebar";
       showBrowser: "Browser";
       showEditor: "Files";
       showGitChanges: "Git";

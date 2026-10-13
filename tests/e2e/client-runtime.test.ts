@@ -1,18 +1,19 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import {
   createHostConnection,
   type HostConnection,
 } from "@cocurdex/client-runtime";
 import { readDaemonMetadata } from "@cocurdex/daemon/client";
 import type { CocurdexDaemonEvent } from "@cocurdex/shared";
-import { afterEach, describe, expect, it } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import {
   type DaemonProcess,
   spawnDaemon,
   waitFor,
 } from "./helpers/daemon-process";
+
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
 const hosts: HostConnection[] = [];
 const daemons: DaemonProcess[] = [];
@@ -47,9 +48,7 @@ async function start(userDataPath: string) {
 
 describe("client runtime against a real daemon", () => {
   it("streams events and requests over one host connection", async () => {
-    const daemon = await start(
-      mkdtempSync(path.join(tmpdir(), "cocurdex-e2e-host-")),
-    );
+    const daemon = await start(tempDirs.createSync("cocurdex-e2e-host-"));
     const host = connectHost(daemon.userDataPath);
     const events: CocurdexDaemonEvent[] = [];
     host.onEvent((event) => events.push(event));
@@ -69,9 +68,7 @@ describe("client runtime against a real daemon", () => {
   });
 
   it("reconnects across a daemon restart and asks clients to resync", async () => {
-    const userDataPath = mkdtempSync(
-      path.join(tmpdir(), "cocurdex-e2e-host-restart-"),
-    );
+    const userDataPath = tempDirs.createSync("cocurdex-e2e-host-restart-");
     const first = await start(userDataPath);
     const host = connectHost(userDataPath);
     const events: CocurdexDaemonEvent[] = [];
