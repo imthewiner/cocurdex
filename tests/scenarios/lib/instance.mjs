@@ -147,8 +147,14 @@ export async function stopIsolatedInstance(pid, userDataPath) {
   await rm(userDataPath, { recursive: true, force: true });
 }
 
-export async function launchIsolatedInstance() {
+export async function launchIsolatedInstance({ prepareUserData } = {}) {
   const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cocu-"));
+  try {
+    await prepareUserData?.(userDataPath);
+  } catch (error) {
+    await rm(userDataPath, { recursive: true, force: true });
+    throw error;
+  }
   const port = await freePort();
   const logPath = `${userDataPath}.log`;
   const logStream = createWriteStream(logPath);
