@@ -13,26 +13,33 @@ const FIXTURE_DB_TIMEOUT_MS = 120_000;
 const SCENARIO_WORKSPACE_ID = "scenario-workspace";
 const PRODUCT_API_MODULE = "/src/lib/product-api.ts";
 
-async function seedWorkspace(session, { id, rootPath }) {
+async function seedWorkspaces(session, workspaces) {
   await session.waitUntil(() => Boolean(window.desktopApi), null, 30_000);
   await session.run(
-    async ({ id, rootPath, productApiModule }) => {
+    async ({ workspaces, productApiModule }) => {
       const { daemonProductApi } = await import(productApiModule);
-      const now = new Date().toISOString();
-      await daemonProductApi.saveWorkspace({
-        id,
-        name: rootPath.split(/[\\/]/).pop(),
-        rootPaths: [rootPath],
-        createdAt: now,
-        updatedAt: now,
-        lastOpenedAt: now,
-        sortOrder: 0,
-      });
+      for (const [index, workspace] of workspaces.entries()) {
+        const now = new Date(Date.now() + index).toISOString();
+        await daemonProductApi.saveWorkspace({
+          ...workspace,
+          createdAt: now,
+          updatedAt: now,
+          lastOpenedAt: now,
+          sortOrder: (workspaces.length - 1 - index) * 1000,
+        });
+      }
       return true;
     },
-    { id, rootPath, productApiModule: PRODUCT_API_MODULE },
+    { workspaces, productApiModule: PRODUCT_API_MODULE },
   );
   await session.reload();
+}
+
+function fixtureDbWorkspaces(install) {
+  const isPrimary = (workspace) => workspace.id === install.workspaceId;
+  return [...install.installedWorkspaces].sort(
+    (left, right) => Number(isPrimary(left)) - Number(isPrimary(right)),
+  );
 }
 
 async function installFixtureDb(userDataPath, workspaceParent) {
@@ -108,14 +115,17 @@ export async function openScenarioApp(
       files[fixture] = target;
     }
     session = await openAppSession(instance);
-    await seedWorkspace(
+    await seedWorkspaces(
       session,
       fixtureDbInstall
-        ? {
-            id: fixtureDbInstall.workspaceId,
-            rootPath: fixtureDbInstall.workspacePath,
-          }
-        : { id: SCENARIO_WORKSPACE_ID, rootPath: workspaceRoot },
+        ? fixtureDbWorkspaces(fixtureDbInstall)
+        : [
+            {
+              id: SCENARIO_WORKSPACE_ID,
+              name: path.basename(workspaceRoot),
+              rootPaths: [workspaceRoot],
+            },
+          ],
     );
     return {
       session,

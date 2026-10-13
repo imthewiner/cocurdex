@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type InstalledFixture, installFixtureDb } from "./fixture-db/install";
 import {
   FIXTURE_ISSUES,
+  FIXTURE_MULTI_FOLDER_WORKSPACE_ID,
   FIXTURE_NOTES,
   FIXTURE_WORKSPACE_ID,
 } from "./fixture-db/recipe";
@@ -77,6 +78,27 @@ describe("sensitive data scanner", () => {
 describe("fixture database", () => {
   it("contains no machine paths, identities, or credentials", async () => {
     expect(await scanForSensitiveData(userDataPath)).toEqual([]);
+  });
+
+  it("installs a multi-folder workspace whose folders all exist", async () => {
+    const suite = fixture.installedWorkspaces.find(
+      (workspace) => workspace.id === FIXTURE_MULTI_FOLDER_WORKSPACE_ID,
+    );
+    expect(suite?.rootPaths.map((rootPath) => path.basename(rootPath))).toEqual(
+      ["acme-web", "acme-docs"],
+    );
+    daemon = await spawnDaemon({ userDataPath });
+    const [stored] = (
+      await requestDaemon("workspace.list", daemon.options)
+    ).filter((candidate) => candidate.id === FIXTURE_MULTI_FOLDER_WORKSPACE_ID);
+    expect(stored?.rootPaths).toHaveLength(2);
+    const relinked = await requestDaemon(
+      "workspace.save",
+      { workspace: { ...stored, rootPaths: suite?.rootPaths ?? [] } },
+      daemon.options,
+    );
+    expect(relinked.missingRootPaths).toEqual([]);
+    await daemon.stop();
   });
 
   it("opens in a fresh daemon with every seeded record", async () => {

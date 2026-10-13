@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { openScenarioApp } from "./lib/app.mjs";
@@ -6,8 +5,7 @@ import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
 const TOOLTIP_DELAY_MS = 900;
-const WORKSPACE_STORE_MODULE = "/src/features/workspaces/workspace-store.ts";
-const SECOND_ROOT_NAME = "acme-docs";
+const MULTI_FOLDER_WORKSPACE_ID = "fixture-acme-suite";
 
 const args = readScenarioArgs();
 if (args.port) {
@@ -37,11 +35,10 @@ runScenario("workspace-picker", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session, fixtureDb }) => {
     check(fixtureDb, "fixture database was not installed");
-    const secondRoot = path.join(
-      path.dirname(fixtureDb.workspacePath),
-      SECOND_ROOT_NAME,
+    const suite = fixtureDb.installedWorkspaces.find(
+      (workspace) => workspace.id === MULTI_FOLDER_WORKSPACE_ID,
     );
-    await mkdir(secondRoot, { recursive: true });
+    check(suite, "fixture database lacks the multi-folder workspace");
     const newSessionLabel = await session.run(() =>
       window.__scenario.t("sessions:sidebar.newSession"),
     );
@@ -49,19 +46,6 @@ runScenario("workspace-picker", {
       (label) => Boolean(window.__scenario.byLabel(label)),
       newSessionLabel,
       UI_TIMEOUT_MS,
-    );
-    await session.run(
-      async ({ storeModule, workspaceId, rootPaths }) => {
-        const store = await window.__scenario.store(storeModule);
-        const module = await import(storeModule);
-        await store.set(module.updateWorkspaceAtom, workspaceId, { rootPaths });
-        return true;
-      },
-      {
-        storeModule: WORKSPACE_STORE_MODULE,
-        workspaceId: fixtureDb.workspaceId,
-        rootPaths: [fixtureDb.workspacePath, secondRoot],
-      },
     );
     await session.run((label) => {
       window.__scenario.byLabel(label).click();
@@ -72,7 +56,10 @@ runScenario("workspace-picker", {
       null,
       UI_TIMEOUT_MS,
     );
-    return { workspaceName: fixtureDb.workspaceName };
+    return {
+      workspaceName: suite.name,
+      folderNames: suite.rootPaths.map((rootPath) => path.basename(rootPath)),
+    };
   },
   steps: [
     [
@@ -98,7 +85,7 @@ runScenario("workspace-picker", {
     ],
     [
       "the dropdown lists every folder of a multi-folder workspace",
-      async ({ session, workspaceName }) => {
+      async ({ session, workspaceName, folderNames }) => {
         const trigger = await workspaceTrigger(session);
         for (const type of ["mousePressed", "mouseReleased"]) {
           await session.send("Input.dispatchMouseEvent", {
@@ -133,11 +120,12 @@ runScenario("workspace-picker", {
         );
         const [, ...rootLines] = lines;
         check(
-          rootLines.length === 2 &&
-            rootLines[0].startsWith(workspaceName) &&
-            rootLines[1].startsWith(SECOND_ROOT_NAME),
-          "option does not list both folders name-first",
-          lines,
+          rootLines.length === folderNames.length &&
+            folderNames.every((name, index) =>
+              rootLines[index].startsWith(name),
+            ),
+          "option does not list every folder name-first",
+          { lines, folderNames },
         );
         return { lines };
       },
