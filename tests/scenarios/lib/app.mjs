@@ -59,6 +59,108 @@ async function installFixtureDb(userDataPath, workspaceParent) {
   return JSON.parse(stdout.trim().split(/\r?\n/).pop());
 }
 
+const SHARED_INSTANCE_ENV = "COCURDEX_SCENARIO_INSTANCE";
+
+function scenarioWorkspaces(workspaceRoot, fixtureDbInstall) {
+  if (fixtureDbInstall) return fixtureDbWorkspaces(fixtureDbInstall);
+  return [
+    {
+      id: SCENARIO_WORKSPACE_ID,
+      name: path.basename(workspaceRoot),
+      rootPaths: [workspaceRoot],
+    },
+  ];
+}
+
+async function copyFixtures(fixtures, workspaceRoot) {
+  const files = {};
+  for (const fixture of fixtures) {
+    const target = path.join(workspaceRoot, path.basename(fixture));
+    await copyFile(fixture, target);
+    files[fixture] = target;
+  }
+  return files;
+}
+
+function readSharedInstance() {
+  const value = process.env[SHARED_INSTANCE_ENV];
+  return value ? JSON.parse(value) : null;
+}
+
+export async function launchSharedScenarioInstance() {
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(os.tmpdir(), "cocu-ws-")),
+  );
+  let fixtureDb = null;
+  let instance;
+  try {
+    instance = await launchIsolatedInstance({
+      prepareUserData: async (userDataPath) => {
+        fixtureDb = await installFixtureDb(userDataPath, workspaceRoot);
+      },
+    });
+  } catch (error) {
+    await rm(workspaceRoot, { recursive: true, force: true });
+    throw error;
+  }
+  const { port, url } = instance;
+  return {
+    port,
+    env: {
+      [SHARED_INSTANCE_ENV]: JSON.stringify({
+        port,
+        url,
+        workspaceRoot,
+        fixtureDb,
+      }),
+    },
+    async stop({ passed = false } = {}) {
+      try {
+        await instance.stop({ keepLog: !passed });
+        if (!passed) console.error(`Shared instance log: ${instance.logPath}`);
+      } finally {
+        await rm(workspaceRoot, { recursive: true, force: true });
+      }
+    },
+  };
+}
+
+async function attachSharedInstance(shared, { fixtures, fixtureDb }) {
+  if (fixtureDb && !shared.fixtureDb) {
+    throw new Error("Shared instance has no fixture database");
+  }
+  const fixtureDbInstall = fixtureDb ? shared.fixtureDb : null;
+  const workspaceRoot = await realpath(
+    await mkdtemp(path.join(shared.workspaceRoot, "scenario-")),
+  );
+  const removeWorkspace = () =>
+    rm(workspaceRoot, { recursive: true, force: true });
+  let session;
+  try {
+    const files = await copyFixtures(fixtures, workspaceRoot);
+    session = await openAppSession(shared);
+    await seedWorkspaces(
+      session,
+      scenarioWorkspaces(workspaceRoot, fixtureDbInstall),
+    );
+    return {
+      session,
+      isolated: false,
+      workspaceRoot,
+      files,
+      fixtureDb: fixtureDbInstall,
+      close: async () => {
+        session.close();
+        await removeWorkspace();
+      },
+    };
+  } catch (error) {
+    session?.close();
+    await removeWorkspace();
+    throw error;
+  }
+}
+
 export async function openScenarioApp(
   { port, url, keep, "fixture-db": fixtureDbArg },
   { fixtures = [], fixtureDb = fixtureDbArg } = {},
@@ -72,6 +174,8 @@ export async function openScenarioApp(
       close: () => session.close(),
     };
   }
+  const shared = readSharedInstance();
+  if (shared) return attachSharedInstance(shared, { fixtures, fixtureDb });
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(os.tmpdir(), "cocu-ws-")),
   );
@@ -92,7 +196,6 @@ export async function openScenarioApp(
     await rm(workspaceRoot, { recursive: true, force: true });
     throw error;
   }
-  const files = {};
   let session;
   const close = async ({ passed = false } = {}) => {
     session?.close();
@@ -118,23 +221,11 @@ export async function openScenarioApp(
     }
   };
   try {
-    for (const fixture of fixtures) {
-      const target = path.join(workspaceRoot, path.basename(fixture));
-      await copyFile(fixture, target);
-      files[fixture] = target;
-    }
+    const files = await copyFixtures(fixtures, workspaceRoot);
     session = await openAppSession(instance);
     await seedWorkspaces(
       session,
-      fixtureDbInstall
-        ? fixtureDbWorkspaces(fixtureDbInstall)
-        : [
-            {
-              id: SCENARIO_WORKSPACE_ID,
-              name: path.basename(workspaceRoot),
-              rootPaths: [workspaceRoot],
-            },
-          ],
+      scenarioWorkspaces(workspaceRoot, fixtureDbInstall),
     );
     return {
       session,

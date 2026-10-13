@@ -1,5 +1,6 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clickByRole } from "./lib/locate.mjs";
 
 const ACTIVE_TITLES = [
   "Add percentage discount codes",
@@ -40,17 +41,11 @@ runScenario("fixture-db", {
     [
       "opens a session with tool calls",
       async ({ session }) => {
-        await session.run((title) => {
-          const label = [...document.querySelectorAll("span, div")].find(
-            (element) =>
-              element.childElementCount === 0 &&
-              element.textContent?.trim() === title,
-          );
-          const button = label?.closest("button");
-          if (!button) throw new Error(`No sidebar item for ${title}`);
-          button.click();
-          return true;
-        }, ACTIVE_TITLES[0]);
+        await clickByRole(session, {
+          role: "button",
+          name: ACTIVE_TITLES[0],
+          exact: false,
+        });
         await session.waitUntil(
           () => document.body.innerText.includes("never returns a negative"),
           null,

@@ -1,4 +1,4 @@
-import { open, realpath } from "node:fs/promises";
+import { mkdir, open, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { requestDaemon } from "@cocurdex/daemon/client";
@@ -76,15 +76,24 @@ it("serves bounded ranges and keeps RPC responsive while a large download is pau
     ).toMatchObject({ title: note.title });
     const rpcMs = Math.round(performance.now() - started);
     expect(rpcMs).toBeLessThan(5_000);
-    console.log(
-      JSON.stringify({
-        fileSize,
-        rangeBytes: tail.length,
-        pausedDownloadRpcMs: rpcMs,
-        rssGrowthBytes: paused.rss - before.rss,
-        externalGrowthBytes: paused.external - before.external,
-      }),
-    );
+    const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+    if (artifacts) {
+      await mkdir(artifacts, { recursive: true });
+      await writeFile(
+        path.join(artifacts, "daemon-file-streaming.json"),
+        JSON.stringify(
+          {
+            fileSize,
+            rangeBytes: tail.length,
+            pausedDownloadRpcMs: rpcMs,
+            rssGrowthBytes: paused.rss - before.rss,
+            externalGrowthBytes: paused.external - before.external,
+          },
+          null,
+          2,
+        ),
+      );
+    }
   } finally {
     controller.abort();
     await reader?.cancel().catch(() => undefined);

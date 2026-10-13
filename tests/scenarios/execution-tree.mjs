@@ -1,5 +1,6 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clickByRole } from "./lib/locate.mjs";
 
 const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
 const DIALOG_MODULE =
@@ -132,17 +133,13 @@ async function readTree(session) {
   });
 }
 
-async function clickRow(session, fragment) {
-  const clicked = await session.run((fragment) => {
-    const dialog = document.querySelector('[role="dialog"]');
-    const button = [...(dialog?.querySelectorAll("li button") ?? [])].find(
-      (candidate) => candidate.innerText.includes(fragment),
-    );
-    button?.click();
-    return Boolean(button);
-  }, fragment);
-  check(clicked, `no row containing ${fragment}`);
-  await session.run(() => window.__scenario.sleep(200));
+function clickRow(session, fragment) {
+  return clickByRole(session, {
+    role: "button",
+    name: fragment,
+    exact: false,
+    within: { role: "dialog" },
+  });
 }
 
 runScenario("execution-tree", {
@@ -289,6 +286,11 @@ runScenario("execution-tree", {
           tree.rows,
         );
         await clickRow(session, "2m 14s");
+        await session.waitUntil(() =>
+          document
+            .querySelector('[role="dialog"]')
+            ?.innerText.includes("git status --short"),
+        );
         const expanded = await readTree(session);
         check(
           expanded.text.includes("git status --short"),

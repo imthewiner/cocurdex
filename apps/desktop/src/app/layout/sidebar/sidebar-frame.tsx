@@ -63,7 +63,7 @@ export function ResizableSidebarSlot({
 }: {
   children: ReactNode;
   isOpen: boolean;
-  separatorAriaLabel?: string;
+  separatorAriaLabel: string;
   width: number;
   onResizeMouseDown(event: MouseEvent): void;
 }) {

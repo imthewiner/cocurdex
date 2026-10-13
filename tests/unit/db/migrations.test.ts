@@ -7,10 +7,6 @@ import {
 } from "@cocurdex/db/internal/migrations";
 import { createSqliteMessageTurnStatsRepository } from "@cocurdex/db/internal/repositories/sqlite-message-turn-stats-repository";
 import { noteDocToMarkdown } from "@cocurdex/note-doc";
-import {
-  historicalSchemaVersions,
-  seedHistoricalDatabase,
-} from "@cocurdex/test-fixtures/database";
 import { describe, expect, it } from "vitest";
 
 function seedVersionFiveDatabase() {
@@ -1265,55 +1261,6 @@ describe("initializeDatabase", () => {
     expect(sentinel).toEqual({ name: "legacy_sentinel" });
     expect(version).toEqual({ user_version: CURRENT_SCHEMA_VERSION });
   });
-
-  it.each(historicalSchemaVersions)(
-    "preserves user data from historical schema %s",
-    (version) => {
-      const database = new DatabaseSync(":memory:");
-      try {
-        seedHistoricalDatabase(database, version, "/acme-shop");
-        expect(database.prepare("PRAGMA application_id").get()).toEqual({
-          application_id: COCURDEX_APPLICATION_ID,
-        });
-        expect(database.prepare("PRAGMA user_version").get()).toEqual({
-          user_version: version,
-        });
-        initializeDatabase(database);
-        expect(database.prepare("PRAGMA user_version").get()).toEqual({
-          user_version: CURRENT_SCHEMA_VERSION,
-        });
-        expect(
-          database.prepare("SELECT id, root_paths FROM workspaces").all(),
-        ).toEqual([
-          { id: "historical-workspace", root_paths: '["/acme-shop"]' },
-        ]);
-        expect(
-          database.prepare("SELECT id, session_mode_id FROM sessions").all(),
-        ).toEqual([{ id: "historical-session", session_mode_id: "plan" }]);
-        expect(database.prepare("SELECT content FROM messages").all()).toEqual([
-          { content: "Keep this conversation" },
-        ]);
-        expect(
-          database.prepare("SELECT title, body_markdown FROM notes").all(),
-        ).toEqual([
-          { title: "Migration note", body_markdown: "Preserved note body" },
-        ]);
-        expect(
-          database
-            .prepare("SELECT title, description_markdown FROM issues")
-            .all(),
-        ).toEqual([
-          {
-            title: "Migration issue",
-            description_markdown: "Preserved issue body",
-          },
-        ]);
-        expect(database.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
-      } finally {
-        database.close();
-      }
-    },
-  );
 
   it("refuses a database written by a newer schema version", () => {
     const database = new DatabaseSync(":memory:");

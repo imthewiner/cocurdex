@@ -1,9 +1,11 @@
+import { clickPoint } from "./locate.mjs";
+
 export async function openWorkspaceFile(session, relativePath) {
-  const findRowCenter = (relativePath) => {
+  const findRowCenter = (itemPath) => {
     const roots = [document];
     for (const root of roots) {
       const row = [...root.querySelectorAll("[data-item-path]")].find(
-        (element) => element.dataset.itemPath === relativePath,
+        (element) => element.dataset.itemPath === itemPath,
       );
       if (row) {
         row.scrollIntoView({ block: "center" });
@@ -23,16 +25,5 @@ export async function openWorkspaceFile(session, relativePath) {
   };
   await session.waitUntil(findRowCenter, relativePath, 30_000);
   const rowCenter = await session.run(findRowCenter, relativePath);
-  await session.send("Input.dispatchMouseEvent", {
-    type: "mousePressed",
-    button: "left",
-    clickCount: 1,
-    ...rowCenter,
-  });
-  await session.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased",
-    button: "left",
-    clickCount: 1,
-    ...rowCenter,
-  });
+  await clickPoint(session, rowCenter);
 }

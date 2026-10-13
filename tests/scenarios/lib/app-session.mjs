@@ -179,7 +179,7 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
         });
         await writeFile(
           path.join(artifacts, `${name}.png`),
-          Buffer.from(screenshot.result.data, "base64"),
+          Buffer.from(screenshot.data, "base64"),
         );
       } catch (error) {
         report.screenshotError = errorMessage(error);
