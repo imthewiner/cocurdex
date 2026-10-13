@@ -604,6 +604,64 @@ describe("CocurdexDaemonService follow-up queue", () => {
     await service.shutdown();
   });
 
+  it("moves a steered queued input after replies streamed while it waited", async () => {
+    const service = await createService();
+    let completeActiveTurn!: () => void;
+    const activeTurn = new Promise<MessageRecord>((resolve) => {
+      completeActiveTurn = () => resolve(createRuntimeMessage("Active turn"));
+    });
+    const shutdownRuntime = service.runtime.shutdown.bind(service.runtime);
+    vi.spyOn(service.runtime, "shutdown").mockImplementation(async () => {
+      completeActiveTurn();
+      await shutdownRuntime();
+    });
+    const send = vi
+      .spyOn(service.runtime, "sendSessionMessage")
+      .mockImplementationOnce(() => activeTurn)
+      .mockResolvedValue(createRuntimeMessage("Steered"));
+    const emit = vi.spyOn(service.runtime, "emitAgentEvent");
+
+    const first = await service.sendSessionMessage(
+      createPayload("First turn", "start-new-run"),
+    );
+    await waitForDispatch(() => expect(send).toHaveBeenCalledOnce());
+    const queued = await service.sendSessionMessage(
+      createPayload("Steer me", "queue-after-run"),
+    );
+    await service.state.persistAgentEvent({
+      type: "message.completed",
+      sessionId: "session-1",
+      message: {
+        ...createRuntimeMessage("Reply while queued"),
+        role: "assistant",
+      },
+    });
+
+    await service.steerQueuedAgentInput("session-1", queued.id);
+
+    const messages = await service.state.listMessagesBySessionId("session-1");
+    expect(messages.map((message) => message.content)).toEqual([
+      "First turn",
+      "Reply while queued",
+      "Steer me",
+    ]);
+    const reply = messages[1];
+    const steered = messages[2];
+    expect(steered.seq).toBeGreaterThan(reply.seq ?? Number.POSITIVE_INFINITY);
+    expect(steered.runId).toBe(first.runId);
+    expect(emit).toHaveBeenCalledWith({
+      type: "message.completed",
+      sessionId: "session-1",
+      message: expect.objectContaining({
+        id: queued.id,
+        seq: steered.seq,
+        runId: first.runId,
+      }),
+    });
+
+    await service.shutdown();
+  });
+
   it("interrupts the active turn to send a queued input immediately", async () => {
     const service = await createService();
     let completeActiveTurn: (() => void) | undefined;
