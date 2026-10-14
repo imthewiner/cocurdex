@@ -1402,4 +1402,10 @@ export interface AppBootstrapData {
   sessionUsage: Record<string, AgentUsageRecord>;
   editorViews: EditorViewRecord[];
   syncCursor: string;
+  pausedQueueSessionIds: string[];
 }
+
+export type StoredBootstrapData = Omit<
+  AppBootstrapData,
+  "pausedQueueSessionIds"
+>;

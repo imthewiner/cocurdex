@@ -175,6 +175,7 @@ function emptyPull(mode: SyncPullResult["mode"]): SyncPullResult {
     sessionUsage: {},
     interactions: { permissions: [], questions: [], planApprovals: [] },
     transcripts: {},
+    pausedQueueSessionIds: [],
   };
 }
 

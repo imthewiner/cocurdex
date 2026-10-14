@@ -64,4 +64,10 @@ export interface SyncPullResult {
   sessionUsage: Record<string, AgentUsageRecord>;
   interactions: SessionInteractionSnapshot;
   transcripts: Record<string, SessionTranscriptSync | null>;
+  pausedQueueSessionIds: string[];
 }
+
+export type StoredSyncPullResult = Omit<
+  SyncPullResult,
+  "pausedQueueSessionIds"
+>;

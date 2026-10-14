@@ -3,20 +3,20 @@ import type {
   AgentSessionPlan,
   AgentToolCallRecord,
   AgentTurnCompletedEvent,
-  AppBootstrapData,
   MessageRecord,
   SessionInteractionSnapshot,
   SessionRecord,
   SessionTranscriptSync,
+  StoredBootstrapData,
+  StoredSyncPullResult,
   SyncPullInput,
-  SyncPullResult,
   TurnChangeSet,
 } from "@cocurdex/shared";
 import { formatSyncCursor, resolveSyncCursor } from "./sync-cursor";
 
 export interface SyncPullSources {
   readClock(): SyncClock;
-  bootstrap(): Promise<AppBootstrapData>;
+  bootstrap(): Promise<StoredBootstrapData>;
   listSessionsChangedSince(changeSeq: number): Promise<SessionRecord[]>;
   listTombstonesSince(changeSeq: number): SyncTombstone[];
   listMessages(sessionId: string): Promise<MessageRecord[]>;
@@ -117,7 +117,7 @@ export async function pullSync(
   sources: SyncPullSources,
   position: SyncPullPosition,
   input: SyncPullInput,
-): Promise<SyncPullResult> {
+): Promise<StoredSyncPullResult> {
   const clock = sources.readClock();
   const since = resolveSyncCursor(input.cursor, clock);
   const data = await sources.bootstrap();

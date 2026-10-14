@@ -17,7 +17,6 @@ import type {
   AgentSessionMode,
   AgentToolCallRecord,
   AgentUsageUpdatedEvent,
-  AppBootstrapData,
   ContextTransferRecord,
   EditorViewRecord,
   MessageRecord,
@@ -30,6 +29,7 @@ import type {
   SessionMessagesResult,
   SessionRecord,
   SessionStatus,
+  StoredBootstrapData,
   WorkspaceRecord,
   WorkspaceWorktreeEnvironment,
   WorktreeEnvironmentProposal,
@@ -136,7 +136,7 @@ export class DaemonState {
     ]);
   }
 
-  async bootstrap(): Promise<AppBootstrapData> {
+  async bootstrap(): Promise<StoredBootstrapData> {
     await this.waitForStartupRecovery();
 
     const queuedAgentInputs = await this.database.queuedAgentInputs.list();
@@ -919,7 +919,15 @@ export class DaemonState {
       this.database.runs.interruptRunning(createdAt),
     );
     await this.database.teams.failActiveMembers();
+    await this.noteRestartInterruptions(sessionIds, createdAt);
+  }
+
+  async noteRestartInterruptions(
+    sessionIds: string[],
+    createdAt = new Date().toISOString(),
+  ) {
     for (const sessionId of sessionIds) {
+      await this.flushBufferedMessages(sessionId);
       await this.database.messages.append(
         this.createSystemMessage(
           sessionId,

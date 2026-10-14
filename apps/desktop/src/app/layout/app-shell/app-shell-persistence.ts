@@ -73,6 +73,7 @@ export function useAppPersistence() {
         bootstrapQueuedInputs({
           inputs: data.queuedAgentInputs,
           messages: data.queuedMessages,
+          pausedSessionIds: data.pausedQueueSessionIds,
         });
         bootstrapSessionUsage(data.sessionUsage);
         bootstrapEditorViews(data.editorViews);

@@ -5,7 +5,10 @@ import {
   appendQueuedInputAtom,
   applyQueuedInputEventAtom,
   bootstrapQueuedInputsAtom,
+  markQueueResumedAtom,
+  pausedQueueSessionIdsAtom,
   queuedInputsBySessionAtom,
+  removeQueuedInputAtom,
 } from "@/features/agent/queued-input/queued-input-store";
 
 const message: MessageRecord = {
@@ -31,6 +34,7 @@ describe("queued input store", () => {
     store.set(bootstrapQueuedInputsAtom, {
       inputs: [input],
       messages: [message],
+      pausedSessionIds: [],
     });
 
     expect(store.get(queuedInputsBySessionAtom)).toEqual({
@@ -43,6 +47,7 @@ describe("queued input store", () => {
     store.set(bootstrapQueuedInputsAtom, {
       inputs: [input],
       messages: [message],
+      pausedSessionIds: [],
     });
 
     store.set(applyQueuedInputEventAtom, {
@@ -74,8 +79,52 @@ describe("queued input store", () => {
     store.set(bootstrapQueuedInputsAtom, {
       inputs: [input],
       messages: [message],
+      pausedSessionIds: [],
     });
 
     expect(store.get(queuedInputsBySessionAtom)).toEqual({});
+  });
+
+  it("keeps a restored queue paused until its last input leaves", () => {
+    const store = createStore();
+    const second = { ...message, id: "message-2" };
+    store.set(bootstrapQueuedInputsAtom, {
+      inputs: [input, { ...input, messageId: second.id }],
+      messages: [message, second],
+      pausedSessionIds: [message.sessionId],
+    });
+    expect(store.get(pausedQueueSessionIdsAtom).has(message.sessionId)).toBe(
+      true,
+    );
+
+    store.set(removeQueuedInputAtom, {
+      sessionId: message.sessionId,
+      messageId: message.id,
+    });
+    expect(store.get(pausedQueueSessionIdsAtom).has(message.sessionId)).toBe(
+      true,
+    );
+
+    store.set(removeQueuedInputAtom, {
+      sessionId: message.sessionId,
+      messageId: second.id,
+    });
+    expect(store.get(pausedQueueSessionIdsAtom).size).toBe(0);
+  });
+
+  it("forgets the paused state once the queue is resumed", () => {
+    const store = createStore();
+    store.set(bootstrapQueuedInputsAtom, {
+      inputs: [input],
+      messages: [message],
+      pausedSessionIds: [message.sessionId],
+    });
+
+    store.set(markQueueResumedAtom, message.sessionId);
+
+    expect(store.get(pausedQueueSessionIdsAtom).size).toBe(0);
+    expect(
+      store.get(queuedInputsBySessionAtom)[message.sessionId],
+    ).toHaveLength(1);
   });
 });

@@ -184,6 +184,8 @@ export default interface Resources {
       editLabel: "Edit queued message";
       label: "Queued follow-ups";
       moreActions: "More queue actions";
+      paused: "Queue paused. Nothing runs until you resume it.";
+      resume: "Resume";
       save: "Save";
       sendNow: "Send now";
       status: "Queued";

@@ -34,6 +34,7 @@ import type {
   GitCommitResult,
   MessageRecord,
   NetworkProxySettings,
+  QueuedAgentInputRecord,
   RefineSessionTitlePayload,
   SaveAgentRolePayload,
   SaveWorkflowDefinitionPayload,
@@ -664,6 +665,7 @@ export class CocurdexDaemonService {
     const data = await this.state.bootstrap();
     return {
       ...data,
+      pausedQueueSessionIds: this.pausedQueueSessionIds(data.queuedAgentInputs),
       workspaces: data.workspaces.map((workspace) => ({
         ...workspace,
         missingRootPaths: workspace.rootPaths.filter(
@@ -1298,7 +1300,7 @@ export class CocurdexDaemonService {
     return this.runtime.withEventPersistence(async () => {
       const eventSeq = this.readEventSeq();
       await this.state.getDatabase();
-      return pullSync(
+      const result = await pullSync(
         this.state.syncSources({
           getPlan: (sessionId) => this.runtime.getSessionPlan(sessionId),
           getInteractions: () => this.runtime.getPendingInteractions(),
@@ -1306,7 +1308,22 @@ export class CocurdexDaemonService {
         { epoch: this.startedAt, eventSeq },
         input,
       );
+      return {
+        ...result,
+        pausedQueueSessionIds: this.pausedQueueSessionIds(
+          result.queuedAgentInputs,
+        ),
+      };
     });
+  }
+
+  private pausedQueueSessionIds(inputs: QueuedAgentInputRecord[]) {
+    const sessionIds = new Set(inputs.map((input) => input.sessionId));
+    return [...sessionIds].filter(
+      (sessionId) =>
+        !this.queuedFollowUps.has(sessionId) &&
+        !this.runs.hasActiveRun(sessionId),
+    );
   }
 
   async getSessionSnapshot(sessionId: string) {
@@ -2518,7 +2535,10 @@ export class CocurdexDaemonService {
     await this.startupRecovery;
     clearInterval(this.checkpointReconcileTimer);
     this.runCapacity.close(new Error("Daemon is shutting down"));
-    await this.runs.interruptAll();
+    const interrupted = await this.runs.interruptAll();
+    await this.state.noteRestartInterruptions(
+      interrupted.map((run) => run.sessionId),
+    );
     this.queuedFollowUps.clear();
     await this.scriptRuns.shutdown();
     const schedulerClose = this.workflowWorkerScheduler.close();

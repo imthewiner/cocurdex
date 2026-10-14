@@ -1,6 +1,6 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
-import { clickByRole } from "./lib/locate.mjs";
+import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
 
 const ACTIVE_TITLES = [
   "Add percentage discount codes",
@@ -8,6 +8,8 @@ const ACTIVE_TITLES = [
   "Draft release notes",
 ];
 const ARCHIVED_TITLE = "Spike: gift cards";
+const INTERRUPTED_TITLE = "Store cart totals in cents";
+const QUEUED_PROMPT = "Then update the release notes.";
 const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
@@ -86,10 +88,59 @@ runScenario("fixture-db", {
       },
     ],
     [
+      "offers to resume a queue paused by a restart",
+      async ({ session }) => {
+        await clickByRole(session, {
+          role: "button",
+          name: INTERRUPTED_TITLE,
+          exact: false,
+        });
+        await session.waitUntil(
+          (prompt) => document.body.innerText.includes(prompt),
+          QUEUED_PROMPT,
+          UI_TIMEOUT_MS,
+        );
+        const text = await session.run(() => document.body.innerText);
+        check(
+          text.includes("Cocurdex restarted before this turn finished"),
+          "restart notice missing",
+        );
+        const resume = await session.run(
+          (key) => window.__scenario.t(key),
+          "agent:queue.resume",
+        );
+        await waitForRole(
+          session,
+          { role: "button", name: resume },
+          UI_TIMEOUT_MS,
+        );
+        return {};
+      },
+    ],
+    [
       "renderer has no errors",
       async ({ session }) => {
         const errors = await session.run(() => window.__scenario.errors);
         check(errors.length === 0, "renderer errors", errors);
+        return {};
+      },
+    ],
+    [
+      "resumes the paused queue",
+      async ({ session }) => {
+        const resume = await session.run(
+          (key) => window.__scenario.t(key),
+          "agent:queue.resume",
+        );
+        await clickByRole(session, { role: "button", name: resume });
+        const deadline = Date.now() + UI_TIMEOUT_MS;
+        while (
+          (await queryAllByRole(session, { role: "button", name: resume }))
+            .length > 0
+        ) {
+          check(Date.now() < deadline, "resume control stayed visible");
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
         return {};
       },
     ],

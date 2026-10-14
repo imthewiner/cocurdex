@@ -70,6 +70,7 @@ export function applySyncResult(store: Store, result: SyncPullResult) {
   store.set(bootstrapQueuedInputsAtom, {
     inputs: result.queuedAgentInputs,
     messages: result.queuedMessages,
+    pausedSessionIds: result.pausedQueueSessionIds,
   });
   store.set(bootstrapSessionUsageAtom, result.sessionUsage);
   store.set(hydratePendingPermissionsAtom, result.interactions.permissions);

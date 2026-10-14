@@ -16,6 +16,7 @@ function result(overrides: Partial<SyncPullResult> = {}): SyncPullResult {
     sessionUsage: {},
     interactions: { permissions: [], questions: [], planApprovals: [] },
     transcripts: {},
+    pausedQueueSessionIds: [],
     ...overrides,
   };
 }

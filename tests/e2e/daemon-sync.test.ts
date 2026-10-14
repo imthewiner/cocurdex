@@ -185,6 +185,14 @@ describe("sync.pull across daemon restarts", () => {
           (message) => message.role === "assistant",
         );
         expect(reply?.content.startsWith("c0 c1 c2 ")).toBe(true);
+        const transcript = result.transcripts[session.id]?.messages ?? [];
+        expect(transcript.at(-1)).toMatchObject({
+          role: "system",
+          content: expect.stringContaining("Cocurdex restarted"),
+        });
+        expect(
+          result.sessions.find((entry) => entry.id === session.id)?.status,
+        ).toBe("idle");
       } finally {
         await second.stop();
       }

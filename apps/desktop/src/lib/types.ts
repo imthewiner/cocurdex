@@ -595,6 +595,7 @@ export interface ProductApi {
   sendQueuedInputNow(
     payload: QueuedAgentInputActionPayload,
   ): Promise<MessageRecord>;
+  resumeQueuedInputs(sessionId: string): Promise<boolean>;
   saveEditorView(view: EditorViewRecord): Promise<void>;
   listSlashCommands(
     agentType: AgentId,

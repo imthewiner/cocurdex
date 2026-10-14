@@ -262,6 +262,7 @@ export const daemonProductApi: ProductRequestApi = {
     rpc("session.steerQueued", { sessionId, messageId }),
   sendQueuedInputNow: ({ sessionId, messageId }) =>
     rpc("session.sendQueuedNow", { sessionId, messageId }),
+  resumeQueuedInputs: (sessionId) => rpc("session.resumeQueued", { sessionId }),
   saveEditorView: async (view) => {
     await rpc("editorView.save", { view });
   },
