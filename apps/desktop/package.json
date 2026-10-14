@@ -1,7 +1,7 @@
 {
   "name": "@cocurdex/desktop",
   "productName": "Cocurdex",
-  "version": "0.1.74",
+  "version": "0.1.75",
   "description": "Cocurdex desktop app",
   "author": "softmeta LLC",
   "homepage": "https://cocurdex.com",
@@ -164,12 +164,9 @@
       "!node_modules/recheck-jar/**",
       "!node_modules/recheck-{linux,macos,windows}-*/**/*",
       "!node_modules/koffi/**",
-      "!node_modules/esbuild/bin/**",
       "!node_modules/@earendil-works/pi-coding-agent/dist/bundle/**"
     ],
     "asarUnpack": [
-      "node_modules/esbuild/**/*",
-      "node_modules/@esbuild/**/*",
       "node_modules/node-pty/**/*",
       "node_modules/@vscode/ripgrep/**/*",
       "node_modules/@vscode/ripgrep-*/**/*"
