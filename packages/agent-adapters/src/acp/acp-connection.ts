@@ -1,6 +1,8 @@
 import type {
   AuthenticateRequest,
   AuthenticateResponse,
+  ForkSessionRequest,
+  ForkSessionResponse,
   InitializeRequest,
   InitializeResponse,
   LoadSessionRequest,
@@ -34,6 +36,7 @@ export interface AcpConnection {
   newSession(request: NewSessionRequest): Promise<NewSessionResponse>;
   loadSession(request: LoadSessionRequest): Promise<LoadSessionResponse>;
   resumeSession(request: ResumeSessionRequest): Promise<ResumeSessionResponse>;
+  forkSession(request: ForkSessionRequest): Promise<ForkSessionResponse>;
   setSessionMode(
     request: SetSessionModeRequest,
   ): Promise<SetSessionModeResponse>;

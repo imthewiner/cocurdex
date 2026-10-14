@@ -151,6 +151,8 @@ export const createSdkAcpConnection: AcpConnectionFactory = async ({
       connection.agent.request(methods.agent.session.load, request),
     resumeSession: (request) =>
       connection.agent.request(methods.agent.session.resume, request),
+    forkSession: (request) =>
+      connection.agent.request(methods.agent.session.fork, request),
     setSessionMode: (request) =>
       connection.agent.request(methods.agent.session.setMode, request),
     setSessionConfigOption: (request) =>
