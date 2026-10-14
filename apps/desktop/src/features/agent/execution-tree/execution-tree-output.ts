@@ -4,6 +4,7 @@ import type {
 } from "@cocurdex/shared";
 import {
   formatToolCallOutput,
+  getToolCallSummary,
   unwrapShellCommand,
 } from "../tool-call/tool-call-utils";
 import { formatDurationMs } from "../view/chat-activity-state";
@@ -11,7 +12,13 @@ import { formatDurationMs } from "../view/chat-activity-state";
 export const OUTPUT_TAIL_LINES = 20;
 
 export function getExecutionToolCallLabel(toolCall: ExecutionToolCallSummary) {
-  return unwrapShellCommand(toolCall.title);
+  if (toolCall.kind === "exec") return unwrapShellCommand(toolCall.title);
+  return getToolCallSummary({
+    ...toolCall,
+    sessionId: "",
+    content: undefined,
+    locations: [],
+  });
 }
 
 export function getExecutionToolCallDurationMs(

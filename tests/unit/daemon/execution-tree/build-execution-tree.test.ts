@@ -126,6 +126,35 @@ describe("buildExecutionTree", () => {
     ]);
   });
 
+  it("keeps a bounded copy of each tool call's input for labels", () => {
+    const longCommand = "x".repeat(2000);
+    const tree = buildExecutionTree(
+      "root",
+      source({
+        sessions: [session("root")],
+        toolCalls: {
+          root: [
+            toolCall("t1", "root", {
+              rawInput: {
+                command: longCommand,
+                input: { path: "src/a.ts", edits: [{ oldText: "a" }] },
+              },
+            }),
+          ],
+        },
+      }),
+      3,
+    );
+
+    const rawInput = tree?.root.toolCalls[0]?.toolCall.rawInput as {
+      command: string;
+      input: { path: string; edits: unknown };
+    };
+    expect(rawInput.command.length).toBeLessThan(longCommand.length);
+    expect(longCommand.startsWith(rawInput.command)).toBe(true);
+    expect(rawInput.input).toEqual({ path: "src/a.ts", edits: null });
+  });
+
   it("nests a provider subagent session under the tool call that spawned it", () => {
     const tree = buildExecutionTree(
       "root",

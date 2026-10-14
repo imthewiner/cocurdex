@@ -29,7 +29,7 @@ export type ExecutionSessionSummary = Pick<
 
 export type ExecutionToolCallSummary = Pick<
   AgentToolCallRecord,
-  "id" | "title" | "kind" | "status" | "startedAt" | "updatedAt"
+  "id" | "title" | "kind" | "status" | "rawInput" | "startedAt" | "updatedAt"
 >;
 
 export type ExecutionObservability = "full" | "limited";

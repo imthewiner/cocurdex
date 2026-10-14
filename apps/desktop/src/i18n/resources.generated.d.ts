@@ -1183,7 +1183,7 @@ export default interface Resources {
     };
     defaultTitle: "New {{agentLabel}} session";
     executionTree: {
-      description: "Runs, tool calls, subagents, and pending approvals for this session. Select a session to open it, or a tool call to see its output.";
+      description: "Runs, tool calls, subagents, and pending approvals for this session. Expand a row to see what it contains, or select a tool call to see its output.";
       failedCount_one: "{{count}} failed";
       failedCount_other: "{{count}} failed";
       issuesOnly: "Issues only";
@@ -1192,10 +1192,12 @@ export default interface Resources {
       noOutput: "No output was recorded.";
       omittedLines_one: "{{count}} earlier line hidden";
       omittedLines_other: "{{count}} earlier lines hidden";
+      openSession: "Open {{title}}";
       outputUnavailable: "The output could not be loaded.";
       planProgress: "Plan {{done}}/{{total}}";
       run: "Run started {{time}}";
       title: "Execution tree";
+      toolCalls: "Tool calls";
       toolCount_one: "{{count}} tool call";
       toolCount_other: "{{count}} tool calls";
       truncated: "Deeper sessions are not shown.";

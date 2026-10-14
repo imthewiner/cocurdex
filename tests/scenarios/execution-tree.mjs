@@ -7,6 +7,7 @@ const DIALOG_MODULE =
   "/src/features/agent/execution-tree/execution-tree-dialog.tsx";
 const SESSION_ID = "scenario-execution-tree";
 const LATEST_RUN_TIME = ":15:07";
+const WORKER_TOOL_CALLS = 30;
 const FAILED_OUTPUT_LINES = 30;
 const PANEL_OPEN_TIMEOUT_MS = 60_000;
 const SHELL_READY_TIMEOUT_MS = 60_000;
@@ -42,6 +43,38 @@ function run(id, status, startedAt, endedAt, toolCalls) {
     interactions: [],
   };
 }
+
+function childSession(id, toolCalls) {
+  return {
+    session: {
+      id,
+      title: id,
+      agentType: "codex",
+      sessionKind: "teammate",
+      status: "idle",
+      parentSessionId: SESSION_ID,
+      parentToolCallId: null,
+      createdAt: "2026-10-13T03:16:00.000Z",
+      updatedAt: "2026-10-13T03:18:00.000Z",
+    },
+    runs: [],
+    toolCalls,
+    children: [],
+    interactions: [],
+    plan: null,
+    truncated: false,
+  };
+}
+
+const WORKER_A_CALLS = Array.from({ length: WORKER_TOOL_CALLS }, (_, index) =>
+  toolCall(
+    `tool-worker-a-${index}`,
+    `/bin/zsh -lc 'cat worker-a-${index}.md'`,
+    index === WORKER_TOOL_CALLS - 1 ? "failed" : "completed",
+    "2026-10-13T03:16:01.000Z",
+    "2026-10-13T03:16:01.300Z",
+  ),
+);
 
 const EXECUTION_TREE = {
   maxDepth: 4,
@@ -112,7 +145,18 @@ const EXECUTION_TREE = {
       ),
     ],
     toolCalls: [],
-    children: [],
+    children: [
+      childSession("worker-a", WORKER_A_CALLS),
+      childSession("worker-b", [
+        toolCall(
+          "tool-worker-b",
+          "/bin/zsh -lc 'git log -1'",
+          "completed",
+          "2026-10-13T03:17:00.000Z",
+          "2026-10-13T03:17:00.200Z",
+        ),
+      ]),
+    ],
     interactions: [],
     plan: null,
     truncated: false,
@@ -130,8 +174,8 @@ async function readTree(session) {
   return session.run(() => {
     const dialog = document.querySelector('[role="dialog"]');
     if (!dialog) return null;
-    const rows = [...dialog.querySelectorAll("li")].map((row) =>
-      row.innerText.replace(/\s+/g, " ").trim(),
+    const rows = [...dialog.querySelectorAll("[data-execution-row]")].map(
+      (row) => row.innerText.replace(/\s+/g, " ").trim(),
     );
     return {
       rows,
@@ -145,6 +189,16 @@ function readDialogTop(session) {
   return session.run(
     () => document.querySelector('[role="dialog"]').getBoundingClientRect().top,
   );
+}
+
+function toggleSessionRow(session, sessionId) {
+  return session.run((key) => {
+    const toggle = document.querySelector(
+      `[data-execution-row="${key}"] button[aria-expanded]`,
+    );
+    toggle?.click();
+    return Boolean(toggle);
+  }, `session:${sessionId}`);
 }
 
 function clickRow(session, fragment) {
@@ -273,7 +327,9 @@ runScenario("execution-tree", {
       "session-row-shows-agent-icon-and-name",
       async ({ session }) => {
         const row = await session.run(() => {
-          const button = document.querySelector('[role="dialog"] li button');
+          const button = document.querySelector(
+            '[data-execution-row^="session:"] button',
+          );
           return {
             text: button.innerText.replace(/\s+/g, " ").trim(),
             icons: button.querySelectorAll("svg, img").length,
@@ -334,9 +390,9 @@ runScenario("execution-tree", {
       "empty-run-has-no-expand-control",
       async ({ session }) => {
         const row = await session.run(() => {
-          const item = [
-            ...document.querySelectorAll('[role="dialog"] li'),
-          ].find((candidate) => candidate.innerText.includes("10s"));
+          const item = document.querySelector(
+            '[data-execution-row="run:run-capacity"]',
+          );
           return item
             ? {
                 text: item.innerText.replace(/\s+/g, " ").trim(),
@@ -347,6 +403,80 @@ runScenario("execution-tree", {
         check(Boolean(row), "empty run row missing");
         check(row.expandControls === 0, "empty run is expandable", row);
         return row;
+      },
+    ],
+    [
+      "subagents-folded-with-summary",
+      async ({ session }) => {
+        const tree = await readTree(session);
+        check(
+          !tree.text.includes("worker-a-0.md"),
+          "subagent calls shown before expanding",
+        );
+        const worker = await session.run(() => {
+          const row = document.querySelector(
+            '[data-execution-row="session:worker-a"]',
+          );
+          return row
+            ? {
+                expanded: row
+                  .querySelector("[aria-expanded]")
+                  ?.getAttribute("aria-expanded"),
+                text: row.innerText.replace(/\s+/g, " ").trim(),
+              }
+            : null;
+        });
+        check(Boolean(worker), "subagent row missing", tree.rows);
+        check(worker.expanded === "false", "subagent expanded by default");
+        check(worker.text.includes("30"), "subagent summary missing", worker);
+        return worker;
+      },
+    ],
+    [
+      "sticky-session-headers",
+      async ({ session }) => {
+        check(
+          await toggleSessionRow(session, "worker-a"),
+          "subagent toggle missing",
+        );
+        await session.waitUntil(() =>
+          document
+            .querySelector('[role="dialog"]')
+            ?.innerText.includes("worker-a-29.md"),
+        );
+        const layout = await session.run(async () => {
+          const list = document.querySelector('[role="dialog"] ul');
+          const lastCall = document.querySelector(
+            '[data-execution-row="tool:tool-worker-a-28"]',
+          );
+          list.scrollTop =
+            lastCall.offsetTop - list.clientHeight + lastCall.offsetHeight;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const top = (key) =>
+            document
+              .querySelector(`[data-execution-row="${key}"]`)
+              .getBoundingClientRect().top;
+          const listTop = list.getBoundingClientRect().top;
+          const result = {
+            scrolled: list.scrollTop,
+            root:
+              document
+                .querySelector('[data-execution-row^="session:"]')
+                .getBoundingClientRect().top - listTop,
+            worker: top("session:worker-a") - listTop,
+          };
+          list.scrollTop = 0;
+          return result;
+        });
+        check(layout.scrolled > 0, "list did not scroll", layout);
+        check(Math.abs(layout.root) < 1, "root header not pinned", layout);
+        check(
+          Math.abs(layout.worker - 28) < 1,
+          "subagent header not pinned below root",
+          layout,
+        );
+        await toggleSessionRow(session, "worker-a");
+        return layout;
       },
     ],
     [

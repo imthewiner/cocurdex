@@ -18,10 +18,12 @@ const statusIcons: Record<string, LucideIcon> = {
   cancelled: X,
   interrupted: X,
   exited: X,
-  idle: Circle,
 };
 
+const silentStatuses = new Set(["idle"]);
+
 export function ExecutionStatusIcon({ status }: { status: string }) {
+  if (silentStatuses.has(status)) return null;
   const Icon = statusIcons[status] ?? Circle;
   return (
     <Icon

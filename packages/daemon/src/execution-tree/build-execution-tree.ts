@@ -75,6 +75,21 @@ function summarizeSession(session: SessionRecord) {
   };
 }
 
+const MAX_INPUT_TEXT_LENGTH = 512;
+const MAX_INPUT_DEPTH = 2;
+
+function trimToolInput(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return value.slice(0, MAX_INPUT_TEXT_LENGTH);
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value) || depth >= MAX_INPUT_DEPTH) return null;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      key,
+      trimToolInput(entry, depth + 1),
+    ]),
+  );
+}
+
 function buildToolCallNode(
   toolCall: AgentToolCallRecord,
   child: ExecutionSessionNode | null,
@@ -86,6 +101,7 @@ function buildToolCallNode(
       title: toolCall.title,
       kind: toolCall.kind ?? null,
       status: toolCall.status,
+      rawInput: trimToolInput(toolCall.rawInput),
       startedAt: toolCall.startedAt,
       updatedAt: toolCall.updatedAt,
     },
