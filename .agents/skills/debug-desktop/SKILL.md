@@ -1,6 +1,6 @@
 ---
 name: debug-desktop
-description: Attach to the running Cocurdex Electron desktop app over Chrome DevTools Protocol (CDP) to read renderer console, evaluate JS, inspect the DOM, and screenshot. Use when verifying a desktop change, reproducing a renderer bug, reading runtime errors/logs, or driving the UI for inspection. Triggers on "debug the desktop app", "check the renderer console", "attach CDP", "screenshot the app", "why does X throw at runtime".
+description: Attach to the running Cocurdex Electron desktop app over Chrome DevTools Protocol (CDP) to read renderer console, evaluate JS, inspect the DOM, screenshot, and record frame-by-frame screencasts. Use when verifying a desktop change, reproducing a renderer bug, chasing a flicker or content jump, reading runtime errors/logs, or driving the UI for inspection. Triggers on "debug the desktop app", "check the renderer console", "attach CDP", "screenshot the app", "record the screen", "录屏", "it flickers/jumps", "why does X throw at runtime".
 ---
 
 # Debug Cocurdex desktop (CDP)
@@ -85,6 +85,35 @@ and includes exception details and stack traces on failure. Use `eval ACTION
 or condition wait, defaults to 10 seconds, and is capped at 60 seconds. A timeout
 does not roll back an action or cancel application work; inspect before retrying.
 Connection loss and evaluation errors stop the wait without replaying actions.
+
+### Recording frames (flicker, jumps, transitions)
+
+A screenshot shows one moment; a jump or flash lives between moments. Record
+every composited frame with CDP `Page.startScreencast`:
+
+```bash
+rtk node .agents/skills/debug-desktop/scripts/cdp.mjs cast <dir> --url http://localhost:5173/ --action "<click or navigate expression>" --duration 2000
+COCURDEX_SCENARIO_RECORD_DIR=<dir> rtk node tests/scenarios/<name>.mjs
+```
+
+`cast` starts recording, runs `--action` once, records for `--duration` ms,
+and writes `NNNN-<ms>ms.jpg` (ms since recording started) plus `frames.json`.
+With `COCURDEX_SCENARIO_RECORD_DIR`, `runScenario` records the whole run,
+reloads included, into `<dir>/<scenario>/` and reports the frame count; in a
+script, `recordScreencast(session, dir)` from `tests/scenarios/lib/app-session.mjs`
+returns `{ stop() }`. Both use `scripts/cdp-screencast.mjs`.
+
+- Chromium sends a frame only when the compositor produces one, so a static
+  page yields one frame. Gaps in the file timestamps are idle time.
+- Read frames back with the image tool around the timestamps that matter.
+- Pair the recording with a `requestAnimationFrame` sampler in the page
+  (effective ancestor opacity, `scrollTop`/`scrollHeight`, key element
+  presence) when you need the exact frame and pixel delta of a change; then
+  assert "first visible frame equals final frame" in a scenario, as
+  `tests/scenarios/chat-first-reveal.mjs` does.
+- For cold-load behavior of a lazy chunk, let Vite transform it once, then
+  `Page.reload` and record. A fresh `electron-vite dev` server compiles large
+  chunks for seconds on first request, which measures Vite, not the app.
 
 ### Light and dark themes
 

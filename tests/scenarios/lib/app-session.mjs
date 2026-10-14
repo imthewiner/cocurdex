@@ -8,6 +8,7 @@ import {
   selectTarget,
   waitFor,
 } from "../../../.agents/skills/debug-desktop/scripts/cdp-client.mjs";
+import { startScreencast } from "../../../.agents/skills/debug-desktop/scripts/cdp-screencast.mjs";
 
 export const DEFAULT_URL = "http://localhost:5173/";
 const EVAL_TIMEOUT_MS = 30_000;
@@ -100,6 +101,7 @@ export async function openAppSession({ port, url }) {
     waitUntil: (fn, arg, timeout = 15_000) =>
       waitFor(client, invocation(fn, arg), timeout, WAIT_INTERVAL_MS),
     send: (method, params) => client.send(method, params, EVAL_TIMEOUT_MS),
+    on: (method, handler) => client.on(method, handler),
     async reload() {
       const previousOrigin = await evaluate(
         client,
@@ -124,6 +126,10 @@ export async function openAppSession({ port, url }) {
   };
 }
 
+export function recordScreencast(session, dir) {
+  return startScreencast(session, { dir });
+}
+
 export class ScenarioFailure extends Error {}
 
 export function check(condition, message, details) {
@@ -142,8 +148,16 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
   const report = { scenario: name, passed: true, steps: [] };
   let opened;
   let context;
+  let recording;
   try {
     opened = await open();
+    const recordRoot = process.env.COCURDEX_SCENARIO_RECORD_DIR;
+    if (recordRoot) {
+      recording = await recordScreencast(
+        opened.session,
+        path.join(recordRoot, name),
+      );
+    }
     context = { ...opened, ...(await setup(opened)) };
     for (const [stepName, step] of steps) {
       const startedAt = Date.now();
@@ -170,6 +184,14 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
     report.passed = false;
     report.setupError = errorMessage(error);
   } finally {
+    if (recording) {
+      try {
+        const { dir, frames } = await recording.stop();
+        report.recording = { dir, frameCount: frames.length };
+      } catch (error) {
+        report.recordingError = errorMessage(error);
+      }
+    }
     const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
     if (!report.passed && opened?.session && artifacts) {
       try {
