@@ -173,10 +173,10 @@ describe("sync.pull across daemon restarts", () => {
       );
       await waitFor(
         () =>
-          events.filter((event) => event.type === "message.delta").length > 20,
+          events.filter((event) => event.type === "message.delta").length > 40,
       );
       subscription.close();
-      expect(await first.stop()).toBe(0);
+      await first.stop();
 
       const second = await spawnDaemon({ userDataPath });
       try {

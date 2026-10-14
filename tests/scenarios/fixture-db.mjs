@@ -62,7 +62,7 @@ runScenario("fixture-db", {
       },
     ],
     [
-      "syncs a session archived by another client",
+      "syncs a session archived and restored by another client",
       async ({ session }) => {
         const title = ACTIVE_TITLES[2];
         const sessionId = await session.run(
@@ -84,6 +84,18 @@ runScenario("fixture-db", {
         );
         const text = await session.run(() => document.body.innerText);
         check(text.includes(ACTIVE_TITLES[0]), "other sessions disappeared");
+        await session.run(
+          async ({ sessionId, productApiModule }) => {
+            const { daemonProductApi } = await import(productApiModule);
+            await daemonProductApi.restoreSessions({ sessionIds: [sessionId] });
+          },
+          { sessionId, productApiModule: "/src/lib/product-api.ts" },
+        );
+        await session.waitUntil(
+          (title) => document.body.innerText.includes(title),
+          title,
+          UI_TIMEOUT_MS,
+        );
         return { archived: sessionId };
       },
     ],
@@ -118,14 +130,6 @@ runScenario("fixture-db", {
       },
     ],
     [
-      "renderer has no errors",
-      async ({ session }) => {
-        const errors = await session.run(() => window.__scenario.errors);
-        check(errors.length === 0, "renderer errors", errors);
-        return {};
-      },
-    ],
-    [
       "resumes the paused queue",
       async ({ session }) => {
         const resume = await session.run(
@@ -141,6 +145,14 @@ runScenario("fixture-db", {
           check(Date.now() < deadline, "resume control stayed visible");
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
+        return {};
+      },
+    ],
+    [
+      "renderer has no errors",
+      async ({ session }) => {
+        const errors = await session.run(() => window.__scenario.errors);
+        check(errors.length === 0, "renderer errors", errors);
         return {};
       },
     ],

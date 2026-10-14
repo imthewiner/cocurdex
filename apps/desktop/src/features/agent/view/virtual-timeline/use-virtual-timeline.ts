@@ -90,6 +90,7 @@ export function useVirtualTimeline({
     count: groups.length,
     estimateSize: () => CONVERSATION_ESTIMATED_HEIGHT,
     followOnAppend: true,
+    useFlushSync: false,
     getItemKey,
     getScrollElement: () => viewportElement,
     overscan: 2,
