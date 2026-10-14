@@ -2,10 +2,16 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import type * as React from "react";
 import { asChildToRender } from "@/components/ui/_as-child-render";
+import { FLYOUT_GAP } from "@/components/ui/_flyout";
 import {
   popupContentWidthClassName,
   popupSubContentWidthClassName,
 } from "@/components/ui/_popup-width";
+import {
+  SubmenuAnchorProvider,
+  useSubmenuAnchor,
+  useSubmenuTriggerRef,
+} from "@/components/ui/_submenu-anchor";
 import { cn } from "@/lib/utils";
 
 function DropdownMenu({
@@ -253,7 +259,11 @@ function DropdownMenuShortcut({
 function DropdownMenuSub({
   ...props
 }: React.ComponentProps<typeof MenuPrimitive.SubmenuRoot>) {
-  return <MenuPrimitive.SubmenuRoot {...props} />;
+  return (
+    <SubmenuAnchorProvider>
+      <MenuPrimitive.SubmenuRoot {...props} />
+    </SubmenuAnchorProvider>
+  );
 }
 
 function DropdownMenuSubTrigger({
@@ -261,11 +271,13 @@ function DropdownMenuSubTrigger({
   inset,
   children,
   ...props
-}: React.ComponentProps<typeof MenuPrimitive.SubmenuTrigger> & {
+}: Omit<React.ComponentProps<typeof MenuPrimitive.SubmenuTrigger>, "ref"> & {
   inset?: boolean;
 }) {
+  const triggerRef = useSubmenuTriggerRef();
   return (
     <MenuPrimitive.SubmenuTrigger
+      ref={triggerRef}
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
@@ -297,9 +309,7 @@ type DropdownMenuSubContentProps = React.ComponentProps<
 
 function DropdownMenuSubContent({
   className,
-  // Small positive gap so the flyout does not visually glue onto / cover the
-  // parent menu. Base UI defaults sideOffset to 0 for nested menus.
-  sideOffset = 4,
+  sideOffset = FLYOUT_GAP,
   // Nudge up slightly so the first row of the submenu lines up with the
   // sub-trigger row (classic menu flyout alignment).
   alignOffset = -4,
@@ -307,11 +317,13 @@ function DropdownMenuSubContent({
   side,
   ...props
 }: DropdownMenuSubContentProps) {
+  const anchor = useSubmenuAnchor();
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
+        anchor={anchor}
         className="z-50 outline-none"
         side={side}
         sideOffset={sideOffset}

@@ -1,3 +1,4 @@
+export { FLYOUT_GAP, flyoutAnchor } from "./_flyout";
 export {
   Avatar,
   AvatarBadge,

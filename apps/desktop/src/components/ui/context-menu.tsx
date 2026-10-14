@@ -2,10 +2,16 @@ import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import type * as React from "react";
 import { asChildToRender } from "@/components/ui/_as-child-render";
+import { FLYOUT_GAP } from "@/components/ui/_flyout";
 import {
   popupContentWidthClassName,
   popupSubContentWidthClassName,
 } from "@/components/ui/_popup-width";
+import {
+  SubmenuAnchorProvider,
+  useSubmenuAnchor,
+  useSubmenuTriggerRef,
+} from "@/components/ui/_submenu-anchor";
 import { cn } from "@/lib/utils";
 
 function ContextMenu({
@@ -53,7 +59,11 @@ function ContextMenuPortal({
 function ContextMenuSub({
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.SubmenuRoot>) {
-  return <ContextMenuPrimitive.SubmenuRoot {...props} />;
+  return (
+    <SubmenuAnchorProvider>
+      <ContextMenuPrimitive.SubmenuRoot {...props} />
+    </SubmenuAnchorProvider>
+  );
 }
 
 function ContextMenuRadioGroup({
@@ -139,11 +149,16 @@ function ContextMenuSubTrigger({
   inset,
   children,
   ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.SubmenuTrigger> & {
+}: Omit<
+  React.ComponentProps<typeof ContextMenuPrimitive.SubmenuTrigger>,
+  "ref"
+> & {
   inset?: boolean;
 }) {
+  const triggerRef = useSubmenuTriggerRef();
   return (
     <ContextMenuPrimitive.SubmenuTrigger
+      ref={triggerRef}
       data-slot="context-menu-sub-trigger"
       data-inset={inset}
       className={cn(
@@ -162,9 +177,16 @@ function ContextMenuSubContent({
   className,
   ...props
 }: React.ComponentProps<typeof ContextMenuPrimitive.Popup>) {
+  const anchor = useSubmenuAnchor();
   return (
     <ContextMenuPrimitive.Portal>
-      <ContextMenuPrimitive.Positioner className="z-50 outline-none">
+      <ContextMenuPrimitive.Positioner
+        align="start"
+        alignOffset={-4}
+        anchor={anchor}
+        className="z-50 outline-none"
+        sideOffset={FLYOUT_GAP}
+      >
         <ContextMenuPrimitive.Popup
           data-slot="context-menu-sub-content"
           className={cn(
