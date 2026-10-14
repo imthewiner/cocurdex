@@ -6,6 +6,8 @@ const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
 const DIALOG_MODULE =
   "/src/features/agent/execution-tree/execution-tree-dialog.tsx";
 const SESSION_ID = "scenario-execution-tree";
+const LATEST_RUN_TIME = ":15:07";
+const WORKER_TOOL_CALLS = 30;
 const FAILED_OUTPUT_LINES = 30;
 const PANEL_OPEN_TIMEOUT_MS = 60_000;
 const SHELL_READY_TIMEOUT_MS = 60_000;
@@ -40,6 +42,40 @@ function run(id, status, startedAt, endedAt, toolCalls) {
     delegated: [],
     interactions: [],
   };
+}
+
+function childSession(id, toolCalls) {
+  return {
+    session: {
+      id,
+      title: id,
+      agentType: "codex",
+      sessionKind: "teammate",
+      status: "idle",
+      parentSessionId: SESSION_ID,
+      parentToolCallId: null,
+      createdAt: "2026-10-13T03:16:00.000Z",
+      updatedAt: "2026-10-13T03:18:00.000Z",
+    },
+    runs: [],
+    toolCalls,
+    children: [],
+    interactions: [],
+    plan: null,
+    truncated: false,
+  };
+}
+
+function workerCalls(worker) {
+  return Array.from({ length: WORKER_TOOL_CALLS }, (_, index) =>
+    toolCall(
+      `tool-${worker}-${index}`,
+      `/bin/zsh -lc 'cat ${worker}-${index}.md'`,
+      index === WORKER_TOOL_CALLS - 1 ? "failed" : "completed",
+      "2026-10-13T03:16:01.000Z",
+      "2026-10-13T03:16:01.300Z",
+    ),
+  );
 }
 
 const EXECUTION_TREE = {
@@ -102,9 +138,19 @@ const EXECUTION_TREE = {
           "2026-10-13T03:15:13.000Z",
         ),
       ]),
+      run(
+        "run-capacity",
+        "failed",
+        "2026-10-13T03:20:00.000Z",
+        "2026-10-13T03:20:10.000Z",
+        [],
+      ),
     ],
     toolCalls: [],
-    children: [],
+    children: [
+      childSession("worker-a", workerCalls("worker-a")),
+      childSession("worker-b", workerCalls("worker-b")),
+    ],
     interactions: [],
     plan: null,
     truncated: false,
@@ -122,8 +168,8 @@ async function readTree(session) {
   return session.run(() => {
     const dialog = document.querySelector('[role="dialog"]');
     if (!dialog) return null;
-    const rows = [...dialog.querySelectorAll("li")].map((row) =>
-      row.innerText.replace(/\s+/g, " ").trim(),
+    const rows = [...dialog.querySelectorAll("[data-execution-row]")].map(
+      (row) => row.innerText.replace(/\s+/g, " ").trim(),
     );
     return {
       rows,
@@ -131,6 +177,22 @@ async function readTree(session) {
       pre: dialog.querySelector("pre")?.innerText ?? null,
     };
   });
+}
+
+function readDialogTop(session) {
+  return session.run(
+    () => document.querySelector('[role="dialog"]').getBoundingClientRect().top,
+  );
+}
+
+function toggleSessionRow(session, sessionId) {
+  return session.run((key) => {
+    const toggle = document.querySelector(
+      `[data-execution-row="${key}"] button[aria-expanded]`,
+    );
+    toggle?.click();
+    return Boolean(toggle);
+  }, `session:${sessionId}`);
 }
 
 function clickRow(session, fragment) {
@@ -259,7 +321,9 @@ runScenario("execution-tree", {
       "session-row-shows-agent-icon-and-name",
       async ({ session }) => {
         const row = await session.run(() => {
-          const button = document.querySelector('[role="dialog"] li button');
+          const button = document.querySelector(
+            '[data-execution-row^="session:"] button',
+          );
           return {
             text: button.innerText.replace(/\s+/g, " ").trim(),
             icons: button.querySelectorAll("svg, img").length,
@@ -317,8 +381,138 @@ runScenario("execution-tree", {
       },
     ],
     [
+      "empty-run-has-no-expand-control",
+      async ({ session }) => {
+        const row = await session.run(() => {
+          const item = document.querySelector(
+            '[data-execution-row="run:run-capacity"]',
+          );
+          return item
+            ? {
+                text: item.innerText.replace(/\s+/g, " ").trim(),
+                expandControls: item.querySelectorAll("[aria-expanded]").length,
+              }
+            : null;
+        });
+        check(Boolean(row), "empty run row missing");
+        check(row.expandControls === 0, "empty run is expandable", row);
+        return row;
+      },
+    ],
+    [
+      "subagents-folded-with-summary",
+      async ({ session }) => {
+        const tree = await readTree(session);
+        check(
+          !tree.text.includes("worker-a-0.md"),
+          "subagent calls shown before expanding",
+        );
+        const worker = await session.run(() => {
+          const row = document.querySelector(
+            '[data-execution-row="session:worker-a"]',
+          );
+          return row
+            ? {
+                expanded: row
+                  .querySelector("[aria-expanded]")
+                  ?.getAttribute("aria-expanded"),
+                text: row.innerText.replace(/\s+/g, " ").trim(),
+              }
+            : null;
+        });
+        check(Boolean(worker), "subagent row missing", tree.rows);
+        check(worker.expanded === "false", "subagent expanded by default");
+        check(worker.text.includes("30"), "subagent summary missing", worker);
+        return worker;
+      },
+    ],
+    [
+      "sticky-session-headers",
+      async ({ session }) => {
+        check(
+          await toggleSessionRow(session, "worker-a"),
+          "subagent toggle missing",
+        );
+        await session.waitUntil(() =>
+          document
+            .querySelector('[role="dialog"]')
+            ?.innerText.includes("worker-a-29.md"),
+        );
+        const layout = await session.run(async () => {
+          const list = document.querySelector('[role="dialog"] ul');
+          const lastCall = document.querySelector(
+            '[data-execution-row="tool:tool-worker-a-28"]',
+          );
+          list.scrollTop =
+            lastCall.offsetTop - list.clientHeight + lastCall.offsetHeight;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const top = (key) =>
+            document
+              .querySelector(`[data-execution-row="${key}"]`)
+              .getBoundingClientRect().top;
+          const listTop = list.getBoundingClientRect().top;
+          const result = {
+            scrolled: list.scrollTop,
+            root:
+              document
+                .querySelector('[data-execution-row^="session:"]')
+                .getBoundingClientRect().top - listTop,
+            worker: top("session:worker-a") - listTop,
+          };
+          list.scrollTop = 0;
+          return result;
+        });
+        check(layout.scrolled > 0, "list did not scroll", layout);
+        check(Math.abs(layout.root) < 1, "root header not pinned", layout);
+        check(
+          Math.abs(layout.worker - 28) < 1,
+          "subagent header not pinned below root",
+          layout,
+        );
+        await toggleSessionRow(session, "worker-a");
+        await toggleSessionRow(session, "worker-b");
+        await session.waitUntil(() =>
+          document
+            .querySelector('[role="dialog"]')
+            ?.innerText.includes("worker-b-29.md"),
+        );
+        const overlap = await session.run(async () => {
+          const list = document.querySelector('[role="dialog"] ul');
+          const row = (key) =>
+            document.querySelector(`[data-execution-row="${key}"]`);
+          const listTop = list.getBoundingClientRect().top;
+          list.scrollTop +=
+            row("session:worker-a").getBoundingClientRect().top - listTop;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const rootHeader = document.querySelector(
+            '[data-execution-row^="session:"]',
+          );
+          const rect = rootHeader.getBoundingClientRect();
+          const hit = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+          );
+          const result = {
+            scrolled: list.scrollTop,
+            rootOnTop: rootHeader.contains(hit),
+          };
+          list.scrollTop = 0;
+          return result;
+        });
+        check(overlap.scrolled > 0, "list did not scroll", overlap);
+        check(
+          overlap.rootOnTop,
+          "a nested header covers the root header",
+          overlap,
+        );
+        await toggleSessionRow(session, "worker-b");
+        return { ...layout, ...overlap };
+      },
+    ],
+    [
       "issues-only-filter",
       async ({ session }) => {
+        const topBefore = await readDialogTop(session);
         const clicked = await session.run(() => {
           const toggle = document.querySelector(
             '[role="dialog"] [role="switch"]',
@@ -327,7 +521,12 @@ runScenario("execution-tree", {
           return Boolean(toggle);
         });
         check(clicked, "issues-only switch missing");
-        await session.run(() => window.__scenario.sleep(200));
+        await session.waitUntil(
+          () =>
+            !document
+              .querySelector('[role="dialog"]')
+              ?.innerText.includes("git fetch origin main"),
+        );
         const tree = await readTree(session);
         check(
           !tree.text.includes("git fetch origin main") &&
@@ -339,7 +538,26 @@ runScenario("execution-tree", {
           tree.text.includes("gh release view"),
           "issues-only dropped the failed call",
         );
-        return { rows: tree.rows.length };
+        const topAfter = await readDialogTop(session);
+        check(
+          Math.abs(topAfter - topBefore) < 1,
+          "dialog moved when filtering",
+          { topBefore, topAfter },
+        );
+        return { rows: tree.rows.length, topBefore, topAfter };
+      },
+    ],
+    [
+      "collapse-run-while-filtering",
+      async ({ session }) => {
+        await clickRow(session, LATEST_RUN_TIME);
+        await session.waitUntil(
+          () =>
+            !document
+              .querySelector('[role="dialog"]')
+              ?.innerText.includes("gh release view"),
+        );
+        return {};
       },
     ],
     [
