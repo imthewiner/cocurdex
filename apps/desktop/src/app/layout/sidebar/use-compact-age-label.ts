@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
+import { formatActivityTime } from "./activity-time-label";
 import { getCompactRelativeTime } from "./compact-relative-time";
 
 const TICK_MS = 30_000;
@@ -48,4 +49,14 @@ export function useCompactAgeLabel(timestamp: string) {
     y: t("sidebar.ageYears", { count }),
   };
   return labels[unit];
+}
+
+export function useActivityTimeLabel(timestamp: string) {
+  const { t, i18n } = useTranslation("sessions");
+  return formatActivityTime(
+    timestamp,
+    useMinuteNow(),
+    i18n.language,
+    t("sidebar.ageNow"),
+  );
 }
