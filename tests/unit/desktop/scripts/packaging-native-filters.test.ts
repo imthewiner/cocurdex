@@ -38,10 +38,6 @@ describe("nativeIdMatchesTarget", () => {
 describe("createNativePackageExcludes", () => {
   it("excludes foreign OS and CPU natives for Apple Silicon", () => {
     const excludes = createNativePackageExcludes("darwin", "arm64");
-    expect(excludes).toContain("!**/node_modules/@esbuild/darwin-x64/**/*");
-    expect(excludes).not.toContain(
-      "!**/node_modules/@esbuild/darwin-arm64/**/*",
-    );
     expect(excludes).toContain(
       "!**/node_modules/@vscode/ripgrep-darwin-x64/**/*",
     );
@@ -73,14 +69,14 @@ describe("createNativePackageExcludes", () => {
     ["darwin", "x64"],
     ["win32", "x64"],
     ["linux", "arm64"],
-  ])("keeps esbuild for %s %s", (platform, arch) => {
+  ])("keeps ripgrep for %s %s", (platform, arch) => {
     const excludes = createNativePackageExcludes(platform, arch);
     expect(excludes).not.toContain(
-      `!**/node_modules/@esbuild/${platform}-${arch}/**/*`,
+      `!**/node_modules/@vscode/ripgrep-${platform}-${arch}/**/*`,
     );
     const foreignArch = arch === "arm64" ? "x64" : "arm64";
     expect(excludes).toContain(
-      `!**/node_modules/@esbuild/${platform}-${foreignArch}/**/*`,
+      `!**/node_modules/@vscode/ripgrep-${platform}-${foreignArch}/**/*`,
     );
   });
 });
