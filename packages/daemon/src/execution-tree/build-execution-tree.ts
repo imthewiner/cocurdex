@@ -10,6 +10,7 @@ import type {
   SessionInteractionSnapshot,
   SessionRecord,
 } from "@cocurdex/shared";
+import { findSpawningToolCall } from "./spawning-tool-call";
 
 export interface ExecutionTreeSource {
   sessions: SessionRecord[];
@@ -142,7 +143,10 @@ function buildSessionNode(
   for (const child of children) {
     const node = childNodes.get(child.id);
     if (!node) continue;
-    const toolCallId = child.parentToolCallId;
+    const toolCallId =
+      child.parentToolCallId ??
+      findSpawningToolCall(child, toolCalls, new Set(spawnedByToolCall.keys()))
+        ?.id;
     if (toolCallId && toolCallIds.has(toolCallId)) {
       spawnedByToolCall.set(toolCallId, node);
       continue;

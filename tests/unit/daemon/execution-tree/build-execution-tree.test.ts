@@ -190,6 +190,58 @@ describe("buildExecutionTree", () => {
     expect(tree?.root.children).toEqual([]);
   });
 
+  it("nests a teammate under the spawn call that created it", () => {
+    const spawn = (id: string, name: string, startedAt: string) =>
+      toolCall(id, "lead", {
+        title: "team_spawn_teammate",
+        kind: "team_spawn_teammate",
+        rawInput: { name, prompt: "research" },
+        startedAt,
+        updatedAt: startedAt,
+      });
+    const tree = buildExecutionTree(
+      "lead",
+      source({
+        sessions: [
+          session("lead"),
+          session("a", {
+            title: "paseo-research",
+            sessionKind: "teammate",
+            parentSessionId: "lead",
+            createdAt: "2026-10-01T00:01:00.500Z",
+          }),
+          session("b", {
+            title: "t3code-research",
+            sessionKind: "teammate",
+            parentSessionId: "lead",
+            createdAt: "2026-10-01T00:01:00.600Z",
+          }),
+          session("c", {
+            title: "renamed",
+            sessionKind: "teammate",
+            parentSessionId: "lead",
+            createdAt: "2026-10-01T00:05:00.000Z",
+          }),
+        ],
+        toolCalls: {
+          lead: [
+            spawn("s1", "paseo-research", "2026-10-01T00:01:00.000Z"),
+            spawn("s2", "t3code-research", "2026-10-01T00:01:00.000Z"),
+            toolCall("other", "lead"),
+          ],
+        },
+      }),
+      3,
+    );
+
+    const childOf = (id: string) =>
+      tree?.root.toolCalls.find((node) => node.toolCall.id === id)?.child
+        ?.session.id;
+    expect(childOf("s1")).toBe("a");
+    expect(childOf("s2")).toBe("b");
+    expect(tree?.root.children.map((node) => node.session.id)).toEqual(["c"]);
+  });
+
   it("marks a subagent call without a recorded session as limited instead of inventing one", () => {
     const tree = buildExecutionTree(
       "root",
