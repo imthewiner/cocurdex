@@ -23,6 +23,10 @@ export interface ToolCallRepository {
   // serialize, and hold detail payloads users may never expand. The returned
   // records have unloaded result fields; fetch them via getResultById.
   listSummariesBySessionId(sessionId: string): Promise<AgentToolCallRecord[]>;
+  listSummariesChangedSince(
+    sessionId: string,
+    changeSeq: number,
+  ): Promise<AgentToolCallRecord[]>;
   getResultById(toolCallId: string): Promise<StoredToolCallResult | null>;
   listResultRefsBySessionId(sessionId: string): Promise<Map<string, string>>;
   listResultRefs(): Promise<Set<string>>;

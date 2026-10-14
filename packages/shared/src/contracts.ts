@@ -1401,4 +1401,5 @@ export interface AppBootstrapData {
   activeRuns: RunRecord[];
   sessionUsage: Record<string, AgentUsageRecord>;
   editorViews: EditorViewRecord[];
+  syncCursor: string;
 }

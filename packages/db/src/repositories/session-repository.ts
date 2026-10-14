@@ -3,6 +3,7 @@ import type { SessionRecord } from "@cocurdex/shared";
 export interface SessionRepository {
   list(): Promise<SessionRecord[]>;
   listArchived(): Promise<SessionRecord[]>;
+  listChangedSince(changeSeq: number): Promise<SessionRecord[]>;
   restore(sessionId: string): Promise<SessionRecord[]>;
   listByWorkspaceId(workspaceId: string): Promise<SessionRecord[]>;
   getById(sessionId: string): Promise<SessionRecord | null>;

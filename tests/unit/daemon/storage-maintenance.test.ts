@@ -49,6 +49,7 @@ async function setup() {
     toolCalls: database.toolCalls,
     toolOutputs,
     commandReceipts: database.commandReceipts,
+    sync: database.sync,
     reclaimFreePages: (maxPages) => database.reclaimFreePages(maxPages),
     isClosed: () => false,
   });
@@ -171,6 +172,31 @@ describe("StorageMaintenance", () => {
 
     await expect(database.commandReceipts.get("old")).resolves.toBe(null);
     await expect(database.commandReceipts.get("fresh")).resolves.toBe("{}");
+    database.close();
+  });
+
+  it("drops sync tombstones older than thirty days and raises the floor", async () => {
+    const { database, maintenance } = await setup();
+    await database.sessions.delete("session-1");
+    const [tombstone] = database.sync.listTombstonesSince(0);
+    expect(tombstone?.entityId).toBe("session-1");
+
+    await maintenance.run();
+    expect(database.sync.listTombstonesSince(0)).toHaveLength(1);
+
+    const later = new StorageMaintenance({
+      toolCalls: database.toolCalls,
+      toolOutputs: createToolOutputStore(tempDirs.createSync("later-")),
+      commandReceipts: database.commandReceipts,
+      sync: database.sync,
+      reclaimFreePages: (maxPages) => database.reclaimFreePages(maxPages),
+      isClosed: () => false,
+      now: () => Date.now() + 31 * 24 * 60 * 60 * 1000,
+    });
+    await later.run();
+
+    expect(database.sync.listTombstonesSince(0)).toEqual([]);
+    expect(database.sync.readClock().tombstoneFloor).toBe(tombstone?.changeSeq);
     database.close();
   });
 });

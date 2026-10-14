@@ -1,5 +1,6 @@
 import type {
   CommandReceiptRepository,
+  SyncRepository,
   ToolCallRepository,
 } from "@cocurdex/db";
 import { COMMAND_RECEIPT_TTL_MS } from "./command-receipt-log";
@@ -9,6 +10,7 @@ import {
   type ToolOutputStore,
 } from "./tool-output-store";
 
+export const SYNC_TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RECLAIM_PAGES_PER_STEP = 2048;
 const EXTERNALIZE_BATCH_SIZE = 50;
 const DEFAULT_MAINTENANCE_DELAY_MS = 30_000;
@@ -20,6 +22,7 @@ export interface StorageMaintenanceDeps {
   >;
   toolOutputs: ToolOutputStore;
   commandReceipts: Pick<CommandReceiptRepository, "deleteCreatedBefore">;
+  sync: Pick<SyncRepository, "pruneTombstones">;
   reclaimFreePages(maxPages: number): { reclaimed: number; remaining: number };
   isClosed(): boolean;
   delayMs?: number;
@@ -78,13 +81,18 @@ export class StorageMaintenance {
     const expiredReceipts = await this.deps.commandReceipts.deleteCreatedBefore(
       new Date(now - COMMAND_RECEIPT_TTL_MS).toISOString(),
     );
+    const prunedTombstones = this.deps.sync.pruneTombstones(
+      new Date(now - SYNC_TOMBSTONE_TTL_MS).toISOString(),
+    );
     if (this.deps.isClosed()) return;
     const reclaimed = await this.reclaimFreePages();
-    if (externalized + removed + expiredReceipts + reclaimed > 0) {
+    const changed = externalized + removed + expiredReceipts + prunedTombstones;
+    if (changed + reclaimed > 0) {
       logDaemonDiagnostic("info", "[Storage] maintenance", {
         externalizedResults: externalized,
         removedOutputs: removed,
         expiredReceipts,
+        prunedTombstones,
         reclaimedPages: reclaimed,
       });
     }

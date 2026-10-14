@@ -7,5 +7,6 @@ export * from "./schema";
 export * from "./script-run";
 export * from "./search";
 export * from "./sqlite";
+export * from "./sync";
 export * from "./team";
 export * from "./workflow";

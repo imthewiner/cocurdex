@@ -166,14 +166,15 @@ describe("app resync RPC", () => {
     });
     service.bindEventSeqProvider(() => 41);
 
-    const snapshot = await handleDaemonRequest<"app.resync">(service, {
+    const snapshot = await handleDaemonRequest<"sync.pull">(service, {
       id: "1",
-      method: "app.resync",
+      method: "sync.pull",
       params: { sessionIds: ["session-1", "missing"] },
       token: "test",
     });
 
     expect(snapshot).toMatchObject({
+      mode: "full",
       epoch: service.status().startedAt,
       eventSeq: 41,
       sessions: [{ id: "session-1" }],

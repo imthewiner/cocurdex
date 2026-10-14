@@ -43,6 +43,16 @@ export function createSqliteToolCallRepository(
         .all(sessionId) as SqliteRow[];
       return rows.map(mapToolCallSummary);
     },
+    async listSummariesChangedSince(sessionId, changeSeq) {
+      const rows = database
+        .prepare(
+          `SELECT ${SUMMARY_COLUMNS} FROM tool_calls
+           WHERE session_id = ? AND change_seq > ?
+           ORDER BY seq ASC`,
+        )
+        .all(sessionId, changeSeq) as SqliteRow[];
+      return rows.map(mapToolCallSummary);
+    },
     async getResultById(toolCallId) {
       const row = database
         .prepare(

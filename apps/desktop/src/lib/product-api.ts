@@ -3,7 +3,7 @@ import type { ProductRequestApi } from "./types";
 
 export const daemonProductApi: ProductRequestApi = {
   bootstrapApp: () => rpc("app.bootstrap"),
-  resyncApp: (sessionIds) => rpc("app.resync", { sessionIds }),
+  pullSync: (input) => rpc("sync.pull", input),
   getProductSkillsStatus: (scope, workspaceRootPath) =>
     rpc("skills.getStatus", {
       scope,

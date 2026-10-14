@@ -17,7 +17,6 @@ import type {
   AgentToolCallResult,
   AppBootstrapData,
   ApplyNoteDocUpdatePayload,
-  AppResyncSnapshot,
   ArchiveSessionsResult,
   CocurdexDaemonEvent,
   CodexAccountState,
@@ -134,6 +133,8 @@ import type {
   SpawnTeammatePayload,
   SpawnTeamTemplatePayload,
   StartScriptRunPayload,
+  SyncPullInput,
+  SyncPullResult,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -228,7 +229,7 @@ export type DaemonRequestPayloadByMethod = {
   "daemon.status": undefined;
   "daemon.shutdownIfIdle": { pid: number; startedAt: string };
   "app.bootstrap": undefined;
-  "app.resync": { sessionIds: string[] };
+  "sync.pull": SyncPullInput;
   "agent.list": undefined;
   "agent.sessionModes.read": { agentId: AgentId };
   "agent.login": { agentId: AgentId };
@@ -517,7 +518,7 @@ export type DaemonResultByMethod = {
   "daemon.status": DaemonStatus;
   "daemon.shutdownIfIdle": DaemonShutdownResult;
   "app.bootstrap": AppBootstrapData;
-  "app.resync": AppResyncSnapshot;
+  "sync.pull": SyncPullResult;
   "agent.list": AgentDescriptor[];
   "agent.sessionModes.read": AgentSessionMode[];
   "agent.login": null;

@@ -14,6 +14,7 @@ import {
   openWorkspaceByPathAtom,
 } from "@/features/workspaces";
 import { desktopApi, useMountEffect } from "@/lib";
+import { adoptAgentSyncCursor } from "./agent-event-bridge";
 import { appBootstrappedAtom } from "./app-bootstrap-store";
 import { startEditorContextSync } from "./editor-context-sync";
 
@@ -66,6 +67,7 @@ export function useAppPersistence() {
           return;
         }
 
+        adoptAgentSyncCursor(data.syncCursor);
         bootstrapWorkspaces(data.workspaces);
         bootstrapSessions(data.sessions);
         bootstrapQueuedInputs({

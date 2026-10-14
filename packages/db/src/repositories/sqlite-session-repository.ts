@@ -18,6 +18,16 @@ export function createSqliteSessionRepository(
         .all() as SqliteRow[];
       return rows.map(mapSession);
     },
+    async listChangedSince(changeSeq) {
+      const rows = database
+        .prepare(
+          `SELECT * FROM sessions
+           WHERE change_seq > ?
+           ORDER BY change_seq`,
+        )
+        .all(changeSeq) as SqliteRow[];
+      return rows.map(mapSession);
+    },
     async listArchived() {
       const rows = database
         .prepare(

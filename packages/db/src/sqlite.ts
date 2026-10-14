@@ -69,6 +69,7 @@ import {
   type ScriptRunRepository,
 } from "./script-run";
 import { createSqliteSearchRepository, type SearchRepository } from "./search";
+import { createSqliteSyncRepository, type SyncRepository } from "./sync";
 import { createSqliteTeamRepository, type TeamRepository } from "./team";
 import {
   createSqliteWorkflowRepository,
@@ -99,6 +100,7 @@ export interface CocurdexDatabase {
   sessionAttention: SessionAttentionRepository;
   appSettings: AppSettingsRepository;
   commandReceipts: CommandReceiptRepository;
+  sync: SyncRepository;
   pendingSettingsChanges: PendingSettingsChangeRepository;
   providerConfigs: ReturnType<
     typeof createProviderRepositories
@@ -210,6 +212,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
     sessionAttention: createSqliteSessionAttentionRepository(database),
     appSettings: createSqliteAppSettingsRepository(database),
     commandReceipts: createSqliteCommandReceiptRepository(database),
+    sync: createSqliteSyncRepository(database),
     pendingSettingsChanges:
       createSqlitePendingSettingsChangeRepository(database),
     agentRoles: createSqliteAgentRoleRepository(database),

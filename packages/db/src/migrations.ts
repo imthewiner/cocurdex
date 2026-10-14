@@ -7,13 +7,14 @@ import {
 import { migrateNotesToCollaborativeDocs } from "./notes/note-schema";
 import { createCommandReceiptsSql, createSchemaSql } from "./schema";
 import { compactStoredDiffs } from "./stored-diff-compaction";
+import { ensureSyncTracking } from "./sync/sync-tracking";
 import { createTeamSchemaSql } from "./team/schema";
 import { ensureTimelineSequence } from "./timeline-sequence";
 
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 30;
+export const CURRENT_SCHEMA_VERSION = 31;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -528,6 +529,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [27, compactStoredDiffs],
   [28, addToolCallResultRefs],
   [29, createCommandReceipts],
+  [30, ensureSyncTracking],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {
@@ -641,6 +643,7 @@ export function initializeDatabase(database: DatabaseSync): void {
 
   migrateDatabase(database, state);
   runMigrationStep(database, ensureTimelineSequence);
+  runMigrationStep(database, ensureSyncTracking);
   ensureIssueIndexes(database);
 
   database.exec(`PRAGMA application_id = ${COCURDEX_APPLICATION_ID}`);

@@ -24,7 +24,6 @@ import type {
   AgentRunLimits,
   AgentRuntimeProviderConfig,
   AppBootstrapData,
-  AppResyncSnapshot,
   ArchiveSessionsResult,
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
@@ -42,6 +41,8 @@ import type {
   SessionConfiguration,
   SessionRecord,
   SetSessionPinnedPayload,
+  SyncPullInput,
+  SyncPullResult,
   TurnChangeDiffRequest,
   TurnChangeFileContentRequest,
   UndoTurnChangesInput,
@@ -149,6 +150,7 @@ import {
 } from "./session-control";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
+import { pullSync } from "./sync/sync-pull";
 import {
   listFontFamilies,
   openDirectoryInFileManager,
@@ -1292,45 +1294,18 @@ export class CocurdexDaemonService {
     this.readEventSeq = provider;
   }
 
-  // Full authoritative refresh after a replay gap. Reads run behind queued
-  // event persistence, so every journaled event at or below the captured
-  // eventSeq is already reflected here; clients must only apply newer
-  // buffered events on top.
-  async resync(sessionIds: string[]): Promise<AppResyncSnapshot> {
+  async pullSync(input: SyncPullInput): Promise<SyncPullResult> {
     return this.runtime.withEventPersistence(async () => {
       const eventSeq = this.readEventSeq();
-      const data = await this.state.bootstrap();
-      const transcripts = Object.fromEntries(
-        await Promise.all(
-          sessionIds.map(async (sessionId) => {
-            const messages = await this.state.listSessionMessages(sessionId);
-            const toolCalls = await this.state.listToolCallSummaries(sessionId);
-            return [
-              sessionId,
-              {
-                messages: messages.messages,
-                activeMessages:
-                  this.state.listActiveMessagesBySessionId(sessionId),
-                turnStats: messages.turnStats,
-                turnChangeSets: messages.turnChangeSets,
-                toolCalls,
-                plan: this.runtime.getSessionPlan(sessionId),
-              },
-            ] as const;
-          }),
-        ),
+      await this.state.getDatabase();
+      return pullSync(
+        this.state.syncSources({
+          getPlan: (sessionId) => this.runtime.getSessionPlan(sessionId),
+          getInteractions: () => this.runtime.getPendingInteractions(),
+        }),
+        { epoch: this.startedAt, eventSeq },
+        input,
       );
-      return {
-        epoch: this.startedAt,
-        eventSeq,
-        sessions: data.sessions,
-        queuedAgentInputs: data.queuedAgentInputs,
-        queuedMessages: data.queuedMessages,
-        activeRuns: data.activeRuns,
-        sessionUsage: data.sessionUsage,
-        interactions: this.runtime.getPendingInteractions(),
-        transcripts,
-      };
     });
   }
 

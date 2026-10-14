@@ -101,8 +101,12 @@ export const offlineApi: DesktopApi = {
     activeRuns: [],
     sessionUsage: {},
     editorViews: [],
+    syncCursor: "",
   }),
-  resyncApp: async () => ({
+  pullSync: async () => ({
+    mode: "full",
+    cursor: "",
+    removedSessionIds: [],
     epoch: "",
     eventSeq: 0,
     sessions: [],

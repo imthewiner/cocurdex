@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { DatabaseSync } from "node:sqlite";
 import {
   COCURDEX_APPLICATION_ID,
@@ -86,10 +88,11 @@ function tableShape(database: DatabaseSync, table: string) {
       .prepare(`PRAGMA index_list(${table})`)
       .all()
       .map((index) => ({
-        name: index.name,
+        name: String(index.name),
         unique: index.unique,
         origin: index.origin,
-      })),
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name)),
   };
 }
 
@@ -951,13 +954,14 @@ describe("initializeDatabase", () => {
 
   it("adds runs and run ids from version 22 and keeps user data", async () => {
     const database = new DatabaseSync(":memory:");
-    initializeDatabase(database);
-    database.exec(`
-      ALTER TABLE messages DROP COLUMN run_id;
-      ALTER TABLE tool_calls DROP COLUMN result_ref;
-      ALTER TABLE tool_calls DROP COLUMN run_id;
-      DROP TABLE runs;
-    `);
+    database.exec(
+      readFileSync(
+        createRequire(import.meta.url).resolve(
+          "@cocurdex/test-fixtures/db/schema-v22.sql",
+        ),
+        "utf8",
+      ),
+    );
     const now = "2026-10-11T00:00:00.000Z";
     database.exec(`
       INSERT INTO workspaces (id, name, root_paths, created_at, updated_at, last_opened_at)
@@ -972,7 +976,6 @@ describe("initializeDatabase", () => {
       VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
       INSERT INTO issues (id, title, workspace_id, created_at, updated_at)
       VALUES ('i1', 'Runs', 'w1', '${now}', '${now}');
-      PRAGMA user_version = 22;
     `);
 
     initializeDatabase(database);

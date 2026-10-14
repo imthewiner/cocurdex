@@ -4,7 +4,7 @@ import type { DaemonMethod } from "./index.ts";
 export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "daemon.status": "read",
   "app.bootstrap": "read",
-  "app.resync": "read",
+  "sync.pull": "read",
   "agent.list": "read",
   "agent.sessionModes.read": "read",
   "agent.rateLimits.read": "read",

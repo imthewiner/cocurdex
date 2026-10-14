@@ -47,6 +47,8 @@ import { logDaemonDiagnostic } from "./diagnostics";
 import { createMessageDeltaBuffer } from "./message-delta-buffer";
 import { getDatabasePath } from "./paths";
 import { StorageMaintenance } from "./storage-maintenance";
+import { formatSyncCursor } from "./sync/sync-cursor";
+import type { SyncPullSources } from "./sync/sync-pull";
 import { withMessageSeq, withTimelineSeq } from "./timeline-seq-event";
 import { capToolCallOutput, withoutToolCallOutput } from "./tool-call-output";
 import {
@@ -86,6 +88,7 @@ export class DaemonState {
       toolCalls: this.database.toolCalls,
       toolOutputs: this.toolOutputs,
       commandReceipts: this.database.commandReceipts,
+      sync: this.database.sync,
       reclaimFreePages: (maxPages) => this.database.reclaimFreePages(maxPages),
       isClosed: () => this.closed,
     });
@@ -143,7 +146,9 @@ export class DaemonState {
       ),
     );
 
+    const syncCursor = formatSyncCursor(this.database.sync.readClock());
     return {
+      syncCursor,
       workspaces: await this.database.workspaces.list(),
       sessions: await this.database.sessions.list(),
       queuedMessages: queuedMessages.filter(
@@ -329,6 +334,38 @@ export class DaemonState {
       options.updatedAt,
       options.expectedTitle,
     );
+  }
+
+  syncSources(
+    runtime: Pick<SyncPullSources, "getPlan" | "getInteractions">,
+  ): SyncPullSources {
+    const { database } = this;
+    const settled = (messages: MessageRecord[]) =>
+      messages.filter((message) => !this.deltaBuffer.has(message.id));
+    return {
+      ...runtime,
+      readClock: () => database.sync.readClock(),
+      bootstrap: () => this.bootstrap(),
+      listSessionsChangedSince: (since) =>
+        database.sessions.listChangedSince(since),
+      listTombstonesSince: (since) => database.sync.listTombstonesSince(since),
+      listMessages: (sessionId) => this.listMessagesBySessionId(sessionId),
+      listMessagesChangedSince: async (sessionId, since) =>
+        settled(await database.messages.listChangedSince(sessionId, since)),
+      listActiveMessages: (sessionId) => this.deltaBuffer.list(sessionId),
+      listToolCalls: (sessionId) =>
+        database.toolCalls.listSummariesBySessionId(sessionId),
+      listToolCallsChangedSince: (sessionId, since) =>
+        database.toolCalls.listSummariesChangedSince(sessionId, since),
+      listTurnStats: (sessionId) =>
+        database.messageTurnStats.listBySessionId(sessionId),
+      listTurnStatsChangedSince: (sessionId, since) =>
+        database.messageTurnStats.listChangedSince(sessionId, since),
+      listTurnChangeSets: (sessionId) =>
+        database.turnChangeSets.listBySessionId(sessionId),
+      hasTurnChangeSetsChangedSince: async (sessionId, since) =>
+        database.sync.hasTurnChangeSetsChangedSince(sessionId, since),
+    };
   }
 
   async listMessagesBySessionId(sessionId: string) {
