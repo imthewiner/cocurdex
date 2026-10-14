@@ -48,6 +48,7 @@ async function setup() {
   const maintenance = new StorageMaintenance({
     toolCalls: database.toolCalls,
     toolOutputs,
+    commandReceipts: database.commandReceipts,
     reclaimFreePages: (maxPages) => database.reclaimFreePages(maxPages),
     isClosed: () => false,
   });
@@ -151,6 +152,25 @@ describe("StorageMaintenance", () => {
     expect((await database.toolCalls.getResultById("tool"))?.resultRef).toBe(
       null,
     );
+    database.close();
+  });
+
+  it("drops command receipts older than a day", async () => {
+    const { database, maintenance } = await setup();
+    const dayAndAMinuteAgo = new Date(
+      Date.now() - 24 * 60 * 60 * 1000 - 60_000,
+    ).toISOString();
+    await database.commandReceipts.save("old", "{}", dayAndAMinuteAgo);
+    await database.commandReceipts.save(
+      "fresh",
+      "{}",
+      new Date().toISOString(),
+    );
+
+    await maintenance.run();
+
+    await expect(database.commandReceipts.get("old")).resolves.toBe(null);
+    await expect(database.commandReceipts.get("fresh")).resolves.toBe("{}");
     database.close();
   });
 });

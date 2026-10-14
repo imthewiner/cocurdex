@@ -47,6 +47,14 @@ function normalizeIdempotencyKey(value: unknown) {
     : undefined;
 }
 
+function isMutatingMethod(method: unknown) {
+  return (
+    typeof method === "string" &&
+    Object.hasOwn(DAEMON_METHOD_SCOPES, method) &&
+    DAEMON_METHOD_SCOPES[method as keyof typeof DAEMON_METHOD_SCOPES] !== "read"
+  );
+}
+
 export function authorizeDaemonRequest(
   principal: HostPrincipal | null,
   method: unknown,
@@ -158,6 +166,7 @@ export async function handleDaemonWireMessage(
       ? await receipts.execute(
           `${principalActor(principal)}:${request.method}:${idempotencyKey}`,
           run,
+          { durable: isMutatingMethod(request.method) },
         )
       : { outcome: await run(), replayed: false };
     if (execution.outcome.ok) {

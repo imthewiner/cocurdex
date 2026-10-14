@@ -4,6 +4,18 @@ import { createScriptRunSchemaSql } from "./script-run/schema";
 import { createTeamSchemaSql } from "./team/schema";
 import { createWorkflowSchemaSql } from "./workflow/schema";
 
+export function createCommandReceiptsSql() {
+  return `
+    CREATE TABLE IF NOT EXISTS command_receipts (
+      key TEXT PRIMARY KEY,
+      outcome_json TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_command_receipts_created_at
+      ON command_receipts(created_at);
+  `;
+}
+
 export function createSchemaSql() {
   return `
     CREATE TABLE IF NOT EXISTS workspaces (
@@ -315,6 +327,8 @@ export function createSchemaSql() {
       value_json TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    ${createCommandReceiptsSql()}
 
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,

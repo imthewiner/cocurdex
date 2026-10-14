@@ -1,6 +1,7 @@
 export * from "./agent-provider-default-repository";
 export * from "./agent-role-repository";
 export * from "./app-settings-repository";
+export * from "./command-receipt-repository";
 export * from "./context-transfer-repository";
 export * from "./editor-view-repository";
 export * from "./message-repository";
@@ -18,6 +19,7 @@ export * from "./session-usage-repository";
 export * from "./sqlite-agent-provider-default-repository";
 export * from "./sqlite-agent-role-repository";
 export * from "./sqlite-app-settings-repository";
+export * from "./sqlite-command-receipt-repository";
 export * from "./sqlite-context-transfer-repository";
 export * from "./sqlite-editor-view-repository";
 export * from "./sqlite-message-repository";

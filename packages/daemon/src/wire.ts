@@ -17,6 +17,7 @@ import {
   createAgentToolHttpHandler,
   isAgentToolHttpRequest,
 } from "./agent-tools";
+import { createCommandReceiptLog } from "./command-receipt-log";
 import { prepareDaemonEndpoint, probeDaemonEndpoint } from "./daemon-endpoint";
 import { acquireDaemonOwnership } from "./daemon-ownership";
 import { DaemonShutdownGate } from "./daemon-shutdown-gate";
@@ -159,7 +160,17 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   const eventJournal = createDaemonEventJournal();
   const eventSubscribers = new Set<(entry: DaemonEventJournalEntry) => void>();
   const terminalSubscribers = new Set<(event: TerminalDaemonEvent) => void>();
-  const receipts = createDaemonReceiptStore();
+  const receipts = createDaemonReceiptStore({
+    durableLog: () => {
+      const activeService = service;
+      return activeService
+        ? createCommandReceiptLog(async () => {
+            const database = await activeService.state.getDatabase();
+            return database.commandReceipts;
+          })
+        : null;
+    },
+  });
   const attachConnection = (
     connection: DaemonConnection,
     transport: DaemonTransport,

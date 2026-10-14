@@ -1,4 +1,8 @@
-import type { ToolCallRepository } from "@cocurdex/db";
+import type {
+  CommandReceiptRepository,
+  ToolCallRepository,
+} from "@cocurdex/db";
+import { COMMAND_RECEIPT_TTL_MS } from "./command-receipt-log";
 import { logDaemonDiagnostic } from "./diagnostics";
 import {
   EXTERNAL_TOOL_RESULT_MIN_BYTES,
@@ -15,9 +19,11 @@ export interface StorageMaintenanceDeps {
     "listExternalizableResults" | "externalizeResult" | "listResultRefs"
   >;
   toolOutputs: ToolOutputStore;
+  commandReceipts: Pick<CommandReceiptRepository, "deleteCreatedBefore">;
   reclaimFreePages(maxPages: number): { reclaimed: number; remaining: number };
   isClosed(): boolean;
   delayMs?: number;
+  now?: () => number;
 }
 
 function yieldToEventLoop() {
@@ -68,11 +74,17 @@ export class StorageMaintenance {
       await this.deps.toolCalls.listResultRefs(),
     );
     if (this.deps.isClosed()) return;
+    const now = this.deps.now?.() ?? Date.now();
+    const expiredReceipts = await this.deps.commandReceipts.deleteCreatedBefore(
+      new Date(now - COMMAND_RECEIPT_TTL_MS).toISOString(),
+    );
+    if (this.deps.isClosed()) return;
     const reclaimed = await this.reclaimFreePages();
-    if (externalized + removed + reclaimed > 0) {
+    if (externalized + removed + expiredReceipts + reclaimed > 0) {
       logDaemonDiagnostic("info", "[Storage] maintenance", {
         externalizedResults: externalized,
         removedOutputs: removed,
+        expiredReceipts,
         reclaimedPages: reclaimed,
       });
     }

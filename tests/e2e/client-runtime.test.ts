@@ -99,4 +99,34 @@ describe("client runtime against a real daemon", () => {
       "before restart",
     ]);
   });
+
+  it("replays a mutation with the same key after a daemon restart", async () => {
+    const userDataPath = tempDirs.createSync("cocurdex-e2e-host-receipt-");
+    const first = await start(userDataPath);
+    const host = connectHost(userDataPath);
+    host.onEvent(() => undefined);
+    await waitFor(() => host.getState().status === "live");
+    const options = { idempotencyKey: "create-across-restart" };
+    const created = await host.command(
+      "note.create",
+      { title: "exactly once" },
+      options,
+    );
+
+    expect(await first.stop()).toBe(0);
+    await waitFor(() => host.getState().status !== "live");
+    const replay = host.command(
+      "note.create",
+      { title: "exactly once" },
+      options,
+    );
+    await start(userDataPath);
+
+    expect((await replay).id).toBe(created.id);
+    expect(
+      (await host.request("note.list")).filter(
+        (note) => note.title === "exactly once",
+      ),
+    ).toHaveLength(1);
+  });
 });

@@ -5,7 +5,7 @@ import {
   migrateIssuesToAgentCore,
 } from "./issues/issue-schema";
 import { migrateNotesToCollaborativeDocs } from "./notes/note-schema";
-import { createSchemaSql } from "./schema";
+import { createCommandReceiptsSql, createSchemaSql } from "./schema";
 import { compactStoredDiffs } from "./stored-diff-compaction";
 import { createTeamSchemaSql } from "./team/schema";
 import { ensureTimelineSequence } from "./timeline-sequence";
@@ -13,7 +13,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 29;
+export const CURRENT_SCHEMA_VERSION = 30;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -420,6 +420,10 @@ function addToolCallResultRefs(database: DatabaseSync): void {
   }
 }
 
+function createCommandReceipts(database: DatabaseSync): void {
+  database.exec(createCommandReceiptsSql());
+}
+
 function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
@@ -523,6 +527,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [26, addSessionPins],
   [27, compactStoredDiffs],
   [28, addToolCallResultRefs],
+  [29, createCommandReceipts],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

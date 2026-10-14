@@ -85,6 +85,7 @@ export class DaemonState {
     this.storageMaintenance = new StorageMaintenance({
       toolCalls: this.database.toolCalls,
       toolOutputs: this.toolOutputs,
+      commandReceipts: this.database.commandReceipts,
       reclaimFreePages: (maxPages) => this.database.reclaimFreePages(maxPages),
       isClosed: () => this.closed,
     });
