@@ -26,12 +26,24 @@ async function daemon(session, method, params) {
   );
 }
 
-async function boxCenter(session, backendNodeId) {
+async function centerInView(session, backendNodeId) {
   await session.send("DOM.getDocument", { depth: 0 });
-  await session.send("DOM.scrollIntoViewIfNeeded", { backendNodeId });
+  const { object } = await session.send("DOM.resolveNode", { backendNodeId });
+  await session.send("Runtime.callFunctionOn", {
+    objectId: object.objectId,
+    functionDeclaration:
+      "function () { this.scrollIntoView({ block: 'center' }); }",
+  });
   const { model } = await session.send("DOM.getBoxModel", { backendNodeId });
   const [left, top, , , right, bottom] = model.border;
   return { x: (left + right) / 2, y: (top + bottom) / 2 };
+}
+
+function hitLabel(point) {
+  return document
+    .elementFromPoint(point.x, point.y)
+    ?.closest("button")
+    ?.getAttribute("aria-label");
 }
 
 async function openSession(session, title) {
@@ -71,11 +83,13 @@ runScenario("session-fork", {
           { role: "button", name: forkLabel },
           UI_TIMEOUT_MS,
         );
-        const point = await boxCenter(session, buttons[0].backendNodeId);
+        const point = await centerInView(session, buttons[0].backendNodeId);
         await session.send("Input.dispatchMouseEvent", {
           type: "mouseMoved",
           ...point,
         });
+        const hit = await session.run(hitLabel, point);
+        check(hit === forkLabel, "fork button is covered", { hit, point });
         await clickPoint(session, point);
         await waitForRole(
           session,
