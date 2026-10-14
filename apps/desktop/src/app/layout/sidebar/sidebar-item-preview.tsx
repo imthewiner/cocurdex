@@ -10,7 +10,7 @@ import {
 } from "@/features/sessions";
 import { WorkspaceRootsPreview } from "@/features/workspaces";
 import { useSidebarScrolling } from "./sidebar-scrolling";
-import { useCompactAgeLabel } from "./use-compact-age-label";
+import { useActivityTimeLabel } from "./use-compact-age-label";
 
 interface SidebarItemPreviewProps {
   agentId?: AgentId;
@@ -31,23 +31,14 @@ export function SidebarItemPreview({
   title,
   workspaceName,
 }: SidebarItemPreviewProps) {
-  const relativeLabel = useCompactAgeLabel(timestamp);
+  const activityTime = useActivityTimeLabel(timestamp);
   const identityLabel = [role?.name, agentLabel].filter(Boolean).join(" · ");
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-1">
-      <div className="flex min-w-0 items-baseline gap-3">
-        <Text
-          size="body"
-          weight="medium"
-          className="min-w-0 flex-1 whitespace-normal"
-        >
-          {title}
-        </Text>
-        <Text size="meta" tone="muted" className="shrink-0">
-          {relativeLabel}
-        </Text>
-      </div>
+      <Text size="body" weight="medium" className="min-w-0 whitespace-normal">
+        {title}
+      </Text>
       {identityLabel ? (
         <div className="flex min-w-0 items-center gap-1.5">
           {role ? <AgentRoleAvatar role={role} /> : null}
@@ -71,6 +62,11 @@ export function SidebarItemPreview({
             {workspaceName}
           </Text>
         </div>
+      ) : null}
+      {activityTime ? (
+        <Text size="meta" tone="muted" className="min-w-0 tabular-nums">
+          {activityTime.relative} · {activityTime.absolute}
+        </Text>
       ) : null}
     </div>
   );
