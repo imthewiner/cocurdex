@@ -40,7 +40,6 @@ interface WorkspacesPanelProps {
   onReorderWorkspaces(activeId: string, overId: string): void;
   onRevealWorkspace(rootPath: string): void;
   onSelectSession(workspaceId: string, sessionId: string): void;
-  onSelectWorkspace(workspaceId: string): void;
   onToggleWorkspace(workspaceId: string): void;
 }
 
@@ -57,7 +56,6 @@ export function WorkspacesPanel({
   onReorderWorkspaces,
   onRevealWorkspace,
   onSelectSession,
-  onSelectWorkspace,
   onToggleWorkspace,
 }: WorkspacesPanelProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -138,7 +136,6 @@ export function WorkspacesPanel({
                   onRemoveWorkspace={onRemoveWorkspace}
                   onRevealWorkspace={onRevealWorkspace}
                   onSelectSession={onSelectSession}
-                  onSelectWorkspace={onSelectWorkspace}
                   onToggleWorkspace={onToggleWorkspace}
                   optimisticActiveSessionId={optimisticActiveSessionId}
                   sessions={sessionsByWorkspace[workspace.id] ?? []}

@@ -36,7 +36,6 @@ interface WorkspaceSidebarItemProps {
   onRevealWorkspace(rootPath: string): void;
   onSelectSession(workspaceId: string, sessionId: string): void;
   onToggleWorkspace(workspaceId: string): void;
-  onSelectWorkspace(workspaceId: string): void;
 }
 
 export function WorkspaceSidebarItem({
@@ -52,13 +51,15 @@ export function WorkspaceSidebarItem({
   onRevealWorkspace,
   onSelectSession,
   onToggleWorkspace,
-  onSelectWorkspace,
 }: WorkspaceSidebarItemProps) {
   const { t } = useTranslation("sessions");
   const pendingRequestSessionIds = useAtomValue(pendingRequestSessionIdsAtom);
   const requestArchive = useSetAtom(archiveGroupRequestAtom);
   const isRunning =
     !expanded && sessions.some((session) => session.status === "running");
+  const hidesActiveSession =
+    !expanded &&
+    sessions.some((session) => session.id === optimisticActiveSessionId);
   const needsAttention =
     !expanded &&
     sessions.some((session) => pendingRequestSessionIds.has(session.id));
@@ -87,18 +88,16 @@ export function WorkspaceSidebarItem({
           <ContextMenuTrigger asChild>
             <SidebarListRow
               isActive={activeWorkspaceId === workspace.id}
-              variant="subtle"
+              variant={hidesActiveSession ? "default" : "subtle"}
               className="px-1"
               {...attributes}
               {...listeners}
             >
               <button
                 type="button"
+                aria-expanded={expanded}
                 className="flex min-w-0 flex-1 cursor-default items-center gap-1.5 text-start active:cursor-grabbing"
-                onClick={() => {
-                  onSelectWorkspace(workspace.id);
-                  onToggleWorkspace(workspace.id);
-                }}
+                onClick={() => onToggleWorkspace(workspace.id)}
               >
                 <WorkspaceIcon className="size-3.5 shrink-0 text-sidebar-fg-subtle" />
                 <span className="min-w-0 flex-1 truncate">

@@ -48,7 +48,7 @@ export interface ChatViewProps {
   thinkingLevel?: AgentThinkingLevel | null;
   thinkingLevelOptions?: ThinkingLevelOption[];
   activeBranch?: string | null;
-  workspace?: Pick<WorkspaceRecord, "name" | "rootPaths"> | null;
+  workspace?: Pick<WorkspaceRecord, "id" | "name" | "rootPaths"> | null;
   workspaceRootPath?: string | null;
   workspaceRootPaths?: string[];
   composerRef?: Ref<ChatComposerHandle>;

@@ -296,7 +296,7 @@ export function CenterPanel({
   const activeWorktrees = useAtomValue(activeWorktreesAtom);
   const draftWorktreePath = useAtomValue(draftWorktreePathAtom);
   const globalWorkingPath = useAtomValue(activeWorkingPathAtom);
-  const activeWorkspace = workspaces.find(
+  const selectedWorkspace = workspaces.find(
     (workspace) => workspace.id === activeWorkspaceId,
   );
   const activeSession = sessions.find((session) => {
@@ -308,18 +308,18 @@ export function CenterPanel({
     }
     return session.workspaceId === activeWorkspaceId;
   });
-  const sessionWorkspace = activeSession
+  const activeWorkspace = activeSession
     ? workspaces.find((workspace) => workspace.id === activeSession.workspaceId)
-    : undefined;
+    : selectedWorkspace;
   const workingPath =
-    activeSession && sessionWorkspace
+    activeSession && activeWorkspace
       ? resolveSessionWorkingPath({
-          workspaceRootPath: primaryWorkspaceRootPath(sessionWorkspace),
+          workspaceRootPath: primaryWorkspaceRootPath(activeWorkspace),
           worktreePath: activeSession.worktreePath,
         })
       : globalWorkingPath;
   const composerWorkspaceRootPaths = normalizeWorkspaceRootPaths([
-    ...((sessionWorkspace ?? activeWorkspace)?.rootPaths ?? []),
+    ...(activeWorkspace?.rootPaths ?? []),
     ...(workingPath ? [workingPath] : []),
   ]);
   const activeQueuedInputs = activeSession

@@ -340,7 +340,6 @@ export function LeftSidebar({
                   void handleRevealWorkspace(rootPath);
                 }}
                 onSelectSession={handleSelectSession}
-                onSelectWorkspace={selectWorkspace}
                 onToggleWorkspace={toggleWorkspace}
                 optimisticActiveSessionId={optimisticActiveSessionId}
                 sessionsByWorkspace={sessionView.sessionsByWorkspace}
