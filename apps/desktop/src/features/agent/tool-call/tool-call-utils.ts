@@ -3,6 +3,7 @@ import {
   type AgentToolCallRecord,
   isContextCompactionToolCall,
   pathBaseName,
+  summarizeToolCallDiff,
   WORKTREE_SETUP_TOOL_KIND,
 } from "@cocurdex/shared";
 import { i18n } from "@/i18n";
@@ -50,11 +51,8 @@ export function formatToolCallOutput(
     }
 
     if (item.type === "diff") {
-      return [
-        [item.oldText, item.newText]
-          .filter((value): value is string => typeof value === "string")
-          .join("\n"),
-      ];
+      const { additions, deletions } = summarizeToolCallDiff(item);
+      return [`${item.path} +${additions ?? 0} -${deletions ?? 0}`];
     }
 
     if (item.type === "data") {

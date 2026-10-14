@@ -51,6 +51,8 @@ import { capToolCallOutput, withoutToolCallOutput } from "./tool-call-output";
 
 type CocurdexDatabase = ReturnType<typeof createCocurdexDatabase>;
 const TERMINAL_STATUSES = new Set<SessionStatus>(["idle", "error", "exited"]);
+const RECLAIM_PAGES_PER_STEP = 2048;
+const RECLAIM_AFTER_DELETE_MS = 30_000;
 export interface AgentEventPersistenceContext {
   runId: string | null;
 }
@@ -71,6 +73,8 @@ export class DaemonState {
   private networkProxyReady: Promise<void>;
   private staleToolCallsSwept: Promise<void>;
   private staleSessionsSwept: Promise<void>;
+  private reclaimTimer: NodeJS.Timeout | null = null;
+  private reclaiming: Promise<void> | null = null;
 
   constructor(userDataPath: string) {
     this.database = createCocurdexDatabase(getDatabasePath(userDataPath));
@@ -96,6 +100,10 @@ export class DaemonState {
       return;
     }
     this.closed = true;
+    if (this.reclaimTimer) {
+      clearTimeout(this.reclaimTimer);
+      this.reclaimTimer = null;
+    }
     this.database.close();
   }
 
@@ -195,8 +203,9 @@ export class DaemonState {
     return this.database.appSettings.set(key, valueJson);
   }
 
-  deleteWorkspace(workspaceId: string) {
-    return this.database.workspaces.delete(workspaceId);
+  async deleteWorkspace(workspaceId: string) {
+    await this.database.workspaces.delete(workspaceId);
+    this.scheduleStorageReclaim();
   }
 
   async listSessionMessages(sessionId: string): Promise<SessionMessagesResult> {
@@ -261,6 +270,48 @@ export class DaemonState {
   async deleteSession(sessionId: string) {
     await this.database.turnChangeSets.deleteBySessionId(sessionId);
     await this.database.sessions.delete(sessionId);
+    this.scheduleStorageReclaim();
+  }
+
+  reclaimStorage(): Promise<void> {
+    this.reclaiming ??= this.reclaimFreePages()
+      .catch((error) => {
+        logDaemonDiagnostic("warn", "[Storage] reclaim failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      })
+      .finally(() => {
+        this.reclaiming = null;
+      });
+    return this.reclaiming;
+  }
+
+  private scheduleStorageReclaim() {
+    if (this.reclaimTimer || this.closed) {
+      return;
+    }
+    this.reclaimTimer = setTimeout(() => {
+      this.reclaimTimer = null;
+      void this.reclaimStorage();
+    }, RECLAIM_AFTER_DELETE_MS);
+    this.reclaimTimer.unref?.();
+  }
+
+  private async reclaimFreePages() {
+    let reclaimed = 0;
+    while (!this.closed) {
+      const step = this.database.reclaimFreePages(RECLAIM_PAGES_PER_STEP);
+      reclaimed += step.reclaimed;
+      if (step.remaining === 0 || step.reclaimed === 0) {
+        break;
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    if (reclaimed > 0) {
+      logDaemonDiagnostic("info", "[Storage] reclaimed free pages", {
+        pages: reclaimed,
+      });
+    }
   }
 
   get turnChangeSets() {

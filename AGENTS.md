@@ -56,7 +56,7 @@ Persisted user data outlives any single release. Never delete, recreate, or rewr
 - Treat persisted JSON columns (`provider_snapshot_json`, `attachments_json`, `origin_json`, workflow artifacts) as versioned data: read old shapes, and change them additively or migrate the stored values in the same release.
 - Keep `getDefaultUserDataPath()` and `DATABASE_FILENAME` stable. A new channel, build flavor, or rename must not move where an installed app reads its existing data.
 - Recreate only a file without the `COCU` application marker, and move it aside as a `.bak-<timestamp>` file first. Refuse a database written by a newer schema version; never downgrade or delete it.
-- Opening a database that needs a migration writes a `cocurdex.sqlite.pre-migration-<timestamp>` snapshot and keeps the newest three.
+- Opening a database that needs a migration writes a `cocurdex.sqlite.pre-migration-<timestamp>` snapshot. The newest snapshot is always kept; older ones are deleted once they are 14 days old, and at most three are kept.
 - Cover each migration with a test that seeds the previous schema, migrates, and asserts that sessions, workspaces, messages, notes, and issues survive.
 
 ## Verification and tests

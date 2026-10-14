@@ -1,6 +1,4 @@
-import { randomBytes } from "node:crypto";
-import { existsSync, readdirSync, renameSync, rmSync } from "node:fs";
-import path from "node:path";
+import { existsSync, renameSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import {
   type AgentCapabilityCacheRepository,
@@ -20,6 +18,11 @@ import {
   shouldRecreateDatabase,
 } from "./migrations";
 import { createSqliteNotesRepository, type NotesRepository } from "./notes";
+import {
+  preMigrationSnapshotPath,
+  prunePreMigrationSnapshots,
+  snapshotSuffix,
+} from "./pre-migration-snapshots";
 import { createProviderRepositories } from "./provider-repositories";
 import type {
   AgentRoleRepository,
@@ -115,15 +118,8 @@ export interface CocurdexDatabase {
    * Repository methods write synchronously, so call them without awaiting here.
    */
   transaction<T>(fn: () => T): T;
+  reclaimFreePages(maxPages: number): { reclaimed: number; remaining: number };
   close(): void;
-}
-
-const PRE_MIGRATION_SNAPSHOT_PREFIX = ".pre-migration-";
-const PRE_MIGRATION_SNAPSHOT_LIMIT = 3;
-
-function snapshotSuffix() {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `${timestamp}-${randomBytes(3).toString("hex")}`;
 }
 
 function backUpPreReleaseDatabase(databasePath: string): void {
@@ -136,27 +132,28 @@ function backUpPreReleaseDatabase(databasePath: string): void {
   }
 }
 
-function prunePreMigrationSnapshots(databasePath: string): void {
-  const directory = path.dirname(databasePath);
-  const prefix = `${path.basename(databasePath)}${PRE_MIGRATION_SNAPSHOT_PREFIX}`;
-  const stale = readdirSync(directory)
-    .filter((name) => name.startsWith(prefix))
-    .sort()
-    .reverse()
-    .slice(PRE_MIGRATION_SNAPSHOT_LIMIT);
-  for (const name of stale) {
-    rmSync(path.join(directory, name), { force: true });
-  }
-}
-
 function snapshotBeforeMigration(
   database: DatabaseSync,
   databasePath: string,
 ): void {
-  database
-    .prepare("VACUUM INTO ?")
-    .run(`${databasePath}${PRE_MIGRATION_SNAPSHOT_PREFIX}${snapshotSuffix()}`);
-  prunePreMigrationSnapshots(databasePath);
+  database.prepare("VACUUM INTO ?").run(preMigrationSnapshotPath(databasePath));
+}
+
+const INCREMENTAL_AUTO_VACUUM = 2;
+
+function readPragmaNumber(database: DatabaseSync, pragma: string): number {
+  const row = database.prepare(`PRAGMA ${pragma}`).get() as
+    | Record<string, number>
+    | undefined;
+  return row?.[pragma] ?? 0;
+}
+
+function ensureIncrementalAutoVacuum(database: DatabaseSync): void {
+  if (readPragmaNumber(database, "auto_vacuum") === INCREMENTAL_AUTO_VACUUM) {
+    return;
+  }
+  database.exec("PRAGMA auto_vacuum = INCREMENTAL");
+  database.exec("VACUUM");
 }
 
 function openDatabase(databasePath: string): DatabaseSync {
@@ -169,6 +166,7 @@ function openDatabase(databasePath: string): DatabaseSync {
   if (hasPendingMigration(database)) {
     snapshotBeforeMigration(database, databasePath);
   }
+  prunePreMigrationSnapshots(databasePath);
   return database;
 }
 
@@ -183,6 +181,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
   database.exec("PRAGMA busy_timeout = 5000");
   database.exec("PRAGMA foreign_keys = ON");
   initializeDatabase(database);
+  ensureIncrementalAutoVacuum(database);
 
   return {
     notes: createSqliteNotesRepository(database),
@@ -222,6 +221,15 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
         database.exec("ROLLBACK");
         throw error;
       }
+    },
+    reclaimFreePages(maxPages) {
+      const before = readPragmaNumber(database, "freelist_count");
+      if (before === 0) {
+        return { reclaimed: 0, remaining: 0 };
+      }
+      database.exec(`PRAGMA incremental_vacuum(${Math.max(1, maxPages)})`);
+      const remaining = readPragmaNumber(database, "freelist_count");
+      return { reclaimed: before - remaining, remaining };
     },
     close() {
       database.close();

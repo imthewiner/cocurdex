@@ -322,7 +322,7 @@ export class AcpEventMapper {
 
   private ingestToolDiffs(toolCall: AgentToolCallRecord) {
     for (const item of toolCall.content ?? []) {
-      if (item.type !== "diff") {
+      if (item.type !== "diff" || item.newText === undefined) {
         continue;
       }
       const relativePath = toWorkspaceRelativePath(

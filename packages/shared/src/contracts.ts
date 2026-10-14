@@ -701,7 +701,9 @@ export type AgentToolCallContent =
       type: "diff";
       path: string;
       oldText?: string | null;
-      newText: string;
+      newText?: string;
+      additions?: number;
+      deletions?: number;
     }
   | {
       type: "terminal";

@@ -875,6 +875,7 @@ export class CocurdexDaemonService {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+    await this.state.reclaimStorage();
   }
 
   async saveWorkspace(workspace: WorkspaceRecord) {

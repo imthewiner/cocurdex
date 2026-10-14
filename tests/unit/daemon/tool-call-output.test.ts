@@ -60,19 +60,52 @@ describe("capToolCallOutput", () => {
     });
   });
 
-  it("leaves short output, diffs, and input untouched", () => {
-    const diff = { type: "diff" as const, path: "a.ts", newText: long };
+  it("leaves short output and input untouched", () => {
     const original = toolCall({
-      content: [{ type: "text", text: "short" }, diff],
+      content: [{ type: "text", text: "short" }],
       rawInput: { command: long },
       rawOutput: "short",
     });
 
     const capped = capToolCallOutput(original);
 
-    expect(capped.content).toEqual([{ type: "text", text: "short" }, diff]);
+    expect(capped.content).toEqual([{ type: "text", text: "short" }]);
     expect(capped.rawInput).toBe(original.rawInput);
     expect(capped.rawOutput).toBe("short");
+  });
+
+  it("replaces diff file contents with changed-line counts", () => {
+    const capped = capToolCallOutput(
+      toolCall({
+        content: [
+          {
+            type: "diff",
+            path: "src/a.ts",
+            oldText: `${long}\nkeep\nold line\n`,
+            newText: `${long}\nkeep\nnew line\nadded\n`,
+          },
+          { type: "diff", path: "src/new.ts", newText: "one\ntwo\n" },
+        ],
+      }),
+    );
+
+    expect(capped.content).toEqual([
+      { type: "diff", path: "src/a.ts", additions: 2, deletions: 1 },
+      { type: "diff", path: "src/new.ts", additions: 2, deletions: 0 },
+    ]);
+  });
+
+  it("keeps an already summarized diff as is", () => {
+    const summary = {
+      type: "diff" as const,
+      path: "src/a.ts",
+      additions: 3,
+      deletions: 4,
+    };
+
+    expect(capToolCallOutput(toolCall({ content: [summary] })).content).toEqual(
+      [summary],
+    );
   });
 });
 

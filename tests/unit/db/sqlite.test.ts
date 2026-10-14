@@ -178,6 +178,32 @@ describe("createCocurdexDatabase", { timeout: 30_000 }, () => {
     expect(existsSync(target)).toBe(true);
   });
 
+  it("returns space freed by deletions to the file system", () => {
+    const target = databasePath();
+    const database = createCocurdexDatabase(target);
+    const writer = new DatabaseSync(target);
+    writer.exec("CREATE TABLE filler (body TEXT)");
+    const insert = writer.prepare("INSERT INTO filler (body) VALUES (?)");
+    for (let index = 0; index < 200; index++) {
+      insert.run("x".repeat(20_000));
+    }
+    writer.exec("DELETE FROM filler");
+    writer.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    writer.close();
+
+    const first = database.reclaimFreePages(100);
+    const rest = database.reclaimFreePages(1_000_000);
+    const inspector = new DatabaseSync(target, { readOnly: true });
+    const autoVacuum = inspector.prepare("PRAGMA auto_vacuum").get();
+    inspector.close();
+    database.close();
+
+    expect(autoVacuum).toEqual({ auto_vacuum: 2 });
+    expect(first).toEqual({ reclaimed: 100, remaining: expect.any(Number) });
+    expect(first.remaining).toBeGreaterThan(0);
+    expect(rest).toEqual({ reclaimed: first.remaining, remaining: 0 });
+  });
+
   it("rolls back every repository write when a transaction throws", async () => {
     const database = createCocurdexDatabase(databasePath());
 
