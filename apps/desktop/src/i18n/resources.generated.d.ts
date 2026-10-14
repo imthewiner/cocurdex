@@ -167,17 +167,7 @@ export default interface Resources {
       waitingEmpty: "No plan written — approve or request changes";
     };
     previousMessage: {
-      cancel: "Cancel";
-      cancelEdit: "Cancel edit";
       copy: "Copy prompt";
-      dialogDescription: "Submitting from a previous message will clear the messages after this one. Reverting also restores files to their checkpoint before this message.";
-      dialogTitle: "Submit from a previous message?";
-      dontAskAgain: "Don't ask again";
-      dontRevert: "Don't revert";
-      edit: "Edit previous message";
-      revert: "Revert";
-      revertUnavailable: "File revert is unavailable because this message has no git workspace checkpoint.";
-      submitEdit: "Submit edited message";
     };
     questions: {
       answer: "Answer";
@@ -1210,6 +1200,8 @@ export default interface Resources {
     };
     lineage: {
       forkFailed: "Could not fork the session";
+      forkFromHere: "Fork from here";
+      forkTitle: "{{title}} (fork)";
       handoff: {
         delta_one: "Handed {{count}} new message from {{sources}} to {{target}}";
         delta_other: "Handed {{count}} new messages from {{sources}} to {{target}}";

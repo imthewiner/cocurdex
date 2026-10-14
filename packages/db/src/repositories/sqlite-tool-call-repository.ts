@@ -103,15 +103,6 @@ export function createSqliteToolCallRepository(
         );
       return existing ? (existing.seq ?? null) : seq;
     },
-    async deleteAfter(sessionId, messageId) {
-      database
-        .prepare(
-          `DELETE FROM tool_calls
-           WHERE session_id = ?
-             AND seq > (SELECT seq FROM messages WHERE id = ?)`,
-        )
-        .run(sessionId, messageId);
-    },
     async clearBySessionId(sessionId) {
       database
         .prepare("DELETE FROM tool_calls WHERE session_id = ?")

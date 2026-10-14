@@ -110,26 +110,5 @@ export function createSqliteContextTransferRepository(
           id,
         );
     },
-    reopenConsumedBy(sessionId, messageIds) {
-      if (messageIds.length === 0) return;
-      const placeholders = messageIds.map(() => "?").join(", ");
-      database
-        .prepare(
-          `DELETE FROM context_transfers
-           WHERE target_session_id = ? AND kind = 'agent_switch'
-             AND consumed_by_message_id IN (${placeholders})`,
-        )
-        .run(sessionId, ...messageIds);
-      database
-        .prepare(
-          `UPDATE context_transfers SET
-             status = 'pending', target_agent_type = NULL, strategy = NULL,
-             covered_message_count = 0, handoff_text = NULL,
-             consumed_by_message_id = NULL, consumed_at = NULL
-           WHERE target_session_id = ? AND kind = 'fork'
-             AND consumed_by_message_id IN (${placeholders})`,
-        )
-        .run(sessionId, ...messageIds);
-    },
   };
 }

@@ -13,7 +13,6 @@ export interface ToolCallRepository {
   listSummariesBySessionId(sessionId: string): Promise<AgentToolCallRecord[]>;
   getResultById(toolCallId: string): Promise<AgentToolCallResult | null>;
   upsert(toolCall: AgentToolCallRecord): Promise<number | null>;
-  deleteAfter(sessionId: string, messageId: string): Promise<void>;
   clearBySessionId(sessionId: string): Promise<void>;
   // Daemon-start recovery: a tool call only reaches a terminal status when the
   // agent reports it, so anything still pending/in_progress when the daemon

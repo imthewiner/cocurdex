@@ -104,14 +104,5 @@ export function createSqliteMessageRepository(
     async delete(messageId) {
       database.prepare("DELETE FROM messages WHERE id = ?").run(messageId);
     },
-    async deleteAfter(sessionId, messageId) {
-      database
-        .prepare(
-          `DELETE FROM messages
-           WHERE session_id = ?
-             AND seq > (SELECT seq FROM messages WHERE id = ?)`,
-        )
-        .run(sessionId, messageId);
-    },
   };
 }

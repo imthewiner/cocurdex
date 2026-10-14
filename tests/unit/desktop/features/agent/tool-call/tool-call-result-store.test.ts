@@ -11,10 +11,8 @@ import {
 import {
   applyToolEventAtom,
   bootstrapToolCallsAtom,
-  clearToolCallsForSessionAtom,
   loadSessionToolCallsAtom,
   toolCallsBySessionAtom,
-  toolCallsLoadedBySessionAtom,
 } from "@/features/agent/tool-call/tool-call-store";
 import { desktopApi } from "@/lib/ipc";
 
@@ -219,34 +217,6 @@ describe("tool result lifetime", () => {
       value: null,
     });
     release();
-  });
-
-  it("clears a session without resurrecting results from pending requests", async () => {
-    const store = createStore();
-    const pending = pendingResult();
-    vi.spyOn(desktopApi, "getToolCallResult").mockReturnValue(pending.promise);
-    store.set(loadSessionToolCallsAtom, {
-      sessionId: "session-1",
-      toolCalls: [toolCall()],
-    });
-    const release = store.set(observeToolCallResultAtom, subscription);
-    const releaseOther = store.set(observeToolCallResultAtom, {
-      toolCallId: "other",
-      sessionId: "session-2",
-    });
-    store.set(clearToolCallsForSessionAtom, "session-1");
-    pending.resolve(result);
-    await pending.promise;
-    expect(store.get(toolCallResultCacheAtom)["tool-1"]).toBeUndefined();
-    expect(
-      store.get(toolCallsLoadedBySessionAtom)["session-1"],
-    ).toBeUndefined();
-    expect(store.get(toolCallResultCacheAtom).other).toEqual({
-      status: "loaded",
-      value: result,
-    });
-    release();
-    releaseOther();
   });
 
   it("refreshes an open result when history supplies a newer tool state", async () => {

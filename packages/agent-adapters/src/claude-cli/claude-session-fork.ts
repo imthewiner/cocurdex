@@ -48,8 +48,9 @@ export async function forkClaudeProviderSession(
   payload: ForkProviderSessionPayload,
   forkSession: ClaudeForkSession,
   providerVersion: string,
-): Promise<AgentProviderSessionRecord> {
+): Promise<AgentProviderSessionRecord | null> {
   const { source } = payload;
+  if (payload.userTurnCount !== null) return null;
   if (!source.providerSessionId || !source.resumable) {
     throw new Error("Claude session has no resumable transcript to fork");
   }

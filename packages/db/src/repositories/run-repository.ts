@@ -19,6 +19,5 @@ export interface RunRepository {
     endedAt: string,
     error?: string | null,
   ): RunRecord | null;
-  deleteByTriggerMessageIds(messageIds: string[]): void;
   interruptRunning(endedAt: string): InterruptedRuns;
 }

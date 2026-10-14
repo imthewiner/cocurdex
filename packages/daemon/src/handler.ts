@@ -461,13 +461,6 @@ export async function handleDaemonRequest(
         request.params.agentType,
         request.params.workspaceRootPath,
       );
-    case "session.resubmit":
-      return service.submitPreviousMessage(request.params);
-    case "session.checkpointStatus":
-      return service.getPreviousMessageCheckpointStatus(
-        request.params.sessionId,
-        request.params.messageId,
-      );
     case "session.send":
       return service.sendSessionMessage(request.params);
     case "session.resumeQueued":

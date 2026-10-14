@@ -394,6 +394,7 @@ export class AgentRuntimeManager {
       source: AgentProviderSessionRecord;
       targetSessionId: string;
       workspaceRootPath: string;
+      userTurnCount: number | null;
     },
   ): Promise<AgentProviderSessionRecord | null> {
     const adapter = this.createAdapter(agentType);
@@ -417,18 +418,6 @@ export class AgentRuntimeManager {
       workspaceRootPath,
       userDataPath: this.userDataPath,
     });
-  }
-
-  async rewindSessionConversation(
-    payload: SessionExecutionContext,
-    persistence: RuntimePersistence,
-    userMessageIndex: number,
-  ) {
-    const sessionRuntime = this.ensureSessionRuntime(payload, persistence);
-    if (!sessionRuntime.runtime.rewindToUserMessage) {
-      return false;
-    }
-    return sessionRuntime.runtime.rewindToUserMessage(userMessageIndex);
   }
 
   async setSessionRuntimeMode(sessionId: string, modeId: string) {

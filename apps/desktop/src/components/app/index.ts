@@ -10,9 +10,6 @@ export {
   type AppDropdownTriggerAppearance,
   AppDropdownTriggerButton,
   AppDropdownTriggerLabel,
-  appDropdownContentClassName,
-  appDropdownSeparatorClassName,
-  compactDropdownContentClassName,
 } from "./dropdown";
 export {
   AppDropdownRadioList,

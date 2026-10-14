@@ -9,7 +9,7 @@ import {
   type MessageRecord,
 } from "@cocurdex/shared";
 import { useAtomValue } from "jotai";
-import { Check, Copy, Pencil, X } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import type { RefObject } from "react";
 import { Fragment, memo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuGroup,
   DropdownMenuTrigger,
-  Textarea,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -34,7 +33,10 @@ import {
   DocumentAttachmentChips,
   ImageAttachmentCards,
 } from "@/features/composer";
-import { ContextHandoffMarker } from "@/features/sessions";
+import {
+  ContextHandoffMarker,
+  ForkFromMessageButton,
+} from "@/features/sessions";
 import { useTurnChangeSet } from "@/features/turn-workspace-changes";
 import { TurnChangesCard } from "@/features/turn-workspace-changes/turn-changes-card";
 import { cn } from "@/lib";
@@ -45,7 +47,6 @@ import { QuestionCard } from "../question";
 // detail view, which renders this component.
 import { ToolCallGroup, ToolCallItem } from "../tool-call/tool-call-ui";
 import type { ToolCallPreviewLocation } from "../tool-call/tool-call-utils";
-import { useTranscriptState } from "../use-transcript-state";
 import { ActivityLine } from "./chat-activity";
 import { ActivitySegment, TurnStoppedNote } from "./chat-activity-segment";
 import { type ActivityState, formatDurationMs } from "./chat-activity-state";
@@ -273,58 +274,12 @@ async function copyRenderedMessage(
 }
 
 function UserPromptBody({
-  draftContent,
   isContextVariant,
-  isEditing,
   message,
-  onCancelEdit,
-  onDraftChange,
-  onSubmit,
 }: {
-  draftContent: string | null;
   isContextVariant: boolean;
-  isEditing: boolean;
   message: MessageRecord;
-  onCancelEdit(): void;
-  onDraftChange(value: string): void;
-  onSubmit(): void;
 }) {
-  const { t } = useTranslation("agent");
-
-  if (isEditing) {
-    return (
-      <div className="flex min-w-72 flex-col gap-2">
-        <Textarea
-          autoFocus
-          className="max-h-72 min-h-24 resize-y text-sm"
-          onChange={(event) => onDraftChange(event.target.value)}
-          value={draftContent ?? ""}
-        />
-        <div className="flex justify-end gap-1.5">
-          <Button
-            aria-label={t("previousMessage.cancelEdit")}
-            onClick={onCancelEdit}
-            size="icon-xs"
-            type="button"
-            variant="ghost"
-          >
-            <X className="size-3.5" />
-          </Button>
-          <Button
-            aria-label={t("previousMessage.submitEdit")}
-            disabled={!(draftContent ?? "").trim()}
-            onClick={onSubmit}
-            size="icon-xs"
-            type="button"
-            variant="ghost"
-          >
-            <Check className="size-3.5" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (isContextVariant) {
     return (
       <CollapsibleUserMessageBody key={message.id} text={message.content}>
@@ -343,39 +298,19 @@ function UserPromptBody({
 }
 
 const UserPrompt = memo(function UserPrompt({
-  canEdit,
   message,
-  onSubmitEdit,
   setUserMessageRef,
   showActions = true,
   variant = "chat",
 }: {
-  canEdit: boolean;
   message: MessageRecord;
-  onSubmitEdit?(message: MessageRecord, content: string): void;
   setUserMessageRef(id: string, element: HTMLDivElement | null): void;
   showActions?: boolean;
   variant?: "chat" | "context";
 }) {
   const { t } = useTranslation("agent");
-  const [draftContent, setDraftContent] = useTranscriptState<string | null>(
-    `prompt-draft:${message.id}`,
-    null,
-  );
   const [hasCopied, setHasCopied] = useState(false);
-  const isEditing = draftContent !== null;
   const sentAt = formatMessageTime(message.createdAt);
-
-  const handleSubmit = () => {
-    const content = draftContent?.trim() ?? "";
-
-    if (!content) {
-      return;
-    }
-
-    onSubmitEdit?.(message, content);
-    setDraftContent(null);
-  };
 
   const handleCopy = () => {
     void navigator.clipboard
@@ -391,7 +326,6 @@ const UserPrompt = memo(function UserPrompt({
   const hasDocuments = message.attachments.some(isDocumentAttachment);
   const hasImages = message.attachments.some(isImageAttachment);
   const hasBubbleContent =
-    isEditing ||
     isContextVariant ||
     message.content.trim().length > 0 ||
     message.attachments.some(isContextAttachment);
@@ -425,17 +359,12 @@ const UserPrompt = memo(function UserPrompt({
         {hasBubbleContent ? (
           <article className={articleClassName}>
             <UserPromptBody
-              draftContent={draftContent}
               isContextVariant={isContextVariant}
-              isEditing={isEditing}
               message={message}
-              onCancelEdit={() => setDraftContent(null)}
-              onDraftChange={setDraftContent}
-              onSubmit={handleSubmit}
             />
           </article>
         ) : null}
-        {!isEditing && showActions ? (
+        {showActions ? (
           <div className="flex h-6 items-center justify-end gap-2 pr-1 text-chat-fg-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             <time
               className="text-xs tabular-nums opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
@@ -459,19 +388,6 @@ const UserPrompt = memo(function UserPrompt({
                   <Copy className="size-3.5" />
                 )}
               </Button>
-              {canEdit ? (
-                <Button
-                  aria-label={t("previousMessage.edit")}
-                  className="size-6 text-chat-fg-muted hover:bg-transparent hover:text-chat-fg"
-                  onClick={() => setDraftContent(message.content)}
-                  size="icon-xs"
-                  title={t("previousMessage.edit")}
-                  type="button"
-                  variant="ghost"
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-              ) : null}
             </div>
           </div>
         ) : null}
@@ -570,6 +486,10 @@ const AssistantMessageActions = memo(function AssistantMessageActions({
             </DropdownMenuGroup>
           </AppDropdownContent>
         </DropdownMenu>
+        <ForkFromMessageButton
+          messageId={message.id}
+          sessionId={message.sessionId}
+        />
         {durationText || hasTokenUsage ? (
           <span className="flex items-center gap-1 text-xs tabular-nums text-chat-fg-muted">
             {durationText ? <span>{durationText}</span> : null}
@@ -710,7 +630,6 @@ export const ChatConversationItem = memo(function ChatConversationItem({
   isRunning,
   latestMessageId,
   onOpenToolLocation,
-  onSubmitPromptEdit,
   onAnswerQuestion,
   onResolvePermission,
   setUserMessageRef,
@@ -728,7 +647,6 @@ export const ChatConversationItem = memo(function ChatConversationItem({
   isRunning: boolean;
   latestMessageId: string | null;
   onOpenToolLocation?(location: ToolCallPreviewLocation): void;
-  onSubmitPromptEdit?(message: MessageRecord, content: string): void;
   onAnswerQuestion?(
     question: AgentQuestionRequestRecord,
     answer: string,
@@ -859,9 +777,7 @@ export const ChatConversationItem = memo(function ChatConversationItem({
         <>
           <ContextHandoffMarker message={ownPrompt} />
           <UserPrompt
-            canEdit={!isRunning && !isLatestConversation}
             message={ownPrompt}
-            onSubmitEdit={onSubmitPromptEdit}
             setUserMessageRef={setUserMessageRef}
             showActions={showMessageActions}
             variant={promptVariant}

@@ -61,10 +61,7 @@ import {
   extractPiEditSnapshot,
 } from "../workspace-changes/native-evidence";
 import { createPiAgentToolDefinitions } from "./pi-agent-tools";
-import {
-  createPiChatResourceLoaderOptions,
-  findPiUserMessageEntry,
-} from "./pi-chat-session";
+import { createPiChatResourceLoaderOptions } from "./pi-chat-session";
 import { handlePiCompactionEvent } from "./pi-compaction";
 import {
   buildModelCost,
@@ -75,6 +72,7 @@ import {
 } from "./pi-model-utils";
 import { getPiAgentDir } from "./pi-paths";
 import { listPiBuiltInProviderIds } from "./pi-provider-catalog";
+import { forkPiProviderSession, readPiSessionFile } from "./pi-session-fork";
 import {
   getPiSkillRootSnapshots,
   logPiSkillDiagnostic,
@@ -126,13 +124,7 @@ type PiSessionLike = {
   };
   sessionManager?: {
     getSessionFile(): string | undefined;
-    getBranch?(): { id: string; type: string; message?: { role?: string } }[];
   };
-  navigateTree?(
-    targetId: string,
-    options?: { summarize?: boolean },
-  ): Promise<{ cancelled: boolean }>;
-  waitForIdle?(): Promise<void>;
 };
 
 async function shutdownPiSession(session: PiSessionLike) {
@@ -383,25 +375,21 @@ export function createPiSdkAdapter(
     listSlashCommands(payload: ListSlashCommandsPayload) {
       return listPiSlashCommands(payload);
     },
+    async forkProviderSession(payload) {
+      return forkPiProviderSession(
+        payload,
+        sdk.SessionManager,
+        PI_PROVIDER_VERSION,
+      );
+    },
     createSession(
       payload: CreateAgentSessionPayload,
       onEvent: (event: AgentEvent) => void,
     ): AgentSession {
       const sessionId = payload.session.id;
-      const persistedSessionFile = (() => {
-        try {
-          const state = payload.providerSession?.providerStateJson
-            ? (JSON.parse(payload.providerSession.providerStateJson) as {
-                sessionFile?: unknown;
-              })
-            : null;
-          return typeof state?.sessionFile === "string"
-            ? state.sessionFile
-            : null;
-        } catch {
-          return null;
-        }
-      })();
+      const persistedSessionFile = payload.providerSession?.providerStateJson
+        ? readPiSessionFile(payload.providerSession.providerStateJson)
+        : null;
       let disposed = false;
       let piSessionPromise: Promise<PiSessionLike> | null = null;
       let piSession: PiSessionLike | null = null;
@@ -1064,18 +1052,6 @@ export function createPiSdkAdapter(
             coverage: "tool-call" as const,
             files: aggregateTurnFileChanges([...nativeFiles.values()]),
           };
-        },
-        async rewindToUserMessage(userMessageIndex: number) {
-          const session = await getPiSession();
-          const branch = session.sessionManager?.getBranch?.();
-          if (!branch || !session.navigateTree) return false;
-          const target = findPiUserMessageEntry(branch, userMessageIndex);
-          if (!target) return false;
-          await session.waitForIdle?.();
-          const result = await session.navigateTree(target.id, {
-            summarize: false,
-          });
-          return !result.cancelled;
         },
         stop() {
           stopRequested = true;

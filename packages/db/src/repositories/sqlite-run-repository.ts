@@ -82,12 +82,6 @@ export function createSqliteRunRepository(
         .get(status, error ?? null, endedAt, runId) as SqliteRow | undefined;
       return row ? mapRun(row) : null;
     },
-    deleteByTriggerMessageIds(messageIds) {
-      const remove = database.prepare(
-        "DELETE FROM runs WHERE trigger_message_id = ?",
-      );
-      for (const messageId of messageIds) remove.run(messageId);
-    },
     interruptRunning(endedAt) {
       const rows = database
         .prepare(

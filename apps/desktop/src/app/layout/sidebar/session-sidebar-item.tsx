@@ -402,7 +402,6 @@ export function SessionSidebarItem({
           ) : null}
           {isChatSession(session) ? null : (
             <SidebarContextMenuItem
-              disabled={session.status === "running"}
               icon={GitFork}
               onClick={() => void forkSession(session)}
             >

@@ -11,6 +11,7 @@ import type {
   AgentSession,
   CreateAgentSessionPayload,
   DiscoverAgentCapabilitiesPayload,
+  ForkProviderSessionPayload,
   SendAgentMessagePayload,
 } from "@cocurdex/agent-core";
 import { AgentSteeringUnavailableError } from "@cocurdex/agent-core";
@@ -19,6 +20,7 @@ import type {
   AgentMcpServerRuntime,
   AgentNegotiatedCapabilities,
   AgentPermissionMode,
+  AgentProviderSessionRecord,
   AgentRateLimitsRecord,
   AgentSessionMode,
   MessageRecord,
@@ -55,6 +57,7 @@ import {
   mapPermissionDecision,
   rejectPermission,
 } from "./acp-mappers";
+import { canForkAcpSession, forkAcpProviderSession } from "./acp-session-fork";
 import {
   type AcpSessionModelState,
   type AcpSessionSelectConfig,
@@ -231,6 +234,31 @@ export class AcpAgentAdapter implements AgentAdapter {
         name: mode.name,
         description: mode.description ?? null,
       }));
+    } finally {
+      await connection.close();
+    }
+  }
+
+  async forkProviderSession(
+    payload: ForkProviderSessionPayload,
+  ): Promise<AgentProviderSessionRecord | null> {
+    if (!canForkAcpSession(payload)) return null;
+    const connection = await this.connectionFactory({
+      args: this.options.args,
+      command: this.options.command,
+      env: this.options.env,
+      cwd: payload.workspaceRootPath,
+      handlers: {
+        onSessionUpdate() {},
+        requestPermission: async (request) => rejectPermission(request),
+      },
+    });
+    try {
+      const initialized = await connection.initialize(
+        buildAcpInitializeRequest(this.options.initializeMeta),
+      );
+      await this.maybeAuthenticate(connection, initialized.authMethods);
+      return await forkAcpProviderSession(payload, connection, initialized);
     } finally {
       await connection.close();
     }

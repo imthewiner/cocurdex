@@ -6,6 +6,7 @@ import type {
   ReactNode,
 } from "react";
 import { useMemo, useRef, useState } from "react";
+import { FLYOUT_GAP, flyoutAnchor } from "@/components/ui/_flyout";
 import {
   Combobox,
   ComboboxCollection,
@@ -293,7 +294,7 @@ export function AppSearchableSelect({
       <ComboboxContent
         ref={popupRef}
         align={align}
-        className={cn("rounded-control!", contentClassName)}
+        className={contentClassName}
         side={side}
       >
         <ComboboxInput
@@ -330,7 +331,10 @@ export function AppSearchableSelect({
         {footer}
       </ComboboxContent>
       <Tooltip open={previewOpen && preview !== null}>
-        <AppPreviewCardTooltipContent anchor={preview?.anchor}>
+        <AppPreviewCardTooltipContent
+          anchor={preview ? flyoutAnchor(preview.anchor) : undefined}
+          sideOffset={FLYOUT_GAP}
+        >
           {preview?.content}
         </AppPreviewCardTooltipContent>
       </Tooltip>

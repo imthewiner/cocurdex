@@ -23,11 +23,11 @@ Reuse installed shadcn/ui components before writing equivalent controls, menus, 
 
 | Layer | Purpose |
 | --- | --- |
-| `components/ui/` | shadcn primitives; avoid direct edits and never add product logic. |
+| `components/ui/` | shadcn primitives, owned by this app: edit them freely to get the best, most consistent UI, but never add product logic. |
 | `components/app/` | App-wide wrappers for consistent APIs, defaults, and option contracts; export through `components/index.ts` and consume via `@/components` or `@/components/app`. |
 | `components/chat/`, `features/*` | Domain-specific compositions, including Markdown and chat shells. |
 
-Prefer semantic tokens, CSS mappings, wrappers, small caller styles, and composition before editing primitives. Edit `components/ui` only for upstream/accessibility fixes, missing extension points, or upstream API changes. Keep such edits minimal and reversible; explain in the PR why a wrapper is insufficient. Do not copy entire primitives or scatter caller patches to avoid editing them.
+Fix a look or behavior that every caller should share in the primitive itself, not with caller overrides or a wrapper that patches it. Do not copy entire primitives or scatter caller patches to avoid editing them.
 
 - Keep colors, interaction states, dimensions, spacing, icons, typography, radii, and shadows consistent across equivalent controls, panels, routes, and float/pinned modes. Encapsulate necessary product exceptions and explain them in the PR.
 - Reuse components for repeated structure, styling, and behavior. Maintain row/column alignment, stable header heights, continuous dividers, and aligned hit areas during sidebar toggles, pinning, expansion, and state changes.
@@ -46,6 +46,8 @@ Misalignment of a few pixels is a visible bug. Design every row, header, and too
 - Align to a shared column. Controls that repeat across rows (chevrons, status icons, trailing actions, counts) share one x-position; a row without that control reserves its slot with a fixed-size spacer of the same width instead of letting content shift. A header or toolbar control above a list lines up with the list's matching column, using the same horizontal padding as the rows.
 - Center on the cross axis with layout, not offsets. Put icon and text in one `flex items-center` line with a fixed row height; do not nudge with `mt-px`, `translate-y-*`, or `relative top-*`. Icons in a row use one size, and mixed text sizes in a line share a baseline or the row's center consistently.
 - Center a glyph inside its hit area: icon-only controls use `IconButton` sizes, so the icon sits in the middle of a square target and hover backgrounds line up across rows.
+- Give every menu-like popup one surface: dropdown, context, select, and combobox contents, their submenus, the composer `@` and `/` menus, and their sidecars share radius, padding, ring, shadow, background, and row metrics, set in the primitives. Do not override a menu's radius, padding, shadow, or row spacing at a call site; `tests/scenarios/menu-flyouts.mjs` compares a submenu's look with its parent.
+- Attach every flyout to its parent popup the same way. Submenus, row preview cards, and sidecars sit `FLYOUT_GAP` (4px) from the parent popup's outer edge, whatever the parent's padding: use `DropdownMenuSub`/`ContextMenuSub` as is, and anchor custom flyouts with `flyoutAnchor(row)` from `@/components/ui` plus `sideOffset={FLYOUT_GAP}`. Never anchor a flyout to the bare row with a hand-picked offset; `tests/scenarios/menu-flyouts.mjs` guards the gap.
 - Keep alignment stable across states: expanding, collapsing, hover, selection, loading, empty, truncation, sticky headers, RTL, and both themes must not move neighboring content or break a column.
 - Verify by measuring. Over CDP, compare `getBoundingClientRect()` edges and centers of the elements that should line up (for example a header switch's right edge against the rows' trailing action column) and treat any difference as a defect; a screenshot alone is not proof.
 
@@ -137,7 +139,10 @@ Extend `AppSearchableSelect` or `AppSelect` props first. Extend primitives only 
 
 - Write complete literal class strings so classes copied from DevTools can be found in source. Do not split tokens with concatenation or template strings.
 - Use `cn` for conditions: one complete static base string, followed by conditional classes. Avoid ternaries in `className` and splitting the static base across arguments.
-- Extract repeated structure, styles, and behavior into components, not class-string constants. For DOM string generation or third-party overrides, prefer functions or components; explain any necessary exception outside code comments.
+- Write class names in JSX, on the element they style. Do not hoist them into constants or shared modules (`const rowClassName = "..."`, `cn(...)` assigned to a variable, exported class strings); the only exception is a lookup table that maps a component prop to complete class strings, such as `{ ghost: "...", outline: "..." }[appearance]`.
+- Remove duplication the way Tailwind recommends (https://tailwindcss.com/docs/styling-with-utility-classes#managing-duplication): render repeated elements in a loop, edit duplicates within one file together, and extract a component when the same styled structure appears in several files. The component, not a string, is the single source of truth.
+- Never put two conflicting utilities on one element. A component exposes props for its variants instead of relying on callers to override its classes; reach for `!` only for third-party styles you cannot otherwise beat.
+- For DOM string generation or third-party overrides, prefer functions or components; explain any necessary exception outside code comments.
 - Split components when class lists make lines unwieldy; do not sacrifice searchability by splitting strings.
 
 ## React hooks and effects

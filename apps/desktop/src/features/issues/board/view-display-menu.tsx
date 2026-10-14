@@ -53,7 +53,7 @@ export function ViewDisplayMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1.5">
+          <DropdownMenuLabel className="flex items-center gap-1.5">
             <Settings2 className="size-3.5 text-editor-fg-subtle" />
             <Text size="meta" weight="medium" className="text-editor-fg-subtle">
               {t("board.layout")}
@@ -82,7 +82,7 @@ export function ViewDisplayMenu({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1.5">
+          <DropdownMenuLabel className="flex items-center gap-1.5">
             <Rows3 className="size-3.5 text-editor-fg-subtle" />
             <Text size="meta" weight="medium" className="text-editor-fg-subtle">
               {layout === "list" ? t("board.groupBy") : t("board.columnsField")}

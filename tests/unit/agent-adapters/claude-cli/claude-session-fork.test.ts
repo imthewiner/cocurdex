@@ -24,6 +24,7 @@ describe("forkClaudeProviderSession", () => {
       {
         source: source({ resumeSessionAt: "uuid-7", turnCount: 4 }),
         targetSessionId: "fork",
+        userTurnCount: null,
         workspaceRootPath: "/repo",
       },
       forkSession,
@@ -39,7 +40,7 @@ describe("forkClaudeProviderSession", () => {
       providerSessionId: "claude-2",
       resumable: true,
     });
-    expect(JSON.parse(record.providerStateJson)).toMatchObject({
+    expect(JSON.parse(record?.providerStateJson ?? "{}")).toMatchObject({
       adapter: "claude-agent-sdk",
       resume: "claude-2",
       runtimeFingerprint: fingerprint,
@@ -55,6 +56,7 @@ describe("forkClaudeProviderSession", () => {
         {
           source: source({}),
           targetSessionId: "fork",
+          userTurnCount: null,
           workspaceRootPath: "/other",
         },
         forkSession,

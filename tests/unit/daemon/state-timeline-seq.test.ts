@@ -180,26 +180,4 @@ describe("DaemonState timeline sequence", () => {
       await service.shutdown();
     }
   });
-
-  it("rewinds everything recorded after the edited message", async () => {
-    const service = await createService();
-    try {
-      await streamTurn(service);
-
-      await service.state.rewindSessionMessages({
-        ...userMessage,
-        content: "Fix the other bug",
-      });
-
-      const messages = await service.state.listMessagesBySessionId("session-1");
-      expect(messages).toEqual([
-        { ...userMessage, content: "Fix the other bug", seq: 1 },
-      ]);
-      expect(await service.state.listToolCallsBySessionId("session-1")).toEqual(
-        [],
-      );
-    } finally {
-      await service.shutdown();
-    }
-  });
 });

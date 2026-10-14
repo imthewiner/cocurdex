@@ -6,7 +6,6 @@ import {
   loadSessionMessagesAtom,
   messagesBySessionAtom,
   messagesLoadedBySessionAtom,
-  rewindMessagesAtom,
 } from "@/features/agent/view/message-store";
 
 afterEach(() => {
@@ -176,65 +175,6 @@ describe("message store", () => {
     ]);
   });
 
-  it("rewinds messages after the edited user prompt", () => {
-    const store = createStore();
-    const sessionId = "session-1";
-    const firstUserMessage: MessageRecord = {
-      id: "user-1",
-      sessionId,
-      role: "user",
-      content: "original prompt",
-      attachments: [],
-      createdAt: "2026-04-22T10:00:00.000Z",
-    };
-    const assistantMessage: MessageRecord = {
-      id: "assistant-1",
-      sessionId,
-      role: "assistant",
-      content: "old answer",
-      attachments: [],
-      createdAt: "2026-04-22T10:00:01.000Z",
-    };
-    const secondUserMessage: MessageRecord = {
-      id: "user-2",
-      sessionId,
-      role: "user",
-      content: "follow-up",
-      attachments: [],
-      createdAt: "2026-04-22T10:00:02.000Z",
-    };
-
-    store.set(applyAgentEventAtom, {
-      type: "message.completed",
-      sessionId,
-      message: firstUserMessage,
-    });
-    store.set(applyAgentEventAtom, {
-      type: "message.completed",
-      sessionId,
-      message: assistantMessage,
-    });
-    store.set(applyAgentEventAtom, {
-      type: "message.completed",
-      sessionId,
-      message: secondUserMessage,
-    });
-
-    store.set(rewindMessagesAtom, {
-      message: {
-        ...firstUserMessage,
-        content: "edited prompt",
-      },
-    });
-
-    expect(store.get(messagesBySessionAtom)[sessionId]).toEqual([
-      {
-        ...firstUserMessage,
-        content: "edited prompt",
-      },
-    ]);
-  });
-
   it("keeps the seq of a streamed message through completion", () => {
     vi.useFakeTimers();
     const store = createStore();
@@ -263,39 +203,6 @@ describe("message store", () => {
 
     expect(store.get(messagesBySessionAtom)["session-1"]).toEqual([
       expect.objectContaining({ content: "Hello", seq: 4 }),
-    ]);
-  });
-
-  it("rewinds by seq when timestamps disagree with the recorded order", () => {
-    const store = createStore();
-    const base = { sessionId: "session-1", attachments: [] };
-    const prompt: MessageRecord = {
-      ...base,
-      id: "user-1",
-      role: "user",
-      content: "prompt",
-      createdAt: "2026-09-27T00:00:05.000Z",
-      seq: 1,
-    };
-    const answer: MessageRecord = {
-      ...base,
-      id: "assistant-1",
-      role: "assistant",
-      content: "answer",
-      createdAt: "2026-09-27T00:00:01.000Z",
-      seq: 2,
-    };
-    store.set(loadSessionMessagesAtom, {
-      sessionId: "session-1",
-      messages: [prompt, answer],
-    });
-
-    store.set(rewindMessagesAtom, {
-      message: { ...prompt, content: "edited" },
-    });
-
-    expect(store.get(messagesBySessionAtom)["session-1"]).toEqual([
-      { ...prompt, content: "edited" },
     ]);
   });
 

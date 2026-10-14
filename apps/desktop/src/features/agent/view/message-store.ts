@@ -52,36 +52,6 @@ export const appendMessageAtom = atom(
   },
 );
 
-export const rewindMessagesAtom = atom(
-  null,
-  (
-    get,
-    set,
-    payload: {
-      message: MessageRecord;
-    },
-  ) => {
-    const current = get(messagesBySessionAtom);
-    const sessionMessages = current[payload.message.sessionId] ?? [];
-
-    set(messagesBySessionAtom, {
-      ...current,
-      [payload.message.sessionId]: sessionMessages
-        .filter((message) => isAtOrBefore(message, payload.message))
-        .map((message) =>
-          message.id === payload.message.id ? payload.message : message,
-        ),
-    });
-  },
-);
-
-function isAtOrBefore(message: MessageRecord, target: MessageRecord) {
-  if (message.seq !== undefined && target.seq !== undefined) {
-    return message.seq <= target.seq;
-  }
-  return message.createdAt <= target.createdAt;
-}
-
 export const loadTurnStatsAtom = atom(
   null,
   (get, set, turnStats: Record<string, AgentTurnCompletedEvent>) => {

@@ -6,8 +6,9 @@ import type { acquireCodexClient } from "./codex-app-server-pool";
 export async function forkCodexProviderSession(
   payload: ForkProviderSessionPayload,
   acquireClient: typeof acquireCodexClient,
-): Promise<AgentProviderSessionRecord> {
+): Promise<AgentProviderSessionRecord | null> {
   const { source } = payload;
+  if (payload.userTurnCount !== null) return null;
   if (!source.providerSessionId || !source.resumable) {
     throw new Error("Codex session has no resumable thread to fork");
   }

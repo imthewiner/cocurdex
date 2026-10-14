@@ -47,7 +47,6 @@ export * from "./subagent-session";
 export type {
   SendSessionCommand,
   SessionConfiguration,
-  SubmitPreviousMessageCommand,
   TaskApi,
 } from "./task-control";
 export {
@@ -55,7 +54,6 @@ export {
   validateSendSessionCommand,
   validateSessionConfiguration,
   validateSessionId,
-  validateSubmitPreviousMessageCommand,
 } from "./task-control";
 export * from "./team";
 export * from "./terminal";

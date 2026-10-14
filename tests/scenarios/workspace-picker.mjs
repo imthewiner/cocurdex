@@ -10,6 +10,8 @@ const PREVIEW_EARLY_MS = 150;
 const UNPROMPTED_PREVIEW_WAIT_MS = 800;
 const MAX_ARROW_PRESSES = 6;
 
+const PREVIEW_GAP = 4;
+
 const args = readScenarioArgs();
 if (args.port) {
   console.error(
@@ -200,16 +202,34 @@ runScenario("workspace-picker", {
             additionalLabel: await window.__scenario.t(
               "sessions:workspace.rootsAdditional",
             ),
-            beside:
-              panel.getBoundingClientRect().left >=
+            gap:
+              panel.getBoundingClientRect().left -
               popup.getBoundingClientRect().right,
+            surfaces: [panel, popup].map((element) => {
+              const style = getComputedStyle(element);
+              return [
+                style.borderTopLeftRadius,
+                style.boxShadow,
+                style.backgroundColor,
+              ].join(" | ");
+            }),
+            panelPadding: getComputedStyle(panel).padding,
           };
         });
         const [primaryName, ...additionalNames] = folderNames;
         const { lines } = preview;
         const primaryIndex = lines.indexOf(preview.primaryLabel);
         const additionalIndex = lines.indexOf(preview.additionalLabel);
-        check(preview.beside, "preview is not beside the popup", preview);
+        check(
+          Math.abs(preview.gap - PREVIEW_GAP) <= 0.5,
+          "preview does not sit the shared gap beside the popup",
+          preview,
+        );
+        check(
+          preview.surfaces[0] === preview.surfaces[1],
+          "preview card surface differs from the popup",
+          preview.surfaces,
+        );
         check(
           lines[0] === preview.primaryLabel,
           "preview repeats the hovered workspace name",

@@ -32,13 +32,6 @@ function hasStatus(
   );
 }
 
-function userTurns(body: Record<string, unknown>) {
-  const messages = body.messages as { role: string; content: unknown }[];
-  return messages
-    .filter((message) => message.role === "user")
-    .map((message) => JSON.stringify(message.content));
-}
-
 describe("chat sessions over a stubbed OpenAI-compatible provider", () => {
   it("answers through Pi without tools or project context", async () => {
     const stub = await startStubLlmServer();
@@ -79,68 +72,6 @@ describe("chat sessions over a stubbed OpenAI-compatible provider", () => {
         workspaces.find((workspace) => workspace.id === CHAT_WORKSPACE_ID)
           ?.rootPaths,
       ).toHaveLength(1);
-      subscription.close();
-    } finally {
-      await daemon.dispose();
-      await stub.close();
-    }
-  });
-
-  it("replaces later turns in the model context when a message is edited", async () => {
-    const stub = await startStubLlmServer();
-    const daemon = await spawnDaemon();
-    try {
-      const events: CocurdexDaemonEvent[] = [];
-      const subscription = await subscribeDaemonEvents(
-        (event) => events.push(event),
-        daemon.options,
-      );
-      const session = await startChatSession(daemon, stub);
-      stub.plan = { kind: "stream", chunks: ["Answer"] };
-
-      for (const content of ["first question", "second question"]) {
-        const before = completedResponses(events).length;
-        await requestDaemon(
-          "session.send",
-          { sessionId: session.id, messageId: crypto.randomUUID(), content },
-          daemon.options,
-        );
-        await waitFor(() => completedResponses(events).length > before);
-        await waitFor(() => hasStatus(events, session.id, "idle"));
-      }
-      const { messages } = await requestDaemon(
-        "session.listMessages",
-        { sessionId: session.id },
-        daemon.options,
-      );
-      const second = messages.find(
-        (message) => message.content === "second question",
-      );
-      if (!second) throw new Error("Missing second user message");
-
-      const before = completedResponses(events).length;
-      await requestDaemon(
-        "session.resubmit",
-        {
-          sessionId: session.id,
-          messageId: second.id,
-          content: "revised question",
-          revertWorkspace: false,
-        },
-        daemon.options,
-      );
-      await waitFor(() => completedResponses(events).length > before);
-
-      const edited = stub.requests.at(-1)?.body;
-      if (!edited) throw new Error("Missing edited request");
-      const turns = userTurns(edited);
-      expect(turns.some((turn) => turn.includes("first question"))).toBe(true);
-      expect(turns.some((turn) => turn.includes("revised question"))).toBe(
-        true,
-      );
-      expect(turns.some((turn) => turn.includes("second question"))).toBe(
-        false,
-      );
       subscription.close();
     } finally {
       await daemon.dispose();

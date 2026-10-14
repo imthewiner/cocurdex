@@ -17,7 +17,7 @@ function completedRun(events: CocurdexDaemonEvent[], sessionId: string) {
 }
 
 describe("session fork over the real socket", () => {
-  it("forks through the CLI and hands the source transcript to the first run", async () => {
+  it("forks a Pi session natively through the CLI, whole or from a turn", async () => {
     const stub = await startStubLlmServer();
     const repo = await createGitRepository();
     const daemon = await spawnDaemon();
@@ -57,61 +57,81 @@ describe("session fork over the real socket", () => {
         daemon.options,
       );
       stub.plan = { kind: "stream", chunks: ["Found the parser"] };
+      const firstPrompt = crypto.randomUUID();
       await requestDaemon(
         "session.send",
         {
           sessionId: source.id,
-          messageId: crypto.randomUUID(),
+          messageId: firstPrompt,
           content: "Where is the parser?",
         },
         daemon.options,
       );
       await waitFor(() => completedRun(events, source.id));
-
-      const forked = await runCli(["session", "fork", source.id, "--json"], {
-        userDataPath: daemon.userDataPath,
-      });
-      expect(forked.stderr).toBe("");
-      const fork = JSON.parse(forked.stdout) as SessionRecord;
-      expect(fork.id).not.toBe(source.id);
-
-      const pending = await runCli(["session", "handoffs", fork.id], {
-        userDataPath: daemon.userDataPath,
-      });
-      expect(pending.stdout).toMatch(/fork\s+pending/);
-
-      stub.plan = { kind: "stream", chunks: ["Tangent done"] };
+      events.length = 0;
+      stub.plan = { kind: "stream", chunks: ["Parser rewritten"] };
       await requestDaemon(
         "session.send",
         {
-          sessionId: fork.id,
+          sessionId: source.id,
           messageId: crypto.randomUUID(),
-          content: "Try another approach",
+          content: "Rewrite the parser",
         },
         daemon.options,
       );
-      await waitFor(() => completedRun(events, fork.id));
-      const body =
-        stub.requests
-          .map((request) => JSON.stringify(request.body))
-          .find((text) => text.includes("Try another approach")) ?? "";
-      expect(body).toMatch(/cocurdex_context_handoff kind=\\*"fork/);
-      expect(body).toContain("Where is the parser?");
-      expect(body).toContain("Found the parser");
+      await waitFor(() => completedRun(events, source.id));
 
-      const transfers = await requestDaemon(
-        "session.contextTransfers",
-        { sessionId: fork.id },
-        daemon.options,
-      );
-      expect(transfers).toMatchObject([
+      const forkThenSend = async (args: string[], content: string) => {
+        const forked = await runCli(
+          ["session", "fork", source.id, ...args, "--json"],
+          { userDataPath: daemon.userDataPath },
+        );
+        expect(forked.stderr).toBe("");
+        const fork = JSON.parse(forked.stdout) as SessionRecord;
+        expect(fork.id).not.toBe(source.id);
+        stub.plan = { kind: "stream", chunks: ["Tangent done"] };
+        await requestDaemon(
+          "session.send",
+          { sessionId: fork.id, messageId: crypto.randomUUID(), content },
+          daemon.options,
+        );
+        await waitFor(() => completedRun(events, fork.id));
+        const body =
+          stub.requests
+            .map((request) => JSON.stringify(request.body))
+            .find((text) => text.includes(content)) ?? "";
+        const transfers = await requestDaemon(
+          "session.contextTransfers",
+          { sessionId: fork.id },
+          daemon.options,
+        );
+        return { body, transfers };
+      };
+
+      const whole = await forkThenSend([], "Try another approach");
+      expect(whole.body).not.toContain("cocurdex_context_handoff");
+      expect(whole.body).toContain("Where is the parser?");
+      expect(whole.body).toContain("Parser rewritten");
+      expect(whole.transfers).toMatchObject([
         {
           kind: "fork",
           status: "consumed",
+          strategy: "native",
           sourceSessionId: source.id,
           targetAgentType: "pi",
-          coveredMessageCount: 2,
+          coveredMessageCount: 4,
         },
+      ]);
+
+      const partial = await forkThenSend(
+        ["--through", firstPrompt],
+        "Explain the parser instead",
+      );
+      expect(partial.body).not.toContain("cocurdex_context_handoff");
+      expect(partial.body).toContain("Found the parser");
+      expect(partial.body).not.toContain("Rewrite the parser");
+      expect(partial.transfers).toMatchObject([
+        { kind: "fork", status: "consumed", strategy: "native" },
       ]);
     } finally {
       subscription.close();

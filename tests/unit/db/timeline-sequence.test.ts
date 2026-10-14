@@ -234,23 +234,6 @@ describe("timeline sequence repositories", () => {
       expect.objectContaining({ seq: 6 }),
     ]);
   });
-
-  it("deletes rows recorded after a message regardless of timestamps", async () => {
-    const { messages, toolCalls } = createDatabase();
-    await messages.append(
-      message("user", { createdAt: "2026-09-01T00:00:09.000Z" }),
-    );
-    await toolCalls.upsert(toolCall("t"));
-    await messages.append(message("after"));
-
-    await toolCalls.deleteAfter("session-1", "user");
-    await messages.deleteAfter("session-1", "user");
-
-    expect(
-      (await messages.listBySessionId("session-1")).map((m) => m.id),
-    ).toEqual(["user"]);
-    expect(await toolCalls.listBySessionId("session-1")).toEqual([]);
-  });
 });
 
 describe("imported provider sessions", () => {

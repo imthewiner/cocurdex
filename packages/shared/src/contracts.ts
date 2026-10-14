@@ -238,7 +238,6 @@ export interface AgentCapabilities {
   supportsSteering: boolean;
   supportsStreaming: boolean;
   supportsSelections: boolean;
-  supportsConversationRewind?: boolean;
   sessionTitleStrategy: SessionTitleStrategy;
   transport: "native" | "acp";
   runtimeAxes?: AgentRuntimeAxisCapabilities;

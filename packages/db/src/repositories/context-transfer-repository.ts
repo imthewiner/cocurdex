@@ -19,5 +19,4 @@ export interface ContextTransferRepository {
   listByTargetSession(sessionId: string): ContextTransferRecord[];
   findPending(sessionId: string): ContextTransferRecord | null;
   consume(id: string, consumption: ContextTransferConsumption): void;
-  reopenConsumedBy(sessionId: string, messageIds: readonly string[]): void;
 }

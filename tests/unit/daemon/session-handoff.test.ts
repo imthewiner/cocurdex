@@ -240,9 +240,15 @@ describe("context transfers", () => {
     expect(calls[2]?.content).toMatch(/kind="fork" strategy="full"/);
   });
 
-  it("falls back to a handoff when only part of the session is forked", async () => {
+  it("forks natively through the end of the chosen turn", async () => {
     const { service, calls } = await fixture();
-    const forkThread = vi.spyOn(service.runtime, "forkProviderSession");
+    const forkThread = vi
+      .spyOn(service.runtime, "forkProviderSession")
+      .mockImplementation(async (agentType, payload) => ({
+        ...payload.source,
+        sessionId: payload.targetSessionId,
+        providerSessionId: `${agentType}-turn-${payload.userTurnCount}`,
+      }));
     const first = await send(service, "session-1", "first");
     await send(service, "session-1", "second");
 
@@ -250,10 +256,33 @@ describe("context transfers", () => {
       sessionId: "session-1",
       throughMessageId: first.id,
     });
-    expect(forkThread).not.toHaveBeenCalled();
+    expect(forkThread).toHaveBeenCalledWith(
+      "pi",
+      expect.objectContaining({ userTurnCount: 1 }),
+    );
+    expect(
+      (await service.state.listMessagesBySessionId(fork.id)).map(
+        (message) => message.content,
+      ),
+    ).toEqual(["first", "pi answer 1"]);
 
     await send(service, fork.id, "tangent");
+    expect(calls[2]?.content).toBe("tangent");
+  });
+
+  it("falls back to a handoff when the agent cannot fork that point", async () => {
+    const { service, calls } = await fixture();
+    vi.spyOn(service.runtime, "forkProviderSession").mockResolvedValue(null);
+    const first = await send(service, "session-1", "first");
+    await send(service, "session-1", "second");
+
+    const fork = await service.forkSession({
+      sessionId: "session-1",
+      throughMessageId: first.id,
+    });
+    await send(service, fork.id, "tangent");
     expect(calls[2]?.content).toMatch(/kind="fork" strategy="full"/);
+    expect(calls[2]?.content).not.toContain("second");
   });
 
   it("forks a session lazily and resolves the transfer on first send", async () => {

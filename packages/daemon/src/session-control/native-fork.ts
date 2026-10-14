@@ -22,6 +22,7 @@ export interface NativeForkDependencies {
       source: AgentProviderSessionRecord;
       targetSessionId: string;
       workspaceRootPath: string;
+      userTurnCount: number | null;
     },
   ): Promise<AgentProviderSessionRecord | null>;
 }
@@ -30,6 +31,7 @@ export interface NativeForkInput {
   sourceSessionId: string;
   targetSessionId: string;
   workspaceRootPath: string;
+  userTurnCount: number | null;
   agentTypes: readonly AgentId[];
   messages: readonly MessageRecord[];
   runs: readonly StartContextRun[];
@@ -65,6 +67,7 @@ export async function forkProviderThreads(
         source,
         targetSessionId: input.targetSessionId,
         workspaceRootPath: input.workspaceRootPath,
+        userTurnCount: input.userTurnCount,
       });
       if (!record) continue;
       await dependencies.saveProviderSession(agentType, record);

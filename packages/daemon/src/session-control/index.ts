@@ -1,5 +1,4 @@
 export { selectArchivableRoots } from "./archive-selection";
-export { SessionCheckpointStore } from "./checkpoints";
 export { SessionCommandQueue } from "./commands";
 export { applySessionConfiguration } from "./configuration";
 export type {
@@ -7,6 +6,7 @@ export type {
   SessionRuntimeMessage,
   SessionTurnOutcome,
 } from "./execution-types";
+export { resolveForkPoint } from "./fork-point";
 export { forkProviderThreads } from "./native-fork";
 export { MessageIdConflictError, resolveRepeatedSend } from "./repeated-send";
 export { RunCapacity } from "./run-capacity";

@@ -15,7 +15,6 @@ import {
   AppDropdownItem,
   type AppDropdownTriggerAppearance,
   AppDropdownTriggerButton,
-  compactDropdownContentClassName,
 } from "@/components";
 import {
   DropdownMenu,
@@ -178,11 +177,7 @@ export function AgentSelect({
       </DropdownMenuTrigger>
       <AppDropdownContent
         align={align}
-        className={cn(
-          compactDropdownContentClassName,
-          "[&_[role=menuitem]]:mb-0.5 [&_[role=menuitem]+[role=menuitem]]:mt-0",
-          contentClassName,
-        )}
+        className={contentClassName}
         side="bottom"
       >
         {teams ? (
