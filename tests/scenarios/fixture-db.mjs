@@ -60,6 +60,32 @@ runScenario("fixture-db", {
       },
     ],
     [
+      "syncs a session archived by another client",
+      async ({ session }) => {
+        const title = ACTIVE_TITLES[2];
+        const sessionId = await session.run(
+          async ({ title, productApiModule }) => {
+            const { daemonProductApi } = await import(productApiModule);
+            const { sessions } = await daemonProductApi.bootstrapApp();
+            const target = sessions.find((entry) => entry.title === title);
+            if (!target) return null;
+            await daemonProductApi.archiveSessions({ sessionIds: [target.id] });
+            return target.id;
+          },
+          { title, productApiModule: "/src/lib/product-api.ts" },
+        );
+        check(sessionId, "session not found", title);
+        await session.waitUntil(
+          (title) => !document.body.innerText.includes(title),
+          title,
+          UI_TIMEOUT_MS,
+        );
+        const text = await session.run(() => document.body.innerText);
+        check(text.includes(ACTIVE_TITLES[0]), "other sessions disappeared");
+        return { archived: sessionId };
+      },
+    ],
+    [
       "renderer has no errors",
       async ({ session }) => {
         const errors = await session.run(() => window.__scenario.errors);
