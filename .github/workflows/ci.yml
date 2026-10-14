@@ -20,9 +20,12 @@ jobs:
   changes:
     name: Detect desktop changes
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     outputs:
-      run_desktop: ${{ steps.verified.outputs.cache-hit != 'true' && steps.scope.outputs.run_desktop || 'false' }}
-      verified: ${{ steps.verified.outputs.cache-hit == 'true' }}
+      run_desktop: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_desktop || 'false' }}
+      verified: ${{ steps.verified.outputs.hit == 'true' }}
       verified_key: ${{ steps.fingerprint.outputs.key }}
     steps:
       - name: Checkout
@@ -41,14 +44,22 @@ jobs:
           echo "key=ci-verified-v1-${fingerprint}" >> "${GITHUB_OUTPUT}"
       - name: Look up verified fingerprint
         id: verified
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: .ci-verified
-          key: ${{ steps.fingerprint.outputs.key }}
-          lookup-only: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEY: ${{ steps.fingerprint.outputs.key }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+        run: |
+          matches="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${KEY}&per_page=100" \
+            --jq "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${REPOSITORY_ID})] | length" \
+            || echo 0)"
+          if [[ "${matches}" -gt 0 ]]; then
+            echo "hit=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "hit=false" >> "${GITHUB_OUTPUT}"
+          fi
       - name: Detect desktop scope
         id: scope
-        if: steps.verified.outputs.cache-hit != 'true'
+        if: steps.verified.outputs.hit != 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -209,9 +220,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Write marker
-        run: echo "${GITHUB_SHA}" > .ci-verified
+        run: echo "${GITHUB_SHA}" > ci-verified.txt
       - name: Save verified fingerprint
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          path: .ci-verified
-          key: ${{ needs.changes.outputs.verified_key }}
+          name: ${{ needs.changes.outputs.verified_key }}
+          path: ci-verified.txt
+          retention-days: 30
