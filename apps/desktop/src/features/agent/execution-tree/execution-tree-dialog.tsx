@@ -42,17 +42,17 @@ function IssuesOnlySwitch({
   const switchId = useId();
   return (
     <div className="flex shrink-0 items-center gap-2">
+      <Label htmlFor={switchId}>
+        <Text size="meta" tone="muted">
+          {t("executionTree.issuesOnly")}
+        </Text>
+      </Label>
       <Switch
         checked={checked}
         id={switchId}
         onCheckedChange={onCheckedChange}
         size="sm"
       />
-      <Label htmlFor={switchId}>
-        <Text size="meta" tone="muted">
-          {t("executionTree.issuesOnly")}
-        </Text>
-      </Label>
     </div>
   );
 }
@@ -178,7 +178,7 @@ export function ExecutionTreeDialog({
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent className="top-[12vh] translate-y-0" size="wide">
-        <div className="flex min-w-0 items-end gap-4 pe-8">
+        <div className="flex min-w-0 items-end gap-4">
           <DialogHeader className="min-w-0 flex-1">
             <DialogTitle>{t("executionTree.title")}</DialogTitle>
             <DialogDescription>
