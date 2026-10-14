@@ -10,6 +10,10 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  restrictToFirstScrollableAncestor,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -40,7 +44,6 @@ interface WorkspacesPanelProps {
   onReorderWorkspaces(activeId: string, overId: string): void;
   onRevealWorkspace(rootPath: string): void;
   onSelectSession(workspaceId: string, sessionId: string): void;
-  onSelectWorkspace(workspaceId: string): void;
   onToggleWorkspace(workspaceId: string): void;
 }
 
@@ -57,7 +60,6 @@ export function WorkspacesPanel({
   onReorderWorkspaces,
   onRevealWorkspace,
   onSelectSession,
-  onSelectWorkspace,
   onToggleWorkspace,
 }: WorkspacesPanelProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -138,7 +140,6 @@ export function WorkspacesPanel({
                   onRemoveWorkspace={onRemoveWorkspace}
                   onRevealWorkspace={onRevealWorkspace}
                   onSelectSession={onSelectSession}
-                  onSelectWorkspace={onSelectWorkspace}
                   onToggleWorkspace={onToggleWorkspace}
                   optimisticActiveSessionId={optimisticActiveSessionId}
                   sessions={sessionsByWorkspace[workspace.id] ?? []}
@@ -148,9 +149,17 @@ export function WorkspacesPanel({
             </SortableContext>
           </SidebarMenu>
         </SidebarScrollArea>
-        <DragOverlay>
+        <DragOverlay
+          modifiers={[
+            restrictToVerticalAxis,
+            restrictToFirstScrollableAncestor,
+          ]}
+        >
           {activeWorkspace ? (
-            <div className="flex h-7 max-w-56 items-center gap-1.5 rounded-control bg-sidebar px-1 text-body text-sidebar-fg shadow-sm">
+            <div
+              data-testid="workspace-drag-overlay"
+              className="flex h-7 max-w-56 items-center gap-1.5 rounded-control bg-sidebar px-1 text-body text-sidebar-fg shadow-sm"
+            >
               <Folder className="size-3.5 shrink-0 text-sidebar-fg-subtle" />
               <span className="min-w-0 truncate">{activeWorkspace.name}</span>
             </div>

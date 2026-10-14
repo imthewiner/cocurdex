@@ -41,6 +41,7 @@ const listeners = new Set<() => void>();
 // same object until a plugin actually lands. Building it per call makes React
 // re-render forever.
 let snapshot: PluginConfig = LIGHT_STREAMDOWN_PLUGINS;
+let loadedKinds: ReadonlySet<HeavyPluginKind> = new Set();
 
 function mergePluginConfigs(configs: PluginConfig[]): PluginConfig {
   return {
@@ -50,6 +51,10 @@ function mergePluginConfigs(configs: PluginConfig[]): PluginConfig {
       (config) => config.renderers ?? [],
     ),
   };
+}
+
+export function getLoadedHeavyPluginKinds() {
+  return loadedKinds;
 }
 
 export function getStreamdownPlugins() {
@@ -74,6 +79,7 @@ export function loadHeavyPlugins(kinds: readonly HeavyPluginKind[]) {
       .then((plugin) => {
         loaded.set(kind, plugin);
         snapshot = mergePluginConfigs([...loaded.values()]);
+        loadedKinds = new Set(loaded.keys());
         // Every mounted MarkdownRenderer re-renders here, and on a long
         // transcript that means highlighting the whole history at once. Keep it
         // interruptible so hover and input stay alive while it runs.

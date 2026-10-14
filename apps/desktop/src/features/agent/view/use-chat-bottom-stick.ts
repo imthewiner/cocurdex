@@ -9,6 +9,7 @@ import type { UserMessageAnchor } from "./chat-user-navigation";
 
 interface ChatBottomStickOptions {
   chatContentRef: RefObject<HTMLDivElement | null>;
+  isContentReady: boolean;
   isRunning: boolean;
   setInitialBottomSettled: Dispatch<SetStateAction<boolean>>;
   status: SessionStatus | undefined;
@@ -21,6 +22,7 @@ interface ChatBottomStickOptions {
 
 export function useChatBottomStick({
   chatContentRef,
+  isContentReady,
   isRunning,
   setInitialBottomSettled,
   status,
@@ -31,7 +33,7 @@ export function useChatBottomStick({
   viewportRef,
 }: ChatBottomStickOptions) {
   useLayoutEffect(() => {
-    if (timelineGroupCount === 0) {
+    if (timelineGroupCount === 0 || !isContentReady) {
       return;
     }
 
@@ -42,7 +44,12 @@ export function useChatBottomStick({
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [setInitialBottomSettled, stickToBottomIfLocked, timelineGroupCount]);
+  }, [
+    isContentReady,
+    setInitialBottomSettled,
+    stickToBottomIfLocked,
+    timelineGroupCount,
+  ]);
 
   // Content-size growth (streaming deltas, new messages, tool calls, plan
   // panel updates) is handled by the ResizeObserver attached to chatContent

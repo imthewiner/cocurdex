@@ -72,7 +72,7 @@ interface ChatComposerControls {
   supportsSteering?: boolean;
   /** Live ACP task list (todo_write / plan update) — docked above the composer. */
   plan?: SessionPlan | null;
-  workspace?: Pick<WorkspaceRecord, "name" | "rootPaths"> | null;
+  workspace?: Pick<WorkspaceRecord, "id" | "name" | "rootPaths"> | null;
   workspaceRootPath?: string | null;
   workspaceRootPaths?: string[];
   composerRef?: Ref<ChatComposerHandle>;
@@ -120,7 +120,7 @@ interface ChatComposerControls {
 function SessionWorkspaceFooterLabel({
   workspace,
 }: {
-  workspace?: Pick<WorkspaceRecord, "name" | "rootPaths"> | null;
+  workspace?: Pick<WorkspaceRecord, "id" | "name" | "rootPaths"> | null;
 }) {
   if (!workspace) {
     return null;
@@ -134,6 +134,7 @@ function SessionWorkspaceFooterLabel({
         className={composerFooterControlClassName(
           "flex max-w-40 text-chat-fg-muted",
         )}
+        data-workspace-id={workspace.id}
       >
         <WorkspaceIcon className="size-3.5 shrink-0" />
         <span className="min-w-0 truncate">{workspace.name}</span>
