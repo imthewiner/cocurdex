@@ -80,6 +80,76 @@ async function collapsedFill(session) {
   return { active, expanded, idle };
 }
 
+async function scrollAreaOf(session, backendNodeId) {
+  await session.send("DOM.getDocument", { depth: 0 });
+  const { object } = await session.send("DOM.resolveNode", { backendNodeId });
+  const { result } = await session.send("Runtime.callFunctionOn", {
+    objectId: object.objectId,
+    returnByValue: true,
+    functionDeclaration: `function () {
+      let node = this.parentElement;
+      while (node && !/auto|scroll/.test(getComputedStyle(node).overflowY)) {
+        node = node.parentElement;
+      }
+      const row = this.getBoundingClientRect();
+      const area = node.getBoundingClientRect();
+      return {
+        row: { left: row.left, top: row.top, bottom: row.bottom },
+        area: { top: area.top, bottom: area.bottom },
+      };
+    }`,
+  });
+  return result.value;
+}
+
+function readDragOverlay() {
+  const overlay = document.querySelector(
+    '[data-testid="workspace-drag-overlay"]',
+  );
+  if (!overlay) return null;
+  const { left, top, bottom } = overlay.getBoundingClientRect();
+  return { left, top, bottom };
+}
+
+async function flingWorkspace(session, workspace) {
+  const [row] = await waitForRole(session, {
+    role: "button",
+    name: new RegExp(`^${workspace.name} `),
+  });
+  const { row: rect, area } = await scrollAreaOf(session, row.backendNodeId);
+  const start = { x: rect.left + 40, y: (rect.top + rect.bottom) / 2 };
+  const mouse = (type, point) =>
+    session.send("Input.dispatchMouseEvent", {
+      type,
+      button: "left",
+      buttons: type === "mouseReleased" ? 0 : 1,
+      clickCount: 1,
+      ...point,
+    });
+  await mouse("mousePressed", start);
+  for (let step = 1; step <= 10; step += 1) {
+    await mouse("mouseMoved", {
+      x: start.x + step * 60,
+      y: Math.max(1, start.y - step * 60),
+    });
+  }
+  await session.waitUntil(readDragOverlay, null, UI_TIMEOUT_MS);
+  const overlay = await session.run(readDragOverlay);
+  await session.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    key: "Escape",
+    code: "Escape",
+    windowsVirtualKeyCode: 27,
+  });
+  await mouse("mouseReleased", start);
+  await session.waitUntil(
+    () => !document.querySelector('[data-testid="workspace-drag-overlay"]'),
+    null,
+    UI_TIMEOUT_MS,
+  );
+  return { overlay, row: rect, area };
+}
+
 runScenario("workspace-sidebar", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
@@ -125,6 +195,23 @@ runScenario("workspace-sidebar", {
           fill,
         );
         return fill;
+      },
+    ],
+    [
+      "a dragged workspace stays in the list column and scroll area",
+      async ({ session }) => {
+        const drag = await flingWorkspace(session, OTHER_WORKSPACE);
+        check(
+          Math.abs(drag.overlay.left - drag.row.left) < 2,
+          "overlay left the list column",
+          drag,
+        );
+        check(
+          drag.overlay.top >= drag.area.top - 1,
+          "overlay left the scroll area",
+          drag,
+        );
+        return drag;
       },
     ],
     [

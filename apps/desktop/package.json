@@ -46,6 +46,7 @@
     "@cocurdex/daemon": "workspace:*",
     "@cocurdex/note-doc": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
+    "@dnd-kit/modifiers": "^9.0.0",
     "@earendil-works/pi-coding-agent": "1.2.0",
     "@napi-rs/keyring": "2.1.0",
     "@tiptap/extension-collaboration": "^3.31.4",
