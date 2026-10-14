@@ -13,9 +13,16 @@ export function useForkSession() {
   const { t } = useTranslation("sessions");
   const upsertSession = useSetAtom(upsertSessionAtom);
   const selectSession = useSetAtom(selectSessionAtom);
-  return async (session: SessionRecord) => {
+  return async (
+    session: Pick<SessionRecord, "id" | "title">,
+    throughMessageId?: string,
+  ) => {
     try {
-      const fork = await desktopApi.forkSession({ sessionId: session.id });
+      const fork = await desktopApi.forkSession({
+        sessionId: session.id,
+        throughMessageId,
+        title: t("lineage.forkTitle", { title: session.title }),
+      });
       upsertSession(fork);
       selectSession(fork.id);
     } catch (error) {

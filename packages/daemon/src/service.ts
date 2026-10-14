@@ -139,6 +139,7 @@ import {
   RunCapacity,
   type RunHandle,
   readSessionActivity,
+  resolveForkPoint,
   resolveRepeatedSend,
   type SessionActivityReader,
   SessionCheckpointStore,
@@ -1660,22 +1661,21 @@ export class CocurdexDaemonService {
     if (!source) throw new Error(`Session ${payload.sessionId} was not found`);
     if (isChatSession(source))
       throw new Error("Chat sessions cannot be forked");
-    if (this.runs.hasActiveRun(source.id)) {
-      throw new Error("Wait for the session to finish before forking it");
-    }
     const [messages, queuedInputs] = await Promise.all([
       this.state.listMessagesBySessionId(source.id),
       this.state.listQueuedAgentInputs(source.id),
     ]);
     const queuedIds = new Set(queuedInputs.map((input) => input.messageId));
     const settled = messages.filter((message) => !queuedIds.has(message.id));
-    const throughIndex = payload.throughMessageId
-      ? settled.findIndex((message) => message.id === payload.throughMessageId)
-      : settled.length - 1;
-    if (payload.throughMessageId && throughIndex < 0) {
-      throw new Error(`Message ${payload.throughMessageId} was not found`);
-    }
-    const included = settled.slice(0, throughIndex + 1);
+    const runs = this.state.listRunsBySessionId(source.id);
+    const activeRun = this.runs.hasActiveRun(source.id)
+      ? [...runs].reverse().find((run) => run.status === "running")
+      : undefined;
+    const { included, userTurnCount } = resolveForkPoint({
+      settled,
+      throughMessageId: payload.throughMessageId,
+      activeTriggerMessageId: activeRun?.triggerMessageId ?? null,
+    });
     const now = new Date().toISOString();
     const forkId = crypto.randomUUID();
     const fork: SessionRecord = {
@@ -1702,7 +1702,6 @@ export class CocurdexDaemonService {
         seq: undefined,
       }),
     );
-    const runs = this.state.listRunsBySessionId(source.id);
     const agentOf = messageAgentLookup(runs);
     const sourceAgentTypes = [
       ...new Set(
@@ -1729,29 +1728,28 @@ export class CocurdexDaemonService {
       createdAt: now,
       consumedAt: null,
     });
-    if (included.length === settled.length) {
-      const { workspaceRootPath } = await this.getSessionExecutionContext(
-        source.id,
-      );
-      await forkProviderThreads(
-        {
-          getProviderSession: (sessionId, agentType) =>
-            this.state.getProviderSession(sessionId, agentType),
-          saveProviderSession: (agentType, record) =>
-            this.state.saveProviderSession(agentType, record),
-          forkProviderSession: (agentType, forkPayload) =>
-            this.runtime.forkProviderSession(agentType, forkPayload),
-        },
-        {
-          sourceSessionId: source.id,
-          targetSessionId: forkId,
-          workspaceRootPath,
-          agentTypes: [source.agentType, ...sourceAgentTypes],
-          messages: included,
-          runs,
-        },
-      );
-    }
+    const { workspaceRootPath } = await this.getSessionExecutionContext(
+      source.id,
+    );
+    await forkProviderThreads(
+      {
+        getProviderSession: (sessionId, agentType) =>
+          this.state.getProviderSession(sessionId, agentType),
+        saveProviderSession: (agentType, record) =>
+          this.state.saveProviderSession(agentType, record),
+        forkProviderSession: (agentType, forkPayload) =>
+          this.runtime.forkProviderSession(agentType, forkPayload),
+      },
+      {
+        sourceSessionId: source.id,
+        targetSessionId: forkId,
+        workspaceRootPath,
+        userTurnCount,
+        agentTypes: [source.agentType, ...sourceAgentTypes],
+        messages: included,
+        runs,
+      },
+    );
     this.events.emit("daemon.event", {
       type: "data.changed",
       areas: ["agent"],

@@ -64,6 +64,7 @@ export {
 export {
   ContextHandoffMarker,
   canSwitchSessionAgent,
+  ForkFromMessageButton,
   useForkSession,
   useSwitchSessionAgent,
 } from "./session-lineage";

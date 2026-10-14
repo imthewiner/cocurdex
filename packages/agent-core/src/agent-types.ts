@@ -135,6 +135,7 @@ export interface ForkProviderSessionPayload {
   source: AgentProviderSessionRecord;
   targetSessionId: string;
   workspaceRootPath: string;
+  userTurnCount: number | null;
   userDataPath?: string;
 }
 
@@ -162,7 +163,7 @@ export interface AgentAdapter {
   ): AgentSession;
   forkProviderSession?(
     payload: ForkProviderSessionPayload,
-  ): Promise<AgentProviderSessionRecord>;
+  ): Promise<AgentProviderSessionRecord | null>;
   injectsContextHandoff?: boolean;
   /** List skills available through the composer's slash-triggered picker. */
   listSlashCommands?(

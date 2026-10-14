@@ -1210,6 +1210,8 @@ export default interface Resources {
     };
     lineage: {
       forkFailed: "Could not fork the session";
+      forkFromHere: "Fork from here";
+      forkTitle: "{{title}} (fork)";
       handoff: {
         delta_one: "Handed {{count}} new message from {{sources}} to {{target}}";
         delta_other: "Handed {{count}} new messages from {{sources}} to {{target}}";

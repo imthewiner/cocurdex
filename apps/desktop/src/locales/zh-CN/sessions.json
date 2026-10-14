@@ -119,6 +119,8 @@
   },
   "lineage": {
     "forkFailed": "无法分叉会话",
+    "forkFromHere": "从这里分叉",
+    "forkTitle": "{{title}}（分叉）",
     "handoff": {
       "delta_other": "已将 {{sources}} 的 {{count}} 条新消息交接给 {{target}}",
       "fork_other": "分叉会话，已将 {{count}} 条消息交接给 {{target}}",

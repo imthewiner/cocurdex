@@ -394,6 +394,7 @@ export class AgentRuntimeManager {
       source: AgentProviderSessionRecord;
       targetSessionId: string;
       workspaceRootPath: string;
+      userTurnCount: number | null;
     },
   ): Promise<AgentProviderSessionRecord | null> {
     const adapter = this.createAdapter(agentType);

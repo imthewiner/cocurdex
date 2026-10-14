@@ -75,6 +75,7 @@ import {
 } from "./pi-model-utils";
 import { getPiAgentDir } from "./pi-paths";
 import { listPiBuiltInProviderIds } from "./pi-provider-catalog";
+import { forkPiProviderSession, readPiSessionFile } from "./pi-session-fork";
 import {
   getPiSkillRootSnapshots,
   logPiSkillDiagnostic,
@@ -383,25 +384,21 @@ export function createPiSdkAdapter(
     listSlashCommands(payload: ListSlashCommandsPayload) {
       return listPiSlashCommands(payload);
     },
+    async forkProviderSession(payload) {
+      return forkPiProviderSession(
+        payload,
+        sdk.SessionManager,
+        PI_PROVIDER_VERSION,
+      );
+    },
     createSession(
       payload: CreateAgentSessionPayload,
       onEvent: (event: AgentEvent) => void,
     ): AgentSession {
       const sessionId = payload.session.id;
-      const persistedSessionFile = (() => {
-        try {
-          const state = payload.providerSession?.providerStateJson
-            ? (JSON.parse(payload.providerSession.providerStateJson) as {
-                sessionFile?: unknown;
-              })
-            : null;
-          return typeof state?.sessionFile === "string"
-            ? state.sessionFile
-            : null;
-        } catch {
-          return null;
-        }
-      })();
+      const persistedSessionFile = payload.providerSession?.providerStateJson
+        ? readPiSessionFile(payload.providerSession.providerStateJson)
+        : null;
       let disposed = false;
       let piSessionPromise: Promise<PiSessionLike> | null = null;
       let piSession: PiSessionLike | null = null;

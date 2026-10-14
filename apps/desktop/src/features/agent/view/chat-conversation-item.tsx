@@ -34,7 +34,10 @@ import {
   DocumentAttachmentChips,
   ImageAttachmentCards,
 } from "@/features/composer";
-import { ContextHandoffMarker } from "@/features/sessions";
+import {
+  ContextHandoffMarker,
+  ForkFromMessageButton,
+} from "@/features/sessions";
 import { useTurnChangeSet } from "@/features/turn-workspace-changes";
 import { TurnChangesCard } from "@/features/turn-workspace-changes/turn-changes-card";
 import { cn } from "@/lib";
@@ -570,6 +573,10 @@ const AssistantMessageActions = memo(function AssistantMessageActions({
             </DropdownMenuGroup>
           </AppDropdownContent>
         </DropdownMenu>
+        <ForkFromMessageButton
+          messageId={message.id}
+          sessionId={message.sessionId}
+        />
         {durationText || hasTokenUsage ? (
           <span className="flex items-center gap-1 text-xs tabular-nums text-chat-fg-muted">
             {durationText ? <span>{durationText}</span> : null}

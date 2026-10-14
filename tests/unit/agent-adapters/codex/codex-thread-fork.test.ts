@@ -22,6 +22,7 @@ describe("forkCodexProviderSession", () => {
           updatedAt: "2026-10-12T00:00:00.000Z",
         },
         targetSessionId: "fork",
+        userTurnCount: null,
         workspaceRootPath: "/repo",
       },
       () => lease,
@@ -37,10 +38,32 @@ describe("forkCodexProviderSession", () => {
       providerSessionId: "thread-2",
       resumable: true,
     });
-    expect(JSON.parse(record.providerStateJson)).toMatchObject({
+    expect(JSON.parse(record?.providerStateJson ?? "{}")).toMatchObject({
       adapter: "codex",
       threadId: "thread-2",
     });
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("leaves forks of earlier turns to the context handoff", async () => {
+    const forkThread = vi.fn();
+    const record = await forkCodexProviderSession(
+      {
+        source: {
+          sessionId: "source",
+          providerSessionId: "thread-1",
+          providerStateJson: '{"adapter":"codex","threadId":"thread-1"}',
+          providerVersion: null,
+          resumable: true,
+          updatedAt: "2026-10-12T00:00:00.000Z",
+        },
+        targetSessionId: "fork",
+        userTurnCount: 1,
+        workspaceRootPath: "/repo",
+      },
+      () => ({ client: { forkThread }, release: vi.fn() }) as never,
+    );
+    expect(record).toBeNull();
+    expect(forkThread).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@ export type {
   SessionRuntimeMessage,
   SessionTurnOutcome,
 } from "./execution-types";
+export { resolveForkPoint } from "./fork-point";
 export { forkProviderThreads } from "./native-fork";
 export { MessageIdConflictError, resolveRepeatedSend } from "./repeated-send";
 export { RunCapacity } from "./run-capacity";
