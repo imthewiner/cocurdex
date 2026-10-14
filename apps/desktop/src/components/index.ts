@@ -12,9 +12,6 @@ export {
   AppSearchableSelect,
   type AppSearchableSelectOption,
   AppSelect,
-  appDropdownContentClassName,
-  appDropdownSeparatorClassName,
-  compactDropdownContentClassName,
   SettingRow,
   SettingsGroup,
 } from "./app";

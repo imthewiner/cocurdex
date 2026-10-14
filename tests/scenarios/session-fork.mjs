@@ -152,5 +152,12 @@ runScenario("session-fork", {
       },
     ],
   ],
-  teardown: async () => ({}),
+  teardown: async ({ session }) => {
+    const workTab = await translate(
+      session,
+      "sessions:sidebar.workspacesGroup",
+    );
+    await clickByRole(session, { role: "tab", name: workTab });
+    return {};
+  },
 });

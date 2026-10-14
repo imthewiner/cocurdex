@@ -294,7 +294,7 @@ export function AppSearchableSelect({
       <ComboboxContent
         ref={popupRef}
         align={align}
-        className={cn("rounded-control!", contentClassName)}
+        className={contentClassName}
         side={side}
       >
         <ComboboxInput

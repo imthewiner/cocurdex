@@ -205,6 +205,15 @@ runScenario("workspace-picker", {
             gap:
               panel.getBoundingClientRect().left -
               popup.getBoundingClientRect().right,
+            surfaces: [panel, popup].map((element) => {
+              const style = getComputedStyle(element);
+              return [
+                style.borderTopLeftRadius,
+                style.boxShadow,
+                style.backgroundColor,
+              ].join(" | ");
+            }),
+            panelPadding: getComputedStyle(panel).padding,
           };
         });
         const [primaryName, ...additionalNames] = folderNames;
@@ -215,6 +224,11 @@ runScenario("workspace-picker", {
           Math.abs(preview.gap - PREVIEW_GAP) <= 0.5,
           "preview does not sit the shared gap beside the popup",
           preview,
+        );
+        check(
+          preview.surfaces[0] === preview.surfaces[1],
+          "preview card surface differs from the popup",
+          preview.surfaces,
         );
         check(
           lines[0] === preview.primaryLabel,

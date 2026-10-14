@@ -27,8 +27,6 @@ import {
   AppDropdownContent,
   AppDropdownItem,
   AppDropdownTriggerLabel,
-  appDropdownSeparatorClassName,
-  compactDropdownContentClassName,
 } from "@/components";
 import { DropdownMenuGroup, DropdownMenuSeparator } from "@/components/ui";
 import {
@@ -520,13 +518,7 @@ const ChatComposerBound = forwardRef<ChatComposerHandle, ChatComposerProps>(
     const resolvedControls = controls ?? defaultAgentControls;
 
     const attachMenuContent = (
-      <AppDropdownContent
-        className={cn(
-          compactDropdownContentClassName,
-          "**:[[role=menuitem]]:text-body",
-        )}
-        side="bottom"
-      >
+      <AppDropdownContent side="bottom">
         <DropdownMenuGroup>
           <AppDropdownItem onClick={openAttachmentPicker}>
             <Paperclip className="size-4 shrink-0" />
@@ -542,7 +534,7 @@ const ChatComposerBound = forwardRef<ChatComposerHandle, ChatComposerProps>(
         </DropdownMenuGroup>
         {attachMenuExtras ? (
           <>
-            <DropdownMenuSeparator className={appDropdownSeparatorClassName} />
+            <DropdownMenuSeparator />
             {attachMenuExtras}
           </>
         ) : null}

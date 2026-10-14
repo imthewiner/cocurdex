@@ -168,7 +168,6 @@ export function PanelComposer({
               menuRef={contextFileMentions.menuRef}
               onSelect={contextFileMentions.selectFile}
               placement={mentionMenuPlacement}
-              tone={tone}
             />
             <SlashCommandMenu
               anchor={mentionAnchor}
@@ -179,7 +178,6 @@ export function PanelComposer({
               onHighlightIndex={slashCommands.setHighlightedIndex}
               onSelect={slashCommands.selectCommand}
               placement={mentionMenuPlacement}
-              tone={tone}
             />
             <MentionEditor
               ariaLabel={

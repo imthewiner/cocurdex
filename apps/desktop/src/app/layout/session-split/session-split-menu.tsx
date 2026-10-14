@@ -8,11 +8,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AppDropdownContent,
-  AppDropdownItem,
-  compactDropdownContentClassName,
-} from "@/components";
+import { AppDropdownContent, AppDropdownItem } from "@/components";
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -70,11 +66,7 @@ export function SessionSplitMenu({
           <Ellipsis className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>
       </DropdownMenuTrigger>
-      <AppDropdownContent
-        align="start"
-        className={compactDropdownContentClassName}
-        side="bottom"
-      >
+      <AppDropdownContent align="start" side="bottom">
         <AppDropdownItem disabled={!canSplitDown} onClick={onSplitDown}>
           <SquareSplitHorizontal className="size-4" />
           {t("split.down")}

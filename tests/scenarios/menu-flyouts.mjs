@@ -71,9 +71,27 @@ function measureOpenFlyout(subSlots) {
     child.left >= parent.right
       ? child.left - parent.right
       : parent.left - child.right;
+  const look = (element) => {
+    const style = getComputedStyle(element);
+    const row = element.querySelector('[role="menuitem"]');
+    const rowStyle = row ? getComputedStyle(row) : null;
+    return {
+      radius: style.borderTopLeftRadius,
+      padding: style.padding,
+      border: `${style.borderTopWidth} ${style.borderTopColor}`,
+      shadow: style.boxShadow,
+      background: style.backgroundColor,
+      rowHeight: row?.getBoundingClientRect().height,
+      rowFont: rowStyle?.fontSize,
+      rowPadding: rowStyle?.padding,
+      rowRadius: rowStyle?.borderTopLeftRadius,
+    };
+  };
   return {
     gap: Number(gap.toFixed(2)),
     parentPadding: getComputedStyle(surface).paddingInlineEnd,
+    parent: look(surface),
+    child: look(flyout),
   };
 }
 
@@ -83,13 +101,32 @@ async function openSubmenu(session, name) {
   return session.run(measureOpenFlyout, SUBMENU_SLOTS);
 }
 
+const SURFACE_KEYS = ["radius", "padding", "border", "shadow", "background"];
+const ROW_KEYS = ["rowHeight", "rowFont", "rowPadding", "rowRadius"];
+
+function sameLook(parent, child, keys) {
+  return keys.every(
+    (key) => child[key] === undefined || parent[key] === child[key],
+  );
+}
+
 function checkGap(measurement, label) {
   check(
     Math.abs(measurement.gap - FLYOUT_GAP) <= GAP_TOLERANCE,
     `${label} flyout gap is not ${FLYOUT_GAP}px`,
     measurement,
   );
-  return measurement;
+  check(
+    sameLook(measurement.parent, measurement.child, SURFACE_KEYS),
+    `${label} flyout surface differs from its parent`,
+    measurement,
+  );
+  check(
+    sameLook(measurement.parent, measurement.child, ROW_KEYS),
+    `${label} flyout rows differ from its parent`,
+    measurement,
+  );
+  return { gap: measurement.gap, radius: measurement.child.radius };
 }
 
 runScenario("menu-flyouts", {
@@ -105,7 +142,7 @@ runScenario("menu-flyouts", {
   },
   steps: [
     [
-      "a default dropdown submenu keeps the shared gap",
+      "a default dropdown submenu matches its parent",
       async ({ session, viewMenu }) => {
         await clickByRole(session, { role: "button", name: viewMenu });
         const name = await translate(
@@ -118,7 +155,7 @@ runScenario("menu-flyouts", {
       },
     ],
     [
-      "a compact composer submenu keeps the shared gap",
+      "a composer submenu matches its parent",
       async ({ session }) => {
         const attach = await translate(session, "common:actions.attach");
         await clickByRole(session, { role: "button", name: attach });
@@ -132,7 +169,7 @@ runScenario("menu-flyouts", {
       },
     ],
     [
-      "a context submenu keeps the shared gap",
+      "a context submenu matches its parent",
       async ({ session }) => {
         const openPanel = await translate(
           session,
@@ -166,5 +203,9 @@ runScenario("menu-flyouts", {
       },
     ],
   ],
-  teardown: async () => ({}),
+  teardown: async ({ session }) => {
+    const editorTab = await translate(session, "editor:actions.showEditor");
+    await clickByRole(session, { role: "button", name: editorTab });
+    return {};
+  },
 });

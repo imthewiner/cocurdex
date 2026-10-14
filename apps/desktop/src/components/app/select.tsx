@@ -216,7 +216,7 @@ export function AppSelect({
       </SelectTrigger>
       <SelectContent
         align={align}
-        className={cn("rounded-control!", contentClassName)}
+        className={contentClassName}
         position={position}
         side={side}
       >
