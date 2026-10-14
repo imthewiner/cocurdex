@@ -120,9 +120,6 @@ export const sessionPayloadSchemas = {
       workspaceRootPath: filesystemPathSchema,
     }),
   ),
-  "session.checkpointStatus": exact<Payload<"session.checkpointStatus">>()(
-    sessionMessagePayload,
-  ),
   "session.updateQueued": exact<Payload<"session.updateQueued">>()(
     z.object({
       sessionId: idSchema,

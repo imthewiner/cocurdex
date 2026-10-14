@@ -14,9 +14,7 @@ function createSessionPayload(
     providerOverride?: Record<string, unknown>;
     piEvents?: Record<string, unknown>[];
     sessionOverride?: Partial<SessionRecord>;
-    branch?: { id: string; type: string; message?: { role?: string } }[];
     capture?: {
-      navigatedTo?: string;
       createAgentSessionOptions?: Record<string, unknown>;
       createAgentSessionCalls?: number;
       modelRuntimeOptions?: Record<string, unknown>;
@@ -45,7 +43,7 @@ function createSessionPayload(
   };
 
   const adapter = createPiSdkAdapter({
-    sdk: createFakeSdk(options.capture, options.piEvents, options.branch),
+    sdk: createFakeSdk(options.capture, options.piEvents),
   });
 
   return adapter.createSession(
@@ -84,7 +82,6 @@ function createSessionPayload(
 
 function createFakeSdk(
   capture?: {
-    navigatedTo?: string;
     createAgentSessionOptions?: Record<string, unknown>;
     createAgentSessionCalls?: number;
     modelRuntimeOptions?: Record<string, unknown>;
@@ -99,7 +96,6 @@ function createFakeSdk(
     extensionEvents?: unknown[];
   },
   piEvents?: Record<string, unknown>[],
-  branch: { id: string; type: string; message?: { role?: string } }[] = [],
 ) {
   let listener: ((event: Record<string, unknown>) => void) | null = null;
 
@@ -170,13 +166,7 @@ function createFakeSdk(
     },
     sessionManager: {
       getSessionFile: () => "/tmp/cocurdex-user-data/pi-agent/sessions/s.jsonl",
-      getBranch: () => branch,
     },
-    navigateTree: vi.fn(async (targetId: string) => {
-      if (capture) capture.navigatedTo = targetId;
-      return { cancelled: false };
-    }),
-    waitForIdle: vi.fn(async () => {}),
     prompt: vi.fn(async () => {
       const script = piEvents ?? [
         {
@@ -429,25 +419,6 @@ describe("createPiSdkAdapter", () => {
       providerOverride: { providerId: "anthropic", apiKey: null },
     }).sendMessage({ content: "hello", history: [] });
     expect(builtIn.runtimeApiKey).toBeUndefined();
-  });
-
-  it("rewinds the native conversation to a user message by its position", async () => {
-    const events: AgentEvent[] = [];
-    const capture: { navigatedTo?: string } = {};
-    const session = createSessionPayload(events, {
-      capture,
-      branch: [
-        { id: "model", type: "model_change" },
-        { id: "u1", type: "message", message: { role: "user" } },
-        { id: "a1", type: "message", message: { role: "assistant" } },
-        { id: "u2", type: "message", message: { role: "user" } },
-        { id: "a2", type: "message", message: { role: "assistant" } },
-      ],
-    });
-
-    await expect(session.rewindToUserMessage?.(1)).resolves.toBe(true);
-    expect(capture.navigatedTo).toBe("u2");
-    await expect(session.rewindToUserMessage?.(2)).resolves.toBe(false);
   });
 
   it("registers Pi model with provider api and model metadata", async () => {

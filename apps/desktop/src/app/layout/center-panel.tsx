@@ -27,11 +27,6 @@ import {
   appendQueuedInputAtom,
   autoCollapsedPlansBySessionAtom,
   ChatView,
-  clearPermissionsForSessionAtom,
-  clearPlanApprovalsForSessionAtom,
-  clearPlanForSessionAtom,
-  clearQuestionsForSessionAtom,
-  clearToolCallsForSessionAtom,
   collapsedPlansBySessionAtom,
   discardQueuedInputAtom,
   dismissedPlansBySessionAtom,
@@ -48,7 +43,6 @@ import {
   questionsBySessionAtom,
   queuedInputsBySessionAtom,
   removeQueuedInputAtom,
-  rewindMessagesAtom,
   selectVisiblePlan,
   togglePlanCollapsedForSessionAtom,
   toolCallsBySessionAtom,
@@ -275,14 +269,6 @@ export function CenterPanel({
   const updateQueuedInput = useSetAtom(updateQueuedInputAtom);
   const removeQueuedInput = useSetAtom(removeQueuedInputAtom);
   const discardQueuedInput = useSetAtom(discardQueuedInputAtom);
-  const rewindMessages = useSetAtom(rewindMessagesAtom);
-  const clearToolCallsForSession = useSetAtom(clearToolCallsForSessionAtom);
-  const clearPermissionsForSession = useSetAtom(clearPermissionsForSessionAtom);
-  const clearQuestionsForSession = useSetAtom(clearQuestionsForSessionAtom);
-  const clearPlanApprovalsForSession = useSetAtom(
-    clearPlanApprovalsForSessionAtom,
-  );
-  const clearPlanForSession = useSetAtom(clearPlanForSessionAtom);
   const dismissPlanForSession = useSetAtom(dismissPlanForSessionAtom);
   const togglePlanCollapsedForSession = useSetAtom(
     togglePlanCollapsedForSessionAtom,
@@ -782,95 +768,6 @@ export function CenterPanel({
     });
   };
 
-  const clearEphemeralSessionState = (sessionId: string) => {
-    clearToolCallsForSession(sessionId);
-    clearPermissionsForSession(sessionId);
-    clearQuestionsForSession(sessionId);
-    clearPlanApprovalsForSession(sessionId);
-    clearPlanForSession(sessionId);
-  };
-
-  const handleCheckPreviousMessageCheckpoint = async (
-    message: MessageRecord,
-  ) => {
-    if (!activeSession) {
-      return { available: false };
-    }
-
-    return taskApi.getPreviousMessageCheckpointStatus(
-      activeSession.id,
-      message.id,
-    );
-  };
-
-  const handleSubmitPreviousMessage = async (
-    message: MessageRecord,
-    content: string,
-    revertWorkspace: boolean,
-  ) => {
-    if (!activeSession || !activeWorkspace) {
-      return;
-    }
-
-    const requestId = crypto.randomUUID();
-    const startedAt = performance.now();
-
-    logRendererDiagnostic("info", "[AgentSession] submit previous message", {
-      requestId,
-      sessionId: activeSession.id,
-      messageId: message.id,
-      revertWorkspace,
-    });
-
-    try {
-      const userMessage = await taskApi.submitPreviousMessage({
-        sessionId: activeSession.id,
-        messageId: message.id,
-        content,
-        attachments:
-          message.attachments.length > 0 ? message.attachments : undefined,
-        revertWorkspace,
-      });
-
-      updateSessionStatus({ sessionId: activeSession.id, status: "running" });
-      rewindMessages({ message: userMessage });
-      clearEphemeralSessionState(activeSession.id);
-      markSessionMessage({
-        sessionId: activeSession.id,
-        createdAt: userMessage.createdAt,
-      });
-      logRendererDiagnostic(
-        "info",
-        "[AgentSession] submit previous message completed",
-        {
-          requestId,
-          sessionId: activeSession.id,
-          messageId: message.id,
-          durationMs: Math.round(performance.now() - startedAt),
-        },
-      );
-    } catch (error) {
-      updateSessionStatus({ sessionId: activeSession.id, status: "error" });
-      console.error("[AgentSession] submit previous message failed", {
-        requestId,
-        sessionId: activeSession.id,
-        messageId: message.id,
-        durationMs: Math.round(performance.now() - startedAt),
-      });
-      appendMessage({
-        id: crypto.randomUUID(),
-        sessionId: activeSession.id,
-        role: "system",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Unknown previous message submit error",
-        attachments: [],
-        createdAt: new Date().toISOString(),
-      });
-    }
-  };
-
   const handleStop = async () => {
     if (!activeSession || isSubagentSession(activeSession)) {
       return;
@@ -1297,19 +1194,11 @@ export function CenterPanel({
                     void switchSessionAgent(activeSession.id, agentType)
                 : undefined
             }
-            onCheckPreviousMessageCheckpoint={
-              handleCheckPreviousMessageCheckpoint
-            }
             onSend={handleSend}
             onDeleteQueuedInput={handleDeleteQueuedInput}
             onSendNowQueuedInput={handleSendNowQueuedInput}
             onSteerQueuedInput={handleSteerQueuedInput}
             onUpdateQueuedInput={handleUpdateQueuedInput}
-            onSubmitPreviousMessage={
-              isSubagentSession(activeSession)
-                ? undefined
-                : handleSubmitPreviousMessage
-            }
             onStop={handleStop}
             onResolvePlanApproval={handleResolvePlanApproval}
             onDismissPlan={() => {

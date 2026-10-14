@@ -9,5 +9,4 @@ export interface MessageRepository {
   assignRun(messageId: string, runId: string): Promise<void>;
   update(message: MessageRecord): Promise<void>;
   delete(messageId: string): Promise<void>;
-  deleteAfter(sessionId: string, messageId: string): Promise<void>;
 }

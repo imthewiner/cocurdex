@@ -165,17 +165,7 @@
     "waitingEmpty": "No plan written — approve or request changes"
   },
   "previousMessage": {
-    "cancel": "Cancel",
-    "cancelEdit": "Cancel edit",
-    "copy": "Copy prompt",
-    "dialogDescription": "Submitting from a previous message will clear the messages after this one. Reverting also restores files to their checkpoint before this message.",
-    "dialogTitle": "Submit from a previous message?",
-    "dontAskAgain": "Don't ask again",
-    "dontRevert": "Don't revert",
-    "edit": "Edit previous message",
-    "revert": "Revert",
-    "revertUnavailable": "File revert is unavailable because this message has no git workspace checkpoint.",
-    "submitEdit": "Submit edited message"
+    "copy": "Copy prompt"
   },
   "questions": {
     "answer": "Answer",

@@ -7,11 +7,7 @@ import type {
 import { sessionConfiguration } from "@cocurdex/shared";
 import { useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
-import {
-  appendMessageAtom,
-  clearToolCallsForSessionAtom,
-  rewindMessagesAtom,
-} from "@/features/agent";
+import { appendMessageAtom } from "@/features/agent";
 import {
   createChatSessionRecord,
   type StartChatPayload,
@@ -52,8 +48,6 @@ export function useChatSessionActions(paneId?: string) {
   const bindPaneContent = useSetAtom(bindPaneContentAtom);
   const bindFocusedPaneContent = useSetAtom(bindFocusedPaneContentAtom);
   const appendMessage = useSetAtom(appendMessageAtom);
-  const rewindMessages = useSetAtom(rewindMessagesAtom);
-  const clearToolCalls = useSetAtom(clearToolCallsForSessionAtom);
   const markSessionMessage = useSetAtom(markSessionMessageAtom);
   const updateSessionStatus = useSetAtom(updateSessionStatusAtom);
   const applyRefinedSessionTitle = useSetAtom(applyRefinedSessionTitleAtom);
@@ -167,36 +161,10 @@ export function useChatSessionActions(paneId?: string) {
     await taskApi.stopSession(session.id);
   };
 
-  const resubmit = async (
-    session: SessionRecord,
-    message: MessageRecord,
-    content: string,
-  ) => {
-    try {
-      const userMessage = await taskApi.submitPreviousMessage({
-        sessionId: session.id,
-        messageId: message.id,
-        content,
-        attachments:
-          message.attachments.length > 0 ? message.attachments : undefined,
-        revertWorkspace: false,
-      });
-      updateSessionStatus({ sessionId: session.id, status: "running" });
-      rewindMessages({ message: userMessage });
-      clearToolCalls(session.id);
-      markSessionMessage({
-        sessionId: session.id,
-        createdAt: userMessage.createdAt,
-      });
-    } catch (error) {
-      reportFailure(session.id, error);
-    }
-  };
-
   const configure = async (session: SessionRecord) => {
     upsertSession(session);
     await taskApi.saveSessionConfiguration(sessionConfiguration(session));
   };
 
-  return { configure, resubmit, send, start, stop };
+  return { configure, send, start, stop };
 }

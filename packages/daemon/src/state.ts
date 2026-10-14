@@ -456,45 +456,6 @@ export class DaemonState {
     });
   }
 
-  async rewindSessionMessages(
-    message: MessageRecord,
-    { keepProviderSession = false } = {},
-  ) {
-    const session = await this.database.sessions.getById(message.sessionId);
-
-    if (!session) {
-      throw new Error("Session not found");
-    }
-
-    const existing = await this.database.messages.listBySessionId(
-      message.sessionId,
-    );
-    const rewindIndex = existing.findIndex((item) => item.id === message.id);
-    const rewoundIds =
-      rewindIndex < 0
-        ? [message.id]
-        : existing.slice(rewindIndex).map((item) => item.id);
-
-    this.database.transaction(() => {
-      void this.database.toolCalls.deleteAfter(message.sessionId, message.id);
-      void this.database.messages.deleteAfter(message.sessionId, message.id);
-      this.database.runs.deleteByTriggerMessageIds([message.id]);
-      this.database.contextTransfers.reopenConsumedBy(
-        message.sessionId,
-        rewoundIds,
-      );
-      void this.database.messages.update(message);
-      if (!keepProviderSession)
-        void this.database.providerSessions.clearSession(message.sessionId);
-      void this.database.sessions.upsert({
-        ...session,
-        status: "idle",
-        updatedAt: message.createdAt,
-        lastMessageAt: message.createdAt,
-      });
-    });
-  }
-
   getProviderSession(sessionId: string, agentType: AgentId) {
     return this.database.providerSessions.get(sessionId, agentType);
   }

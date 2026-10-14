@@ -134,7 +134,6 @@ import type {
   SpawnTeammatePayload,
   SpawnTeamTemplatePayload,
   StartScriptRunPayload,
-  SubmitPreviousMessageCommand,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -356,8 +355,6 @@ export type DaemonRequestPayloadByMethod = {
     agentType: AgentId;
     workspaceRootPath: string;
   };
-  "session.resubmit": SubmitPreviousMessageCommand;
-  "session.checkpointStatus": { sessionId: string; messageId: string };
   "session.send": SendSessionCommand;
   "session.resumeQueued": { sessionId: string };
   "session.updateQueued": {
@@ -615,8 +612,6 @@ export type DaemonResultByMethod = {
   "session.listMessages": SessionMessagesResult;
   "session.listToolCalls": AgentToolCallRecord[];
   "session.listSlashCommands": AgentSlashCommand[];
-  "session.resubmit": MessageRecord;
-  "session.checkpointStatus": { available: boolean };
   "session.send": MessageRecord;
   "session.resumeQueued": boolean;
   "session.updateQueued": MessageRecord;

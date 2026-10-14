@@ -42,7 +42,6 @@ import type {
   SessionConfiguration,
   SessionRecord,
   SetSessionPinnedPayload,
-  SubmitPreviousMessageCommand,
   TurnChangeDiffRequest,
   TurnChangeFileContentRequest,
   UndoTurnChangesInput,
@@ -83,7 +82,6 @@ import {
   validateSendSessionCommand,
   validateSessionConfiguration,
   validateSessionId,
-  validateSubmitPreviousMessageCommand,
   workspacePathsEqual,
 } from "@cocurdex/shared";
 import { resolveAuthorizedPdfReadPath } from "@cocurdex/shared/node";
@@ -142,7 +140,6 @@ import {
   resolveForkPoint,
   resolveRepeatedSend,
   type SessionActivityReader,
-  SessionCheckpointStore,
   SessionCommandQueue,
   type SessionExecutionContext,
   SessionRunCoordinator,
@@ -262,7 +259,6 @@ export class CocurdexDaemonService {
   private readonly socketPath: string;
   private readonly startedAt: string;
   private readonly userDataPath: string;
-  private readonly sessionCheckpoints: SessionCheckpointStore;
   private readonly sessionCommands = new SessionCommandQueue();
   readonly runs: SessionRunCoordinator;
   private readonly worktreeSetups = new WorktreeSetupRuns();
@@ -277,7 +273,6 @@ export class CocurdexDaemonService {
     this.socketPath = options.socketPath ?? "";
     this.startedAt = options.startedAt ?? new Date().toISOString();
     this.userDataPath = options.userDataPath;
-    this.sessionCheckpoints = new SessionCheckpointStore(options.userDataPath);
     this.state = new DaemonState(options.userDataPath);
     this.hostAccess = new HostAccessService({
       localToken: options.localToken ?? crypto.randomUUID(),
@@ -1940,150 +1935,6 @@ export class CocurdexDaemonService {
     });
   }
 
-  async getPreviousMessageCheckpointStatus(
-    sessionId: string,
-    messageId: string,
-  ) {
-    validateSessionId(messageId);
-    const context = await this.getSessionExecutionContext(sessionId);
-    const message = await this.state.getMessageById(messageId);
-    if (!message || message.sessionId !== sessionId || message.role !== "user")
-      return { available: false };
-    return this.sessionCheckpoints.status({
-      sessionId,
-      messageId,
-      workspaceRootPath: context.workspaceRootPath,
-      workspaceRootPaths: context.workspaceRootPaths,
-    });
-  }
-
-  async submitPreviousMessage(command: SubmitPreviousMessageCommand) {
-    validateSubmitPreviousMessageCommand(command);
-    return this.sessionCommands.run(command.sessionId, () =>
-      this.resubmitMessage(command),
-    );
-  }
-
-  private async resubmitMessage(command: SubmitPreviousMessageCommand) {
-    const context = await this.getSessionExecutionContext(command.sessionId);
-    const existing = await this.state.getMessageById(command.messageId);
-    if (
-      !existing ||
-      existing.sessionId !== command.sessionId ||
-      existing.role !== "user"
-    ) {
-      throw new Error("Previous user message not found");
-    }
-    await this.stopSessionTurn(command.sessionId);
-    if (this.runs.hasActiveRun(command.sessionId))
-      throw new Error("Session still has an active turn after stop");
-    if (command.revertWorkspace) {
-      await this.sessionCheckpoints.restore({
-        sessionId: command.sessionId,
-        messageId: command.messageId,
-        workspaceRootPath: context.workspaceRootPath,
-        workspaceRootPaths: context.workspaceRootPaths,
-      });
-    }
-    const message: MessageRecord = {
-      ...existing,
-      content: command.content.trim(),
-      attachments: command.attachments ?? [],
-    };
-    const rewoundNatively = await this.rewindNativeConversation(
-      context,
-      message.id,
-    );
-    await this.rewindSession(message, {
-      keepProviderSession: rewoundNatively,
-    });
-    return this.acceptSessionMessage({
-      sessionId: command.sessionId,
-      messageId: message.id,
-      createdAt: message.createdAt,
-      content: message.content,
-      attachments: message.attachments,
-    });
-  }
-
-  private async captureSessionCheckpoint(
-    payload: SessionRuntimeMessage,
-    message: MessageRecord,
-  ) {
-    if (isChatSession(payload.session)) return;
-    await this.sessionCheckpoints
-      .capture({
-        sessionId: message.sessionId,
-        messageId: message.id,
-        workspaceRootPath: payload.workspaceRootPath,
-        workspaceRootPaths: payload.workspaceRootPaths,
-      })
-      .catch((error: unknown) => {
-        logDaemonDiagnostic("warn", "checkpoint.captureSkipped", {
-          sessionId: message.sessionId,
-          messageId: message.id,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-      });
-  }
-
-  private async rewindNativeConversation(
-    context: SessionExecutionContext,
-    messageId: string,
-  ) {
-    const sessionId = context.session.id;
-    const agent = await this.ensureAgentAvailable(context.session.agentType);
-    if (!agent.capabilities.supportsConversationRewind) {
-      return false;
-    }
-    const userMessageIndex = (
-      await this.state.listMessagesBySessionId(sessionId)
-    )
-      .filter((message) => message.role === "user")
-      .findIndex((message) => message.id === messageId);
-    try {
-      if (userMessageIndex >= 0) {
-        const persistence = {
-          ...(await this.createRuntimePersistence(context.session)),
-          providerConfig: await this.providerCredentials.forSession(
-            context.session,
-          ),
-        };
-        if (
-          await this.runtime.rewindSessionConversation(
-            context,
-            persistence,
-            userMessageIndex,
-          )
-        ) {
-          return true;
-        }
-      }
-    } catch (error) {
-      logDaemonDiagnostic("warn", "session.conversationRewindFailed", {
-        sessionId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-    await this.disposeSessionRuntime(sessionId);
-    return false;
-  }
-
-  private async rewindSession(
-    message: MessageRecord,
-    { keepProviderSession = false } = {},
-  ) {
-    if (this.runs.hasActiveRun(message.sessionId)) {
-      throw new Error(
-        `Session ${message.sessionId} still has an active turn after stop`,
-      );
-    }
-    this.queuedFollowUps.delete(message.sessionId);
-    this.runtime.clearSessionPlan(message.sessionId);
-    await this.state.rewindSessionMessages(message, { keepProviderSession });
-    await this.state.deleteQueuedAgentInput(message.id);
-  }
-
   async sendSessionMessage(command: SendSessionCommand) {
     validateSendSessionCommand(command);
     if (!command.origin) this.peerMessaging.noteHumanInput(command.sessionId);
@@ -2173,7 +2024,6 @@ export class CocurdexDaemonService {
         ...this.createUserMessage(payload),
         runId: this.runs.activeRunId(sessionId),
       };
-      await this.captureSessionCheckpoint(payload, createdMessage);
       const userMessage = await this.state.saveUserMessage(createdMessage);
       void this.runs.track(
         this.dispatchSteeringMessage(payload, userMessage, providerConfig),
@@ -2220,7 +2070,6 @@ export class CocurdexDaemonService {
     await this.ensureAgentAvailable(payload.session.agentType);
     payload = await this.refreshSessionWorkingPath(payload);
     const createdMessage = this.createUserMessage(payload);
-    await this.captureSessionCheckpoint(payload, createdMessage);
     if (dequeued) {
       await this.state.moveMessageToEnd(createdMessage.id, sessionId);
     }

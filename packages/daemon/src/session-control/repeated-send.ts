@@ -2,9 +2,7 @@ import type { MessageRecord, SendSessionCommand } from "@cocurdex/shared";
 
 export class MessageIdConflictError extends Error {
   constructor(messageId: string) {
-    super(
-      `Message ID ${messageId} was already used for a different message; use the resubmit command to edit a previous message`,
-    );
+    super(`Message ID ${messageId} was already used for a different message`);
     this.name = "MessageIdConflictError";
   }
 }

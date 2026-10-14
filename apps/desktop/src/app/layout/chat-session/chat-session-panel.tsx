@@ -111,9 +111,6 @@ export function ChatSessionPanel({
       onStop={() => {
         void actions.stop(session).catch(notifyFailure);
       }}
-      onSubmitPreviousMessage={(message, content) =>
-        actions.resubmit(session, message, content)
-      }
       providerSnapshot={snapshot}
       sessionId={session.id}
       sessionModeId={null}

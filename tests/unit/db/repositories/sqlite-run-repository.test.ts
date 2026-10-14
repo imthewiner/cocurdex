@@ -115,18 +115,4 @@ describe("createSqliteRunRepository", () => {
     });
     expect((await toolCalls.listBySessionId("s1"))[0]?.runId).toBe("r1");
   });
-
-  it("removes runs triggered by rewound messages and unlinks their output", async () => {
-    const database = createDatabase();
-    const runs = createSqliteRunRepository(database);
-    const messages = createSqliteMessageRepository(database);
-    runs.insert(startRun("r1"));
-    await messages.assignRun("m1", "r1");
-    runs.finish("r1", "completed", now);
-
-    runs.deleteByTriggerMessageIds(["m1"]);
-
-    expect(runs.listBySessionId("s1")).toEqual([]);
-    expect((await messages.getById("m1"))?.runId).toBeUndefined();
-  });
 });

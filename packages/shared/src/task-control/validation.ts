@@ -1,10 +1,6 @@
 import { isAgentId } from "../agent-role";
 import { providerApis, reasoningEfforts } from "../contracts";
-import type {
-  SendSessionCommand,
-  SessionConfiguration,
-  SubmitPreviousMessageCommand,
-} from "./types";
+import type { SendSessionCommand, SessionConfiguration } from "./types";
 
 function record(value: unknown): asserts value is Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -257,22 +253,4 @@ export function validateSendSessionCommand(
     !(value.attachments as unknown[] | undefined)?.length
   )
     throw new Error("Message must contain text or attachments");
-}
-
-export function validateSubmitPreviousMessageCommand(
-  value: unknown,
-): asserts value is SubmitPreviousMessageCommand {
-  record(value);
-  keys(value, [
-    "sessionId",
-    "messageId",
-    "content",
-    "attachments",
-    "revertWorkspace",
-  ]);
-  const { revertWorkspace, ...message } = value;
-  if (typeof revertWorkspace !== "boolean")
-    throw new Error("Invalid workspace revert choice");
-  validateSessionId(message.messageId);
-  validateSendSessionCommand(message);
 }

@@ -1,22 +1,11 @@
 import type {
   AgentQuestionRequestRecord,
   MessageAttachment,
-  MessageRecord,
 } from "@cocurdex/shared";
 import { useAtomValue } from "jotai";
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  ScrollArea,
-} from "@/components/ui";
+import { ScrollArea } from "@/components/ui";
 import {
   ChatContentColumn,
   sessionComposerDraftKey,
@@ -41,11 +30,7 @@ import {
   UserMessageNavigation,
 } from "./chat-user-navigation";
 import { ComposerDock, EmptyChatState, JumpControls } from "./chat-view-panels";
-import type {
-  ChatViewProps,
-  PendingPreviousMessageSubmit,
-  PreviousMessageRevertPreference,
-} from "./chat-view-types";
+import type { ChatViewProps } from "./chat-view-types";
 import { useChatBottomStick } from "./use-chat-bottom-stick";
 import { useChatScrollState } from "./use-chat-scroll-state";
 import { useChatViewPerfMarkers } from "./use-chat-view-perf-markers";
@@ -54,9 +39,6 @@ import {
   type ChatTimelineScrollHandle,
   ChatVirtualTimeline,
 } from "./virtual-timeline";
-
-const PREVIOUS_MESSAGE_REVERT_PREFERENCE_KEY =
-  "agents.previousMessageRevertPreference";
 
 export function ChatView({
   chatComposer,
@@ -95,8 +77,6 @@ export function ChatView({
   onSelectRuntimeMode,
   onSelectAgent,
   onSend,
-  onSubmitPreviousMessage,
-  onCheckPreviousMessageCheckpoint,
   onStop,
   onDeleteQueuedInput,
   onSendNowQueuedInput,
@@ -113,11 +93,6 @@ export function ChatView({
   onOpenParentSession,
 }: ChatViewProps) {
   const { t } = useTranslation("agent");
-  const rememberPreviousMessageChoiceId = useId();
-  const [rememberPreviousMessageChoice, setRememberPreviousMessageChoice] =
-    useState(false);
-  const [pendingPreviousMessageSubmit, setPendingPreviousMessageSubmit] =
-    useState<PendingPreviousMessageSubmit | null>(null);
   const [isInitialBottomSettled, setIsInitialBottomSettled] = useState(false);
   const perfSessionId = sessionId ?? messages[0]?.sessionId ?? null;
   const runStartedAtBySession = useAtomValue(sessionRunStartedAtAtom);
@@ -196,16 +171,12 @@ export function ChatView({
     onAnswerQuestion,
     onResolvePermission,
     onOpenToolLocation,
-    onCheckPreviousMessageCheckpoint,
-    onSubmitPreviousMessage,
     onSend,
   });
   callbacksRef.current = {
     onAnswerQuestion,
     onResolvePermission,
     onOpenToolLocation,
-    onCheckPreviousMessageCheckpoint,
-    onSubmitPreviousMessage,
     onSend,
   };
   const stableOnAnswerQuestion = useCallback(
@@ -351,73 +322,6 @@ export function ChatView({
     },
     [markUserScrollStart],
   );
-  const submitPreviousMessage = useCallback(
-    async (revertWorkspace: boolean) => {
-      if (!pendingPreviousMessageSubmit || !onSubmitPreviousMessage) {
-        return;
-      }
-
-      if (rememberPreviousMessageChoice) {
-        localStorage.setItem(
-          PREVIOUS_MESSAGE_REVERT_PREFERENCE_KEY,
-          revertWorkspace ? "revert" : "dont-revert",
-        );
-      }
-
-      const pending = pendingPreviousMessageSubmit;
-      setPendingPreviousMessageSubmit(null);
-      await onSubmitPreviousMessage(
-        pending.message,
-        pending.content,
-        revertWorkspace,
-      );
-    },
-    [
-      onSubmitPreviousMessage,
-      pendingPreviousMessageSubmit,
-      rememberPreviousMessageChoice,
-    ],
-  );
-  const handleSubmitPromptEdit = useCallback(
-    async (message: MessageRecord, content: string) => {
-      // Read latest parent callbacks via ref so this handler's identity
-      // stays stable across re-renders — propagates through React.memo on
-      // ChatConversationItem → UserPrompt without invalidating them.
-      const submit = callbacksRef.current.onSubmitPreviousMessage;
-      const checkCheckpoint =
-        callbacksRef.current.onCheckPreviousMessageCheckpoint;
-      if (!submit) {
-        return;
-      }
-
-      if (!checkCheckpoint) {
-        await submit(message, content, false);
-        return;
-      }
-      const checkpointStatus = await checkCheckpoint(message);
-      const storedPreference = localStorage.getItem(
-        PREVIOUS_MESSAGE_REVERT_PREFERENCE_KEY,
-      ) as PreviousMessageRevertPreference | null;
-
-      if (storedPreference === "dont-revert") {
-        await submit(message, content, false);
-        return;
-      }
-
-      if (storedPreference === "revert" && checkpointStatus.available) {
-        await submit(message, content, true);
-        return;
-      }
-
-      setRememberPreviousMessageChoice(false);
-      setPendingPreviousMessageSubmit({
-        canRevert: checkpointStatus.available,
-        content,
-        message,
-      });
-    },
-    [],
-  );
   if (timelineGroups.length === 0 && !isInitialBottomSettled) {
     setIsInitialBottomSettled(true);
   }
@@ -525,9 +429,6 @@ export function ChatView({
                   onAnswerQuestion={stableOnAnswerQuestion}
                   onOpenToolLocation={stableOnOpenToolLocation}
                   onResolvePermission={stableOnResolvePermission}
-                  onSubmitPromptEdit={
-                    readOnly ? undefined : handleSubmitPromptEdit
-                  }
                   runStartedAt={runStartedAt}
                   scrollRef={timelineScrollRef}
                   setUserMessageRef={setUserMessageRef}
@@ -542,64 +443,6 @@ export function ChatView({
             )}
           </ChatContentColumn>
         </ScrollArea>
-        <Dialog
-          onOpenChange={(open) => {
-            if (!open) {
-              setPendingPreviousMessageSubmit(null);
-            }
-          }}
-          open={Boolean(pendingPreviousMessageSubmit)}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("previousMessage.dialogTitle")}</DialogTitle>
-              <DialogDescription>
-                {t("previousMessage.dialogDescription")}
-              </DialogDescription>
-            </DialogHeader>
-            <label
-              className="flex items-center gap-2 text-sm text-chat-fg-secondary"
-              htmlFor={rememberPreviousMessageChoiceId}
-            >
-              <Checkbox
-                checked={rememberPreviousMessageChoice}
-                id={rememberPreviousMessageChoiceId}
-                onCheckedChange={(checked) =>
-                  setRememberPreviousMessageChoice(checked === true)
-                }
-              />
-              {t("previousMessage.dontAskAgain")}
-            </label>
-            {!pendingPreviousMessageSubmit?.canRevert ? (
-              <p className="text-sm text-chat-fg-muted">
-                {t("previousMessage.revertUnavailable")}
-              </p>
-            ) : null}
-            <DialogFooter>
-              <Button
-                onClick={() => setPendingPreviousMessageSubmit(null)}
-                type="button"
-                variant="ghost"
-              >
-                {t("previousMessage.cancel")}
-              </Button>
-              <Button
-                onClick={() => void submitPreviousMessage(false)}
-                type="button"
-                variant="outline"
-              >
-                {t("previousMessage.dontRevert")}
-              </Button>
-              <Button
-                disabled={!pendingPreviousMessageSubmit?.canRevert}
-                onClick={() => void submitPreviousMessage(true)}
-                type="button"
-              >
-                {t("previousMessage.revert")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
         <JumpControls
           onJumpToLatest={() => scrollToLatest("smooth")}
           onJumpToTop={() => scrollToTop("smooth")}

@@ -1,38 +1,7 @@
-import {
-  validateSendSessionCommand,
-  validateSubmitPreviousMessageCommand,
-} from "@cocurdex/shared/internal/task-control/validation";
+import { validateSendSessionCommand } from "@cocurdex/shared/internal/task-control/validation";
 import { describe, expect, it } from "vitest";
 
 describe("task message command validation", () => {
-  it("requires a bounded resubmission command and explicit revert choice", () => {
-    const command = {
-      sessionId: "task-1",
-      messageId: "message-1",
-      content: "Revised",
-      revertWorkspace: false,
-    };
-    expect(() => validateSubmitPreviousMessageCommand(command)).not.toThrow();
-    expect(() =>
-      validateSubmitPreviousMessageCommand({
-        ...command,
-        revertWorkspace: "false",
-      }),
-    ).toThrow("revert choice");
-    expect(() =>
-      validateSubmitPreviousMessageCommand({
-        ...command,
-        workspaceRootPath: "/untrusted",
-      }),
-    ).toThrow("Unexpected field");
-    expect(() =>
-      validateSubmitPreviousMessageCommand({
-        ...command,
-        messageId: "../outside",
-      }),
-    ).toThrow("Invalid session ID");
-  });
-
   it.each([
     "session",
     "workspaceRootPath",

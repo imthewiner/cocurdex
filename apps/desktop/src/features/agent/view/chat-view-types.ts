@@ -21,14 +21,6 @@ import type { QueuedAgentInputItem } from "../queued-input";
 import type { AgentSessionRuntimeState } from "../runtime";
 import type { ToolCallPreviewLocation } from "../tool-call";
 
-export type PreviousMessageRevertPreference = "revert" | "dont-revert";
-
-export type PendingPreviousMessageSubmit = {
-  canRevert: boolean;
-  content: string;
-  message: MessageRecord;
-};
-
 export interface ChatComposerOverride {
   controls: ReactNode;
   footerTrailing?: ReactNode;
@@ -82,14 +74,6 @@ export interface ChatViewProps {
     attachments: MessageAttachment[],
     useOppositeFollowUpBehavior?: boolean,
   ): void;
-  onSubmitPreviousMessage?(
-    message: MessageRecord,
-    content: string,
-    revertWorkspace: boolean,
-  ): Promise<void> | void;
-  onCheckPreviousMessageCheckpoint?(
-    message: MessageRecord,
-  ): Promise<{ available: boolean }> | { available: boolean };
   onStop?(): void;
   onDeleteQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
   onSendNowQueuedInput?(item: QueuedAgentInputItem): Promise<void>;

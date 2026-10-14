@@ -152,17 +152,7 @@
     "waitingEmpty": "Agent 未写出计划 — 批准或要求修改"
   },
   "previousMessage": {
-    "cancel": "取消",
-    "cancelEdit": "取消编辑",
-    "copy": "复制 prompt",
-    "dialogDescription": "从旧消息提交会清除这条消息之后的消息。选择回滚还会把文件恢复到这条消息前的检查点。",
-    "dialogTitle": "从旧消息提交？",
-    "dontAskAgain": "不再询问",
-    "dontRevert": "不回滚",
-    "edit": "编辑旧消息",
-    "revert": "回滚",
-    "revertUnavailable": "没有可用的 git 工作区检查点，无法回滚文件。",
-    "submitEdit": "提交编辑后的消息"
+    "copy": "复制 prompt"
   },
   "questions": {
     "answer": "回答",

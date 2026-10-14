@@ -3,9 +3,6 @@ import { commandDaemon, requestDaemon as rpc } from "./daemon-client";
 import { onDaemonAgentEvent } from "./daemon-events";
 
 export const taskApi: TaskApi = {
-  submitPreviousMessage: (input) => rpc("session.resubmit", input),
-  getPreviousMessageCheckpointStatus: (sessionId, messageId) =>
-    rpc("session.checkpointStatus", { sessionId, messageId }),
   listSessions: () => rpc("session.list"),
   getSessionSnapshot: (sessionId) => rpc("session.snapshot", { sessionId }),
   saveSessionConfiguration: (input) => rpc("session.configure", input),

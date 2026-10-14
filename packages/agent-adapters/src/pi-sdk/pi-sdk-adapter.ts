@@ -61,10 +61,7 @@ import {
   extractPiEditSnapshot,
 } from "../workspace-changes/native-evidence";
 import { createPiAgentToolDefinitions } from "./pi-agent-tools";
-import {
-  createPiChatResourceLoaderOptions,
-  findPiUserMessageEntry,
-} from "./pi-chat-session";
+import { createPiChatResourceLoaderOptions } from "./pi-chat-session";
 import { handlePiCompactionEvent } from "./pi-compaction";
 import {
   buildModelCost,
@@ -127,13 +124,7 @@ type PiSessionLike = {
   };
   sessionManager?: {
     getSessionFile(): string | undefined;
-    getBranch?(): { id: string; type: string; message?: { role?: string } }[];
   };
-  navigateTree?(
-    targetId: string,
-    options?: { summarize?: boolean },
-  ): Promise<{ cancelled: boolean }>;
-  waitForIdle?(): Promise<void>;
 };
 
 async function shutdownPiSession(session: PiSessionLike) {
@@ -1061,18 +1052,6 @@ export function createPiSdkAdapter(
             coverage: "tool-call" as const,
             files: aggregateTurnFileChanges([...nativeFiles.values()]),
           };
-        },
-        async rewindToUserMessage(userMessageIndex: number) {
-          const session = await getPiSession();
-          const branch = session.sessionManager?.getBranch?.();
-          if (!branch || !session.navigateTree) return false;
-          const target = findPiUserMessageEntry(branch, userMessageIndex);
-          if (!target) return false;
-          await session.waitForIdle?.();
-          const result = await session.navigateTree(target.id, {
-            summarize: false,
-          });
-          return !result.cancelled;
         },
         stop() {
           stopRequested = true;

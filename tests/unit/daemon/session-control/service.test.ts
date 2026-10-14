@@ -217,44 +217,10 @@ describe("authoritative task commands", () => {
         content: "Replace",
       }),
     ).rejects.toThrow("was already used for a different message");
-    await expect(
-      service.submitPreviousMessage({
-        sessionId: "session-1",
-        messageId: existing.id,
-        content: "Replace",
-        revertWorkspace: false,
-      }),
-    ).rejects.toThrow("Previous user message not found");
     expect(stop).not.toHaveBeenCalled();
     expect(await service.state.getMessageById(existing.id)).toEqual({
       ...existing,
       seq: 1,
-    });
-  });
-
-  it("resubmits with the stored message identity and timestamp", async () => {
-    const { service } = await fixture();
-    const existing: MessageRecord = {
-      id: "message-1",
-      sessionId: "session-1",
-      role: "user",
-      content: "Original",
-      attachments: [],
-      createdAt: "2026-09-01T00:00:00.000Z",
-    };
-    await service.state.saveUserMessage(existing);
-    vi.spyOn(service.runtime, "sendSessionMessage").mockResolvedValue(existing);
-    const result = await service.submitPreviousMessage({
-      sessionId: existing.sessionId,
-      messageId: existing.id,
-      content: " Revised ",
-      revertWorkspace: false,
-    });
-    expect(result).toEqual({
-      ...existing,
-      content: "Revised",
-      seq: 1,
-      runId: expect.any(String),
     });
   });
 
@@ -274,78 +240,5 @@ describe("authoritative task commands", () => {
       (item) => item.id === CHAT_WORKSPACE_ID,
     );
     expect(workspace?.rootPaths).toEqual([path.join(root, "chat")]);
-  });
-
-  describe("resubmitting a previous message", () => {
-    async function seedTwoTurns(
-      service: Awaited<ReturnType<typeof fixture>>["service"],
-    ) {
-      for (const [id, createdAt] of [
-        ["first", "2026-10-07T00:00:00.000Z"],
-        ["second", "2026-10-07T00:01:00.000Z"],
-      ] as const) {
-        await service.state.saveUserMessage({
-          id,
-          sessionId: "session-1",
-          role: "user",
-          content: id,
-          attachments: [],
-          createdAt,
-        });
-      }
-      await service.state.saveProviderSession("pi", {
-        sessionId: "session-1",
-        providerSessionId: "pi-session",
-        providerStateJson: JSON.stringify({ sessionFile: "/tmp/pi.jsonl" }),
-        providerVersion: null,
-        resumable: true,
-        updatedAt: "2026-10-07T00:02:00.000Z",
-      });
-      vi.spyOn(service.runtime, "sendSessionMessage").mockImplementation(
-        async (payload) => ({
-          id: payload.messageId ?? "reply",
-          sessionId: payload.session.id,
-          role: "user",
-          content: payload.content,
-          attachments: [],
-          createdAt: new Date().toISOString(),
-        }),
-      );
-    }
-
-    it("keeps the native session when the agent rewinds its conversation", async () => {
-      const { service } = await fixture();
-      await seedTwoTurns(service);
-      const rewind = vi
-        .spyOn(service.runtime, "rewindSessionConversation")
-        .mockResolvedValue(true);
-      await service.submitPreviousMessage({
-        sessionId: "session-1",
-        messageId: "second",
-        content: "Revised",
-        revertWorkspace: false,
-      });
-      expect(rewind.mock.calls[0][2]).toBe(1);
-      expect(
-        await service.state.getProviderSession("session-1", "pi"),
-      ).toMatchObject({ providerSessionId: "pi-session" });
-    });
-
-    it("drops the native session when the agent cannot rewind", async () => {
-      const { service } = await fixture();
-      await seedTwoTurns(service);
-      vi.spyOn(service.runtime, "rewindSessionConversation").mockResolvedValue(
-        false,
-      );
-      await service.submitPreviousMessage({
-        sessionId: "session-1",
-        messageId: "second",
-        content: "Revised",
-        revertWorkspace: false,
-      });
-      expect(
-        await service.state.getProviderSession("session-1", "pi"),
-      ).toBeNull();
-    });
   });
 });
