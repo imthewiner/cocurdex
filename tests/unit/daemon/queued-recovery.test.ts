@@ -113,6 +113,28 @@ describe("daemon-owned queue recovery", () => {
     expect(await second.service.state.listQueuedAgentInputs("session")).toEqual(
       [expect.objectContaining({ messageId: message.id })],
     );
+    expect((await second.service.bootstrap()).pausedQueueSessionIds).toEqual([
+      "session",
+    ]);
+  });
+
+  it("reports the queue as no longer paused once it is resumed", async () => {
+    const root = await seed();
+    vi.spyOn(ProviderCredentials.prototype, "forSession").mockResolvedValue(
+      null,
+    );
+    vi.spyOn(
+      AgentRuntimeManager.prototype,
+      "sendSessionMessage",
+    ).mockReturnValue(new Promise(() => undefined));
+    const second = await start(root);
+    const before = await second.service.pullSync({ sessionIds: [] });
+    expect(before.pausedQueueSessionIds).toEqual(["session"]);
+
+    await expect(resumeQueued(root)).resolves.toBe(true);
+
+    const after = await second.service.pullSync({ sessionIds: [] });
+    expect(after.pausedQueueSessionIds).toEqual([]);
   });
 
   it("does not start a resumed task when shutdown arrives during credential resolution", async () => {

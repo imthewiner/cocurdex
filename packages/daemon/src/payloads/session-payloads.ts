@@ -48,8 +48,12 @@ const agentRoleAvatarSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const sessionPayloadSchemas = {
-  "app.resync": exact<Payload<"app.resync">>()(
-    z.object({ sessionIds: z.array(idSchema).max(500) }),
+  "sync.pull": exact<Payload<"sync.pull">>()(
+    z.object({
+      sessionIds: z.array(idSchema).max(500),
+      hydratedSessionIds: z.array(idSchema).max(500).optional(),
+      cursor: z.string().max(128).nullable().optional(),
+    }),
   ),
   "session.snapshot": exact<Payload<"session.snapshot">>()(sessionIdPayload),
   "session.fork": exact<Payload<"session.fork">>()(

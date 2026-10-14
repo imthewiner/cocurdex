@@ -93,7 +93,7 @@ export function createSqliteRunRepository(
       const runs = rows.map(mapRun);
       const sessions = database
         .prepare(
-          `UPDATE sessions SET status = 'error', updated_at = ?
+          `UPDATE sessions SET status = 'idle', updated_at = ?
            WHERE status = 'running'
            RETURNING id`,
         )

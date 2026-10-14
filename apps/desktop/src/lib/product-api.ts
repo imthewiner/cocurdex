@@ -3,7 +3,7 @@ import type { ProductRequestApi } from "./types";
 
 export const daemonProductApi: ProductRequestApi = {
   bootstrapApp: () => rpc("app.bootstrap"),
-  resyncApp: (sessionIds) => rpc("app.resync", { sessionIds }),
+  pullSync: (input) => rpc("sync.pull", input),
   getProductSkillsStatus: (scope, workspaceRootPath) =>
     rpc("skills.getStatus", {
       scope,
@@ -262,6 +262,7 @@ export const daemonProductApi: ProductRequestApi = {
     rpc("session.steerQueued", { sessionId, messageId }),
   sendQueuedInputNow: ({ sessionId, messageId }) =>
     rpc("session.sendQueuedNow", { sessionId, messageId }),
+  resumeQueuedInputs: (sessionId) => rpc("session.resumeQueued", { sessionId }),
   saveEditorView: async (view) => {
     await rpc("editorView.save", { view });
   },

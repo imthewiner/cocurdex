@@ -67,6 +67,21 @@ export function createSqliteMessageTurnStatsRepository(
         }),
       );
     },
+    async listChangedSince(sessionId, changeSeq) {
+      const rows = database
+        .prepare(
+          `SELECT *
+           FROM message_turn_stats
+           WHERE session_id = ? AND change_seq > ?`,
+        )
+        .all(sessionId, changeSeq) as SqliteRow[];
+      return Object.fromEntries(
+        rows.map((row) => {
+          const stats = mapTurnStats(row);
+          return [stats.messageId, stats];
+        }),
+      );
+    },
     async upsert(event) {
       database
         .prepare(

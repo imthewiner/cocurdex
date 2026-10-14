@@ -35,7 +35,11 @@ import { desktopApi } from "@/lib";
 import { PermissionCard, permissionsBySessionAtom } from "../permission";
 import { PlanApprovalCard, PlanPanel, type SessionPlan } from "../plan";
 import { QuestionCard, questionsBySessionAtom } from "../question";
-import { type QueuedAgentInputItem, QueuedInputShelf } from "../queued-input";
+import {
+  pausedQueueSessionIdsAtom,
+  type QueuedAgentInputItem,
+  QueuedInputShelf,
+} from "../queued-input";
 import type { ChatComposerOverride } from "./chat-view-types";
 
 // Shared with pure chat — re-export so existing agent imports keep working.
@@ -86,6 +90,7 @@ interface ChatComposerControls {
   onStop?(): void;
   onDeleteQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
   onSendNowQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
+  onResumeQueuedInputs?(sessionId: string): Promise<void>;
   onSteerQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
   onUpdateQueuedInput?(
     item: QueuedAgentInputItem,
@@ -227,6 +232,7 @@ export function ComposerDock({
   onAnswerQuestion,
   onDeleteQueuedInput,
   onSendNowQueuedInput,
+  onResumeQueuedInputs,
   onSteerQueuedInput,
   onUpdateQueuedInput,
   hideComposer = false,
@@ -238,6 +244,11 @@ export function ComposerDock({
   const { t } = useTranslation("agent");
   const permissionsBySession = useAtomValue(permissionsBySessionAtom);
   const questionsBySession = useAtomValue(questionsBySessionAtom);
+  const pausedQueueSessionIds = useAtomValue(pausedQueueSessionIdsAtom);
+  const queuePaused =
+    !isRunning &&
+    composerProps.sessionId !== undefined &&
+    pausedQueueSessionIds.has(composerProps.sessionId);
   const pendingPromptBySession = collectPendingPrompts(
     permissionsBySession,
     questionsBySession,
@@ -287,9 +298,10 @@ export function ComposerDock({
               items={queuedInputs}
               onDelete={onDeleteQueuedInput}
               onSendNow={onSendNowQueuedInput}
+              onResume={queuePaused ? onResumeQueuedInputs : undefined}
               onSteer={onSteerQueuedInput}
               onUpdate={onUpdateQueuedInput}
-              supportsSteering={supportsSteering}
+              supportsSteering={supportsSteering && isRunning}
             />
           ) : null}
           {pendingPlanApproval ? (

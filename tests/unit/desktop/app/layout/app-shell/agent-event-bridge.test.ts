@@ -1,8 +1,9 @@
 import type {
   AgentEvent,
-  AppResyncSnapshot,
   DaemonEventMeta,
   SessionRecord,
+  SyncPullInput,
+  SyncPullResult,
 } from "@cocurdex/shared";
 import { createStore } from "jotai";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -22,7 +23,7 @@ const host = vi.hoisted(() => ({
   listener: null as
     | ((event: AgentEvent, meta?: DaemonEventMeta) => void)
     | null,
-  resyncApp: vi.fn<(ids: string[]) => Promise<AppResyncSnapshot>>(),
+  pullSync: vi.fn<(input: SyncPullInput) => Promise<SyncPullResult>>(),
   onDataChanged: vi.fn(() => () => {}),
   listSessionAttention: vi.fn(async () => []),
   updateSessionAttention: vi.fn(async (_payload: unknown) => ({})),
@@ -50,8 +51,8 @@ afterEach(() => {
 describe("agent state during a window handoff", () => {
   it("waits for the snapshot and replays only events newer than its boundary", async () => {
     vi.useFakeTimers();
-    let resolveSnapshot: (snapshot: AppResyncSnapshot) => void = () => {};
-    host.resyncApp.mockImplementation(
+    let resolveSnapshot: (snapshot: SyncPullResult) => void = () => {};
+    host.pullSync.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolveSnapshot = resolve;
@@ -61,7 +62,11 @@ describe("agent state during a window handoff", () => {
     const bridge = createAgentEventBridge(store);
     const stop = bridge.start();
     const synchronization = bridge.synchronize(["session"]);
-    expect(host.resyncApp).toHaveBeenCalledWith(["session"]);
+    expect(host.pullSync).toHaveBeenCalledWith({
+      sessionIds: ["session"],
+      hydratedSessionIds: [],
+      cursor: null,
+    });
     const delta = (content: string, seq: number) =>
       host.listener?.(
         {
@@ -78,17 +83,13 @@ describe("agent state during a window handoff", () => {
     delta(" world", 11);
     expect(store.get(messagesBySessionAtom).session).toBeUndefined();
     resolveSnapshot({
-      epoch: "epoch",
+      ...emptyPull("full"),
       eventSeq: 10,
-      sessions: [],
-      queuedAgentInputs: [],
-      queuedMessages: [],
-      activeRuns: [],
-      sessionUsage: {},
-      interactions: { permissions: [], questions: [], planApprovals: [] },
       transcripts: {
         session: {
+          complete: true,
           messages: [],
+          deletedMessageIds: [],
           activeMessages: [
             {
               id: "answer",
@@ -114,6 +115,94 @@ describe("agent state during a window handoff", () => {
     stop();
   });
 });
+
+describe("incremental agent sync", () => {
+  it("pulls only changes since the adopted cursor for loaded sessions", async () => {
+    const store = createStore();
+    store.set(sessionsAtom, [
+      sessionRecord("kept", "2026-09-18T00:00:00Z"),
+      sessionRecord("removed", "2026-09-18T00:00:00Z"),
+    ]);
+    const bridge = createAgentEventBridge(store);
+    host.pullSync.mockResolvedValueOnce({
+      ...emptyPull("full"),
+      cursor: "cursor-1",
+      sessions: [
+        sessionRecord("kept", "2026-09-18T00:00:00Z"),
+        sessionRecord("removed", "2026-09-18T00:00:00Z"),
+      ],
+      transcripts: {
+        kept: transcript(true, [message("first", "First")]),
+      },
+    });
+    await bridge.synchronize(["kept"]);
+
+    host.pullSync.mockResolvedValueOnce({
+      ...emptyPull("delta"),
+      cursor: "cursor-2",
+      removedSessionIds: ["removed"],
+      transcripts: {
+        kept: transcript(false, [message("second", "Second")]),
+      },
+    });
+    await bridge.synchronize();
+
+    expect(host.pullSync).toHaveBeenLastCalledWith({
+      sessionIds: ["kept"],
+      hydratedSessionIds: ["kept"],
+      cursor: "cursor-1",
+    });
+    expect(store.get(sessionsAtom).map((session) => session.id)).toEqual([
+      "kept",
+    ]);
+    expect(
+      store.get(messagesBySessionAtom).kept.map((entry) => entry.content),
+    ).toEqual(["First", "Second"]);
+  });
+});
+
+function emptyPull(mode: SyncPullResult["mode"]): SyncPullResult {
+  return {
+    mode,
+    cursor: "cursor",
+    epoch: "epoch",
+    eventSeq: 0,
+    sessions: [],
+    removedSessionIds: [],
+    queuedAgentInputs: [],
+    queuedMessages: [],
+    activeRuns: [],
+    sessionUsage: {},
+    interactions: { permissions: [], questions: [], planApprovals: [] },
+    transcripts: {},
+    pausedQueueSessionIds: [],
+  };
+}
+
+function message(id: string, content: string, seq = 0) {
+  return {
+    id,
+    sessionId: "kept",
+    role: "assistant" as const,
+    content,
+    attachments: [],
+    createdAt: `2026-09-18T00:00:0${id === "first" ? 1 : 2}Z`,
+    seq,
+  };
+}
+
+function transcript(complete: boolean, messages: ReturnType<typeof message>[]) {
+  return {
+    complete,
+    messages,
+    deletedMessageIds: [],
+    activeMessages: [],
+    turnStats: {},
+    turnChangeSets: null,
+    toolCalls: [],
+    plan: null,
+  };
+}
 
 describe("agent event bridge lifetime", () => {
   it("keeps one agent event listener however often it is started", () => {

@@ -90,6 +90,7 @@ export async function hydrateChatWindow(
   store.set(bootstrapQueuedInputsAtom, {
     inputs: data.queuedAgentInputs,
     messages: data.queuedMessages,
+    pausedSessionIds: data.pausedQueueSessionIds,
   });
   store.set(bootstrapSessionUsageAtom, data.sessionUsage);
   await Promise.all([

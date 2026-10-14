@@ -701,7 +701,9 @@ export type AgentToolCallContent =
       type: "diff";
       path: string;
       oldText?: string | null;
-      newText: string;
+      newText?: string;
+      additions?: number;
+      deletions?: number;
     }
   | {
       type: "terminal";
@@ -1399,4 +1401,11 @@ export interface AppBootstrapData {
   activeRuns: RunRecord[];
   sessionUsage: Record<string, AgentUsageRecord>;
   editorViews: EditorViewRecord[];
+  syncCursor: string;
+  pausedQueueSessionIds: string[];
 }
+
+export type StoredBootstrapData = Omit<
+  AppBootstrapData,
+  "pausedQueueSessionIds"
+>;

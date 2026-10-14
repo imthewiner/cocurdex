@@ -16,7 +16,6 @@ import type {
   AgentToolCallRecord,
   AgentToolCallResult,
   AppBootstrapData,
-  AppResyncSnapshot,
   ArchiveSessionPayload,
   ArchiveSessionsResult,
   BrowserAnnotation,
@@ -103,6 +102,8 @@ import type {
   SessionRecord,
   SetSessionPinnedPayload,
   StartScriptRunPayload,
+  SyncPullInput,
+  SyncPullResult,
   TeamMemberRecord,
   TeamRecord,
   TeamSnapshot,
@@ -318,7 +319,7 @@ export interface ProductApi {
   bootstrapApp(): Promise<AppBootstrapData>;
   // Authoritative reload after a daemon event replay gap; the snapshot's
   // eventSeq boundary tells the client which buffered events it covers.
-  resyncApp(sessionIds: string[]): Promise<AppResyncSnapshot>;
+  pullSync(input: SyncPullInput): Promise<SyncPullResult>;
   getProductSkillsStatus(
     scope: ProductSkillScope,
     workspaceRootPath?: string | null,
@@ -594,6 +595,7 @@ export interface ProductApi {
   sendQueuedInputNow(
     payload: QueuedAgentInputActionPayload,
   ): Promise<MessageRecord>;
+  resumeQueuedInputs(sessionId: string): Promise<boolean>;
   saveEditorView(view: EditorViewRecord): Promise<void>;
   listSlashCommands(
     agentType: AgentId,

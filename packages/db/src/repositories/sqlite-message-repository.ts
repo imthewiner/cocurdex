@@ -27,6 +27,16 @@ export function createSqliteMessageRepository(
         .all(sessionId) as SqliteRow[];
       return rows.map(mapMessage);
     },
+    async listChangedSince(sessionId, changeSeq) {
+      const rows = database
+        .prepare(
+          `SELECT * FROM messages
+           WHERE session_id = ? AND change_seq > ?
+           ORDER BY seq ASC`,
+        )
+        .all(sessionId, changeSeq) as SqliteRow[];
+      return rows.map(mapMessage);
+    },
     async getById(messageId) {
       const row = database
         .prepare(

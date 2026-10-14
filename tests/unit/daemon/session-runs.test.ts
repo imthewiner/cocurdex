@@ -232,8 +232,14 @@ describe("session runs", () => {
       await restarted.state.waitForStartupRecovery();
       const runs = (await restarted.state.getDatabase()).runs;
       expect(runs.getById("run-1")).toMatchObject({ status: "interrupted" });
-      expect((await restarted.getSession("session-1"))?.status).toBe("error");
+      expect((await restarted.getSession("session-1"))?.status).toBe("idle");
       expect((await restarted.bootstrap()).activeRuns).toEqual([]);
+      const messages =
+        await restarted.state.listMessagesBySessionId("session-1");
+      expect(messages.at(-1)).toMatchObject({
+        role: "system",
+        content: expect.stringContaining("Send a message to continue"),
+      });
     } finally {
       await restarted.shutdown();
     }

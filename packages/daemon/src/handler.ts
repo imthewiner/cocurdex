@@ -54,8 +54,8 @@ export async function handleDaemonRequest(
       throw new Error(
         "daemon.shutdownIfIdle is intercepted before request dispatch",
       );
-    case "app.resync":
-      return service.resync(request.params.sessionIds);
+    case "sync.pull":
+      return service.pullSync(request.params);
     case "app.bootstrap":
       return service.bootstrap();
     case "agent.list":

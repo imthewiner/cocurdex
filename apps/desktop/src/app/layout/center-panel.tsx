@@ -28,7 +28,6 @@ import {
   autoCollapsedPlansBySessionAtom,
   ChatView,
   collapsedPlansBySessionAtom,
-  discardQueuedInputAtom,
   dismissedPlansBySessionAtom,
   dismissPlanForSessionAtom,
   findPendingPlanApproval,
@@ -39,7 +38,6 @@ import {
   permissionsBySessionAtom,
   planApprovalsBySessionAtom,
   plansBySessionAtom,
-  type QueuedAgentInputItem,
   questionsBySessionAtom,
   queuedInputsBySessionAtom,
   removeQueuedInputAtom,
@@ -47,7 +45,6 @@ import {
   togglePlanCollapsedForSessionAtom,
   toolCallsBySessionAtom,
   toolCallsLoadedBySessionAtom,
-  updateQueuedInputAtom,
   useSessionMessages,
 } from "@/features/agent";
 import { NewChatCard } from "@/features/chat";
@@ -125,6 +122,7 @@ import {
   useBrowserAnnotationSender,
 } from "./chat-window/chat-browser-context";
 import { sidebarTabAtom } from "./sidebar/sidebar-tab-store";
+import { useQueuedInputActions } from "./use-queued-input-actions";
 
 interface CenterPanelProps {
   composerRef?: Ref<ChatComposerHandle>;
@@ -266,9 +264,8 @@ export function CenterPanel({
   const composerAttachment = useAtomValue(chatComposerAttachmentAtom);
   const appendMessage = useSetAtom(appendMessageAtom);
   const appendQueuedInput = useSetAtom(appendQueuedInputAtom);
-  const updateQueuedInput = useSetAtom(updateQueuedInputAtom);
   const removeQueuedInput = useSetAtom(removeQueuedInputAtom);
-  const discardQueuedInput = useSetAtom(discardQueuedInputAtom);
+  const queuedInputActions = useQueuedInputActions();
   const dismissPlanForSession = useSetAtom(dismissPlanForSessionAtom);
   const togglePlanCollapsedForSession = useSetAtom(
     togglePlanCollapsedForSessionAtom,
@@ -731,43 +728,6 @@ export function CenterPanel({
     }
   };
 
-  const handleUpdateQueuedInput = async (
-    item: QueuedAgentInputItem,
-    content: string,
-  ) => {
-    const message = await desktopApi.updateQueuedInput({
-      sessionId: item.sessionId,
-      messageId: item.messageId,
-      content,
-    });
-    updateQueuedInput(message);
-  };
-
-  const handleDeleteQueuedInput = async (item: QueuedAgentInputItem) => {
-    await desktopApi.deleteQueuedInput({
-      sessionId: item.sessionId,
-      messageId: item.messageId,
-    });
-    discardQueuedInput({
-      sessionId: item.sessionId,
-      messageId: item.messageId,
-    });
-  };
-
-  const handleSendNowQueuedInput = async (item: QueuedAgentInputItem) => {
-    await desktopApi.sendQueuedInputNow({
-      sessionId: item.sessionId,
-      messageId: item.messageId,
-    });
-  };
-
-  const handleSteerQueuedInput = async (item: QueuedAgentInputItem) => {
-    await desktopApi.steerQueuedInput({
-      sessionId: item.sessionId,
-      messageId: item.messageId,
-    });
-  };
-
   const handleStop = async () => {
     if (!activeSession || isSubagentSession(activeSession)) {
       return;
@@ -1195,10 +1155,7 @@ export function CenterPanel({
                 : undefined
             }
             onSend={handleSend}
-            onDeleteQueuedInput={handleDeleteQueuedInput}
-            onSendNowQueuedInput={handleSendNowQueuedInput}
-            onSteerQueuedInput={handleSteerQueuedInput}
-            onUpdateQueuedInput={handleUpdateQueuedInput}
+            {...queuedInputActions}
             onStop={handleStop}
             onResolvePlanApproval={handleResolvePlanApproval}
             onDismissPlan={() => {

@@ -24,7 +24,6 @@ import type {
   AgentRunLimits,
   AgentRuntimeProviderConfig,
   AppBootstrapData,
-  AppResyncSnapshot,
   ArchiveSessionsResult,
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
@@ -35,6 +34,7 @@ import type {
   GitCommitResult,
   MessageRecord,
   NetworkProxySettings,
+  QueuedAgentInputRecord,
   RefineSessionTitlePayload,
   SaveAgentRolePayload,
   SaveWorkflowDefinitionPayload,
@@ -42,6 +42,8 @@ import type {
   SessionConfiguration,
   SessionRecord,
   SetSessionPinnedPayload,
+  SyncPullInput,
+  SyncPullResult,
   TurnChangeDiffRequest,
   TurnChangeFileContentRequest,
   UndoTurnChangesInput,
@@ -149,6 +151,7 @@ import {
 } from "./session-control";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
+import { pullSync } from "./sync/sync-pull";
 import {
   listFontFamilies,
   openDirectoryInFileManager,
@@ -662,6 +665,7 @@ export class CocurdexDaemonService {
     const data = await this.state.bootstrap();
     return {
       ...data,
+      pausedQueueSessionIds: this.pausedQueueSessionIds(data.queuedAgentInputs),
       workspaces: data.workspaces.map((workspace) => ({
         ...workspace,
         missingRootPaths: workspace.rootPaths.filter(
@@ -875,6 +879,7 @@ export class CocurdexDaemonService {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+    await this.state.maintainStorage();
   }
 
   async saveWorkspace(workspace: WorkspaceRecord) {
@@ -1291,46 +1296,34 @@ export class CocurdexDaemonService {
     this.readEventSeq = provider;
   }
 
-  // Full authoritative refresh after a replay gap. Reads run behind queued
-  // event persistence, so every journaled event at or below the captured
-  // eventSeq is already reflected here; clients must only apply newer
-  // buffered events on top.
-  async resync(sessionIds: string[]): Promise<AppResyncSnapshot> {
+  async pullSync(input: SyncPullInput): Promise<SyncPullResult> {
     return this.runtime.withEventPersistence(async () => {
       const eventSeq = this.readEventSeq();
-      const data = await this.state.bootstrap();
-      const transcripts = Object.fromEntries(
-        await Promise.all(
-          sessionIds.map(async (sessionId) => {
-            const messages = await this.state.listSessionMessages(sessionId);
-            const toolCalls = await this.state.listToolCallSummaries(sessionId);
-            return [
-              sessionId,
-              {
-                messages: messages.messages,
-                activeMessages:
-                  this.state.listActiveMessagesBySessionId(sessionId),
-                turnStats: messages.turnStats,
-                turnChangeSets: messages.turnChangeSets,
-                toolCalls,
-                plan: this.runtime.getSessionPlan(sessionId),
-              },
-            ] as const;
-          }),
-        ),
+      await this.state.getDatabase();
+      const result = await pullSync(
+        this.state.syncSources({
+          getPlan: (sessionId) => this.runtime.getSessionPlan(sessionId),
+          getInteractions: () => this.runtime.getPendingInteractions(),
+        }),
+        { epoch: this.startedAt, eventSeq },
+        input,
       );
       return {
-        epoch: this.startedAt,
-        eventSeq,
-        sessions: data.sessions,
-        queuedAgentInputs: data.queuedAgentInputs,
-        queuedMessages: data.queuedMessages,
-        activeRuns: data.activeRuns,
-        sessionUsage: data.sessionUsage,
-        interactions: this.runtime.getPendingInteractions(),
-        transcripts,
+        ...result,
+        pausedQueueSessionIds: this.pausedQueueSessionIds(
+          result.queuedAgentInputs,
+        ),
       };
     });
+  }
+
+  private pausedQueueSessionIds(inputs: QueuedAgentInputRecord[]) {
+    const sessionIds = new Set(inputs.map((input) => input.sessionId));
+    return [...sessionIds].filter(
+      (sessionId) =>
+        !this.queuedFollowUps.has(sessionId) &&
+        !this.runs.hasActiveRun(sessionId),
+    );
   }
 
   async getSessionSnapshot(sessionId: string) {
@@ -1899,8 +1892,7 @@ export class CocurdexDaemonService {
     if (!isToolCallId(input?.toolCallId)) {
       throw new Error("Invalid tool call ID");
     }
-    const database = await this.state.getDatabase();
-    return database.toolCalls.getResultById(input.toolCallId);
+    return this.state.getToolCallResult(input.toolCallId);
   }
 
   async getTurnChangeFile(input: TurnChangeFileContentRequest) {
@@ -2543,7 +2535,10 @@ export class CocurdexDaemonService {
     await this.startupRecovery;
     clearInterval(this.checkpointReconcileTimer);
     this.runCapacity.close(new Error("Daemon is shutting down"));
-    await this.runs.interruptAll();
+    const interrupted = await this.runs.interruptAll();
+    await this.state.noteRestartInterruptions(
+      interrupted.map((run) => run.sessionId),
+    );
     this.queuedFollowUps.clear();
     await this.scriptRuns.shutdown();
     const schedulerClose = this.workflowWorkerScheduler.close();

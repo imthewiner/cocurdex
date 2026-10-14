@@ -62,7 +62,7 @@ describe("createSqliteRunRepository", () => {
     expect(runs.listActive().map((run) => run.id)).toEqual(["r2"]);
   });
 
-  it("interrupts running runs and their sessions after a restart", () => {
+  it("interrupts running runs and returns their sessions to idle after a restart", () => {
     const database = createDatabase();
     const runs = createSqliteRunRepository(database);
     runs.insert(startRun("r1"));
@@ -74,8 +74,8 @@ describe("createSqliteRunRepository", () => {
     expect(
       database.prepare("SELECT id, status FROM sessions ORDER BY id").all(),
     ).toEqual([
-      { id: "s1", status: "error" },
-      { id: "s2", status: "error" },
+      { id: "s1", status: "idle" },
+      { id: "s2", status: "idle" },
       { id: "s3", status: "idle" },
     ]);
   });

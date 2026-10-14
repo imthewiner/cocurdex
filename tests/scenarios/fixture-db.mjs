@@ -1,6 +1,6 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
-import { clickByRole } from "./lib/locate.mjs";
+import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
 
 const ACTIVE_TITLES = [
   "Add percentage discount codes",
@@ -8,6 +8,8 @@ const ACTIVE_TITLES = [
   "Draft release notes",
 ];
 const ARCHIVED_TITLE = "Spike: gift cards";
+const INTERRUPTED_TITLE = "Store cart totals in cents";
+const QUEUED_PROMPT = "Then update the release notes.";
 const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
@@ -56,6 +58,93 @@ runScenario("fixture-db", {
           text.includes("Does the README mention discounts?"),
           "second user turn missing",
         );
+        return {};
+      },
+    ],
+    [
+      "syncs a session archived and restored by another client",
+      async ({ session }) => {
+        const title = ACTIVE_TITLES[2];
+        const sessionId = await session.run(
+          async ({ title, productApiModule }) => {
+            const { daemonProductApi } = await import(productApiModule);
+            const { sessions } = await daemonProductApi.bootstrapApp();
+            const target = sessions.find((entry) => entry.title === title);
+            if (!target) return null;
+            await daemonProductApi.archiveSessions({ sessionIds: [target.id] });
+            return target.id;
+          },
+          { title, productApiModule: "/src/lib/product-api.ts" },
+        );
+        check(sessionId, "session not found", title);
+        await session.waitUntil(
+          (title) => !document.body.innerText.includes(title),
+          title,
+          UI_TIMEOUT_MS,
+        );
+        const text = await session.run(() => document.body.innerText);
+        check(text.includes(ACTIVE_TITLES[0]), "other sessions disappeared");
+        await session.run(
+          async ({ sessionId, productApiModule }) => {
+            const { daemonProductApi } = await import(productApiModule);
+            await daemonProductApi.restoreSessions({ sessionIds: [sessionId] });
+          },
+          { sessionId, productApiModule: "/src/lib/product-api.ts" },
+        );
+        await session.waitUntil(
+          (title) => document.body.innerText.includes(title),
+          title,
+          UI_TIMEOUT_MS,
+        );
+        return { archived: sessionId };
+      },
+    ],
+    [
+      "offers to resume a queue paused by a restart",
+      async ({ session }) => {
+        await clickByRole(session, {
+          role: "button",
+          name: INTERRUPTED_TITLE,
+          exact: false,
+        });
+        await session.waitUntil(
+          (prompt) => document.body.innerText.includes(prompt),
+          QUEUED_PROMPT,
+          UI_TIMEOUT_MS,
+        );
+        const text = await session.run(() => document.body.innerText);
+        check(
+          text.includes("Cocurdex restarted before this turn finished"),
+          "restart notice missing",
+        );
+        const resume = await session.run(
+          (key) => window.__scenario.t(key),
+          "agent:queue.resume",
+        );
+        await waitForRole(
+          session,
+          { role: "button", name: resume },
+          UI_TIMEOUT_MS,
+        );
+        return {};
+      },
+    ],
+    [
+      "resumes the paused queue",
+      async ({ session }) => {
+        const resume = await session.run(
+          (key) => window.__scenario.t(key),
+          "agent:queue.resume",
+        );
+        await clickByRole(session, { role: "button", name: resume });
+        const deadline = Date.now() + UI_TIMEOUT_MS;
+        while (
+          (await queryAllByRole(session, { role: "button", name: resume }))
+            .length > 0
+        ) {
+          check(Date.now() < deadline, "resume control stayed visible");
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
         return {};
       },
     ],

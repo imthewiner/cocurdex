@@ -26,6 +26,7 @@ import {
   FIXTURE_WORKSPACE_ID,
   FIXTURE_WORKSPACE_NAME,
   FIXTURE_WORKSPACES,
+  type FixtureInterruptedTurn,
   type FixtureSession,
   type FixtureWorkspace,
 } from "./recipe";
@@ -109,6 +110,15 @@ async function seedSession(
       RUN_TIMEOUT_MS,
     );
   }
+  if (fixture.interruptedTurn) {
+    await leaveTurnRunning(
+      daemon,
+      stub,
+      events,
+      fixture.id,
+      fixture.interruptedTurn,
+    );
+  }
   await requestDaemon(
     "session.updateTitle",
     { sessionId: fixture.id, title: fixture.title },
@@ -128,6 +138,41 @@ async function seedSession(
       daemon.options,
     );
   }
+}
+
+async function leaveTurnRunning(
+  daemon: DaemonProcess,
+  stub: StubLlmServer,
+  events: CocurdexDaemonEvent[],
+  sessionId: string,
+  turn: FixtureInterruptedTurn,
+) {
+  stub.plan = { kind: "hang" };
+  await requestDaemon(
+    "session.send",
+    { sessionId, messageId: turn.messageId, content: turn.prompt },
+    daemon.options,
+  );
+  await waitFor(
+    () =>
+      events.some(
+        (event) =>
+          event.type === "run.updated" &&
+          event.sessionId === sessionId &&
+          event.run.status === "running",
+      ),
+    RUN_TIMEOUT_MS,
+  );
+  await requestDaemon(
+    "session.send",
+    {
+      sessionId,
+      messageId: turn.queued.messageId,
+      content: turn.queued.prompt,
+      delivery: "queue-after-run",
+    },
+    daemon.options,
+  );
 }
 
 async function seedNotes(daemon: DaemonProcess) {

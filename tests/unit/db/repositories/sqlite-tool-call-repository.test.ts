@@ -111,3 +111,68 @@ describe("subagent reference", () => {
     ).toEqual(record.subagent);
   });
 });
+
+describe("external results", () => {
+  function finished(id: string, sessionId: string, text: string) {
+    return {
+      ...toolCall(id, sessionId, "completed"),
+      content: [{ type: "text" as const, text }],
+    };
+  }
+
+  it("pages finished large results and tracks refs after externalizing", async () => {
+    const database = createDatabase();
+    await seedSession(database, "session-1");
+    await seedSession(database, "session-2");
+    await database.toolCalls.upsert(finished("a", "session-1", "x".repeat(64)));
+    await database.toolCalls.upsert(finished("b", "session-1", "short"));
+    await database.toolCalls.upsert(finished("c", "session-2", "y".repeat(64)));
+    await database.toolCalls.upsert({
+      ...finished("d", "session-2", "z".repeat(64)),
+      status: "in_progress",
+    });
+
+    const first = await database.toolCalls.listExternalizableResults({
+      minBytes: 64,
+      limit: 1,
+      afterRowId: 0,
+    });
+    const second = await database.toolCalls.listExternalizableResults({
+      minBytes: 64,
+      limit: 1,
+      afterRowId: first[0]?.rowId ?? 0,
+    });
+    expect([...first, ...second].map((row) => row.toolCallId)).toEqual([
+      "a",
+      "c",
+    ]);
+
+    for (const row of [...first, ...second]) {
+      await expect(
+        database.toolCalls.externalizeResult(
+          row.toolCallId,
+          row.updatedAt,
+          `${row.toolCallId}-ref`,
+        ),
+      ).resolves.toBe(true);
+    }
+
+    await expect(
+      database.toolCalls.listExternalizableResults({
+        minBytes: 64,
+        limit: 10,
+        afterRowId: 0,
+      }),
+    ).resolves.toEqual([]);
+    await expect(database.toolCalls.listResultRefs()).resolves.toEqual(
+      new Set(["a-ref", "c-ref"]),
+    );
+    await expect(
+      database.toolCalls.listResultRefsBySessionId("session-1"),
+    ).resolves.toEqual(new Map([["a", "a-ref"]]));
+    await expect(database.toolCalls.getResultById("a")).resolves.toEqual({
+      result: { content: [], rawOutput: null },
+      resultRef: "a-ref",
+    });
+  });
+});

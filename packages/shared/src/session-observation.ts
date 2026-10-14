@@ -32,29 +32,42 @@ export interface SessionObservationSnapshot {
   plan: AgentSessionPlan | null;
 }
 
-export interface SessionTranscriptSnapshot {
+export interface SessionTranscriptSync {
+  complete: boolean;
   messages: MessageRecord[];
+  deletedMessageIds: string[];
   activeMessages: MessageRecord[];
   turnStats: Record<string, AgentTurnCompletedEvent>;
-  turnChangeSets: Record<string, TurnChangeSet>;
+  turnChangeSets: Record<string, TurnChangeSet> | null;
   toolCalls: AgentToolCallRecord[];
-  // Latest plan the agent pushed (`todo_write` / ACP plan). Ephemeral like the
-  // journal — a daemon restart drops it and the next plan update repopulates.
   plan: AgentSessionPlan | null;
 }
 
-// Authoritative resync payload after an event replay gap. eventSeq is the
-// journal position captured atomically before the reads: journaled events at
-// or below it are already persisted and reflected in this payload; events
-// above it must still be applied by the client.
-export interface AppResyncSnapshot {
+export type SyncPullMode = "full" | "delta";
+
+export interface SyncPullInput {
+  sessionIds: string[];
+  hydratedSessionIds?: string[];
+  cursor?: string | null;
+}
+
+export interface SyncPullResult {
+  mode: SyncPullMode;
+  cursor: string;
   epoch: string;
   eventSeq: number;
   sessions: SessionRecord[];
+  removedSessionIds: string[];
   queuedAgentInputs: QueuedAgentInputRecord[];
   queuedMessages: MessageRecord[];
   activeRuns: RunRecord[];
   sessionUsage: Record<string, AgentUsageRecord>;
   interactions: SessionInteractionSnapshot;
-  transcripts: Record<string, SessionTranscriptSnapshot | null>;
+  transcripts: Record<string, SessionTranscriptSync | null>;
+  pausedQueueSessionIds: string[];
 }
+
+export type StoredSyncPullResult = Omit<
+  SyncPullResult,
+  "pausedQueueSessionIds"
+>;

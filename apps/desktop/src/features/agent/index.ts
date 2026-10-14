@@ -41,6 +41,7 @@ export {
   applyQueuedInputEventAtom,
   bootstrapQueuedInputsAtom,
   discardQueuedInputAtom,
+  markQueueResumedAtom,
   type QueuedAgentInputItem,
   queuedInputsBySessionAtom,
   removeQueuedInputAtom,

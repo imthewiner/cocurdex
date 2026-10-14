@@ -43,19 +43,82 @@ export function createSqliteToolCallRepository(
         .all(sessionId) as SqliteRow[];
       return rows.map(mapToolCallSummary);
     },
+    async listSummariesChangedSince(sessionId, changeSeq) {
+      const rows = database
+        .prepare(
+          `SELECT ${SUMMARY_COLUMNS} FROM tool_calls
+           WHERE session_id = ? AND change_seq > ?
+           ORDER BY seq ASC`,
+        )
+        .all(sessionId, changeSeq) as SqliteRow[];
+      return rows.map(mapToolCallSummary);
+    },
     async getResultById(toolCallId) {
       const row = database
         .prepare(
-          "SELECT content_json, raw_output_json FROM tool_calls WHERE id = ? LIMIT 1",
+          "SELECT content_json, raw_output_json, result_ref FROM tool_calls WHERE id = ? LIMIT 1",
         )
         .get(toolCallId) as SqliteRow | undefined;
       if (!row) {
         return null;
       }
       return {
-        content: parseJson(row.content_json, []),
-        rawOutput: parseJson(row.raw_output_json, null),
+        result: {
+          content: parseJson(row.content_json, []),
+          rawOutput: parseJson(row.raw_output_json, null),
+        },
+        resultRef: typeof row.result_ref === "string" ? row.result_ref : null,
       };
+    },
+    async listResultRefsBySessionId(sessionId) {
+      const rows = database
+        .prepare(
+          `SELECT id, result_ref FROM tool_calls
+           WHERE session_id = ? AND result_ref IS NOT NULL`,
+        )
+        .all(sessionId) as { id: string; result_ref: string }[];
+      return new Map(rows.map((row) => [row.id, row.result_ref]));
+    },
+    async listResultRefs() {
+      const rows = database
+        .prepare(
+          "SELECT DISTINCT result_ref FROM tool_calls WHERE result_ref IS NOT NULL",
+        )
+        .all() as { result_ref: string }[];
+      return new Set(rows.map((row) => row.result_ref));
+    },
+    async listExternalizableResults({ minBytes, limit, afterRowId }) {
+      const rows = database
+        .prepare(
+          `SELECT rowid AS row_id, id, updated_at, content_json, raw_output_json
+           FROM tool_calls
+           WHERE rowid > ?
+             AND result_ref IS NULL
+             AND status IN ('completed', 'failed')
+             AND length(content_json) + length(coalesce(raw_output_json, '')) >= ?
+           ORDER BY rowid
+           LIMIT ?`,
+        )
+        .all(afterRowId, minBytes, limit) as SqliteRow[];
+      return rows.map((row) => ({
+        rowId: Number(row.row_id),
+        toolCallId: String(row.id),
+        updatedAt: String(row.updated_at),
+        result: {
+          content: parseJson(row.content_json, []),
+          rawOutput: parseJson(row.raw_output_json, null),
+        },
+      }));
+    },
+    async externalizeResult(toolCallId, updatedAt, resultRef) {
+      const changed = database
+        .prepare(
+          `UPDATE tool_calls
+           SET result_ref = ?, content_json = '[]', raw_output_json = 'null'
+           WHERE id = ? AND updated_at = ? AND result_ref IS NULL`,
+        )
+        .run(resultRef, toolCallId, updatedAt);
+      return Number(changed.changes) > 0;
     },
     async upsert(toolCall) {
       const existing = database
@@ -83,7 +146,8 @@ export function createSqliteToolCallRepository(
              locations_json = excluded.locations_json,
              started_at = excluded.started_at,
              updated_at = excluded.updated_at,
-             run_id = COALESCE(tool_calls.run_id, excluded.run_id)`,
+             run_id = COALESCE(tool_calls.run_id, excluded.run_id),
+             result_ref = NULL`,
         )
         .run(
           toolCall.id,

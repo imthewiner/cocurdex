@@ -57,7 +57,11 @@ export {
 } from "./task-control";
 export * from "./team";
 export * from "./terminal";
-export { type GetToolCallResultInput, isToolCallId } from "./tool-call";
+export {
+  type GetToolCallResultInput,
+  isToolCallId,
+  summarizeToolCallDiff,
+} from "./tool-call";
 export * from "./workflow";
 export * from "./workspace-change-diff";
 export * from "./workspace-change-tools";

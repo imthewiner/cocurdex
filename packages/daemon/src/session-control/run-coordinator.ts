@@ -182,11 +182,12 @@ export class SessionRunCoordinator {
   }
 
   async interruptAll() {
-    await Promise.all(
+    const ended = await Promise.all(
       [...this.active.keys()].map((sessionId) =>
         this.end(sessionId, "interrupted"),
       ),
     );
+    return ended.filter((run): run is RunRecord => run !== null);
   }
 
   private async end(sessionId: string, status: "cancelled" | "interrupted") {

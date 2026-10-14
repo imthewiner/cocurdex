@@ -29,6 +29,12 @@ export interface FixtureTurn {
   replies: StubTurn[];
 }
 
+export interface FixtureInterruptedTurn {
+  messageId: string;
+  prompt: string;
+  queued: { messageId: string; prompt: string };
+}
+
 export interface FixtureSession {
   id: string;
   title: string;
@@ -36,6 +42,7 @@ export interface FixtureSession {
   turns: FixtureTurn[];
   pinned?: boolean;
   archived?: boolean;
+  interruptedTurn?: FixtureInterruptedTurn;
 }
 
 export interface FixtureNote {
@@ -224,6 +231,20 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
         ],
       },
     ],
+  },
+  {
+    id: "fixture-session-cents",
+    title: "Store cart totals in cents",
+    kind: "main",
+    turns: [],
+    interruptedTurn: {
+      messageId: "fixture-message-cents-1",
+      prompt: "Store cart totals as integer cents.",
+      queued: {
+        messageId: "fixture-message-cents-2",
+        prompt: "Then update the release notes.",
+      },
+    },
   },
 ];
 

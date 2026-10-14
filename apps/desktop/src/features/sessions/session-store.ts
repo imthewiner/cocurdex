@@ -491,6 +491,25 @@ export const reconcileSessionsAtom = atom(
   },
 );
 
+export const mergeSessionChangesAtom = atom(
+  null,
+  (
+    get,
+    set,
+    changes: { sessions: SessionRecord[]; removedSessionIds: string[] },
+  ) => {
+    const changed = new Map(
+      changes.sessions.map((session) => [session.id, session]),
+    );
+    const removed = new Set(changes.removedSessionIds);
+    const kept = get(sessionsAtom).filter(
+      (session) => !removed.has(session.id) && !changed.has(session.id),
+    );
+    const active = changes.sessions.filter((session) => !session.archivedAt);
+    set(reconcileSessionsAtom, [...kept, ...active]);
+  },
+);
+
 export const bootstrapSessionsAtom = atom(
   null,
   (_get, set, sessions: SessionRecord[]) => {

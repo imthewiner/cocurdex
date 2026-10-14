@@ -101,8 +101,14 @@ export const offlineApi: DesktopApi = {
     activeRuns: [],
     sessionUsage: {},
     editorViews: [],
+    syncCursor: "",
+    pausedQueueSessionIds: [],
   }),
-  resyncApp: async () => ({
+  pullSync: async () => ({
+    mode: "full",
+    cursor: "",
+    removedSessionIds: [],
+    pausedQueueSessionIds: [],
     epoch: "",
     eventSeq: 0,
     sessions: [],
@@ -540,6 +546,7 @@ export const offlineApi: DesktopApi = {
       attachments: [],
       createdAt: new Date().toISOString(),
     }) satisfies MessageRecord,
+  resumeQueuedInputs: async () => false,
   sendQueuedInputNow: async (payload) =>
     ({
       id: payload.messageId,

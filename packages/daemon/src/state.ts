@@ -17,7 +17,6 @@ import type {
   AgentSessionMode,
   AgentToolCallRecord,
   AgentUsageUpdatedEvent,
-  AppBootstrapData,
   ContextTransferRecord,
   EditorViewRecord,
   MessageRecord,
@@ -30,6 +29,7 @@ import type {
   SessionMessagesResult,
   SessionRecord,
   SessionStatus,
+  StoredBootstrapData,
   WorkspaceRecord,
   WorkspaceWorktreeEnvironment,
   WorktreeEnvironmentProposal,
@@ -46,8 +46,15 @@ import { SessionAttentionProjection } from "./attention";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { createMessageDeltaBuffer } from "./message-delta-buffer";
 import { getDatabasePath } from "./paths";
+import { StorageMaintenance } from "./storage-maintenance";
+import { formatSyncCursor } from "./sync/sync-cursor";
+import type { SyncPullSources } from "./sync/sync-pull";
 import { withMessageSeq, withTimelineSeq } from "./timeline-seq-event";
 import { capToolCallOutput, withoutToolCallOutput } from "./tool-call-output";
+import {
+  createToolOutputStore,
+  type ToolOutputStore,
+} from "./tool-output-store";
 
 type CocurdexDatabase = ReturnType<typeof createCocurdexDatabase>;
 const TERMINAL_STATUSES = new Set<SessionStatus>(["idle", "error", "exited"]);
@@ -71,9 +78,20 @@ export class DaemonState {
   private networkProxyReady: Promise<void>;
   private staleToolCallsSwept: Promise<void>;
   private staleSessionsSwept: Promise<void>;
+  private readonly toolOutputs: ToolOutputStore;
+  private readonly storageMaintenance: StorageMaintenance;
 
   constructor(userDataPath: string) {
     this.database = createCocurdexDatabase(getDatabasePath(userDataPath));
+    this.toolOutputs = createToolOutputStore(userDataPath);
+    this.storageMaintenance = new StorageMaintenance({
+      toolCalls: this.database.toolCalls,
+      toolOutputs: this.toolOutputs,
+      commandReceipts: this.database.commandReceipts,
+      sync: this.database.sync,
+      reclaimFreePages: (maxPages) => this.database.reclaimFreePages(maxPages),
+      isClosed: () => this.closed,
+    });
     this.workflows = this.database.workflows;
     this.teams = this.database.teams;
     this.scriptRuns = this.database.scriptRuns;
@@ -96,6 +114,12 @@ export class DaemonState {
       return;
     }
     this.closed = true;
+    this.storageMaintenance.dispose();
+    this.database.transaction(() => {
+      for (const message of this.deltaBuffer.drainAll()) {
+        void this.database.messages.append(message);
+      }
+    });
     this.database.close();
   }
 
@@ -112,7 +136,7 @@ export class DaemonState {
     ]);
   }
 
-  async bootstrap(): Promise<AppBootstrapData> {
+  async bootstrap(): Promise<StoredBootstrapData> {
     await this.waitForStartupRecovery();
 
     const queuedAgentInputs = await this.database.queuedAgentInputs.list();
@@ -122,7 +146,9 @@ export class DaemonState {
       ),
     );
 
+    const syncCursor = formatSyncCursor(this.database.sync.readClock());
     return {
+      syncCursor,
       workspaces: await this.database.workspaces.list(),
       sessions: await this.database.sessions.list(),
       queuedMessages: queuedMessages.filter(
@@ -195,13 +221,14 @@ export class DaemonState {
     return this.database.appSettings.set(key, valueJson);
   }
 
-  deleteWorkspace(workspaceId: string) {
-    return this.database.workspaces.delete(workspaceId);
+  async deleteWorkspace(workspaceId: string) {
+    await this.database.workspaces.delete(workspaceId);
+    this.storageMaintenance.schedule();
   }
 
   async listSessionMessages(sessionId: string): Promise<SessionMessagesResult> {
     const [messages, turnStats, turnChangeSets] = await Promise.all([
-      this.database.messages.listBySessionId(sessionId),
+      this.listMessagesBySessionId(sessionId),
       this.database.messageTurnStats.listBySessionId(sessionId),
       this.database.turnChangeSets.listBySessionId(sessionId),
     ]);
@@ -261,6 +288,27 @@ export class DaemonState {
   async deleteSession(sessionId: string) {
     await this.database.turnChangeSets.deleteBySessionId(sessionId);
     await this.database.sessions.delete(sessionId);
+    this.storageMaintenance.schedule();
+  }
+
+  maintainStorage(): Promise<void> {
+    return this.storageMaintenance.run();
+  }
+
+  async getToolCallResult(toolCallId: string) {
+    const stored = await this.database.toolCalls.getResultById(toolCallId);
+    if (!stored) {
+      return null;
+    }
+    if (!stored.resultRef) {
+      return stored.result;
+    }
+    return (
+      (await this.toolOutputs.get(stored.resultRef)) ?? {
+        content: [],
+        rawOutput: null,
+      }
+    );
   }
 
   get turnChangeSets() {
@@ -288,12 +336,58 @@ export class DaemonState {
     );
   }
 
-  listMessagesBySessionId(sessionId: string) {
-    return this.database.messages.listBySessionId(sessionId);
+  syncSources(
+    runtime: Pick<SyncPullSources, "getPlan" | "getInteractions">,
+  ): SyncPullSources {
+    const { database } = this;
+    const settled = (messages: MessageRecord[]) =>
+      messages.filter((message) => !this.deltaBuffer.has(message.id));
+    return {
+      ...runtime,
+      readClock: () => database.sync.readClock(),
+      bootstrap: () => this.bootstrap(),
+      listSessionsChangedSince: (since) =>
+        database.sessions.listChangedSince(since),
+      listTombstonesSince: (since) => database.sync.listTombstonesSince(since),
+      listMessages: (sessionId) => this.listMessagesBySessionId(sessionId),
+      listMessagesChangedSince: async (sessionId, since) =>
+        settled(await database.messages.listChangedSince(sessionId, since)),
+      listActiveMessages: (sessionId) => this.deltaBuffer.list(sessionId),
+      listToolCalls: (sessionId) =>
+        database.toolCalls.listSummariesBySessionId(sessionId),
+      listToolCallsChangedSince: (sessionId, since) =>
+        database.toolCalls.listSummariesChangedSince(sessionId, since),
+      listTurnStats: (sessionId) =>
+        database.messageTurnStats.listBySessionId(sessionId),
+      listTurnStatsChangedSince: (sessionId, since) =>
+        database.messageTurnStats.listChangedSince(sessionId, since),
+      listTurnChangeSets: (sessionId) =>
+        database.turnChangeSets.listBySessionId(sessionId),
+      hasTurnChangeSetsChangedSince: async (sessionId, since) =>
+        database.sync.hasTurnChangeSetsChangedSince(sessionId, since),
+    };
   }
 
-  listToolCallsBySessionId(sessionId: string) {
-    return this.database.toolCalls.listBySessionId(sessionId);
+  async listMessagesBySessionId(sessionId: string) {
+    const messages = await this.database.messages.listBySessionId(sessionId);
+    return messages.filter((message) => !this.deltaBuffer.has(message.id));
+  }
+
+  async listToolCallsBySessionId(sessionId: string) {
+    const [toolCalls, resultRefs] = await Promise.all([
+      this.database.toolCalls.listBySessionId(sessionId),
+      this.database.toolCalls.listResultRefsBySessionId(sessionId),
+    ]);
+    if (resultRefs.size === 0) {
+      return toolCalls;
+    }
+    return Promise.all(
+      toolCalls.map(async (toolCall) => {
+        const ref = resultRefs.get(toolCall.id);
+        const result = ref ? await this.toolOutputs.get(ref) : null;
+        return result ? { ...toolCall, ...result } : toolCall;
+      }),
+    );
   }
 
   listActiveMessagesBySessionId(sessionId: string) {
@@ -650,7 +744,15 @@ export class DaemonState {
       const seq = this.deltaBuffer.has(event.messageId)
         ? null
         : await this.reserveTimelineSeq(event.sessionId, event.messageId);
-      return withTimelineSeq(event, this.deltaBuffer.append(event, seq).seq);
+      const buffered = this.deltaBuffer.append(event, seq);
+      const checkpoint = this.deltaBuffer.takeCheckpoint(event.messageId);
+      if (checkpoint) {
+        await this.database.messages.append({
+          ...checkpoint,
+          runId: checkpoint.runId ?? runId,
+        });
+      }
+      return withTimelineSeq(event, buffered.seq);
     }
 
     if (
@@ -663,6 +765,9 @@ export class DaemonState {
         runId: event.toolCall.runId ?? runId,
       });
       const seq = await this.database.toolCalls.upsert(toolCall);
+      if (toolCall.status === "completed" || toolCall.status === "failed") {
+        this.storageMaintenance.schedule();
+      }
       await this.persistSubagentChildSession(toolCall);
       return withTimelineSeq(
         { ...event, toolCall: withoutToolCallOutput(toolCall) },
@@ -814,7 +919,15 @@ export class DaemonState {
       this.database.runs.interruptRunning(createdAt),
     );
     await this.database.teams.failActiveMembers();
+    await this.noteRestartInterruptions(sessionIds, createdAt);
+  }
+
+  async noteRestartInterruptions(
+    sessionIds: string[],
+    createdAt = new Date().toISOString(),
+  ) {
     for (const sessionId of sessionIds) {
+      await this.flushBufferedMessages(sessionId);
       await this.database.messages.append(
         this.createSystemMessage(
           sessionId,

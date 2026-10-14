@@ -42,3 +42,9 @@ export {
   type DaemonEventSubscriber,
   type WaitReason,
 } from "./supervisor";
+export {
+  createSyncEngine,
+  type SyncEngine,
+  type SyncEngineOptions,
+  type SyncScope,
+} from "./sync-engine";

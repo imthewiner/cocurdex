@@ -137,7 +137,7 @@ describe("daemon startup recovery", () => {
     await first.close();
     const { daemon: second } = await start(userDataPath);
     expect(await second.service.state.getSession("session")).toMatchObject({
-      status: "error",
+      status: "idle",
     });
     const { messages } =
       await second.service.state.listSessionMessages("session");

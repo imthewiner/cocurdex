@@ -115,6 +115,7 @@ export {
   isDefaultSessionTitle,
   lastSelectedAgentAtom,
   markSessionMessageAtom,
+  mergeSessionChangesAtom,
   openSessionInSplitAtom,
   projectSubagentSessionFromToolCallAtom,
   reconcileSessionsAtom,

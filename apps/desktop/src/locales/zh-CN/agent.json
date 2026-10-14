@@ -169,6 +169,8 @@
     "editLabel": "编辑排队消息",
     "label": "排队中的后续消息",
     "moreActions": "更多队列操作",
+    "paused": "队列已暂停，恢复后才会继续执行。",
+    "resume": "继续",
     "save": "保存",
     "sendNow": "立即发送",
     "status": "排队中",
