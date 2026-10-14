@@ -139,6 +139,7 @@ export function createSchemaSql() {
       updated_at TEXT NOT NULL,
       seq INTEGER,
       run_id TEXT REFERENCES runs(id) ON DELETE SET NULL,
+      result_ref TEXT,
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
     );
 

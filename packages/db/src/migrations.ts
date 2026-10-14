@@ -13,7 +13,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 28;
+export const CURRENT_SCHEMA_VERSION = 29;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -414,6 +414,12 @@ function addSessionPins(database: DatabaseSync): void {
   }
 }
 
+function addToolCallResultRefs(database: DatabaseSync): void {
+  if (!hasColumn(database, "tool_calls", "result_ref")) {
+    database.exec("ALTER TABLE tool_calls ADD COLUMN result_ref TEXT");
+  }
+}
+
 function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
@@ -516,6 +522,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [25, allowNativeContextTransfers],
   [26, addSessionPins],
   [27, compactStoredDiffs],
+  [28, addToolCallResultRefs],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

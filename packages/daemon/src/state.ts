@@ -46,13 +46,16 @@ import { SessionAttentionProjection } from "./attention";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { createMessageDeltaBuffer } from "./message-delta-buffer";
 import { getDatabasePath } from "./paths";
+import { StorageMaintenance } from "./storage-maintenance";
 import { withMessageSeq, withTimelineSeq } from "./timeline-seq-event";
 import { capToolCallOutput, withoutToolCallOutput } from "./tool-call-output";
+import {
+  createToolOutputStore,
+  type ToolOutputStore,
+} from "./tool-output-store";
 
 type CocurdexDatabase = ReturnType<typeof createCocurdexDatabase>;
 const TERMINAL_STATUSES = new Set<SessionStatus>(["idle", "error", "exited"]);
-const RECLAIM_PAGES_PER_STEP = 2048;
-const RECLAIM_AFTER_DELETE_MS = 30_000;
 export interface AgentEventPersistenceContext {
   runId: string | null;
 }
@@ -73,11 +76,18 @@ export class DaemonState {
   private networkProxyReady: Promise<void>;
   private staleToolCallsSwept: Promise<void>;
   private staleSessionsSwept: Promise<void>;
-  private reclaimTimer: NodeJS.Timeout | null = null;
-  private reclaiming: Promise<void> | null = null;
+  private readonly toolOutputs: ToolOutputStore;
+  private readonly storageMaintenance: StorageMaintenance;
 
   constructor(userDataPath: string) {
     this.database = createCocurdexDatabase(getDatabasePath(userDataPath));
+    this.toolOutputs = createToolOutputStore(userDataPath);
+    this.storageMaintenance = new StorageMaintenance({
+      toolCalls: this.database.toolCalls,
+      toolOutputs: this.toolOutputs,
+      reclaimFreePages: (maxPages) => this.database.reclaimFreePages(maxPages),
+      isClosed: () => this.closed,
+    });
     this.workflows = this.database.workflows;
     this.teams = this.database.teams;
     this.scriptRuns = this.database.scriptRuns;
@@ -100,10 +110,7 @@ export class DaemonState {
       return;
     }
     this.closed = true;
-    if (this.reclaimTimer) {
-      clearTimeout(this.reclaimTimer);
-      this.reclaimTimer = null;
-    }
+    this.storageMaintenance.dispose();
     this.database.close();
   }
 
@@ -205,7 +212,7 @@ export class DaemonState {
 
   async deleteWorkspace(workspaceId: string) {
     await this.database.workspaces.delete(workspaceId);
-    this.scheduleStorageReclaim();
+    this.storageMaintenance.schedule();
   }
 
   async listSessionMessages(sessionId: string): Promise<SessionMessagesResult> {
@@ -270,48 +277,27 @@ export class DaemonState {
   async deleteSession(sessionId: string) {
     await this.database.turnChangeSets.deleteBySessionId(sessionId);
     await this.database.sessions.delete(sessionId);
-    this.scheduleStorageReclaim();
+    this.storageMaintenance.schedule();
   }
 
-  reclaimStorage(): Promise<void> {
-    this.reclaiming ??= this.reclaimFreePages()
-      .catch((error) => {
-        logDaemonDiagnostic("warn", "[Storage] reclaim failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      })
-      .finally(() => {
-        this.reclaiming = null;
-      });
-    return this.reclaiming;
+  maintainStorage(): Promise<void> {
+    return this.storageMaintenance.run();
   }
 
-  private scheduleStorageReclaim() {
-    if (this.reclaimTimer || this.closed) {
-      return;
+  async getToolCallResult(toolCallId: string) {
+    const stored = await this.database.toolCalls.getResultById(toolCallId);
+    if (!stored) {
+      return null;
     }
-    this.reclaimTimer = setTimeout(() => {
-      this.reclaimTimer = null;
-      void this.reclaimStorage();
-    }, RECLAIM_AFTER_DELETE_MS);
-    this.reclaimTimer.unref?.();
-  }
-
-  private async reclaimFreePages() {
-    let reclaimed = 0;
-    while (!this.closed) {
-      const step = this.database.reclaimFreePages(RECLAIM_PAGES_PER_STEP);
-      reclaimed += step.reclaimed;
-      if (step.remaining === 0 || step.reclaimed === 0) {
-        break;
+    if (!stored.resultRef) {
+      return stored.result;
+    }
+    return (
+      (await this.toolOutputs.get(stored.resultRef)) ?? {
+        content: [],
+        rawOutput: null,
       }
-      await new Promise((resolve) => setImmediate(resolve));
-    }
-    if (reclaimed > 0) {
-      logDaemonDiagnostic("info", "[Storage] reclaimed free pages", {
-        pages: reclaimed,
-      });
-    }
+    );
   }
 
   get turnChangeSets() {
@@ -343,8 +329,21 @@ export class DaemonState {
     return this.database.messages.listBySessionId(sessionId);
   }
 
-  listToolCallsBySessionId(sessionId: string) {
-    return this.database.toolCalls.listBySessionId(sessionId);
+  async listToolCallsBySessionId(sessionId: string) {
+    const [toolCalls, resultRefs] = await Promise.all([
+      this.database.toolCalls.listBySessionId(sessionId),
+      this.database.toolCalls.listResultRefsBySessionId(sessionId),
+    ]);
+    if (resultRefs.size === 0) {
+      return toolCalls;
+    }
+    return Promise.all(
+      toolCalls.map(async (toolCall) => {
+        const ref = resultRefs.get(toolCall.id);
+        const result = ref ? await this.toolOutputs.get(ref) : null;
+        return result ? { ...toolCall, ...result } : toolCall;
+      }),
+    );
   }
 
   listActiveMessagesBySessionId(sessionId: string) {
@@ -714,6 +713,9 @@ export class DaemonState {
         runId: event.toolCall.runId ?? runId,
       });
       const seq = await this.database.toolCalls.upsert(toolCall);
+      if (toolCall.status === "completed" || toolCall.status === "failed") {
+        this.storageMaintenance.schedule();
+      }
       await this.persistSubagentChildSession(toolCall);
       return withTimelineSeq(
         { ...event, toolCall: withoutToolCallOutput(toolCall) },

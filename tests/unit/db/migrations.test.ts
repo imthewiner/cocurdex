@@ -954,6 +954,7 @@ describe("initializeDatabase", () => {
     initializeDatabase(database);
     database.exec(`
       ALTER TABLE messages DROP COLUMN run_id;
+      ALTER TABLE tool_calls DROP COLUMN result_ref;
       ALTER TABLE tool_calls DROP COLUMN run_id;
       DROP TABLE runs;
     `);

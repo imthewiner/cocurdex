@@ -875,7 +875,7 @@ export class CocurdexDaemonService {
         error: error instanceof Error ? error.message : String(error),
       });
     }
-    await this.state.reclaimStorage();
+    await this.state.maintainStorage();
   }
 
   async saveWorkspace(workspace: WorkspaceRecord) {
@@ -1900,8 +1900,7 @@ export class CocurdexDaemonService {
     if (!isToolCallId(input?.toolCallId)) {
       throw new Error("Invalid tool call ID");
     }
-    const database = await this.state.getDatabase();
-    return database.toolCalls.getResultById(input.toolCallId);
+    return this.state.getToolCallResult(input.toolCallId);
   }
 
   async getTurnChangeFile(input: TurnChangeFileContentRequest) {
