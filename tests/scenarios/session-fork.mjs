@@ -91,11 +91,30 @@ runScenario("session-fork", {
         const hit = await session.run(hitLabel, point);
         check(hit === forkLabel, "fork button is covered", { hit, point });
         await clickPoint(session, point);
-        await waitForRole(
-          session,
-          { role: "button", name: new RegExp(`^${forkTitle}`) },
-          UI_TIMEOUT_MS,
-        );
+        const shown = await session
+          .waitUntil(
+            (title) =>
+              [...document.querySelectorAll("button")].some((button) =>
+                button.textContent?.startsWith(title),
+              ),
+            forkTitle,
+            UI_TIMEOUT_MS,
+          )
+          .then(
+            () => true,
+            () => false,
+          );
+        if (!shown) {
+          const toasts = await session.run(() =>
+            [...document.querySelectorAll("[data-sonner-toast]")].map(
+              (toast) => toast.textContent,
+            ),
+          );
+          const titles = (await daemon(session, "session.list")).map(
+            ({ title }) => title,
+          );
+          check(false, "fork did not appear", { toasts, titles });
+        }
         const sessions = await daemon(session, "session.list");
         const fork = sessions.find((record) => record.title === forkTitle);
         check(
