@@ -15,6 +15,7 @@ import type { MarkdownFilePathHandlers } from "./markdown-file-path";
 import { rewriteMarkdownLocalFileLinks } from "./markdown-file-path";
 import type { HeavyPluginKind } from "./markdown-heavy-plugins";
 import {
+  getLoadedHeavyPluginKinds,
   getStreamdownPlugins,
   LIGHT_STREAMDOWN_PLUGINS,
   loadHeavyPlugins,
@@ -22,6 +23,7 @@ import {
 } from "./markdown-heavy-plugins";
 import { createMarkdownComponents } from "./markdown-renderer-components";
 import { createStreamFadeBlockPlugins } from "./markdown-stream-fade";
+import { useRenderReadinessHold } from "./render-readiness";
 import { StreamFadeBlock } from "./stream-fade-block";
 import { StreamFadeContext } from "./stream-fade-context";
 import { hidePendingTableStart } from "./streaming-table";
@@ -200,6 +202,11 @@ function useStreamdownPlugins(neededPlugins: HeavyPluginKind[]) {
       loadHeavyPlugins(neededPlugins);
     }
   }, [neededPlugins]);
+  const loadedKinds = useSyncExternalStore(
+    subscribeStreamdownPlugins,
+    getLoadedHeavyPluginKinds,
+  );
+  useRenderReadinessHold(neededPlugins.some((kind) => !loadedKinds.has(kind)));
 
   return neededPlugins.length > 0 ? loadedPlugins : LIGHT_STREAMDOWN_PLUGINS;
 }

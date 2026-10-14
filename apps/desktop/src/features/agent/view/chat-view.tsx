@@ -5,6 +5,11 @@ import type {
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  createRenderReadiness,
+  RenderReadinessContext,
+  useRenderReadiness,
+} from "@/components";
 import { ScrollArea } from "@/components/ui";
 import {
   ChatContentColumn,
@@ -39,6 +44,8 @@ import {
   type ChatTimelineScrollHandle,
   ChatVirtualTimeline,
 } from "./virtual-timeline";
+
+const CONTENT_READY_DEADLINE_MS = 1_000;
 
 export function ChatView({
   chatComposer,
@@ -95,6 +102,11 @@ export function ChatView({
 }: ChatViewProps) {
   const { t } = useTranslation("agent");
   const [isInitialBottomSettled, setIsInitialBottomSettled] = useState(false);
+  const [renderReadiness] = useState(createRenderReadiness);
+  const isContentReady = useRenderReadiness(
+    renderReadiness,
+    CONTENT_READY_DEADLINE_MS,
+  );
   const perfSessionId = sessionId ?? messages[0]?.sessionId ?? null;
   const runStartedAtBySession = useAtomValue(sessionRunStartedAtAtom);
   const runStartedAt = perfSessionId
@@ -328,6 +340,7 @@ export function ChatView({
   }
   useChatBottomStick({
     chatContentRef,
+    isContentReady,
     isRunning,
     setInitialBottomSettled: setIsInitialBottomSettled,
     status,
@@ -359,91 +372,93 @@ export function ChatView({
           messages={stickyUserMessages}
           onSelect={scrollToUserMessage}
         />
-        <ScrollArea
-          className={cn(
-            "h-full px-2 @lg/chat:px-3 @3xl/chat:px-6",
-            !isInitialBottomSettled && "opacity-0",
-          )}
-          viewportProps={{
-            className: "[overflow-anchor:none]",
-            onClickCapture: (event) => {
-              if (isDisclosureToggle(event.target)) {
-                holdForDisclosure();
-              }
-            },
-            onKeyDownCapture: () => handleUserScrollIntent(),
-            onPointerDown: markUserScrollIntent,
-            onPointerDownCapture: markUserScrollIntent,
-            onScroll: () => syncScrollState(stickyUserMessages),
-            onTouchMoveCapture: () => handleUserScrollIntent(),
-            onWheelCapture: (event) => handleUserScrollIntent(event.deltaY),
-            tabIndex: 0,
-          }}
-          viewportRef={attachViewport}
-        >
-          <ChatContentColumn className="py-6" ref={chatContentRef}>
-            {timelineGroups.length === 0 && !readOnly ? (
-              <EmptyChatState
-                activeBranch={activeBranch}
-                workspace={workspace}
-                sessionId={sessionId}
-                agentLabel={agentLabel}
-                agentType={agentType}
-                attachment={attachment}
-                composerContextChips={composerContextChips}
-                draftKey={
-                  sessionId ? sessionComposerDraftKey(sessionId) : undefined
-                }
-                sessionModeId={sessionModeId}
-                composerRef={composerRef}
-                permissionMode={permissionMode}
-                providerSnapshot={providerSnapshot}
-                thinkingLevel={thinkingLevel}
-                thinkingLevelOptions={thinkingLevelOptions}
-                isRunning={isRunning}
-                canSendWhileRunning={canSendWhileRunning}
-                runtimeCommands={runtime?.commands}
-                runtimeMode={runtime?.mode}
-                onClearAttachment={onClearAttachment}
-                onSelectSessionMode={onSelectSessionMode}
-                onSelectPermissionMode={onSelectPermissionMode}
-                onSelectThinkingLevel={onSelectThinkingLevel}
-                onSelectRuntimeMode={onSelectRuntimeMode}
-                onSelectAgent={onSelectAgent}
-                onSend={stableOnSend}
-                onStop={onStop}
-                workspaceRootPath={workspaceRootPath}
-                workspaceRootPaths={workspaceRootPaths}
-              />
-            ) : timelineGroups.length === 0 ? (
-              <div className="text-chat-fg-muted text-meta">
-                {t("toolCalls.subagentEmpty")}
-              </div>
-            ) : (
-              <>
-                <ChatVirtualTimeline
-                  activity={activity}
-                  anchoredPromptId={anchoredPromptId}
-                  groups={conversationGroups}
-                  isRunning={isRunning}
-                  latestMessageId={latestMessage?.id ?? null}
-                  onAnswerQuestion={stableOnAnswerQuestion}
-                  onOpenToolLocation={stableOnOpenToolLocation}
-                  onResolvePermission={stableOnResolvePermission}
-                  runStartedAt={runStartedAt}
-                  scrollRef={timelineScrollRef}
-                  setUserMessageRef={setUserMessageRef}
-                  showMessageActions={!readOnly}
-                  userMessageRefs={userMessageRefs}
-                  viewportElement={viewportElement}
-                />
-                {sessionId && !readOnly ? (
-                  <ScriptRunProposals key={sessionId} sessionId={sessionId} />
-                ) : null}
-              </>
+        <RenderReadinessContext value={renderReadiness}>
+          <ScrollArea
+            className={cn(
+              "h-full px-2 @lg/chat:px-3 @3xl/chat:px-6",
+              !isInitialBottomSettled && "opacity-0",
             )}
-          </ChatContentColumn>
-        </ScrollArea>
+            viewportProps={{
+              className: "[overflow-anchor:none]",
+              onClickCapture: (event) => {
+                if (isDisclosureToggle(event.target)) {
+                  holdForDisclosure();
+                }
+              },
+              onKeyDownCapture: () => handleUserScrollIntent(),
+              onPointerDown: markUserScrollIntent,
+              onPointerDownCapture: markUserScrollIntent,
+              onScroll: () => syncScrollState(stickyUserMessages),
+              onTouchMoveCapture: () => handleUserScrollIntent(),
+              onWheelCapture: (event) => handleUserScrollIntent(event.deltaY),
+              tabIndex: 0,
+            }}
+            viewportRef={attachViewport}
+          >
+            <ChatContentColumn className="py-6" ref={chatContentRef}>
+              {timelineGroups.length === 0 && !readOnly ? (
+                <EmptyChatState
+                  activeBranch={activeBranch}
+                  workspace={workspace}
+                  sessionId={sessionId}
+                  agentLabel={agentLabel}
+                  agentType={agentType}
+                  attachment={attachment}
+                  composerContextChips={composerContextChips}
+                  draftKey={
+                    sessionId ? sessionComposerDraftKey(sessionId) : undefined
+                  }
+                  sessionModeId={sessionModeId}
+                  composerRef={composerRef}
+                  permissionMode={permissionMode}
+                  providerSnapshot={providerSnapshot}
+                  thinkingLevel={thinkingLevel}
+                  thinkingLevelOptions={thinkingLevelOptions}
+                  isRunning={isRunning}
+                  canSendWhileRunning={canSendWhileRunning}
+                  runtimeCommands={runtime?.commands}
+                  runtimeMode={runtime?.mode}
+                  onClearAttachment={onClearAttachment}
+                  onSelectSessionMode={onSelectSessionMode}
+                  onSelectPermissionMode={onSelectPermissionMode}
+                  onSelectThinkingLevel={onSelectThinkingLevel}
+                  onSelectRuntimeMode={onSelectRuntimeMode}
+                  onSelectAgent={onSelectAgent}
+                  onSend={stableOnSend}
+                  onStop={onStop}
+                  workspaceRootPath={workspaceRootPath}
+                  workspaceRootPaths={workspaceRootPaths}
+                />
+              ) : timelineGroups.length === 0 ? (
+                <div className="text-chat-fg-muted text-meta">
+                  {t("toolCalls.subagentEmpty")}
+                </div>
+              ) : (
+                <>
+                  <ChatVirtualTimeline
+                    activity={activity}
+                    anchoredPromptId={anchoredPromptId}
+                    groups={conversationGroups}
+                    isRunning={isRunning}
+                    latestMessageId={latestMessage?.id ?? null}
+                    onAnswerQuestion={stableOnAnswerQuestion}
+                    onOpenToolLocation={stableOnOpenToolLocation}
+                    onResolvePermission={stableOnResolvePermission}
+                    runStartedAt={runStartedAt}
+                    scrollRef={timelineScrollRef}
+                    setUserMessageRef={setUserMessageRef}
+                    showMessageActions={!readOnly}
+                    userMessageRefs={userMessageRefs}
+                    viewportElement={viewportElement}
+                  />
+                  {sessionId && !readOnly ? (
+                    <ScriptRunProposals key={sessionId} sessionId={sessionId} />
+                  ) : null}
+                </>
+              )}
+            </ChatContentColumn>
+          </ScrollArea>
+        </RenderReadinessContext>
         <JumpControls
           onJumpToLatest={() => scrollToLatest("smooth")}
           onJumpToTop={() => scrollToTop("smooth")}

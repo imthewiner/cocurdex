@@ -98,6 +98,11 @@ const RELEASE_NOTES = `## Acme Shop 0.4.0
 \`\`\`ts
 applyDiscount(100, { code: "SPRING10", percentOff: 10 }); // 90
 \`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  Cart --> Discount --> Checkout
+\`\`\`
 `;
 
 export const FIXTURE_SESSIONS: FixtureSession[] = [

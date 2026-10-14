@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { CodeBlockCopyButton, type CustomRendererProps } from "streamdown";
 import { PreviewToolbarButton } from "@/components/media-preview";
 import { Text } from "@/components/ui/text";
+import { useRenderReadinessHold } from "../render-readiness";
 import { downloadMermaidSvg } from "./mermaid-download";
 import { MermaidPreviewDialog } from "./mermaid-preview-dialog";
 import { useMermaidRender } from "./use-mermaid-render";
@@ -20,6 +21,7 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
   const { t } = useTranslation("common");
   const { diagram, error } = useMermaidRender(code, !isIncomplete);
   const [previewOpen, setPreviewOpen] = useState(false);
+  useRenderReadinessHold(!isIncomplete && !diagram && !error);
 
   if (error) {
     return (

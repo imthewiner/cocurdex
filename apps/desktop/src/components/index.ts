@@ -30,6 +30,11 @@ export type {
   ResolvedFilePath,
 } from "./markdown-file-path";
 export { MarkdownRenderer } from "./markdown-renderer";
+export {
+  createRenderReadiness,
+  RenderReadinessContext,
+  useRenderReadiness,
+} from "./render-readiness";
 export { ResizableSidebar } from "./resizable-sidebar";
 export {
   SidebarPanelHeader,
