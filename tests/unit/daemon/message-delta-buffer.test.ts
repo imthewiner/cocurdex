@@ -98,4 +98,27 @@ describe("createMessageDeltaBuffer", () => {
     expect(buffer.list("session-1").map((record) => record.id)).toEqual(["a"]);
     expect(buffer.drain("session-1").map((record) => record.id)).toEqual(["a"]);
   });
+
+  it("offers a checkpoint once a second or after enough new text", () => {
+    let clock = 0;
+    const buffer = createMessageDeltaBuffer(() => clock);
+
+    buffer.append(delta({ delta: "Hel" }));
+    expect(buffer.takeCheckpoint("message-1")).toBe(null);
+
+    clock = 1000;
+    buffer.append(delta({ delta: "lo" }));
+    expect(buffer.takeCheckpoint("message-1")).toMatchObject({
+      content: "Hello",
+    });
+    expect(buffer.takeCheckpoint("message-1")).toBe(null);
+
+    buffer.append(delta({ delta: "x".repeat(16 * 1024) }));
+    expect(buffer.takeCheckpoint("message-1")?.content).toHaveLength(
+      5 + 16 * 1024,
+    );
+
+    clock = 5000;
+    expect(buffer.takeCheckpoint("message-1")).toBe(null);
+  });
 });

@@ -112,6 +112,11 @@ export class DaemonState {
     }
     this.closed = true;
     this.storageMaintenance.dispose();
+    this.database.transaction(() => {
+      for (const message of this.deltaBuffer.drainAll()) {
+        void this.database.messages.append(message);
+      }
+    });
     this.database.close();
   }
 
@@ -218,7 +223,7 @@ export class DaemonState {
 
   async listSessionMessages(sessionId: string): Promise<SessionMessagesResult> {
     const [messages, turnStats, turnChangeSets] = await Promise.all([
-      this.database.messages.listBySessionId(sessionId),
+      this.listMessagesBySessionId(sessionId),
       this.database.messageTurnStats.listBySessionId(sessionId),
       this.database.turnChangeSets.listBySessionId(sessionId),
     ]);
@@ -326,8 +331,9 @@ export class DaemonState {
     );
   }
 
-  listMessagesBySessionId(sessionId: string) {
-    return this.database.messages.listBySessionId(sessionId);
+  async listMessagesBySessionId(sessionId: string) {
+    const messages = await this.database.messages.listBySessionId(sessionId);
+    return messages.filter((message) => !this.deltaBuffer.has(message.id));
   }
 
   async listToolCallsBySessionId(sessionId: string) {
@@ -701,7 +707,15 @@ export class DaemonState {
       const seq = this.deltaBuffer.has(event.messageId)
         ? null
         : await this.reserveTimelineSeq(event.sessionId, event.messageId);
-      return withTimelineSeq(event, this.deltaBuffer.append(event, seq).seq);
+      const buffered = this.deltaBuffer.append(event, seq);
+      const checkpoint = this.deltaBuffer.takeCheckpoint(event.messageId);
+      if (checkpoint) {
+        await this.database.messages.append({
+          ...checkpoint,
+          runId: checkpoint.runId ?? runId,
+        });
+      }
+      return withTimelineSeq(event, buffered.seq);
     }
 
     if (
