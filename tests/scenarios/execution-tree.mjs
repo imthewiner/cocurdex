@@ -66,15 +66,17 @@ function childSession(id, toolCalls) {
   };
 }
 
-const WORKER_A_CALLS = Array.from({ length: WORKER_TOOL_CALLS }, (_, index) =>
-  toolCall(
-    `tool-worker-a-${index}`,
-    `/bin/zsh -lc 'cat worker-a-${index}.md'`,
-    index === WORKER_TOOL_CALLS - 1 ? "failed" : "completed",
-    "2026-10-13T03:16:01.000Z",
-    "2026-10-13T03:16:01.300Z",
-  ),
-);
+function workerCalls(worker) {
+  return Array.from({ length: WORKER_TOOL_CALLS }, (_, index) =>
+    toolCall(
+      `tool-${worker}-${index}`,
+      `/bin/zsh -lc 'cat ${worker}-${index}.md'`,
+      index === WORKER_TOOL_CALLS - 1 ? "failed" : "completed",
+      "2026-10-13T03:16:01.000Z",
+      "2026-10-13T03:16:01.300Z",
+    ),
+  );
+}
 
 const EXECUTION_TREE = {
   maxDepth: 4,
@@ -146,16 +148,8 @@ const EXECUTION_TREE = {
     ],
     toolCalls: [],
     children: [
-      childSession("worker-a", WORKER_A_CALLS),
-      childSession("worker-b", [
-        toolCall(
-          "tool-worker-b",
-          "/bin/zsh -lc 'git log -1'",
-          "completed",
-          "2026-10-13T03:17:00.000Z",
-          "2026-10-13T03:17:00.200Z",
-        ),
-      ]),
+      childSession("worker-a", workerCalls("worker-a")),
+      childSession("worker-b", workerCalls("worker-b")),
     ],
     interactions: [],
     plan: null,
@@ -476,7 +470,43 @@ runScenario("execution-tree", {
           layout,
         );
         await toggleSessionRow(session, "worker-a");
-        return layout;
+        await toggleSessionRow(session, "worker-b");
+        await session.waitUntil(() =>
+          document
+            .querySelector('[role="dialog"]')
+            ?.innerText.includes("worker-b-29.md"),
+        );
+        const overlap = await session.run(async () => {
+          const list = document.querySelector('[role="dialog"] ul');
+          const row = (key) =>
+            document.querySelector(`[data-execution-row="${key}"]`);
+          const listTop = list.getBoundingClientRect().top;
+          list.scrollTop +=
+            row("session:worker-a").getBoundingClientRect().top - listTop;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const rootHeader = document.querySelector(
+            '[data-execution-row^="session:"]',
+          );
+          const rect = rootHeader.getBoundingClientRect();
+          const hit = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+          );
+          const result = {
+            scrolled: list.scrollTop,
+            rootOnTop: rootHeader.contains(hit),
+          };
+          list.scrollTop = 0;
+          return result;
+        });
+        check(overlap.scrolled > 0, "list did not scroll", overlap);
+        check(
+          overlap.rootOnTop,
+          "a nested header covers the root header",
+          overlap,
+        );
+        await toggleSessionRow(session, "worker-b");
+        return { ...layout, ...overlap };
       },
     ],
     [

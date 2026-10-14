@@ -58,6 +58,7 @@ function IssuesOnlySwitch({
 }
 
 const SESSION_HEADER_HEIGHT_REM = 1.75;
+const OUTERMOST_HEADER_Z_INDEX = 20;
 
 function SectionItem({
   section,
@@ -87,9 +88,13 @@ function SectionItem({
   return (
     <li>
       <div
-        className="sticky z-10 bg-popover"
+        className="sticky bg-popover"
         data-execution-row={row.key}
-        style={{ ...indent, top: `${level * SESSION_HEADER_HEIGHT_REM}rem` }}
+        style={{
+          ...indent,
+          top: `${level * SESSION_HEADER_HEIGHT_REM}rem`,
+          zIndex: OUTERMOST_HEADER_Z_INDEX - level,
+        }}
       >
         {content}
       </div>
