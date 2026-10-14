@@ -39,6 +39,16 @@ Prefer semantic tokens, CSS mappings, wrappers, small caller styles, and composi
 - Support RTL with logical layout, spacing, positioning, corners, icon direction, and text alignment. Use physical `left`/`right` only when the behavior is physically directional.
 - Prefer `lucide-react`. Use explicit, consistent `size-3.5`, `size-4`, or `size-5` within a row or context. Conditionally render status icons; do not reserve them with `opacity-0`.
 
+### Alignment and centering
+
+Misalignment of a few pixels is a visible bug. Design every row, header, and toolbar against the grid of the content around it, and check it by measurement rather than by eye.
+
+- Align to a shared column. Controls that repeat across rows (chevrons, status icons, trailing actions, counts) share one x-position; a row without that control reserves its slot with a fixed-size spacer of the same width instead of letting content shift. A header or toolbar control above a list lines up with the list's matching column, using the same horizontal padding as the rows.
+- Center on the cross axis with layout, not offsets. Put icon and text in one `flex items-center` line with a fixed row height; do not nudge with `mt-px`, `translate-y-*`, or `relative top-*`. Icons in a row use one size, and mixed text sizes in a line share a baseline or the row's center consistently.
+- Center a glyph inside its hit area: icon-only controls use `IconButton` sizes, so the icon sits in the middle of a square target and hover backgrounds line up across rows.
+- Keep alignment stable across states: expanding, collapsing, hover, selection, loading, empty, truncation, sticky headers, RTL, and both themes must not move neighboring content or break a column.
+- Verify by measuring. Over CDP, compare `getBoundingClientRect()` edges and centers of the elements that should line up (for example a header switch's right edge against the rows' trailing action column) and treat any difference as a defect; a screenshot alone is not proof.
+
 ### Same scenario, same solution
 
 A scenario the app already handles somewhere must look and behave the same everywhere it appears. Before building UI for a scenario, find where the app already solves it (confirming a destructive action, inline rename, row actions, empty or error states, status display, settings toggles, pickers) and reuse that component and interaction.
