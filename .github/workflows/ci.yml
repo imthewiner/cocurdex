@@ -97,7 +97,8 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
-          cache: pnpm
+      - name: Restore pnpm store
+        uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck
@@ -153,7 +154,9 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
-          cache: pnpm
+      - name: Restore pnpm store
+        if: needs.changes.outputs.run_desktop == 'true'
+        uses: ./.github/actions/restore-pnpm-store
       - name: Install native build tools
         if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3 make g++
@@ -212,6 +215,48 @@ jobs:
           path: ${{ runner.temp }}/desktop-tests
           if-no-files-found: ignore
           retention-days: 7
+
+  pnpm-store:
+    name: Cache pnpm store (${{ matrix.os }})
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+          - ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Locate pnpm store
+        id: store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "${GITHUB_OUTPUT}"
+      - name: Look up cached pnpm store
+        id: cached
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ steps.store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          lookup-only: true
+      - name: Fetch dependencies
+        if: steps.cached.outputs.cache-hit != 'true'
+        run: pnpm fetch
+      - name: Save pnpm store
+        if: steps.cached.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ steps.store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
   record:
     name: Record verified fingerprint
