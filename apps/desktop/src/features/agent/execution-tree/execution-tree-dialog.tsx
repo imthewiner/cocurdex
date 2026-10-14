@@ -122,6 +122,21 @@ function RunSummary({ row }: { row: RunRow }) {
   );
 }
 
+function RunRowLabel({ row }: { row: RunRow }) {
+  const { t } = useTranslation("sessions");
+  return (
+    <>
+      <ExecutionStatusIcon status={row.run.status} />
+      <Text className="min-w-0 flex-1" size="body" tone="subtle" truncate>
+        {t("executionTree.run", {
+          time: new Date(row.run.startedAt).toLocaleString(),
+        })}
+      </Text>
+      <RunSummary row={row} />
+    </>
+  );
+}
+
 function RunRowContent({
   row,
   onToggle,
@@ -129,25 +144,25 @@ function RunRowContent({
   row: RunRow;
   onToggle(row: RunRow): void;
 }) {
-  const { t } = useTranslation("sessions");
   const Chevron = row.expanded ? ChevronDown : ChevronRight;
   return (
     <div className="flex min-w-0 flex-col">
-      <button
-        aria-expanded={row.expanded}
-        className="flex h-7 w-full min-w-0 items-center gap-2 rounded-control px-1 text-start hover:bg-accent"
-        onClick={() => onToggle(row)}
-        type="button"
-      >
-        <Chevron className="size-3.5 shrink-0 text-muted-foreground" />
-        <ExecutionStatusIcon status={row.run.status} />
-        <Text className="min-w-0 flex-1" size="body" tone="subtle" truncate>
-          {t("executionTree.run", {
-            time: new Date(row.run.startedAt).toLocaleString(),
-          })}
-        </Text>
-        <RunSummary row={row} />
-      </button>
+      {row.expandable ? (
+        <button
+          aria-expanded={row.expanded}
+          className="flex h-7 w-full min-w-0 items-center gap-2 rounded-control px-1 text-start hover:bg-accent"
+          onClick={() => onToggle(row)}
+          type="button"
+        >
+          <Chevron className="size-3.5 shrink-0 text-muted-foreground" />
+          <RunRowLabel row={row} />
+        </button>
+      ) : (
+        <div className="flex h-7 w-full min-w-0 items-center gap-2 px-1">
+          <span aria-hidden className="size-3.5 shrink-0" />
+          <RunRowLabel row={row} />
+        </div>
+      )}
       {row.run.error ? (
         <Text className="ps-12" size="meta" tone="destructive" truncate>
           {row.run.error}
@@ -295,7 +310,7 @@ export function ExecutionTreeDialog({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
-      <DialogContent size="wide">
+      <DialogContent className="top-[12vh] translate-y-0" size="wide">
         <div className="flex min-w-0 items-end gap-4 pe-8">
           <DialogHeader className="min-w-0 flex-1">
             <DialogTitle>{t("executionTree.title")}</DialogTitle>

@@ -6,6 +6,7 @@ const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
 const DIALOG_MODULE =
   "/src/features/agent/execution-tree/execution-tree-dialog.tsx";
 const SESSION_ID = "scenario-execution-tree";
+const LATEST_RUN_TIME = ":15:07";
 const FAILED_OUTPUT_LINES = 30;
 const PANEL_OPEN_TIMEOUT_MS = 60_000;
 const SHELL_READY_TIMEOUT_MS = 60_000;
@@ -102,6 +103,13 @@ const EXECUTION_TREE = {
           "2026-10-13T03:15:13.000Z",
         ),
       ]),
+      run(
+        "run-capacity",
+        "failed",
+        "2026-10-13T03:20:00.000Z",
+        "2026-10-13T03:20:10.000Z",
+        [],
+      ),
     ],
     toolCalls: [],
     children: [],
@@ -131,6 +139,12 @@ async function readTree(session) {
       pre: dialog.querySelector("pre")?.innerText ?? null,
     };
   });
+}
+
+function readDialogTop(session) {
+  return session.run(
+    () => document.querySelector('[role="dialog"]').getBoundingClientRect().top,
+  );
 }
 
 function clickRow(session, fragment) {
@@ -317,8 +331,28 @@ runScenario("execution-tree", {
       },
     ],
     [
+      "empty-run-has-no-expand-control",
+      async ({ session }) => {
+        const row = await session.run(() => {
+          const item = [
+            ...document.querySelectorAll('[role="dialog"] li'),
+          ].find((candidate) => candidate.innerText.includes("10s"));
+          return item
+            ? {
+                text: item.innerText.replace(/\s+/g, " ").trim(),
+                expandControls: item.querySelectorAll("[aria-expanded]").length,
+              }
+            : null;
+        });
+        check(Boolean(row), "empty run row missing");
+        check(row.expandControls === 0, "empty run is expandable", row);
+        return row;
+      },
+    ],
+    [
       "issues-only-filter",
       async ({ session }) => {
+        const topBefore = await readDialogTop(session);
         const clicked = await session.run(() => {
           const toggle = document.querySelector(
             '[role="dialog"] [role="switch"]',
@@ -327,7 +361,12 @@ runScenario("execution-tree", {
           return Boolean(toggle);
         });
         check(clicked, "issues-only switch missing");
-        await session.run(() => window.__scenario.sleep(200));
+        await session.waitUntil(
+          () =>
+            !document
+              .querySelector('[role="dialog"]')
+              ?.innerText.includes("git fetch origin main"),
+        );
         const tree = await readTree(session);
         check(
           !tree.text.includes("git fetch origin main") &&
@@ -339,7 +378,26 @@ runScenario("execution-tree", {
           tree.text.includes("gh release view"),
           "issues-only dropped the failed call",
         );
-        return { rows: tree.rows.length };
+        const topAfter = await readDialogTop(session);
+        check(
+          Math.abs(topAfter - topBefore) < 1,
+          "dialog moved when filtering",
+          { topBefore, topAfter },
+        );
+        return { rows: tree.rows.length, topBefore, topAfter };
+      },
+    ],
+    [
+      "collapse-run-while-filtering",
+      async ({ session }) => {
+        await clickRow(session, LATEST_RUN_TIME);
+        await session.waitUntil(
+          () =>
+            !document
+              .querySelector('[role="dialog"]')
+              ?.innerText.includes("gh release view"),
+        );
+        return {};
       },
     ],
     [

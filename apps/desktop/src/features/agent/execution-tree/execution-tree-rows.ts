@@ -21,6 +21,7 @@ export type ExecutionTreeRow =
       depth: number;
       run: RunRecord;
       summary: ExecutionRunSummary;
+      expandable: boolean;
       expanded: boolean;
     }
   | {
@@ -84,9 +85,17 @@ export function summarizeRun(node: ExecutionRunNode): ExecutionRunSummary {
   };
 }
 
-function isRunExpandedByDefault(node: ExecutionRunNode, isLatest: boolean) {
+function isRunExpandedByDefault(
+  node: ExecutionRunNode,
+  isLatest: boolean,
+  issuesOnly: boolean,
+) {
+  if (issuesOnly) return true;
   return (
-    isLatest || node.run.status === "running" || node.interactions.length > 0
+    isLatest ||
+    node.run.status === "running" ||
+    node.run.status === "failed" ||
+    node.interactions.length > 0
   );
 }
 
@@ -150,25 +159,26 @@ class RowBuilder {
     depth: number,
     isLatest: boolean,
   ): ExecutionTreeRow[] {
+    const children = [
+      ...this.toolCalls(node.toolCalls, depth + 1),
+      ...this.sessions(node.delegated, depth + 1),
+      ...interactionRows(node.interactions, depth + 1),
+    ];
+    const expandable = children.length > 0;
     const expanded =
-      this.view.issuesOnly ||
+      expandable &&
       (this.view.runExpansion.get(node.run.id) ??
-        isRunExpandedByDefault(node, isLatest));
+        isRunExpandedByDefault(node, isLatest, this.view.issuesOnly));
     const row: ExecutionTreeRow = {
       kind: "run",
       key: `run:${node.run.id}`,
       depth,
       run: node.run,
       summary: summarizeRun(node),
+      expandable,
       expanded,
     };
-    if (!expanded) return [row];
-    return [
-      row,
-      ...this.toolCalls(node.toolCalls, depth + 1),
-      ...this.sessions(node.delegated, depth + 1),
-      ...interactionRows(node.interactions, depth + 1),
-    ];
+    return expanded ? [row, ...children] : [row];
   }
 }
 

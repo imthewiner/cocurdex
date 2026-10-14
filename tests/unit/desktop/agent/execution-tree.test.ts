@@ -132,6 +132,44 @@ describe("flattenExecutionTree", () => {
       ),
     ).toEqual(["session:root", "run:old", "tool:old-b"]);
   });
+
+  it("lets a run be collapsed while filtering issues", () => {
+    const runExpansion = toggleRunExpansion(new Map(), "old", true);
+    expect(
+      keys(flattenExecutionTree(sample, { runExpansion, issuesOnly: true })),
+    ).toEqual(["session:root", "run:old"]);
+  });
+
+  it("expands a failed run by default", () => {
+    const failed = tree([
+      run("failed", [toolCall("failed-a")], "failed"),
+      run("latest", [toolCall("new-a")]),
+    ]);
+    expect(keys(flattenExecutionTree(failed))).toEqual([
+      "session:root",
+      "run:failed",
+      "tool:failed-a",
+      "run:latest",
+      "tool:new-a",
+    ]);
+  });
+
+  it("marks a run without children as not expandable", () => {
+    const empty = tree([run("old", [toolCall("a")]), run("latest", [])]);
+    const latest = flattenExecutionTree(empty).find(
+      (row) => row.key === "run:latest",
+    );
+    expect(latest).toMatchObject({ expandable: false, expanded: false });
+  });
+
+  it("does not expand a failed run whose tool calls are all filtered out", () => {
+    const failed = tree([run("failed", [toolCall("ok")], "failed")]);
+    const row = flattenExecutionTree(failed, {
+      runExpansion: new Map(),
+      issuesOnly: true,
+    }).find((candidate) => candidate.key === "run:failed");
+    expect(row).toMatchObject({ expandable: false, expanded: false });
+  });
 });
 
 describe("execution tree tool call display", () => {
