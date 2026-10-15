@@ -93,13 +93,19 @@ export function resolveStickToBottom({
   hasRecentUserScrollIntent,
   isAtBottom,
   isNearBottom,
+  scrollDelta,
   wasSticking,
 }: {
   hasRecentUserScrollIntent: boolean;
   isAtBottom: boolean;
   isNearBottom: boolean;
+  scrollDelta: number;
   wasSticking: boolean;
 }): boolean {
+  if (!isNearBottom && scrollDelta < 0) {
+    return false;
+  }
+
   if (hasRecentUserScrollIntent) {
     return isAtBottom;
   }
