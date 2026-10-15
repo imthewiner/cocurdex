@@ -33,4 +33,31 @@ describe("filterSlashCommandItems", () => {
   it("returns nothing for an unmatched query", () => {
     expect(filterSlashCommandItems("zzz")).toEqual([]);
   });
+
+  it("matches word prefixes instead of any substring", () => {
+    expect(filterSlashCommandItems("ta").map((i) => i.key)).toEqual([
+      "taskList",
+      "table",
+    ]);
+  });
+
+  it("matches localized labels", () => {
+    const labels: Record<string, string> = {
+      table: "表格",
+      bulletList: "无序列表",
+      orderedList: "有序列表",
+      taskList: "待办列表",
+    };
+    const labelOf = (item: { key: string }) => labels[item.key] ?? "";
+    expect(
+      filterSlashCommandItems("列表", SLASH_COMMAND_ITEMS, labelOf).map(
+        (i) => i.key,
+      ),
+    ).toEqual(["bulletList", "orderedList", "taskList"]);
+    expect(
+      filterSlashCommandItems("表格", SLASH_COMMAND_ITEMS, labelOf).map(
+        (i) => i.key,
+      ),
+    ).toEqual(["table"]);
+  });
 });

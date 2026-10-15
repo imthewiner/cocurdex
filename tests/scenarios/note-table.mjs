@@ -2,7 +2,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
-import { clickByRole, waitForRole } from "./lib/locate.mjs";
+import {
+  clickByRole,
+  clickPoint,
+  queryAllByRole,
+  waitForRole,
+} from "./lib/locate.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
 
@@ -19,6 +24,44 @@ async function openNote(session, title) {
     title,
     UI_TIMEOUT_MS,
   );
+}
+
+async function pressKey(session, key, code = key) {
+  for (const type of ["keyDown", "keyUp"]) {
+    await session.send("Input.dispatchKeyEvent", {
+      type,
+      key,
+      code,
+      windowsVirtualKeyCode: key === "Enter" ? 13 : 35,
+    });
+  }
+}
+
+async function focusEditorEnd(session) {
+  const point = await session.run(() => {
+    const blocks = document.querySelector(".md-body-prose").children;
+    const rect = blocks[blocks.length - 1].getBoundingClientRect();
+    return { x: rect.left + 4, y: rect.top + rect.height / 2 };
+  });
+  await clickPoint(session, point);
+  await pressKey(session, "End");
+}
+
+async function captureElement(session, selector, name) {
+  const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+  if (!artifacts) return null;
+  const clip = await session.run((query) => {
+    const rect = document.querySelector(query).getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, selector);
+  const { data } = await session.send("Page.captureScreenshot", {
+    format: "png",
+    clip: { ...clip, scale: 1 },
+  });
+  await mkdir(artifacts, { recursive: true });
+  const file = path.join(artifacts, `${name}.png`);
+  await writeFile(file, Buffer.from(data, "base64"));
+  return file;
 }
 
 function readTableLayout() {
@@ -148,6 +191,103 @@ runScenario("note-table", {
         }
         await session.run(() => window.__cocurdexDebug.restoreTheme());
         return results;
+      },
+    ],
+    [
+      "slash menu filters to table and inserts one",
+      async ({ session }) => {
+        await openNote(session, "Acme Shop roadmap");
+        const [menuLabel, tableLabel, taskLabel] = await Promise.all(
+          [
+            "notes:slash.label",
+            "notes:slash.items.table",
+            "notes:slash.items.taskList",
+          ].map((key) => translate(session, key)),
+        );
+        const tablesBefore = await session.run(
+          () => document.querySelectorAll(".md-body-prose table").length,
+        );
+        await focusEditorEnd(session);
+        await pressKey(session, "Enter");
+        await session.send("Input.insertText", { text: "/ta" });
+        await waitForRole(
+          session,
+          { role: "listbox", name: menuLabel },
+          UI_TIMEOUT_MS,
+        );
+        const options = (await queryAllByRole(session, { role: "option" })).map(
+          (option) => option.name,
+        );
+        check(
+          options.length === 2 &&
+            options.some((name) => name.includes(tableLabel)) &&
+            options.some((name) => name.includes(taskLabel)),
+          "unexpected slash options",
+          options,
+        );
+        const results = {};
+        for (const theme of ["light", "dark"]) {
+          await session.run(
+            (value) => window.__cocurdexDebug.previewTheme(value),
+            theme,
+          );
+          results[theme] = await captureElement(
+            session,
+            "[role=listbox]",
+            `slash-menu-${theme}`,
+          );
+        }
+        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clickByRole(session, {
+          role: "option",
+          name: new RegExp(tableLabel),
+        });
+        await session.waitUntil(
+          (count) =>
+            document.querySelectorAll(".md-body-prose table").length > count,
+          tablesBefore,
+          UI_TIMEOUT_MS,
+        );
+        return { options, screenshots: results };
+      },
+    ],
+    [
+      "collapsed notes sidebar keeps the expand control in the content column",
+      async ({ session }) => {
+        const [collapse, expand] = await Promise.all(
+          ["notes:sidebar.collapse", "notes:sidebar.expand"].map((key) =>
+            translate(session, key),
+          ),
+        );
+        await clickByRole(session, { role: "button", name: collapse });
+        const [toggle] = await waitForRole(
+          session,
+          { role: "button", name: expand },
+          UI_TIMEOUT_MS,
+        );
+        const layout = await session.run(() => {
+          const button = document.querySelector(
+            "button[aria-label][class*='size-3.5']",
+          );
+          const prose = document.querySelector(".md-body-prose");
+          const rect = button.getBoundingClientRect();
+          return {
+            toggleLeft: rect.left,
+            toggleTop: rect.top,
+            proseLeft: prose.getBoundingClientRect().left,
+          };
+        });
+        check(layout.toggleLeft < layout.proseLeft, "toggle overlaps body", {
+          layout,
+          toggle,
+        });
+        await clickByRole(session, { role: "button", name: expand });
+        await waitForRole(
+          session,
+          { role: "button", name: collapse },
+          UI_TIMEOUT_MS,
+        );
+        return layout;
       },
     ],
     [

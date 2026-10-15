@@ -968,8 +968,10 @@ export default interface Resources {
         heading3: "Heading 3";
         orderedList: "Numbered list";
         paragraph: "Text";
+        table: "Table";
         taskList: "To-do list";
       };
+      label: "Insert block";
     };
   };
   onboarding: {

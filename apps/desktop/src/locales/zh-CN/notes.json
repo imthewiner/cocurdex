@@ -63,7 +63,9 @@
       "heading3": "标题 3",
       "orderedList": "有序列表",
       "paragraph": "正文",
+      "table": "表格",
       "taskList": "待办列表"
-    }
+    },
+    "label": "插入块"
   }
 }

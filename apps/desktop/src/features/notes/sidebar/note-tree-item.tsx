@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib";
 import { useScrollIntoViewWhenActive } from "@/lib/react-hooks";
 import type { MoveDestination, NoteMoveTarget } from "./note-moves";
+import { NoteTitleButton } from "./note-title-button";
 
 export type NoteTreeDragData = {
   type: "note-item";
@@ -88,6 +89,7 @@ export function NoteTreeItem({
     id: note.id,
     data: { type: "note-item", note } satisfies NoteTreeDragData,
     disabled: isRenaming,
+    attributes: { role: "group" },
   });
 
   const { setNodeRef: setDropRef } = useDroppable({
@@ -164,23 +166,14 @@ export function NoteTreeItem({
               onCommit={(title) => onCommitRename(note.id, title)}
             />
           ) : (
-            <button
-              type="button"
-              className="flex h-6 min-w-0 flex-1 items-center overflow-hidden text-start"
-              onClick={() => onOpen(note.id)}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onStartRename(note.id);
-              }}
-            >
-              <SidebarListRowLabel>
-                {note.title || t("sidebar.untitled")}
-              </SidebarListRowLabel>
-            </button>
+            <NoteTitleButton
+              title={note.title || t("sidebar.untitled")}
+              onOpen={() => onOpen(note.id)}
+              onStartRename={() => onStartRename(note.id)}
+            />
           )}
           {!isRenaming ? (
-            <SidebarListRowActions visibility="hover">
+            <SidebarListRowActions visibility="hover-reveal">
               <IconButton
                 size="xs"
                 variant="ghost"
