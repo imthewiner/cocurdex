@@ -166,8 +166,11 @@ export function useVirtualTimeline({
       elementScroll(offset, options, instance);
     },
   });
-  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item) =>
-    item.end <= (viewportElement?.scrollTop ?? 0);
+  virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item) => {
+    const targetIndex = lookup.byMessageId.get(targetRef.current ?? "");
+    if (targetIndex !== undefined) return item.index < targetIndex;
+    return item.end <= (viewportElement?.scrollTop ?? 0);
+  };
   const items = virtualizer.getVirtualItems();
 
   const attemptReveal = useCallback(() => {

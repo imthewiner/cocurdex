@@ -144,6 +144,52 @@ const AUDIT_TURNS: FixtureTurn[] = Array.from(
   }),
 );
 
+const DIAGRAM_STAGES = ["Cart", "Discount", "Payment", "Fulfillment", "Refund"];
+
+function diagramReply(): string {
+  return DIAGRAM_STAGES.flatMap((stage, index) => [
+    `### ${index + 1}. ${stage} boundary`,
+    "",
+    "```mermaid",
+    "flowchart TD",
+    `  ${stage}Start[${stage} request] --> ${stage}Check{Valid?}`,
+    `  ${stage}Check -->|yes| ${stage}Apply[Apply ${stage.toLowerCase()}]`,
+    `  ${stage}Check -->|no| ${stage}Reject[Reject]`,
+    `  ${stage}Apply --> ${stage}Log[Audit log]`,
+    `  ${stage}Reject --> ${stage}Log`,
+    "```",
+    "",
+  ]).join("\n");
+}
+
+const DIAGRAM_TURNS: FixtureTurn[] = [
+  {
+    messageId: "fixture-message-diagrams-1",
+    prompt: "List the checkout stages.",
+    replies: [{ text: [DIAGRAM_STAGES.join(", ")] }],
+  },
+  {
+    messageId: "fixture-message-diagrams-2",
+    prompt: "Which stage can reject a cart?",
+    replies: [{ text: ["Every stage can reject a cart."] }],
+  },
+  {
+    messageId: "fixture-message-diagrams-3",
+    prompt: "Draw each checkout stage as a flowchart.",
+    replies: [{ text: [diagramReply()] }],
+  },
+  {
+    messageId: "fixture-message-diagrams-4",
+    prompt: "Where is the audit log written?",
+    replies: [{ text: ["Each stage writes to the audit log at its end."] }],
+  },
+  ...Array.from({ length: 6 }, (_, index) => ({
+    messageId: `fixture-message-diagrams-${index + 5}`,
+    prompt: `Audit diagram cart ${index + 1}.`,
+    replies: [{ text: [auditReply(index)] }],
+  })),
+];
+
 export const FIXTURE_SESSIONS: FixtureSession[] = [
   {
     id: "fixture-session-discounts",
@@ -242,6 +288,12 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
     title: "Checkout audit log",
     kind: "main",
     turns: AUDIT_TURNS,
+  },
+  {
+    id: "fixture-session-checkout-diagrams",
+    title: "Checkout flow diagrams",
+    kind: "main",
+    turns: DIAGRAM_TURNS,
   },
   {
     id: "fixture-session-old-spike",
