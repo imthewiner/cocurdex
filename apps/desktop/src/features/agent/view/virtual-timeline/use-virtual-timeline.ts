@@ -1,5 +1,6 @@
 import {
   elementScroll,
+  observeElementOffset,
   type Range,
   useVirtualizer,
   type Virtualizer,
@@ -41,11 +42,20 @@ export interface ChatTimelineScrollHandle {
   resumeSizeAdjustment(): void;
   hasNavigationTarget(): boolean;
   holdScrollPosition(durationMs: number): void;
+  revealWhenSettled(stick: () => void, onSettled: () => void): () => void;
   getStickySelection(): StickyUserMessageSelection | null;
   scrollToUserMessage(messageId: string): boolean;
 }
 
 type TimelineVirtualizer = Virtualizer<HTMLDivElement, HTMLDivElement>;
+type OffsetCallback = (offset: number, isScrolling: boolean) => void;
+type PendingReveal = {
+  attempts: number;
+  onSettled(): void;
+  stick(): void;
+};
+
+const MAX_REVEAL_ATTEMPTS = 8;
 
 function measureMountedRows(virtualizer: TimelineVirtualizer) {
   for (const item of virtualizer.getVirtualItems()) {
@@ -57,6 +67,18 @@ function measureMountedRows(virtualizer: TimelineVirtualizer) {
       virtualizer.options.measureElement(element, undefined, virtualizer),
     );
   }
+}
+
+function isLayoutSettled(
+  virtualizer: TimelineVirtualizer,
+  viewport: HTMLDivElement,
+) {
+  if (Math.abs((virtualizer.scrollOffset ?? 0) - viewport.scrollTop) >= 1) {
+    return false;
+  }
+  return virtualizer
+    .getVirtualItems()
+    .every((item) => virtualizer.itemSizeCache.has(item.key));
 }
 
 function positionMountedRows(virtualizer: TimelineVirtualizer) {
@@ -89,6 +111,8 @@ export function useVirtualTimeline({
   const targetRef = useRef<string | null>(null);
   const holdUntilRef = useRef(0);
   const suspendAdjustmentRef = useRef(false);
+  const offsetCallbackRef = useRef<OffsetCallback | null>(null);
+  const pendingRevealRef = useRef<PendingReveal | null>(null);
   const lookup = useMemo(() => createConversationLookup(groups), [groups]);
   const { focusedId, selectedIds, updateFocus } =
     usePinnedConversations(rootRef);
@@ -122,6 +146,16 @@ export function useVirtualTimeline({
     followOnAppend: true,
     useFlushSync: false,
     onChange: positionMountedRows,
+    observeElementOffset: (instance, callback) => {
+      offsetCallbackRef.current = callback;
+      const unsubscribe = observeElementOffset(instance, callback);
+      return () => {
+        if (offsetCallbackRef.current === callback) {
+          offsetCallbackRef.current = null;
+        }
+        unsubscribe?.();
+      };
+    },
     getItemKey,
     getScrollElement: () => viewportElement,
     overscan: 2,
@@ -139,6 +173,19 @@ export function useVirtualTimeline({
     !suspendAdjustmentRef.current &&
     item.end <= (viewportElement?.scrollTop ?? 0);
   const items = virtualizer.getVirtualItems();
+
+  const attemptReveal = useCallback(() => {
+    const pending = pendingRevealRef.current;
+    const viewport = viewportElement;
+    if (!pending || !viewport) return;
+    pending.attempts += 1;
+    pending.stick();
+    offsetCallbackRef.current?.(viewport.scrollTop, false);
+    const settled = isLayoutSettled(virtualizer, viewport);
+    if (!settled && pending.attempts < MAX_REVEAL_ATTEMPTS) return;
+    pendingRevealRef.current = null;
+    if (settled) pending.onSettled();
+  }, [viewportElement, virtualizer]);
 
   const correctTargetPosition = useCallback(() => {
     const messageId = targetRef.current;
@@ -223,6 +270,16 @@ export function useVirtualTimeline({
           }
         }, durationMs);
       },
+      revealWhenSettled(stick, onSettled) {
+        const pending = { attempts: 0, onSettled, stick };
+        pendingRevealRef.current = pending;
+        attemptReveal();
+        return () => {
+          if (pendingRevealRef.current === pending) {
+            pendingRevealRef.current = null;
+          }
+        };
+      },
       getStickySelection() {
         const viewport = viewportElement;
         if (!viewport) return null;
@@ -274,6 +331,7 @@ export function useVirtualTimeline({
       },
     }),
     [
+      attemptReveal,
       correctTargetPosition,
       groups,
       lookup,
@@ -307,6 +365,7 @@ export function useVirtualTimeline({
   useLayoutEffect(() => {
     measureMountedRows(virtualizer);
     positionMountedRows(virtualizer);
+    attemptReveal();
   });
 
   useLayoutEffect(() => {

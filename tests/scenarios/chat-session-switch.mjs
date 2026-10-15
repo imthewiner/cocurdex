@@ -16,9 +16,15 @@ function sessionRow(title) {
 }
 
 function installPaintSampler() {
+  const isVisible = (node) => {
+    for (let el = node; el; el = el.parentElement) {
+      if (Number(getComputedStyle(el).opacity) === 0) return false;
+    }
+    return true;
+  };
   const timelineRows = () => {
     const timeline = document.querySelector("[data-testid=chat-timeline]");
-    if (!timeline) return null;
+    if (!timeline || !isVisible(timeline)) return null;
     return [...timeline.querySelectorAll(":scope > [data-index]")]
       .map((row) => {
         const rect = row.getBoundingClientRect();
@@ -43,9 +49,13 @@ function installPaintSampler() {
   const sample = () => {
     const recorder = sampler.recorder;
     if (!recorder || recorder.done) return;
-    const rows = timelineRows();
-    if (!rows) return;
     recorder.frames += 1;
+    const rows = timelineRows();
+    if (!rows) {
+      recorder.blankFrames += 1;
+      recorder.stableFrames = 0;
+      return;
+    }
     const overlaps = overlapsOf(rows);
     if (overlaps.length > 0) recorder.overlaps.push(overlaps);
     const signature = JSON.stringify(rows);
@@ -66,6 +76,7 @@ function installPaintSampler() {
   sampler.start = (settleFrames) => {
     sampler.recorder = {
       frames: 0,
+      blankFrames: 0,
       overlaps: [],
       previous: "",
       stableFrames: 0,
@@ -74,9 +85,9 @@ function installPaintSampler() {
     };
   };
   sampler.stop = () => {
-    const { frames, overlaps } = sampler.recorder;
+    const { frames, blankFrames, overlaps } = sampler.recorder;
     sampler.recorder.done = true;
-    return { frames, overlaps };
+    return { frames, blankFrames, overlaps };
   };
   window.__paintSampler = sampler;
 }
@@ -149,13 +160,27 @@ runScenario("chat-session-switch", {
         const switches = [];
         for (let index = 0; index < SWITCHES; index += 1) {
           const title = index % 2 === 0 ? LONG_SESSION : OTHER_SESSION;
-          const { frames, overlaps } = await switchTo(session, title);
-          switches.push({ title, frames, overlapFrames: overlaps.length });
+          const { frames, blankFrames, overlaps } = await switchTo(
+            session,
+            title,
+          );
+          switches.push({
+            title,
+            frames,
+            blankFrames,
+            overlapFrames: overlaps.length,
+          });
           check(overlaps.length === 0, `rows overlapped opening ${title}`, {
             switches,
             firstOverlap: overlaps[0],
           });
         }
+        const warmBlankFrames = switches
+          .slice(2)
+          .reduce((total, entry) => total + entry.blankFrames, 0);
+        check(warmBlankFrames === 0, "revisited sessions painted blank", {
+          switches,
+        });
         return { switches };
       },
     ],

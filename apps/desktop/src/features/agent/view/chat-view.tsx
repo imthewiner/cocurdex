@@ -341,6 +341,7 @@ export function ChatView({
   useChatBottomStick({
     chatContentRef,
     isContentReady,
+    isContentReadyNow: renderReadiness.isReady,
     isRunning,
     setInitialBottomSettled: setIsInitialBottomSettled,
     status,
@@ -348,6 +349,7 @@ export function ChatView({
     stickyUserMessages,
     syncScrollState,
     timelineGroupCount: timelineGroups.length,
+    timelineScrollRef,
     viewportRef,
   });
 

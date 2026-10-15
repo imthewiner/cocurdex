@@ -6,10 +6,12 @@ import {
   useLayoutEffect,
 } from "react";
 import type { UserMessageAnchor } from "./chat-user-navigation";
+import type { ChatTimelineScrollHandle } from "./virtual-timeline";
 
 interface ChatBottomStickOptions {
   chatContentRef: RefObject<HTMLDivElement | null>;
   isContentReady: boolean;
+  isContentReadyNow(): boolean;
   isRunning: boolean;
   setInitialBottomSettled: Dispatch<SetStateAction<boolean>>;
   status: SessionStatus | undefined;
@@ -17,12 +19,14 @@ interface ChatBottomStickOptions {
   stickyUserMessages: UserMessageAnchor[];
   syncScrollState(stickyUserMessages: UserMessageAnchor[]): void;
   timelineGroupCount: number;
+  timelineScrollRef: RefObject<ChatTimelineScrollHandle | null>;
   viewportRef: RefObject<HTMLDivElement | null>;
 }
 
 export function useChatBottomStick({
   chatContentRef,
   isContentReady,
+  isContentReadyNow,
   isRunning,
   setInitialBottomSettled,
   status,
@@ -30,6 +34,7 @@ export function useChatBottomStick({
   stickyUserMessages,
   syncScrollState,
   timelineGroupCount,
+  timelineScrollRef,
   viewportRef,
 }: ChatBottomStickOptions) {
   useLayoutEffect(() => {
@@ -37,18 +42,40 @@ export function useChatBottomStick({
       return;
     }
 
-    stickToBottomIfLocked();
-    const frameId = requestAnimationFrame(() => {
-      stickToBottomIfLocked();
+    let isSettled = false;
+    let frameId: number | null = null;
+    const settle = () => {
+      if (isSettled) return;
+      isSettled = true;
+      if (frameId !== null) cancelAnimationFrame(frameId);
       setInitialBottomSettled(true);
-    });
+    };
+    stickToBottomIfLocked();
+    const cancelReveal = timelineScrollRef.current?.revealWhenSettled(
+      stickToBottomIfLocked,
+      () => {
+        if (isContentReadyNow()) settle();
+      },
+    );
+    if (!isSettled) {
+      frameId = requestAnimationFrame(() => {
+        cancelReveal?.();
+        stickToBottomIfLocked();
+        settle();
+      });
+    }
 
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      cancelReveal?.();
+    };
   }, [
     isContentReady,
+    isContentReadyNow,
     setInitialBottomSettled,
     stickToBottomIfLocked,
     timelineGroupCount,
+    timelineScrollRef,
   ]);
 
   // Content-size growth (streaming deltas, new messages, tool calls, plan
