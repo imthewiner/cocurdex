@@ -31,6 +31,9 @@ PRDs and specs are ordinary notes: write the Markdown, save it with
 multi-line bodies with `--body-file <path>` or pipe them with `--body -`;
 `--body <markdown>` is only for short single-line text.
 
+The title is shown above the body, so start the body with its first section,
+not a `# <title>` heading; a leading H1 that repeats the title is dropped.
+
 The note body is a collaborative document; the Markdown you send is merged
 into it, and the stored body comes back normalized. Use the `bodyMarkdown`
 returned by the command as the current text. Supported blocks: headings,

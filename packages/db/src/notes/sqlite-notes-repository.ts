@@ -19,6 +19,10 @@ import type {
 import type { SqliteRow } from "../sqlite-types";
 import { extractNoteMetadata } from "./note-metadata";
 import {
+  leadingTitleHeading,
+  stripLeadingTitleHeading,
+} from "./note-title-heading";
+import {
   NoteConflictError,
   type NoteDocApplyResult,
   type NoteDocRecord,
@@ -208,7 +212,14 @@ function updateNote(
 ): NoteRecord {
   const current = requireNote(database, payload.id);
   assertExpectedRevision(current, payload.expectedRevision);
-  const body = nextBody(database, current, payload.bodyMarkdown);
+  const title = payload.title?.trim() || current.title;
+  const body = nextBody(
+    database,
+    current,
+    payload.bodyMarkdown === undefined
+      ? undefined
+      : stripLeadingTitleHeading(payload.bodyMarkdown, title),
+  );
   const updatedAt = new Date().toISOString();
   const result = database
     .prepare(
@@ -223,7 +234,7 @@ function updateNote(
        WHERE id = ? AND revision = ?`,
     )
     .run(
-      payload.title?.trim() || current.title,
+      title,
       payload.icon !== undefined ? payload.icon : current.icon,
       body?.markdown ?? current.bodyMarkdown,
       body?.state ?? null,
@@ -406,9 +417,14 @@ export function createSqliteNotesRepository(
         const kind = payload.kind ?? "note";
         const now = new Date().toISOString();
         const id = crypto.randomUUID();
+        const bodyMarkdown = payload.bodyMarkdown ?? "";
+        const title =
+          payload.title?.trim() ||
+          (kind === "note" ? leadingTitleHeading(bodyMarkdown) : null) ||
+          (kind === "folder" ? "Folder" : "Untitled");
         const docState =
           kind === "note"
-            ? createNoteDocState(payload.bodyMarkdown ?? "")
+            ? createNoteDocState(stripLeadingTitleHeading(bodyMarkdown, title))
             : null;
         database
           .prepare(
@@ -422,8 +438,7 @@ export function createSqliteNotesRepository(
             parentId,
             workspaceId,
             kind,
-            payload.title?.trim() ||
-              (kind === "folder" ? "Folder" : "Untitled"),
+            title,
             payload.icon ?? null,
             docState ? noteDocToMarkdown(docState) : "",
             docState,
