@@ -284,6 +284,11 @@ export const FIXTURE_NOTES: FixtureNote[] = [
 
 - [x] Fixed amount codes
 - [ ] Percentage codes
+
+| Code | Discount | Status |
+| --- | --- | --- |
+| \`SPRING10\` | 10% off | Live |
+| \`FIVEOFF\` | 5 off | Draft |
 `,
   },
   {
