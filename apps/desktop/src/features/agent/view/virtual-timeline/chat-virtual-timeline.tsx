@@ -1,4 +1,5 @@
 import type { ComponentProps, RefObject } from "react";
+import { cn } from "@/lib";
 import { TranscriptStateProvider } from "../../transcript-state";
 import { ChatConversationItem } from "../chat-conversation-item";
 import type { ConversationGroup } from "../chat-timeline";
@@ -57,7 +58,10 @@ export function ChatVirtualTimeline({
             group.prompt?.id === anchoredPromptId;
           return (
             <div
-              className="absolute inset-x-0 top-0 w-full"
+              className={cn(
+                "absolute inset-x-0 top-0 w-full",
+                isLatestConversation && "pb-6",
+              )}
               data-conversation-id={group.id}
               data-index={index}
               key={group.id}

@@ -398,7 +398,10 @@ export function ChatView({
             }}
             viewportRef={attachViewport}
           >
-            <ChatContentColumn className="py-6" ref={chatContentRef}>
+            <ChatContentColumn
+              className={cn("pt-6", timelineGroups.length === 0 && "pb-6")}
+              ref={chatContentRef}
+            >
               {timelineGroups.length === 0 && !readOnly ? (
                 <EmptyChatState
                   activeBranch={activeBranch}

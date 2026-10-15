@@ -4,8 +4,10 @@ import { clickByRole } from "./lib/locate.mjs";
 
 const SESSION_ROW = /^Checkout audit log\s+(?![(（])/;
 const UI_TIMEOUT_MS = 30_000;
-const DRAG_STEPS = 24;
+const DRAG_STEP_PX = 20;
+const MAX_THUMB_LEAD_PX = 24;
 const IDLE_FRAMES = 30;
+const SLOW_CPU_RATE = 4;
 
 const args = readScenarioArgs();
 
@@ -114,14 +116,23 @@ async function dragThumb(session, toY) {
     });
   await mouse("mouseMoved", start.y, { button: "none" });
   await mouse("mousePressed", start.y, { buttons: 1, clickCount: 1 });
-  for (let step = 1; step <= DRAG_STEPS; step += 1) {
-    const y = start.y + ((toY - start.y) * step) / DRAG_STEPS;
+  const direction = Math.sign(toY - start.y);
+  const samples = [];
+  let y = start.y;
+  while (Math.abs(toY - y) > 0.5) {
+    y += direction * Math.min(DRAG_STEP_PX, Math.abs(toY - y));
     await mouse("mouseMoved", y, { buttons: 1 });
     await session.run(nextFrame);
+    const thumb = await session.run(readThumb);
+    samples.push({
+      pointer: Math.round(y),
+      lead: Math.round(start.y + (y - start.y) - thumb.y),
+      scrollTop: Math.round(thumb.scrollTop),
+    });
   }
   await mouse("mouseReleased", toY, { clickCount: 1 });
   await session.run(waitForIdle, IDLE_FRAMES);
-  return session.run(readThumb);
+  return { ...(await session.run(readThumb)), samples };
 }
 
 runScenario("chat-long-session-scroll", {
@@ -142,7 +153,7 @@ runScenario("chat-long-session-scroll", {
   },
   steps: [
     [
-      "dragging the thumb up from the bottom reaches the top",
+      "the thumb follows the pointer from the bottom to the top",
       async ({ session }) => {
         const before = await session.run(readThumb);
         check(
@@ -155,7 +166,13 @@ runScenario("chat-long-session-scroll", {
           before,
           after,
         });
-        return { before: before.scrollTop, after: after.scrollTop };
+        const maxLead = Math.max(
+          ...after.samples.map((sample) => Math.abs(sample.lead)),
+        );
+        check(maxLead <= MAX_THUMB_LEAD_PX, "thumb drifted from the pointer", {
+          samples: after.samples,
+        });
+        return { before: before.scrollTop, after: after.scrollTop, maxLead };
       },
     ],
     [
@@ -175,6 +192,9 @@ runScenario("chat-long-session-scroll", {
     [
       "jump to latest lands at the bottom without a blank or shifting frame",
       async ({ session, latestLabel }) => {
+        await session.send("Emulation.setCPUThrottlingRate", {
+          rate: SLOW_CPU_RATE,
+        });
         await session.run(recordFrames);
         await clickByRole(session, { role: "button", name: latestLabel });
         await session.waitUntil(
@@ -192,6 +212,7 @@ runScenario("chat-long-session-scroll", {
         );
         await session.run(waitForIdle, IDLE_FRAMES);
         const frames = await session.run(() => window.__stopFrames());
+        await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
         const firstAtBottom = frames.findIndex(
           (frame) => frame.gap < 2 && frame.visibleRows > 0,
         );
