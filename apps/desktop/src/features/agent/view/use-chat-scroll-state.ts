@@ -1,5 +1,8 @@
 import { type RefObject, useCallback, useRef, useState } from "react";
 import {
+  resolveScrollDirection,
+  type ScrollDirection,
+  scrollDirectionOfDelta,
   shouldFollowStreamOnResize,
   shouldReleaseStickOnUserScroll,
 } from "@/components/chat";
@@ -66,8 +69,10 @@ export function useChatScrollState({
   const [isNearTop, setIsNearTop] = useState(true);
   // Last hand-scroll direction. In the middle region the jump button mirrors
   // it: scrolling up offers "back to top", scrolling down offers "to latest".
-  const [scrollDirection, setScrollDirection] = useState<"up" | "down">("down");
+  const [scrollDirection, setScrollDirection] =
+    useState<ScrollDirection>("down");
   const lastScrollTopRef = useRef(0);
+  const inputDirectionRef = useRef<ScrollDirection | null>(null);
   // Latches once the viewer scrolls by hand. Gates the jump-to-top button so a
   // freshly opened conversation (auto-pinned to the bottom) does not show it
   // until the viewer has actually moved the viewport themselves.
@@ -136,13 +141,20 @@ export function useChatScrollState({
       const nextIsNearTop = isViewportNearTop(viewport);
       setIsNearTop(nextIsNearTop);
 
+      const hasRecentUserScrollIntent =
+        performance.now() - userScrollIntentTsRef.current <
+        USER_SCROLL_INTENT_WINDOW_MS;
       const scrollTop = viewport.scrollTop;
-      if (scrollTop !== lastScrollTopRef.current) {
-        setScrollDirection(
-          scrollTop > lastScrollTopRef.current ? "down" : "up",
-        );
-        lastScrollTopRef.current = scrollTop;
-      }
+      const scrollDelta = scrollTop - lastScrollTopRef.current;
+      lastScrollTopRef.current = scrollTop;
+      setScrollDirection((current) =>
+        resolveScrollDirection({
+          current,
+          scrollDelta,
+          inputDirection: inputDirectionRef.current,
+          hasRecentUserScrollIntent,
+        }),
+      );
 
       const autoScrollTarget = autoScrollTargetRef.current;
       if (
@@ -152,9 +164,6 @@ export function useChatScrollState({
         endAutoScroll();
       }
 
-      const hasRecentUserScrollIntent =
-        performance.now() - userScrollIntentTsRef.current <
-        USER_SCROLL_INTENT_WINDOW_MS;
       setNearBottomState(nextIsNearBottom);
       shouldStickToBottomRef.current =
         !timelineScrollRef?.current?.hasNavigationTarget() &&
@@ -217,6 +226,7 @@ export function useChatScrollState({
   const markUserScrollIntent = useCallback(() => {
     timelineScrollRef?.current?.cancelNavigation();
     userScrollIntentTsRef.current = performance.now();
+    inputDirectionRef.current = null;
     setHasUserScrolled(true);
     endAutoScroll();
     const viewport = viewportRef.current;
@@ -230,6 +240,7 @@ export function useChatScrollState({
     (deltaY?: number) => {
       timelineScrollRef?.current?.cancelNavigation();
       userScrollIntentTsRef.current = performance.now();
+      inputDirectionRef.current = scrollDirectionOfDelta(deltaY);
       setHasUserScrolled(true);
       endAutoScroll();
       const viewport = viewportRef.current;

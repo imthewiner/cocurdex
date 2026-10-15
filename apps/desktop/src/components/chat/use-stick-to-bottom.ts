@@ -6,7 +6,13 @@ import {
   useState,
   type WheelEvent,
 } from "react";
-import { type JumpButtonKind, resolveJumpButton } from "./jump-button";
+import {
+  type JumpButtonKind,
+  resolveJumpButton,
+  resolveScrollDirection,
+  type ScrollDirection,
+  scrollDirectionOfDelta,
+} from "./jump-button";
 
 export const STICK_TO_BOTTOM_THRESHOLD = 96;
 export const STICK_TO_BOTTOM_RESUME_THRESHOLD = 8;
@@ -115,6 +121,7 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const stickToBottomIfLockedRef = useRef<() => void>(() => {});
   const lastScrollTopRef = useRef(0);
+  const inputDirectionRef = useRef<ScrollDirection | null>(null);
   // While a smooth jump-to-top is in flight, suppress near-bottom re-lock so
   // ResizeObserver stick cannot yank the viewport back down mid-animation.
   const autoScrollTargetRef = useRef<"top" | "bottom" | null>(null);
@@ -122,7 +129,8 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [isNearTop, setIsNearTop] = useState(true);
   const [hasUserScrolled, setHasUserScrolled] = useState(false);
-  const [scrollDirection, setScrollDirection] = useState<"up" | "down">("down");
+  const [scrollDirection, setScrollDirection] =
+    useState<ScrollDirection>("down");
   const [isReady, setIsReady] = useState(false);
 
   const endAutoScroll = useCallback(() => {
@@ -204,6 +212,7 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
   const markUserScrollStart = useCallback(
     (deltaY?: number) => {
       userScrollIntentTsRef.current = performance.now();
+      inputDirectionRef.current = scrollDirectionOfDelta(deltaY);
       endAutoScroll();
       setHasUserScrolled(true);
       const el = viewportRef.current;
@@ -221,6 +230,7 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
 
   const markUserScrollIntent = useCallback(() => {
     userScrollIntentTsRef.current = performance.now();
+    inputDirectionRef.current = null;
     setHasUserScrolled(true);
     endAutoScroll();
     const el = viewportRef.current;
@@ -241,11 +251,20 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
     setIsNearBottom(nextIsNearBottom);
     setIsNearTop(nextIsNearTop);
 
+    const hasRecentUserScrollIntent =
+      performance.now() - userScrollIntentTsRef.current <
+      USER_SCROLL_INTENT_WINDOW_MS;
     const scrollTop = el.scrollTop;
-    if (scrollTop !== lastScrollTopRef.current) {
-      setScrollDirection(scrollTop > lastScrollTopRef.current ? "down" : "up");
-      lastScrollTopRef.current = scrollTop;
-    }
+    const scrollDelta = scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+    setScrollDirection((current) =>
+      resolveScrollDirection({
+        current,
+        scrollDelta,
+        inputDirection: inputDirectionRef.current,
+        hasRecentUserScrollIntent,
+      }),
+    );
 
     const autoScrollTarget = autoScrollTargetRef.current;
     if (
@@ -258,9 +277,7 @@ export function useStickToBottom(viewportRef: RefObject<HTMLElement | null>) {
     shouldStickToBottomRef.current = nextShouldStickToBottom({
       currentlyStick: shouldStickToBottomRef.current,
       nearBottom: nextIsNearBottom,
-      hasRecentUserScrollIntent:
-        performance.now() - userScrollIntentTsRef.current <
-        USER_SCROLL_INTENT_WINDOW_MS,
+      hasRecentUserScrollIntent,
       suppressBottomRelock: autoScrollTarget === "top",
     });
   }, [endAutoScroll, viewportRef]);
