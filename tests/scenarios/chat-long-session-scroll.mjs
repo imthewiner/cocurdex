@@ -6,6 +6,7 @@ const SESSION_ROW = /^Checkout audit log\s+(?![(（])/;
 const UI_TIMEOUT_MS = 30_000;
 const DRAG_STEPS = 24;
 const IDLE_FRAMES = 30;
+const SLOW_CPU_RATE = 4;
 
 const args = readScenarioArgs();
 
@@ -175,6 +176,9 @@ runScenario("chat-long-session-scroll", {
     [
       "jump to latest lands at the bottom without a blank or shifting frame",
       async ({ session, latestLabel }) => {
+        await session.send("Emulation.setCPUThrottlingRate", {
+          rate: SLOW_CPU_RATE,
+        });
         await session.run(recordFrames);
         await clickByRole(session, { role: "button", name: latestLabel });
         await session.waitUntil(
@@ -192,6 +196,7 @@ runScenario("chat-long-session-scroll", {
         );
         await session.run(waitForIdle, IDLE_FRAMES);
         const frames = await session.run(() => window.__stopFrames());
+        await session.send("Emulation.setCPUThrottlingRate", { rate: 1 });
         const firstAtBottom = frames.findIndex(
           (frame) => frame.gap < 2 && frame.visibleRows > 0,
         );
