@@ -33,3 +33,25 @@ export function resolveJumpButton({
 
   return scrollDirection === "up" ? "top" : "latest";
 }
+
+export type ScrollDirection = "up" | "down";
+
+export function scrollDirectionOfDelta(deltaY: number | undefined) {
+  if (!deltaY) return null;
+  return deltaY > 0 ? "down" : "up";
+}
+
+export function resolveScrollDirection({
+  current,
+  scrollDelta,
+  inputDirection,
+  hasRecentUserScrollIntent,
+}: {
+  current: ScrollDirection;
+  scrollDelta: number;
+  inputDirection: ScrollDirection | null;
+  hasRecentUserScrollIntent: boolean;
+}): ScrollDirection {
+  if (!hasRecentUserScrollIntent) return current;
+  return inputDirection ?? scrollDirectionOfDelta(scrollDelta) ?? current;
+}

@@ -82,6 +82,26 @@ async function scrollUntilJumpToTop(session, point, jumpLabel) {
   throw new Error(`No "${jumpLabel}" button after ${MAX_WHEEL_TICKS} ticks`);
 }
 
+function watchJumpButtonWhileScrollingUp(latestLabel) {
+  const viewport = window.__jumpViewport;
+  const state = { flips: [], reversals: 0, last: viewport.scrollTop };
+  const onScroll = () => {
+    if (viewport.scrollTop > state.last) state.reversals += 1;
+    state.last = viewport.scrollTop;
+    const nearTop = viewport.scrollTop < 200;
+    const latest = document.querySelector(
+      `button[aria-label="${CSS.escape(latestLabel)}"]`,
+    );
+    if (latest && !nearTop) state.flips.push(viewport.scrollTop);
+  };
+  viewport.addEventListener("scroll", onScroll);
+  window.__stopJumpWatch = () => {
+    viewport.removeEventListener("scroll", onScroll);
+    requestAnimationFrame(onScroll);
+    return state;
+  };
+}
+
 runScenario("chat-jump-to-top", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
@@ -108,6 +128,30 @@ runScenario("chat-jump-to-top", {
     return { jumpLabel, latestLabel };
   },
   steps: [
+    [
+      "scrolling up never offers jump to latest",
+      async ({ session, latestLabel }) => {
+        await session.run(() => {
+          const viewport = window.__jumpViewport;
+          viewport.scrollTop = viewport.scrollHeight;
+        });
+        await session.run(waitForScrollIdle);
+        const point = await session.run(readViewport);
+        await session.run(watchJumpButtonWhileScrollingUp, latestLabel);
+        let scrollTop = point.scrollTop;
+        while (scrollTop > 200) {
+          await wheel(session, point, -120, 5);
+          scrollTop = (await session.run(readViewport)).scrollTop;
+        }
+        const state = await session.run(() => window.__stopJumpWatch());
+        check(
+          state.flips.length === 0,
+          "jump to latest shown while scrolling up",
+          state,
+        );
+        return state;
+      },
+    ],
     [
       "jump to top reaches the first message",
       async ({ session, jumpLabel }) => {
