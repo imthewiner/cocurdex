@@ -463,7 +463,7 @@ export function ChatView({
         </RenderReadinessContext>
         <JumpControls
           onJumpToLatest={() => scrollToLatest("smooth")}
-          onJumpToTop={() => scrollToTop("smooth")}
+          onJumpToTop={scrollToTop}
           showJumpToLatest={shouldShowJumpToLatest}
           showJumpToTop={shouldShowJumpToTop}
         />

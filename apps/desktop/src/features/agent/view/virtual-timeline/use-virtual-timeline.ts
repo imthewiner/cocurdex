@@ -38,11 +38,10 @@ export interface ChatTimelineScrollHandle {
   readPosition(): ChatReadingPosition | null;
   restorePosition(position: ChatReadingPosition): boolean;
   cancelNavigation(): void;
-  suspendSizeAdjustment(): void;
-  resumeSizeAdjustment(): void;
   hasNavigationTarget(): boolean;
   holdScrollPosition(durationMs: number): void;
   revealWhenSettled(stick: () => void, onSettled: () => void): () => void;
+  syncScrollOffset(): void;
   getStickySelection(): StickyUserMessageSelection | null;
   scrollToUserMessage(messageId: string): boolean;
 }
@@ -110,7 +109,6 @@ export function useVirtualTimeline({
   const [targetId, setTargetId] = useState<string | null>(null);
   const targetRef = useRef<string | null>(null);
   const holdUntilRef = useRef(0);
-  const suspendAdjustmentRef = useRef(false);
   const offsetCallbackRef = useRef<OffsetCallback | null>(null);
   const pendingRevealRef = useRef<PendingReveal | null>(null);
   const lookup = useMemo(() => createConversationLookup(groups), [groups]);
@@ -164,13 +162,11 @@ export function useVirtualTimeline({
     scrollMargin,
     scrollPaddingStart: MESSAGE_SCROLL_INSET,
     scrollToFn: (offset, options, instance) => {
-      if (suspendAdjustmentRef.current) return;
       if (performance.now() < holdUntilRef.current) return;
       elementScroll(offset, options, instance);
     },
   });
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item) =>
-    !suspendAdjustmentRef.current &&
     item.end <= (viewportElement?.scrollTop ?? 0);
   const items = virtualizer.getVirtualItems();
 
@@ -248,14 +244,7 @@ export function useVirtualTimeline({
       },
       cancelNavigation() {
         targetRef.current = null;
-        suspendAdjustmentRef.current = false;
         setTargetId(null);
-      },
-      suspendSizeAdjustment() {
-        suspendAdjustmentRef.current = true;
-      },
-      resumeSizeAdjustment() {
-        suspendAdjustmentRef.current = false;
       },
       hasNavigationTarget: () => targetRef.current !== null,
       holdScrollPosition(durationMs) {
@@ -269,6 +258,11 @@ export function useVirtualTimeline({
             virtualizer.options.anchorTo = "end";
           }
         }, durationMs);
+      },
+      syncScrollOffset() {
+        if (viewportElement) {
+          offsetCallbackRef.current?.(viewportElement.scrollTop, false);
+        }
       },
       revealWhenSettled(stick, onSettled) {
         const pending = { attempts: 0, onSettled, stick };
