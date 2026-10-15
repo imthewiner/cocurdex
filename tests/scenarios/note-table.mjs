@@ -8,6 +8,10 @@ const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
 
+async function translate(session, key) {
+  return session.run((text) => window.__scenario.t(text), key);
+}
+
 async function openNote(session, title) {
   await clickByRole(session, { role: "button", name: title });
   await session.waitUntil(
@@ -58,15 +62,25 @@ async function captureTable(session, theme) {
 runScenario("note-table", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
+    const [openPanel, closePanel, notesTab] = await Promise.all(
+      [
+        "editor:actions.openEditorPanel",
+        "editor:actions.closeEditorPanel",
+        "editor:actions.showNotes",
+      ].map((key) => translate(session, key)),
+    );
     const [toggle] = await waitForRole(
       session,
-      { role: "button", name: /^(打开|关闭)功能区$/ },
+      {
+        role: "button",
+        name: new RegExp(`^(${openPanel}|${closePanel})$`),
+      },
       UI_TIMEOUT_MS,
     );
-    if (toggle.name === "打开功能区") {
-      await clickByRole(session, { role: "button", name: "打开功能区" });
+    if (toggle.name === openPanel) {
+      await clickByRole(session, { role: "button", name: openPanel });
     }
-    await clickByRole(session, { role: "button", name: "笔记" });
+    await clickByRole(session, { role: "button", name: notesTab });
     await waitForRole(
       session,
       { role: "button", name: "Checkout spec" },
