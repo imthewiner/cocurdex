@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   isScrollNearBottom,
   isScrollNearTop,
-  nextShouldStickToBottom,
   resolveJumpButton,
   resolveScrollDirection,
   STICK_TO_BOTTOM_THRESHOLD,
@@ -99,58 +98,6 @@ describe("shouldFollowStreamOnResize", () => {
         isAtBottom: true,
         isLocked: true,
         suppressFollow: true,
-      }),
-    ).toBe(false);
-  });
-});
-
-describe("nextShouldStickToBottom", () => {
-  it("re-locks when the viewport is near the bottom", () => {
-    expect(
-      nextShouldStickToBottom({
-        currentlyStick: false,
-        nearBottom: true,
-        hasRecentUserScrollIntent: true,
-      }),
-    ).toBe(true);
-  });
-
-  it("unlocks on recent user scroll intent away from the bottom", () => {
-    expect(
-      nextShouldStickToBottom({
-        currentlyStick: true,
-        nearBottom: false,
-        hasRecentUserScrollIntent: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("preserves the current lock when there is no user intent", () => {
-    expect(
-      nextShouldStickToBottom({
-        currentlyStick: true,
-        nearBottom: false,
-        hasRecentUserScrollIntent: false,
-      }),
-    ).toBe(true);
-    expect(
-      nextShouldStickToBottom({
-        currentlyStick: false,
-        nearBottom: false,
-        hasRecentUserScrollIntent: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("does not re-lock near bottom during a jump-to-top animation", () => {
-    // Smooth jump-to-top starts at the bottom edge; without suppress the lock
-    // would re-arm and a concurrent stick would yank the view back down.
-    expect(
-      nextShouldStickToBottom({
-        currentlyStick: false,
-        nearBottom: true,
-        hasRecentUserScrollIntent: false,
-        suppressBottomRelock: true,
       }),
     ).toBe(false);
   });

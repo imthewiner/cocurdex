@@ -244,7 +244,6 @@ export function ChatView({
   const {
     activeUserMessageId,
     hasUserScrolled,
-    isAutoScrolling,
     isNearBottom,
     isNearTop,
     scrollDirection,
@@ -288,7 +287,7 @@ export function ChatView({
         attachments,
         useOppositeFollowUpBehavior,
       );
-      scrollToLatest("auto");
+      scrollToLatest();
       anchorNextPrompt();
     },
     [anchorNextPrompt, scrollToLatest],
@@ -298,8 +297,7 @@ export function ChatView({
   // One mutually-exclusive jump button. At the edges it points to the opposite
   // end; in the middle it mirrors the scroll direction.
   const jumpButton = resolveJumpButton({
-    isReady:
-      isInitialBottomSettled && !isAutoScrolling && timelineGroups.length > 0,
+    isReady: isInitialBottomSettled && timelineGroups.length > 0,
     hasUserScrolled,
     isNearTop,
     isNearBottom,
@@ -380,6 +378,9 @@ export function ChatView({
               "h-full px-2 @lg/chat:px-3 @3xl/chat:px-6",
               !isInitialBottomSettled && "opacity-0",
             )}
+            scrollbarProps={{
+              onPointerDownCapture: markUserScrollIntent,
+            }}
             viewportProps={{
               className: "[overflow-anchor:none]",
               onClickCapture: (event) => {
@@ -462,7 +463,7 @@ export function ChatView({
           </ScrollArea>
         </RenderReadinessContext>
         <JumpControls
-          onJumpToLatest={() => scrollToLatest("smooth")}
+          onJumpToLatest={scrollToLatest}
           onJumpToTop={scrollToTop}
           showJumpToLatest={shouldShowJumpToLatest}
           showJumpToTop={shouldShowJumpToTop}

@@ -5,6 +5,7 @@ const base = {
   hasRecentUserScrollIntent: false,
   isAtBottom: true,
   isNearBottom: true,
+  scrollDelta: 0,
   wasSticking: true,
 };
 
@@ -44,5 +45,27 @@ describe("resolveStickToBottom", () => {
         wasSticking: false,
       }),
     ).toBe(false);
+  });
+
+  it("detaches when the viewport moves up out of the bottom band without intent", () => {
+    expect(
+      resolveStickToBottom({
+        ...base,
+        isAtBottom: false,
+        isNearBottom: false,
+        scrollDelta: -400,
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps following when content growth moves the viewport down", () => {
+    expect(
+      resolveStickToBottom({
+        ...base,
+        isAtBottom: false,
+        isNearBottom: false,
+        scrollDelta: 400,
+      }),
+    ).toBe(true);
   });
 });
