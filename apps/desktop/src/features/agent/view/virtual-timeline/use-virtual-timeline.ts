@@ -36,6 +36,8 @@ export interface ChatTimelineScrollHandle {
   readPosition(): ChatReadingPosition | null;
   restorePosition(position: ChatReadingPosition): boolean;
   cancelNavigation(): void;
+  suspendSizeAdjustment(): void;
+  resumeSizeAdjustment(): void;
   hasNavigationTarget(): boolean;
   holdScrollPosition(durationMs: number): void;
   getStickySelection(): StickyUserMessageSelection | null;
@@ -59,6 +61,7 @@ export function useVirtualTimeline({
   const [targetId, setTargetId] = useState<string | null>(null);
   const targetRef = useRef<string | null>(null);
   const holdUntilRef = useRef(0);
+  const suspendAdjustmentRef = useRef(false);
   const lookup = useMemo(() => createConversationLookup(groups), [groups]);
   const { focusedId, selectedIds, updateFocus } =
     usePinnedConversations(rootRef);
@@ -99,11 +102,13 @@ export function useVirtualTimeline({
     scrollMargin,
     scrollPaddingStart: MESSAGE_SCROLL_INSET,
     scrollToFn: (offset, options, instance) => {
+      if (suspendAdjustmentRef.current) return;
       if (performance.now() < holdUntilRef.current) return;
       elementScroll(offset, options, instance);
     },
   });
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item) =>
+    !suspendAdjustmentRef.current &&
     item.end <= (viewportElement?.scrollTop ?? 0);
   const items = virtualizer.getVirtualItems();
 
@@ -168,7 +173,14 @@ export function useVirtualTimeline({
       },
       cancelNavigation() {
         targetRef.current = null;
+        suspendAdjustmentRef.current = false;
         setTargetId(null);
+      },
+      suspendSizeAdjustment() {
+        suspendAdjustmentRef.current = true;
+      },
+      resumeSizeAdjustment() {
+        suspendAdjustmentRef.current = false;
       },
       hasNavigationTarget: () => targetRef.current !== null,
       holdScrollPosition(durationMs) {

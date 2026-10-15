@@ -20,7 +20,10 @@ async function translate(session, key) {
 async function openNote(session, title) {
   await clickByRole(session, { role: "button", name: title });
   await session.waitUntil(
-    (text) => document.body.innerText.includes(text),
+    (text) =>
+      [...document.querySelectorAll("[data-note-id][data-active]")].some(
+        (row) => row.textContent.trim() === text,
+      ) && Boolean(document.querySelector(".md-body-prose")),
     title,
     UI_TIMEOUT_MS,
   );
@@ -194,6 +197,52 @@ runScenario("note-table", {
       },
     ],
     [
+      "pasted Markdown text renders as rich content",
+      async ({ session }) => {
+        await openNote(session, "Scratchpad");
+        await session.waitUntil(
+          () =>
+            document
+              .querySelector(".md-body-prose")
+              ?.textContent.includes("Ideas that are not tied"),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        await focusEditorEnd(session);
+        await pressKey(session, "Enter");
+        const pasted = await session.run(() => {
+          const data = new DataTransfer();
+          data.setData(
+            "text/plain",
+            "## Pasted heading\n\n- first **bold** item\n- second item\n",
+          );
+          document.activeElement.dispatchEvent(
+            new ClipboardEvent("paste", {
+              clipboardData: data,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+          const prose = document.querySelector(".md-body-prose");
+          return {
+            heading: [...prose.querySelectorAll("h2")].some(
+              (node) => node.textContent === "Pasted heading",
+            ),
+            bold: [...prose.querySelectorAll("li strong")].some(
+              (node) => node.textContent === "bold",
+            ),
+            rawMarkers: prose.textContent.includes("## Pasted"),
+          };
+        });
+        check(
+          pasted.heading && pasted.bold && !pasted.rawMarkers,
+          "pasted Markdown stayed raw",
+          pasted,
+        );
+        return pasted;
+      },
+    ],
+    [
       "slash menu filters to table and inserts one",
       async ({ session }) => {
         await openNote(session, "Acme Shop roadmap");
@@ -299,5 +348,9 @@ runScenario("note-table", {
       },
     ],
   ],
-  teardown: async () => ({}),
+  teardown: async ({ session }) => {
+    const editorTab = await translate(session, "editor:actions.showEditor");
+    await clickByRole(session, { role: "button", name: editorTab });
+    return {};
+  },
 });

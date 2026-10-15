@@ -16,6 +16,20 @@ import type { ChatTimelineScrollHandle } from "./virtual-timeline";
 
 const USER_SCROLL_INTENT_WINDOW_MS = 600;
 const DISCLOSURE_HOLD_MS = 400;
+const JUMP_SETTLE_TIMEOUT_MS = 1500;
+
+function settleJumpToTop(viewport: HTMLElement, onSettled: () => void) {
+  let settled = false;
+  const settle = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    viewport.removeEventListener("scrollend", settle);
+    onSettled();
+  };
+  const timeout = setTimeout(settle, JUMP_SETTLE_TIMEOUT_MS);
+  viewport.addEventListener("scrollend", settle);
+}
 
 function getMountedUserMessageTop(
   element: HTMLDivElement,
@@ -77,8 +91,9 @@ export function useChatScrollState({
 
   const endAutoScroll = useCallback(() => {
     autoScrollTargetRef.current = null;
+    timelineScrollRef?.current?.resumeSizeAdjustment();
     setIsAutoScrolling(false);
-  }, []);
+  }, [timelineScrollRef]);
 
   const setNearBottomState = useCallback((nextIsNearBottom: boolean) => {
     if (isNearBottomRef.current === nextIsNearBottom) {
@@ -285,6 +300,12 @@ export function useChatScrollState({
       if (behavior === "smooth") {
         autoScrollTargetRef.current = "top";
         setIsAutoScrolling(true);
+        timelineScrollRef?.current?.suspendSizeAdjustment();
+        settleJumpToTop(viewport, () => {
+          if (autoScrollTargetRef.current !== "top") return;
+          if (viewport.scrollTop > 0) viewport.scrollTop = 0;
+          endAutoScroll();
+        });
       }
 
       if (typeof viewport.scrollTo === "function") {
@@ -298,6 +319,7 @@ export function useChatScrollState({
     },
     [
       clearPendingUserMessage,
+      endAutoScroll,
       setNearBottomState,
       stopScrollAnimation,
       timelineScrollRef,
