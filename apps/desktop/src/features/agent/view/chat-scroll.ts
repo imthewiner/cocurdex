@@ -14,8 +14,6 @@ export {
 
 const SCROLL_BOTTOM_THRESHOLD = STICK_TO_BOTTOM_THRESHOLD;
 const SCROLL_RESUME_BOTTOM_THRESHOLD = STICK_TO_BOTTOM_RESUME_THRESHOLD;
-const SCROLL_ANIMATION_DURATION_MS = 180;
-const SCROLL_INITIAL_LEAD_MS = 18;
 
 // A prompt is treated as the active section once its header rises to within
 // this distance of the viewport top. Mirrors the side-navigation activation.
@@ -92,24 +90,16 @@ export function isViewportAtBottom(viewport: HTMLDivElement) {
  * only a deliberate return to the very bottom re-arms it.
  */
 export function resolveStickToBottom({
-  autoScrollTarget,
   hasRecentUserScrollIntent,
   isAtBottom,
   isNearBottom,
   wasSticking,
 }: {
-  autoScrollTarget: "top" | "bottom" | null;
   hasRecentUserScrollIntent: boolean;
   isAtBottom: boolean;
   isNearBottom: boolean;
   wasSticking: boolean;
 }): boolean {
-  // Mid jump-to-top the viewport is still near the bottom for a few frames;
-  // re-arming there lets layout stick yank it back down.
-  if (autoScrollTarget === "top") {
-    return false;
-  }
-
   if (hasRecentUserScrollIntent) {
     return isAtBottom;
   }
@@ -139,58 +129,6 @@ export function getStickyUserMessageIdForConversationIndex(
   }
 
   return null;
-}
-
-function easeOutCubic(value: number) {
-  return 1 - (1 - value) ** 3;
-}
-
-export function animateViewportScroll({
-  onComplete,
-  onUpdate,
-  startTop,
-  targetTop,
-  viewport,
-}: {
-  onComplete?(): void;
-  onUpdate?(nextTop: number): void;
-  startTop: number;
-  targetTop: number;
-  viewport: HTMLDivElement;
-}) {
-  if (startTop === targetTop) {
-    viewport.scrollTop = targetTop;
-    onUpdate?.(targetTop);
-    onComplete?.();
-    return null;
-  }
-
-  const startTime = performance.now();
-
-  const applyScroll = (timestamp: number) => {
-    const elapsed = timestamp - startTime;
-    const progress = Math.min(1, elapsed / SCROLL_ANIMATION_DURATION_MS);
-    const nextTop = startTop + (targetTop - startTop) * easeOutCubic(progress);
-
-    viewport.scrollTop = nextTop;
-    onUpdate?.(nextTop);
-
-    return progress;
-  };
-
-  const step = (timestamp: number) => {
-    const progress = applyScroll(timestamp);
-
-    if (progress < 1) {
-      return requestAnimationFrame(step);
-    }
-
-    onComplete?.();
-    return null;
-  };
-
-  applyScroll(startTime + SCROLL_INITIAL_LEAD_MS);
-  return requestAnimationFrame(step);
 }
 
 export function isDisclosureToggle(target: EventTarget | null) {

@@ -41,16 +41,46 @@ async function wheel(session, point, deltaY, times) {
   }
 }
 
-function recordScrollWrites() {
+function recordJumpFrames() {
   const viewport = window.__jumpViewport;
-  const original = viewport.scrollTo.bind(viewport);
-  window.__jumpScrollWrites = [];
-  viewport.scrollTo = (options) => {
-    window.__jumpScrollWrites.push(JSON.stringify(options));
-    original(options);
+  const timeline = viewport.querySelector("[data-testid=chat-timeline]");
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;left:-10px;top:0;width:1px;height:1px;pointer-events:none";
+  document.body.append(probe);
+  const frames = [];
+  let observer = null;
+  let active = true;
+  const sample = () => {
+    const bounds = viewport.getBoundingClientRect();
+    const rows = [...timeline.querySelectorAll(":scope > [data-index]")].map(
+      (row) => ({
+        index: Number(row.dataset.index),
+        rect: row.getBoundingClientRect(),
+      }),
+    );
+    const visible = rows.filter(
+      ({ rect }) => rect.bottom > bounds.top && rect.top < bounds.bottom,
+    );
+    const first = rows.find(({ index }) => index === 0);
+    frames.push({
+      scrollTop: Math.round(viewport.scrollTop),
+      visibleRows: visible.length,
+      firstRowTop: first ? Math.round(first.rect.top) : null,
+    });
   };
-  window.__restoreScrollTo = () => {
-    delete viewport.scrollTo;
+  const tick = () => {
+    observer?.disconnect();
+    if (!active) return;
+    observer = new ResizeObserver(sample);
+    observer.observe(probe);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  window.__stopJumpFrames = () => {
+    active = false;
+    probe.remove();
+    return frames;
   };
 }
 
@@ -174,7 +204,7 @@ runScenario("chat-jump-to-top", {
         );
         const before = await session.run(readViewport);
         await scrollUntilJumpToTop(session, before, jumpLabel);
-        await session.run(recordScrollWrites);
+        await session.run(recordJumpFrames);
         await clickByRole(session, {
           role: "button",
           name: jumpLabel,
@@ -189,17 +219,25 @@ runScenario("chat-jump-to-top", {
             () => true,
             () => false,
           );
+        await session.run(waitForScrollIdle);
         const after = await session.run(readViewport);
-        const writes = await session.run(() => {
-          window.__restoreScrollTo();
-          return window.__jumpScrollWrites;
+        const frames = await session.run(() => window.__stopJumpFrames());
+        check(reached, "jump stopped before the top", { before, after });
+        const blankFrames = frames.filter((frame) => frame.visibleRows === 0);
+        check(blankFrames.length === 0, "jump to top painted blank frames", {
+          frames,
         });
-        check(reached, "jump stopped before the top", {
-          before,
-          after,
-          writes,
+        const topPositions = new Set(
+          frames
+            .filter(
+              (frame) => frame.scrollTop === 0 && frame.firstRowTop !== null,
+            )
+            .map((frame) => frame.firstRowTop),
+        );
+        check(topPositions.size === 1, "first message moved after the jump", {
+          frames,
         });
-        return { before, after, writes };
+        return { before, after, frames: frames.length };
       },
     ],
     [

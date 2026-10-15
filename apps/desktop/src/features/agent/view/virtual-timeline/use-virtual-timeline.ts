@@ -1,7 +1,9 @@
 import {
   elementScroll,
+  observeElementOffset,
   type Range,
   useVirtualizer,
+  type Virtualizer,
 } from "@tanstack/react-virtual";
 import {
   type RefObject,
@@ -36,12 +38,58 @@ export interface ChatTimelineScrollHandle {
   readPosition(): ChatReadingPosition | null;
   restorePosition(position: ChatReadingPosition): boolean;
   cancelNavigation(): void;
-  suspendSizeAdjustment(): void;
-  resumeSizeAdjustment(): void;
   hasNavigationTarget(): boolean;
   holdScrollPosition(durationMs: number): void;
+  revealWhenSettled(stick: () => void, onSettled: () => void): () => void;
+  syncScrollOffset(): void;
   getStickySelection(): StickyUserMessageSelection | null;
   scrollToUserMessage(messageId: string): boolean;
+}
+
+type TimelineVirtualizer = Virtualizer<HTMLDivElement, HTMLDivElement>;
+type OffsetCallback = (offset: number, isScrolling: boolean) => void;
+type PendingReveal = {
+  attempts: number;
+  onSettled(): void;
+  stick(): void;
+};
+
+const MAX_REVEAL_ATTEMPTS = 8;
+
+function measureMountedRows(virtualizer: TimelineVirtualizer) {
+  for (const item of virtualizer.getVirtualItems()) {
+    if (virtualizer.itemSizeCache.has(item.key)) continue;
+    const element = virtualizer.elementsCache.get(item.key);
+    if (!element?.isConnected) continue;
+    virtualizer.resizeItem(
+      item.index,
+      virtualizer.options.measureElement(element, undefined, virtualizer),
+    );
+  }
+}
+
+function isLayoutSettled(
+  virtualizer: TimelineVirtualizer,
+  viewport: HTMLDivElement,
+) {
+  if (Math.abs((virtualizer.scrollOffset ?? 0) - viewport.scrollTop) >= 1) {
+    return false;
+  }
+  return virtualizer
+    .getVirtualItems()
+    .every((item) => virtualizer.itemSizeCache.has(item.key));
+}
+
+function positionMountedRows(virtualizer: TimelineVirtualizer) {
+  const { scrollMargin } = virtualizer.options;
+  for (const item of virtualizer.getVirtualItems()) {
+    const element = virtualizer.elementsCache.get(item.key);
+    if (!element) continue;
+    const transform = `translateY(${item.start - scrollMargin}px)`;
+    if (element.style.transform !== transform) {
+      element.style.transform = transform;
+    }
+  }
 }
 
 export function useVirtualTimeline({
@@ -61,7 +109,8 @@ export function useVirtualTimeline({
   const [targetId, setTargetId] = useState<string | null>(null);
   const targetRef = useRef<string | null>(null);
   const holdUntilRef = useRef(0);
-  const suspendAdjustmentRef = useRef(false);
+  const offsetCallbackRef = useRef<OffsetCallback | null>(null);
+  const pendingRevealRef = useRef<PendingReveal | null>(null);
   const lookup = useMemo(() => createConversationLookup(groups), [groups]);
   const { focusedId, selectedIds, updateFocus } =
     usePinnedConversations(rootRef);
@@ -94,6 +143,17 @@ export function useVirtualTimeline({
     estimateSize: () => CONVERSATION_ESTIMATED_HEIGHT,
     followOnAppend: true,
     useFlushSync: false,
+    onChange: positionMountedRows,
+    observeElementOffset: (instance, callback) => {
+      offsetCallbackRef.current = callback;
+      const unsubscribe = observeElementOffset(instance, callback);
+      return () => {
+        if (offsetCallbackRef.current === callback) {
+          offsetCallbackRef.current = null;
+        }
+        unsubscribe?.();
+      };
+    },
     getItemKey,
     getScrollElement: () => viewportElement,
     overscan: 2,
@@ -102,15 +162,26 @@ export function useVirtualTimeline({
     scrollMargin,
     scrollPaddingStart: MESSAGE_SCROLL_INSET,
     scrollToFn: (offset, options, instance) => {
-      if (suspendAdjustmentRef.current) return;
       if (performance.now() < holdUntilRef.current) return;
       elementScroll(offset, options, instance);
     },
   });
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item) =>
-    !suspendAdjustmentRef.current &&
     item.end <= (viewportElement?.scrollTop ?? 0);
   const items = virtualizer.getVirtualItems();
+
+  const attemptReveal = useCallback(() => {
+    const pending = pendingRevealRef.current;
+    const viewport = viewportElement;
+    if (!pending || !viewport) return;
+    pending.attempts += 1;
+    pending.stick();
+    offsetCallbackRef.current?.(viewport.scrollTop, false);
+    const settled = isLayoutSettled(virtualizer, viewport);
+    if (!settled && pending.attempts < MAX_REVEAL_ATTEMPTS) return;
+    pendingRevealRef.current = null;
+    if (settled) pending.onSettled();
+  }, [viewportElement, virtualizer]);
 
   const correctTargetPosition = useCallback(() => {
     const messageId = targetRef.current;
@@ -173,14 +244,7 @@ export function useVirtualTimeline({
       },
       cancelNavigation() {
         targetRef.current = null;
-        suspendAdjustmentRef.current = false;
         setTargetId(null);
-      },
-      suspendSizeAdjustment() {
-        suspendAdjustmentRef.current = true;
-      },
-      resumeSizeAdjustment() {
-        suspendAdjustmentRef.current = false;
       },
       hasNavigationTarget: () => targetRef.current !== null,
       holdScrollPosition(durationMs) {
@@ -194,6 +258,21 @@ export function useVirtualTimeline({
             virtualizer.options.anchorTo = "end";
           }
         }, durationMs);
+      },
+      syncScrollOffset() {
+        if (viewportElement) {
+          offsetCallbackRef.current?.(viewportElement.scrollTop, false);
+        }
+      },
+      revealWhenSettled(stick, onSettled) {
+        const pending = { attempts: 0, onSettled, stick };
+        pendingRevealRef.current = pending;
+        attemptReveal();
+        return () => {
+          if (pendingRevealRef.current === pending) {
+            pendingRevealRef.current = null;
+          }
+        };
       },
       getStickySelection() {
         const viewport = viewportElement;
@@ -246,6 +325,7 @@ export function useVirtualTimeline({
       },
     }),
     [
+      attemptReveal,
       correctTargetPosition,
       groups,
       lookup,
@@ -277,6 +357,12 @@ export function useVirtualTimeline({
   }, [correctTargetPosition, viewportElement]);
 
   useLayoutEffect(() => {
+    measureMountedRows(virtualizer);
+    positionMountedRows(virtualizer);
+    attemptReveal();
+  });
+
+  useLayoutEffect(() => {
     if (targetId && lookup.byMessageId.has(targetId) && items.length > 0)
       correctTargetPosition();
   }, [correctTargetPosition, lookup, items, targetId]);
@@ -284,7 +370,6 @@ export function useVirtualTimeline({
   return {
     items,
     rootRef,
-    scrollMargin,
     totalSize: virtualizer.getTotalSize(),
     updateFocus,
     virtualizer,

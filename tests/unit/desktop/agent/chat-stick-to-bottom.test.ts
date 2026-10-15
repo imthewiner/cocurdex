@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { resolveStickToBottom } from "@/features/agent/view/chat-scroll";
 
 const base = {
-  autoScrollTarget: null,
   hasRecentUserScrollIntent: false,
   isAtBottom: true,
   isNearBottom: true,
@@ -45,11 +44,5 @@ describe("resolveStickToBottom", () => {
         wasSticking: false,
       }),
     ).toBe(false);
-  });
-
-  it("never follows mid jump-to-top", () => {
-    expect(resolveStickToBottom({ ...base, autoScrollTarget: "top" })).toBe(
-      false,
-    );
   });
 });
