@@ -29,7 +29,7 @@ export function ChatVirtualTimeline({
   viewportElement,
   ...conversationProps
 }: ChatVirtualTimelineProps) {
-  const { items, rootRef, scrollMargin, totalSize, updateFocus, virtualizer } =
+  const { items, rootRef, totalSize, updateFocus, virtualizer } =
     useVirtualTimeline({
       groups,
       scrollRef,
@@ -37,10 +37,6 @@ export function ChatVirtualTimeline({
       viewportElement,
     });
   const viewportHeight = useElementHeight(viewportElement);
-  const rows = items.map((item) => ({
-    index: item.index,
-    top: item.start - scrollMargin,
-  }));
   return (
     <TranscriptStateProvider>
       <div
@@ -51,7 +47,7 @@ export function ChatVirtualTimeline({
         ref={rootRef}
         style={{ height: totalSize }}
       >
-        {rows.map(({ index, top }) => {
+        {items.map(({ index }) => {
           const group = groups[index];
           const isLatestConversation = index === groups.length - 1;
           const isAnchored =
@@ -70,7 +66,6 @@ export function ChatVirtualTimeline({
                 minHeight: isAnchored
                   ? getAnchoredConversationMinHeight(viewportHeight)
                   : undefined,
-                transform: `translateY(${top}px)`,
               }}
             >
               <ChatConversationItem

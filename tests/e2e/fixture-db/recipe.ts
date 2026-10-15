@@ -107,23 +107,31 @@ flowchart LR
 
 const AUDIT_TURN_COUNT = 14;
 
-function auditReply(index: number): string {
+const AUDIT_STAGES = ["cart", "payment", "fulfillment"];
+
+function auditStage(index: number, stage: string): string[] {
   const lines = Array.from(
     { length: 28 },
     (_, line) =>
       `  { step: ${line + 1}, cart: "cart-${index + 1}", total: ${(index + 1) * 100 + line} },`,
   );
   return [
-    `### Checkout audit ${index + 1}`,
-    "",
-    "Totals recorded for each step of this cart:",
+    `Totals recorded for each ${stage} step of this cart:`,
     "",
     "```ts",
-    "const steps = [",
+    `const ${stage}Steps = [`,
     ...lines,
     "];",
     "```",
     "",
+  ];
+}
+
+function auditReply(index: number): string {
+  return [
+    `### Checkout audit ${index + 1}`,
+    "",
+    ...AUDIT_STAGES.flatMap((stage) => auditStage(index, stage)),
   ].join("\n");
 }
 

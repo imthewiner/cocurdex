@@ -2,6 +2,7 @@ import {
   elementScroll,
   type Range,
   useVirtualizer,
+  type Virtualizer,
 } from "@tanstack/react-virtual";
 import {
   type RefObject,
@@ -42,6 +43,32 @@ export interface ChatTimelineScrollHandle {
   holdScrollPosition(durationMs: number): void;
   getStickySelection(): StickyUserMessageSelection | null;
   scrollToUserMessage(messageId: string): boolean;
+}
+
+type TimelineVirtualizer = Virtualizer<HTMLDivElement, HTMLDivElement>;
+
+function measureMountedRows(virtualizer: TimelineVirtualizer) {
+  for (const item of virtualizer.getVirtualItems()) {
+    if (virtualizer.itemSizeCache.has(item.key)) continue;
+    const element = virtualizer.elementsCache.get(item.key);
+    if (!element?.isConnected) continue;
+    virtualizer.resizeItem(
+      item.index,
+      virtualizer.options.measureElement(element, undefined, virtualizer),
+    );
+  }
+}
+
+function positionMountedRows(virtualizer: TimelineVirtualizer) {
+  const { scrollMargin } = virtualizer.options;
+  for (const item of virtualizer.getVirtualItems()) {
+    const element = virtualizer.elementsCache.get(item.key);
+    if (!element) continue;
+    const transform = `translateY(${item.start - scrollMargin}px)`;
+    if (element.style.transform !== transform) {
+      element.style.transform = transform;
+    }
+  }
 }
 
 export function useVirtualTimeline({
@@ -94,6 +121,7 @@ export function useVirtualTimeline({
     estimateSize: () => CONVERSATION_ESTIMATED_HEIGHT,
     followOnAppend: true,
     useFlushSync: false,
+    onChange: positionMountedRows,
     getItemKey,
     getScrollElement: () => viewportElement,
     overscan: 2,
@@ -277,6 +305,11 @@ export function useVirtualTimeline({
   }, [correctTargetPosition, viewportElement]);
 
   useLayoutEffect(() => {
+    measureMountedRows(virtualizer);
+    positionMountedRows(virtualizer);
+  });
+
+  useLayoutEffect(() => {
     if (targetId && lookup.byMessageId.has(targetId) && items.length > 0)
       correctTargetPosition();
   }, [correctTargetPosition, lookup, items, targetId]);
@@ -284,7 +317,6 @@ export function useVirtualTimeline({
   return {
     items,
     rootRef,
-    scrollMargin,
     totalSize: virtualizer.getTotalSize(),
     updateFocus,
     virtualizer,
