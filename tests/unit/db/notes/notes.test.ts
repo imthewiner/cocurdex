@@ -25,6 +25,50 @@ function createTestDatabase() {
   );
 }
 
+describe("CocurdexDatabase.notes title heading", () => {
+  it("drops a leading H1 that repeats the title on create and update", async () => {
+    const database = createTestDatabase();
+    const note = await database.notes.create({
+      title: "Storage plan",
+      bodyMarkdown: "# Storage  plan\r\n\r\n## Summary\n\nUse SQLite.",
+    });
+    expect(note.bodyMarkdown).not.toContain("# Storage");
+    expect(note.bodyMarkdown).toContain("## Summary");
+
+    const updated = await database.notes.update({
+      id: note.id,
+      title: "Storage design",
+      bodyMarkdown: "\n# Storage design #\nUse SQLite.",
+    });
+    expect(updated.title).toBe("Storage design");
+    expect(updated.bodyMarkdown.trim()).toBe("Use SQLite.");
+  });
+
+  it("keeps a leading H1 that differs from the title", async () => {
+    const database = createTestDatabase();
+    const note = await database.notes.create({
+      title: "Storage plan",
+      bodyMarkdown: "# Background\n\nText.",
+    });
+    expect(note.bodyMarkdown).toContain("# Background");
+
+    const updated = await database.notes.update({
+      id: note.id,
+      bodyMarkdown: "## Storage plan\n\nText.",
+    });
+    expect(updated.bodyMarkdown).toContain("## Storage plan");
+  });
+
+  it("takes an untitled note's title from its leading H1", async () => {
+    const database = createTestDatabase();
+    const note = await database.notes.create({
+      bodyMarkdown: "# Storage plan\n\nUse SQLite.",
+    });
+    expect(note.title).toBe("Storage plan");
+    expect(note.bodyMarkdown.trim()).toBe("Use SQLite.");
+  });
+});
+
 describe("CocurdexDatabase.notes", () => {
   it("creates a stable note tree and rejects stale updates", async () => {
     const database = createTestDatabase();
@@ -229,10 +273,10 @@ describe("CocurdexDatabase.notes", () => {
     const database = createTestDatabase();
     const note = await database.notes.create({
       title: "Spec",
-      bodyMarkdown: "# Spec\n\nTrack #sync work.",
+      bodyMarkdown: "# Scope\n\nTrack #sync work.",
     });
 
-    expect(note.bodyMarkdown).toBe("# Spec\n\nTrack #sync work.");
+    expect(note.bodyMarkdown).toBe("# Scope\n\nTrack #sync work.");
     const doc = await database.notes.getDoc(note.id);
     expect(doc?.revision).toBe(note.revision);
     expect(noteDocToMarkdown(doc?.update as Uint8Array)).toBe(

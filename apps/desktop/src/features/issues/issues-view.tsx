@@ -11,7 +11,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ResizableSidebar,
-  SidebarCollapsedRail,
+  SidebarPanelToggle,
   WORKBENCH_SIDEBAR_WIDTH_PX,
 } from "@/components";
 import { EmptyState, Text } from "@/components/ui";
@@ -256,14 +256,7 @@ export function IssuesView({
 
   return (
     <div className="flex min-h-0 flex-1">
-      {sidebarCollapsed ? (
-        <SidebarCollapsedRail
-          onExpand={() => setSidebarCollapsed(false)}
-          expandLabel={t("sidebar.expand")}
-          // Continue the display-bar border under the toggle when that bar is shown.
-          chromeSeparator={boards.length > 0}
-        />
-      ) : (
+      {sidebarCollapsed ? null : (
         <ResizableSidebar
           defaultWidth={WORKBENCH_SIDEBAR_WIDTH_PX}
           ariaLabel={t("sidebar.resize")}
@@ -287,11 +280,19 @@ export function IssuesView({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-editor-canvas/80">
         {/* View-scoped chrome: lives in the content column so layout/groupBy
             read as settings for the open view, not a panel-wide control. */}
-        {boards.length > 0 ? (
+        {boards.length > 0 || sidebarCollapsed ? (
           <div
             className="flex h-8 shrink-0 items-center gap-1 border-b border-editor-border px-2"
             data-testid="issues-view-display-bar"
           >
+            {sidebarCollapsed ? (
+              <div className="flex h-6 items-center ps-2 pe-1.5">
+                <SidebarPanelToggle
+                  onClick={() => setSidebarCollapsed(false)}
+                  aria-label={t("sidebar.expand")}
+                />
+              </div>
+            ) : null}
             <Text
               size="body"
               weight="medium"
@@ -299,18 +300,22 @@ export function IssuesView({
             >
               {navTitle}
             </Text>
-            <ViewFilterMenu
-              filters={viewFilters}
-              workspaces={workspaces}
-              labels={activeBoard?.labels ?? []}
-              onFiltersChange={handleFiltersChange}
-            />
-            <ViewDisplayMenu
-              layout={layout}
-              groupBy={groupBy}
-              onLayoutChange={handleLayout}
-              onGroupByChange={handleGroupBy}
-            />
+            {boards.length > 0 ? (
+              <>
+                <ViewFilterMenu
+                  filters={viewFilters}
+                  workspaces={workspaces}
+                  labels={activeBoard?.labels ?? []}
+                  onFiltersChange={handleFiltersChange}
+                />
+                <ViewDisplayMenu
+                  layout={layout}
+                  groupBy={groupBy}
+                  onLayoutChange={handleLayout}
+                  onGroupByChange={handleGroupBy}
+                />
+              </>
+            ) : null}
           </div>
         ) : null}
         {viewBoard ? (

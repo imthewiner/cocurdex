@@ -72,6 +72,7 @@ import {
 import { ContextCompactionDivider } from "./context-compaction-divider";
 import { messageOriginLabel } from "./message-origin-label";
 import { turnStatsByMessageAtom } from "./message-store";
+import { MessageTime } from "./message-time";
 import { PeerPrompt } from "./peer-prompt";
 import { useMessageFilePathHandlers } from "./use-message-file-path-handlers";
 
@@ -95,14 +96,6 @@ function getMessageArticleClassName(message: MessageRecord) {
   }
 
   return "w-full min-w-0 max-w-3xl text-chat-fg";
-}
-
-function formatMessageTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(new Date(value));
 }
 
 function formatTokenCount(value: number) {
@@ -310,7 +303,6 @@ const UserPrompt = memo(function UserPrompt({
 }) {
   const { t } = useTranslation("agent");
   const [hasCopied, setHasCopied] = useState(false);
-  const sentAt = formatMessageTime(message.createdAt);
 
   const handleCopy = () => {
     void navigator.clipboard
@@ -366,12 +358,10 @@ const UserPrompt = memo(function UserPrompt({
         ) : null}
         {showActions ? (
           <div className="flex h-6 items-center justify-end gap-2 pr-1 text-chat-fg-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-            <time
-              className="text-xs tabular-nums opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-              dateTime={message.createdAt}
-            >
-              {sentAt}
-            </time>
+            <MessageTime
+              className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+              value={message.createdAt}
+            />
             <div className="flex items-center gap-1">
               <Button
                 aria-label={t("previousMessage.copy")}
@@ -409,7 +399,6 @@ const AssistantMessageActions = memo(function AssistantMessageActions({
   const turnStats = useAtomValue(turnStatsByMessageAtom)[message.id];
   const [hasCopied, setHasCopied] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen] = useState(false);
-  const sentAt = formatMessageTime(message.createdAt);
   const durationText = turnStats
     ? formatDurationMs(turnStats.durationMs)
     : null;
@@ -499,9 +488,7 @@ const AssistantMessageActions = memo(function AssistantMessageActions({
             <TurnTokenUsage usage={turnStats?.usage} />
           </span>
         ) : null}
-        <time className="text-xs tabular-nums" dateTime={message.createdAt}>
-          {sentAt}
-        </time>
+        <MessageTime value={message.createdAt} />
       </div>
     </div>
   );

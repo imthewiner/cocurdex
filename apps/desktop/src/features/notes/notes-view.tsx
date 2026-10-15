@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ResizableSidebar,
-  SidebarCollapsedRail,
+  SidebarPanelToggle,
   WORKBENCH_SIDEBAR_WIDTH_PX,
 } from "@/components";
 import { EmptyState } from "@/components/ui";
@@ -46,12 +46,7 @@ export function NotesView() {
       className="flex min-h-0 flex-1"
       style={{ minWidth: MIN_NOTES_VIEW_WIDTH_PX }}
     >
-      {sidebarCollapsed ? (
-        <SidebarCollapsedRail
-          onExpand={() => setSidebarCollapsed(false)}
-          expandLabel={t("sidebar.expand")}
-        />
-      ) : (
+      {sidebarCollapsed ? null : (
         <ResizableSidebar
           defaultWidth={WORKBENCH_SIDEBAR_WIDTH_PX}
           ariaLabel={t("sidebar.resize")}
@@ -60,9 +55,17 @@ export function NotesView() {
         </ResizableSidebar>
       )}
       <div
-        className="flex min-h-0 min-w-0 flex-1 flex-col bg-editor-canvas"
+        className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-editor-canvas"
         style={{ minWidth: MIN_NOTES_EDITOR_WIDTH_PX }}
       >
+        {sidebarCollapsed ? (
+          <div className="absolute start-4 top-2 z-10 flex h-6 items-center">
+            <SidebarPanelToggle
+              onClick={() => setSidebarCollapsed(false)}
+              aria-label={t("sidebar.expand")}
+            />
+          </div>
+        ) : null}
         {activeNoteId ? (
           <NoteEditor />
         ) : (

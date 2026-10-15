@@ -1,0 +1,187 @@
+import { openScenarioApp } from "./lib/app.mjs";
+import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
+
+const SESSION_ROW = /^Checkout audit log\s+(?![(（])/;
+const UI_TIMEOUT_MS = 30_000;
+const JUMP_TIMEOUT_MS = 5_000;
+const MAX_WHEEL_TICKS = 20;
+
+const args = readScenarioArgs();
+
+function readViewport() {
+  const viewport = window.__jumpViewport;
+  if (!viewport) return null;
+  const rect = viewport.getBoundingClientRect();
+  return {
+    scrollTop: viewport.scrollTop,
+    scrollHeight: viewport.scrollHeight,
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+async function wheel(session, point, deltaY, times) {
+  await session.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    ...point,
+  });
+  for (let index = 0; index < times; index += 1) {
+    await session.send("Input.dispatchMouseEvent", {
+      type: "mouseWheel",
+      ...point,
+      deltaX: 0,
+      deltaY,
+    });
+    await session.waitUntil(
+      () =>
+        new Promise((resolve) => requestAnimationFrame(() => resolve(true))),
+      null,
+    );
+  }
+}
+
+function recordScrollWrites() {
+  const viewport = window.__jumpViewport;
+  const original = viewport.scrollTo.bind(viewport);
+  window.__jumpScrollWrites = [];
+  viewport.scrollTo = (options) => {
+    window.__jumpScrollWrites.push(JSON.stringify(options));
+    original(options);
+  };
+  window.__restoreScrollTo = () => {
+    delete viewport.scrollTo;
+  };
+}
+
+function waitForScrollIdle() {
+  return new Promise((resolve) => {
+    const viewport = window.__jumpViewport;
+    let last = viewport.scrollTop;
+    let stableFrames = 0;
+    const tick = () => {
+      stableFrames = viewport.scrollTop === last ? stableFrames + 1 : 0;
+      last = viewport.scrollTop;
+      if (stableFrames >= 20) resolve(true);
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+async function scrollUntilJumpToTop(session, point, jumpLabel) {
+  for (let tick = 0; tick < MAX_WHEEL_TICKS; tick += 1) {
+    await wheel(session, point, -60, 1);
+    await session.run(waitForScrollIdle);
+    const matches = await queryAllByRole(session, {
+      role: "button",
+      name: jumpLabel,
+    });
+    if (matches.length > 0) return;
+  }
+  throw new Error(`No "${jumpLabel}" button after ${MAX_WHEEL_TICKS} ticks`);
+}
+
+runScenario("chat-jump-to-top", {
+  open: () => openScenarioApp(args, { fixtureDb: true }),
+  setup: async ({ session }) => {
+    await clickByRole(
+      session,
+      { role: "button", name: SESSION_ROW },
+      UI_TIMEOUT_MS,
+    );
+    await session.waitUntil(
+      () => {
+        window.__jumpViewport = [
+          ...document.querySelectorAll("[data-slot=scroll-area-viewport]"),
+        ].find((node) => node.scrollHeight > 4000);
+        return Boolean(window.__jumpViewport);
+      },
+      null,
+      UI_TIMEOUT_MS,
+    );
+    const [jumpLabel, latestLabel] = await Promise.all(
+      ["common:jumpToTop", "common:jumpToLatest"].map((key) =>
+        session.run((text) => window.__scenario.t(text), key),
+      ),
+    );
+    return { jumpLabel, latestLabel };
+  },
+  steps: [
+    [
+      "jump to top reaches the first message",
+      async ({ session, jumpLabel }) => {
+        await session.run(() => {
+          const viewport = window.__jumpViewport;
+          viewport.scrollTop = viewport.scrollHeight;
+        });
+        await session.waitUntil(
+          () => {
+            const viewport = window.__jumpViewport;
+            return (
+              viewport.scrollHeight -
+                viewport.scrollTop -
+                viewport.clientHeight <
+              2
+            );
+          },
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const before = await session.run(readViewport);
+        await scrollUntilJumpToTop(session, before, jumpLabel);
+        await session.run(recordScrollWrites);
+        await clickByRole(session, {
+          role: "button",
+          name: jumpLabel,
+        });
+        const reached = await session
+          .waitUntil(
+            () => window.__jumpViewport.scrollTop === 0,
+            null,
+            JUMP_TIMEOUT_MS,
+          )
+          .then(
+            () => true,
+            () => false,
+          );
+        const after = await session.run(readViewport);
+        const writes = await session.run(() => {
+          window.__restoreScrollTo();
+          return window.__jumpScrollWrites;
+        });
+        check(reached, "jump stopped before the top", {
+          before,
+          after,
+          writes,
+        });
+        return { before, after, writes };
+      },
+    ],
+    [
+      "jump controls return after scrolling away from the top",
+      async ({ session, latestLabel }) => {
+        const point = await session.run(readViewport);
+        await wheel(session, point, 240, 4);
+        await session.run(waitForScrollIdle);
+        await waitForRole(
+          session,
+          { role: "button", name: latestLabel },
+          UI_TIMEOUT_MS,
+        );
+        return {
+          scrollTop: (await session.run(readViewport)).scrollTop,
+        };
+      },
+    ],
+    [
+      "renderer has no errors",
+      async ({ session }) => {
+        const errors = await session.run(() => window.__scenario.errors);
+        check(errors.length === 0, "renderer errors", errors);
+        return {};
+      },
+    ],
+  ],
+  teardown: async () => ({}),
+});

@@ -105,6 +105,37 @@ flowchart LR
 \`\`\`
 `;
 
+const AUDIT_TURN_COUNT = 14;
+
+function auditReply(index: number): string {
+  const lines = Array.from(
+    { length: 28 },
+    (_, line) =>
+      `  { step: ${line + 1}, cart: "cart-${index + 1}", total: ${(index + 1) * 100 + line} },`,
+  );
+  return [
+    `### Checkout audit ${index + 1}`,
+    "",
+    "Totals recorded for each step of this cart:",
+    "",
+    "```ts",
+    "const steps = [",
+    ...lines,
+    "];",
+    "```",
+    "",
+  ].join("\n");
+}
+
+const AUDIT_TURNS: FixtureTurn[] = Array.from(
+  { length: AUDIT_TURN_COUNT },
+  (_, index) => ({
+    messageId: `fixture-message-audit-${index + 1}`,
+    prompt: `Audit checkout cart ${index + 1}.`,
+    replies: [{ text: [auditReply(index)] }],
+  }),
+);
+
 export const FIXTURE_SESSIONS: FixtureSession[] = [
   {
     id: "fixture-session-discounts",
@@ -199,6 +230,12 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
     ],
   },
   {
+    id: "fixture-session-checkout-audit",
+    title: "Checkout audit log",
+    kind: "main",
+    turns: AUDIT_TURNS,
+  },
+  {
     id: "fixture-session-old-spike",
     title: "Spike: gift cards",
     kind: "main",
@@ -284,6 +321,11 @@ export const FIXTURE_NOTES: FixtureNote[] = [
 
 - [x] Fixed amount codes
 - [ ] Percentage codes
+
+| Code | Discount | Status |
+| --- | --- | --- |
+| \`SPRING10\` | 10% off | Live |
+| \`FIVEOFF\` | 5 off | Draft |
 `,
   },
   {

@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { readDaemonMetadata, requestDaemon } from "@cocurdex/daemon/client";
+import { withoutNodeEnvProxyFlag } from "@cocurdex/shared";
 import { findMonorepoRoot } from "./open-desktop";
 
 export async function withDaemon<T>(operation: () => Promise<T>) {
@@ -27,6 +28,7 @@ async function startDaemon() {
     {
       cwd: daemonRoot,
       detached: true,
+      env: withoutNodeEnvProxyFlag(process.env),
       stdio: "ignore",
       windowsHide: true,
     },
