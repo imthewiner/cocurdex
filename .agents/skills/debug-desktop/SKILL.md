@@ -59,10 +59,35 @@ An `EPERM` connecting to the local port is a sandbox restriction, not evidence
 that the app is stopped. Use the normal escalation mechanism for the read-only
 probe. A refused connection means the selected port is not listening.
 
+### How CDP is enabled
+Every build, dev or packaged, opens CDP only when `COCURDEX_REMOTE_DEBUGGING_PORT`
+is set at launch (`configureRemoteDebugging` in `electron/main.ts`); without it
+CDP is off. `dev:inspect` sets it to 9222.
+
 ### Critical gotcha — origin allowlist
-`main.ts` sets `remote-allow-origins=http://127.0.0.1:9222`. Always use
+`main.ts` sets `remote-allow-origins=http://127.0.0.1:<port>`. Always use
 **`127.0.0.1`, never `localhost`**, or the CDP websocket is rejected. The helper
 already does this.
+
+### Attach to a packaged build
+Reproduce packaged-only behavior (production bundle, real data volume) by
+launching the installed app with the variable, on a port other than 9222:
+
+```bash
+# macOS
+COCURDEX_REMOTE_DEBUGGING_PORT=9333 /Applications/Cocurdex.app/Contents/MacOS/Cocurdex
+# Linux
+COCURDEX_REMOTE_DEBUGGING_PORT=9333 ./Cocurdex-linux-x64.AppImage
+# Windows (PowerShell, per-user install)
+$env:COCURDEX_REMOTE_DEBUGGING_PORT=9333; & "$env:LOCALAPPDATA\Programs\Cocurdex\Cocurdex.exe"
+```
+
+Then pass `--port 9333` to `cdp.mjs`.
+
+- Quit the running packaged app first. The single-instance lock makes a second
+  launch exit at once, and no CDP port opens.
+- It uses the user's real profile (no `-dev` suffix). Keep checks read-only and
+  restore what you change, or set a short `COCURDEX_USER_DATA_PATH` to isolate it.
 
 ## 1. Renderer: eval / screenshot / target list
 
@@ -252,6 +277,6 @@ Diagnostics dumps: `<userData>/diagnostics/`. Use these for crashes, IPC, agent/
 session backend errors — none of which surface in the renderer console.
 
 ## Troubleshooting
-- `No CDP at http://127.0.0.1:9222` → app not started with `dev:inspect`.
+- `No CDP at http://127.0.0.1:9222` → app not started with `dev:inspect`, or a packaged app launched without `COCURDEX_REMOTE_DEBUGGING_PORT` (or already running before the relaunch).
 - Empty/refused target list → used `localhost` instead of `127.0.0.1`, or app down.
 - DevTools (`devtools://`) targets are filtered out by the helper automatically.
