@@ -7,6 +7,7 @@ import {
   getNetworkProxySettings,
   type NetworkProxySettings,
 } from "@cocurdex/shared";
+import { applyNodeGlobalProxy } from "@cocurdex/shared/node";
 import { app, session } from "electron";
 import { chatDaemonOptions } from "../chat/app-state";
 
@@ -42,6 +43,7 @@ export function initializeNetworkProxyRuntime() {
 function applyHostNetworkProxy(settings: NetworkProxySettings) {
   const operation = applyQueue.then(async () => {
     applyNetworkProxySettings(settings, process.env);
+    applyNodeGlobalProxy(process.env);
     const config = buildElectronProxyConfig(settings);
     await session.defaultSession.setProxy({
       mode: config.mode,

@@ -10,8 +10,10 @@ import {
   parseNetworkProxySettings,
   pickProxyEnv,
   redactProxyUrl,
+  resolveNodeGlobalProxyEnv,
   resolveProxyEnvAssignments,
   serializeNetworkProxySettings,
+  withoutNodeEnvProxyFlag,
 } from "@cocurdex/shared/internal/network-proxy";
 import { describe, expect, it } from "vitest";
 
@@ -264,5 +266,61 @@ describe("network-proxy", () => {
         error: "timeout",
       }),
     ).toBeNull();
+  });
+
+  it("maps manual proxy settings to Node's global proxy env", () => {
+    const assignments = resolveProxyEnvAssignments(
+      normalizeNetworkProxySettings({
+        mode: "manual",
+        httpProxy: "http://127.0.0.1:7890",
+        httpsProxy: "",
+        allProxy: "socks5://127.0.0.1:7891",
+        noProxy: "localhost",
+      }),
+      systemSnapshot,
+    );
+    expect(resolveNodeGlobalProxyEnv(assignments)).toEqual({
+      http_proxy: "http://127.0.0.1:7890",
+      https_proxy: "http://127.0.0.1:7890",
+      no_proxy: "localhost",
+    });
+  });
+
+  it("falls back to an HTTP ALL_PROXY and ignores SOCKS-only proxies", () => {
+    expect(
+      resolveNodeGlobalProxyEnv({ ALL_PROXY: "http://127.0.0.1:7890" }),
+    ).toEqual({
+      http_proxy: "http://127.0.0.1:7890",
+      https_proxy: "http://127.0.0.1:7890",
+    });
+    expect(
+      resolveNodeGlobalProxyEnv({
+        HTTPS_PROXY: "socks5://127.0.0.1:7891",
+        all_proxy: "socks5://127.0.0.1:7891",
+      }),
+    ).toEqual({});
+  });
+
+  it("resolves no Node proxy when proxying is off", () => {
+    const assignments = resolveProxyEnvAssignments(
+      normalizeNetworkProxySettings({
+        mode: "off",
+        httpProxy: "",
+        httpsProxy: "",
+        allProxy: "",
+        noProxy: "",
+      }),
+      systemSnapshot,
+    );
+    expect(resolveNodeGlobalProxyEnv(assignments)).toEqual({});
+  });
+
+  it("drops the startup env-proxy flag from a spawn env", () => {
+    expect(
+      withoutNodeEnvProxyFlag({
+        NODE_USE_ENV_PROXY: "1",
+        HTTP_PROXY: "http://127.0.0.1:7890",
+      }),
+    ).toEqual({ HTTP_PROXY: "http://127.0.0.1:7890" });
   });
 });

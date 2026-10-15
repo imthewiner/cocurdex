@@ -1,6 +1,9 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { COCURDEX_DAEMON_DIAGNOSTIC_PREFIX } from "@cocurdex/shared";
+import {
+  COCURDEX_DAEMON_DIAGNOSTIC_PREFIX,
+  withoutNodeEnvProxyFlag,
+} from "@cocurdex/shared";
 import { terminateProcessTree } from "../process";
 
 // Must outlast the daemon's own teardown: each live agent session cancels its
@@ -100,7 +103,7 @@ export function spawnOwnedDaemonProcess(
   const child = spawn(process.execPath, [options.daemonEntryPath], {
     detached: true,
     env: {
-      ...process.env,
+      ...withoutNodeEnvProxyFlag(process.env),
       COCURDEX_DAEMON_OWNER_FD: "3",
       COCURDEX_DAEMON_RUNTIME_FINGERPRINT: options.runtimeFingerprint,
       COCURDEX_USER_DATA_PATH: options.userDataPath,

@@ -42,6 +42,7 @@ import {
   mergeUsageRecords,
   NETWORK_PROXY_SETTING_KEY,
 } from "@cocurdex/shared";
+import { applyNodeGlobalProxy } from "@cocurdex/shared/node";
 import { SessionAttentionProjection } from "./attention";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { createMessageDeltaBuffer } from "./message-delta-buffer";
@@ -64,6 +65,11 @@ export interface AgentEventPersistenceContext {
 
 const INTERRUPTED_BY_RESTART_MESSAGE =
   "The agent was interrupted because Cocurdex restarted before this turn finished. Send a message to continue.";
+
+function applyStoredNetworkProxy(raw: string | null) {
+  loadNetworkProxySettingsFromJson(raw, process.env);
+  applyNodeGlobalProxy(process.env);
+}
 
 export class DaemonState {
   readonly sessionAttention: SessionAttentionProjection;
@@ -166,12 +172,12 @@ export class DaemonState {
       const raw = await this.database.appSettings.get(
         NETWORK_PROXY_SETTING_KEY,
       );
-      loadNetworkProxySettingsFromJson(raw, process.env);
+      applyStoredNetworkProxy(raw);
     } catch (error) {
       logDaemonDiagnostic("warn", "networkProxy.loadFailed", {
         error: error instanceof Error ? error.message : String(error),
       });
-      loadNetworkProxySettingsFromJson(null, process.env);
+      applyStoredNetworkProxy(null);
     }
   }
 
@@ -247,7 +253,7 @@ export class DaemonState {
   async setNetworkProxySettingJson(valueJson: string) {
     await this.networkProxyReady;
     await this.database.appSettings.set(NETWORK_PROXY_SETTING_KEY, valueJson);
-    loadNetworkProxySettingsFromJson(valueJson, process.env);
+    applyStoredNetworkProxy(valueJson);
   }
 
   get hostAccessStore() {
