@@ -41,6 +41,7 @@ import {
 import { cn, desktopApi, useMountEffect } from "@/lib";
 import { IssuesPanel } from "./issues-panel";
 import { PanScrollbar } from "./pan-scrollbar";
+import { PanelToolbar } from "./panel-toolbar";
 import { PdfReaderView } from "./pdf-reader-view";
 import {
   fileTreeWidthAtom,
@@ -341,8 +342,8 @@ export function RightEditorPanel({
       />
 
       {activeView === "editor" ? (
-        <div
-          className="app-drag relative z-30 flex items-center gap-1 border-b border-editor-border px-2 py-1"
+        <PanelToolbar
+          className="app-drag relative z-30 gap-1"
           data-testid="editor-panel-toolbar"
         >
           <SidebarToggleButton
@@ -360,7 +361,7 @@ export function RightEditorPanel({
           <div className="min-w-0 flex-1">
             <EditorTabs />
           </div>
-        </div>
+        </PanelToolbar>
       ) : null}
 
       {/*

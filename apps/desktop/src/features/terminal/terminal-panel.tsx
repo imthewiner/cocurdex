@@ -2,6 +2,7 @@ import { useAtom, useSetAtom } from "jotai";
 import { Plus, RotateCcw, TerminalSquare } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
 import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
@@ -161,8 +162,8 @@ export function TerminalPanel({
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col bg-editor-canvas">
-      <div
-        className="app-drag flex h-9 shrink-0 items-center border-b border-editor-border bg-editor-shell px-2"
+      <PanelToolbar
+        className="app-drag bg-editor-shell"
         data-testid="terminal-tab-row"
       >
         {/* Tabs and the new-tab button stay grouped on the start edge so the
@@ -188,7 +189,7 @@ export function TerminalPanel({
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
           </TitlebarIconButton>
         </div>
-      </div>
+      </PanelToolbar>
       <div
         className="min-h-0 flex-1 overflow-hidden p-2"
         data-testid="terminal-host"

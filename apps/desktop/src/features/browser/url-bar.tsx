@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
 import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
@@ -67,7 +68,7 @@ export function BrowserUrlBar({ actions }: { actions?: ReactNode }) {
   );
 
   return (
-    <div className="flex items-center gap-1 border-b border-editor-border px-2 py-1.5">
+    <PanelToolbar className="gap-1">
       <TitlebarIconButton
         aria-label={t("actions.back")}
         onClick={() => {
@@ -118,6 +119,6 @@ export function BrowserUrlBar({ actions }: { actions?: ReactNode }) {
         />
       </div>
       {actions}
-    </div>
+    </PanelToolbar>
   );
 }

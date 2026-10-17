@@ -9,6 +9,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ListTodo } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
 import { SidebarToggleButton } from "@/app/layout/titlebar-icon-button";
 import { ResizableSidebar, WORKBENCH_SIDEBAR_WIDTH_PX } from "@/components";
 import { EmptyState, Text } from "@/components/ui";
@@ -278,9 +279,10 @@ export function IssuesView({
         {/* View-scoped chrome: lives in the content column so layout/groupBy
             read as settings for the open view, not a panel-wide control. */}
         {boards.length > 0 || sidebarCollapsed ? (
-          <div
-            className="flex h-9 shrink-0 items-center gap-1 px-2"
+          <PanelToolbar
+            className="gap-1"
             data-testid="issues-view-display-bar"
+            divided={false}
           >
             {sidebarCollapsed ? (
               <SidebarToggleButton
@@ -316,7 +318,7 @@ export function IssuesView({
                 />
               </>
             ) : null}
-          </div>
+          </PanelToolbar>
         ) : null}
         {viewBoard ? (
           <>
