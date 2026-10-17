@@ -392,7 +392,8 @@ export function SettingsScreen({
       >
         <div className="app-no-drag flex items-center gap-1">
           <SidebarToggleButton
-            ariaLabel={t("editor:actions.toggleSidebar")}
+            label={t("editor:actions.toggleSidebar")}
+            open={isSidebarOpen}
             onToggle={onToggleSidebar}
           />
           <ScreenBackButton

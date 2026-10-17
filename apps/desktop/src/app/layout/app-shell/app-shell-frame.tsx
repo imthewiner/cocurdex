@@ -322,7 +322,8 @@ export function AppShellFrame({
                 )}
               >
                 <SidebarToggleButton
-                  ariaLabel={t("editor:actions.toggleSidebar")}
+                  label={t("editor:actions.toggleSidebar")}
+                  open={isLeftSidebarOpen}
                   onToggle={onToggleLeftSidebar}
                 />
                 <AppShellTitlebarActions

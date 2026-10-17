@@ -1,5 +1,4 @@
 import { useAtomValue } from "jotai";
-import { PanelLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,10 +19,7 @@ import {
   useSessionSplitActions,
 } from "./session-split";
 import { LeftSidebar } from "./sidebar";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "./titlebar-icon-button";
+import { SidebarToggleButton } from "./titlebar-icon-button";
 import { useChatDockViewportWidth } from "./use-chat-dock-viewport";
 import { VIEW_SWITCHER_ROW_HEIGHT_PX } from "./view-switcher-tabs";
 
@@ -103,14 +99,12 @@ export function ChatDock({
   // Session toggle must stay the same size as pin/close so opening the drawer
   // (toggle leaves the row for a width spacer) does not change row height.
   const sessionToggle = (
-    <TitlebarIconButton
-      active={sessionListOpen}
-      aria-label={t("actions.toggleChatSessions")}
-      onClick={() => setSessionListOpen((prev) => !prev)}
+    <SidebarToggleButton
+      label={t("actions.toggleChatSessions")}
+      open={sessionListOpen}
+      onToggle={() => setSessionListOpen((prev) => !prev)}
       onMouseDown={(event) => event.stopPropagation()}
-    >
-      <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
-    </TitlebarIconButton>
+    />
   );
 
   const headerTrailing = (

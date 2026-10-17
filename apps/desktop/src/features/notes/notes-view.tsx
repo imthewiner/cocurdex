@@ -2,11 +2,8 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { NotebookPen } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ResizableSidebar,
-  SidebarPanelToggle,
-  WORKBENCH_SIDEBAR_WIDTH_PX,
-} from "@/components";
+import { SidebarToggleButton } from "@/app/layout/titlebar-icon-button";
+import { ResizableSidebar, WORKBENCH_SIDEBAR_WIDTH_PX } from "@/components";
 import { EmptyState } from "@/components/ui";
 import { useDataSync } from "@/features/data-sync";
 import { useMountEffect } from "@/lib";
@@ -59,10 +56,11 @@ export function NotesView() {
         style={{ minWidth: MIN_NOTES_EDITOR_WIDTH_PX }}
       >
         {sidebarCollapsed ? (
-          <div className="absolute start-4 top-0 z-10 flex h-8 items-center">
-            <SidebarPanelToggle
-              onClick={() => setSidebarCollapsed(false)}
-              aria-label={t("sidebar.expand")}
+          <div className="absolute start-2 top-0 z-10 flex h-9 items-center">
+            <SidebarToggleButton
+              label={t("sidebar.expand")}
+              open={false}
+              onToggle={() => setSidebarCollapsed(false)}
             />
           </div>
         ) : null}

@@ -1,4 +1,4 @@
-import { ArrowLeft, PanelLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { ResizeSeparator } from "@/components/resize-separator";
 import { cn } from "@/lib";
@@ -8,7 +8,11 @@ import {
 } from "../titlebar-icon-button";
 
 export { ResizeSeparator } from "@/components/resize-separator";
-export { TitlebarButton, TitlebarIconButton } from "../titlebar-icon-button";
+export {
+  SidebarToggleButton,
+  TitlebarButton,
+  TitlebarIconButton,
+} from "../titlebar-icon-button";
 
 export function ScreenBackButton({
   canGoBack,
@@ -29,27 +33,6 @@ export function ScreenBackButton({
       <ArrowLeft
         className={cn(TITLEBAR_ICON_GLYPH_CLASS, "rtl:-scale-x-100")}
       />
-    </TitlebarIconButton>
-  );
-}
-
-export function SidebarToggleButton({
-  ariaLabel,
-  className,
-  onToggle,
-}: {
-  ariaLabel: string;
-  className?: string;
-  onToggle(): void;
-}) {
-  return (
-    <TitlebarIconButton
-      aria-label={ariaLabel}
-      className={className}
-      tooltip={ariaLabel}
-      onClick={onToggle}
-    >
-      <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
     </TitlebarIconButton>
   );
 }

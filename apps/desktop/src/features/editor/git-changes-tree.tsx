@@ -1,17 +1,10 @@
 import { FileTree as PierreFileTree, useFileTree } from "@pierre/trees/react";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  List,
-  ListTree,
-  Minus,
-  PanelLeft,
-  Plus,
-  Search,
-  Undo2,
-} from "lucide-react";
+import { List, ListTree, Minus, Plus, Search, Undo2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  SidebarToggleButton,
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "@/app/layout/titlebar-icon-button";
@@ -339,11 +332,10 @@ function DiffActionsStrip({
   return (
     <div className="shrink-0 px-2 pt-2">
       <div className="flex h-7 items-center gap-1">
-        <ToolbarButton
-          active={showTreePanel}
-          icon={<PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />}
+        <SidebarToggleButton
           label={showTreePanel ? t("git.hideFileTree") : t("git.showFileTree")}
-          onClick={() => onTreePanelVisibleChange(!showTreePanel)}
+          open={showTreePanel}
+          onToggle={() => onTreePanelVisibleChange(!showTreePanel)}
         />
         <div className="mx-1 flex min-w-0 items-center gap-2">
           <Text tone="muted" className="truncate">

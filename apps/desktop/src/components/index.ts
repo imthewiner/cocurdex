@@ -35,10 +35,8 @@ export {
   RenderReadinessContext,
   useRenderReadiness,
 } from "./render-readiness";
-export { ResizableSidebar } from "./resizable-sidebar";
 export {
-  SidebarPanelHeader,
+  ResizableSidebar,
   WORKBENCH_SIDEBAR_WIDTH_PX,
-} from "./sidebar-panel-header";
-export { SidebarPanelToggle } from "./sidebar-panel-toggle";
+} from "./resizable-sidebar";
 export { SidebarSectionHeader } from "./sidebar-section-header";

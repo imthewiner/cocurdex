@@ -3,7 +3,7 @@ import {
   primaryWorkspaceRootPath,
 } from "@cocurdex/shared";
 import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
-import { PanelLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ResizeSeparator } from "@/components/resize-separator";
@@ -51,6 +51,7 @@ import {
   rightPanelViewTouchedAtom,
 } from "./right-editor-panel-store";
 import {
+  SidebarToggleButton,
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "./titlebar-icon-button";
@@ -344,13 +345,11 @@ export function RightEditorPanel({
           className="app-drag relative z-30 flex items-center gap-1 border-b border-editor-border px-2 py-1"
           data-testid="editor-panel-toolbar"
         >
-          <TitlebarIconButton
-            active={fileTreeVisible && !searchPanelVisible}
-            aria-label={t("actions.explorer")}
-            onClick={showFileTreePanel}
-          >
-            <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
-          </TitlebarIconButton>
+          <SidebarToggleButton
+            label={t("actions.explorer")}
+            open={fileTreeVisible && !searchPanelVisible}
+            onToggle={showFileTreePanel}
+          />
           <TitlebarIconButton
             active={searchPanelVisible}
             aria-label={tSearch("searchFiles")}

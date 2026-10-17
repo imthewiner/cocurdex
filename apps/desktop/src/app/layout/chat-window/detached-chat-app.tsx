@@ -1,5 +1,4 @@
 import { useAtomValue, useStore } from "jotai";
-import { PanelLeft } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -14,7 +13,7 @@ import { synchronizeAgentState } from "../app-shell/agent-event-bridge";
 import { syncInitialPreferences } from "../app-shell/app-shell-preferences";
 import { SessionSplitLayout } from "../session-split";
 import { LeftSidebar } from "../sidebar";
-import { TitlebarIconButton } from "../titlebar-icon-button";
+import { SidebarToggleButton } from "../titlebar-icon-button";
 import {
   useChatBrowserContext,
   useChatBrowserPreviewBridge,
@@ -84,13 +83,11 @@ function DetachedChatContent({ transfer }: { transfer: ChatWindowTransfer }) {
           paddingRight: "calc(0.5rem + var(--titlebar-controls-inset))",
         }}
       >
-        <TitlebarIconButton
-          active={sidebarOpen}
-          aria-label={t("actions.toggleChatSessions")}
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <PanelLeft className="size-3.5" />
-        </TitlebarIconButton>
+        <SidebarToggleButton
+          label={t("actions.toggleChatSessions")}
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
         <ChatWindowButton />
       </div>
       <div className="relative min-h-0 flex-1">
