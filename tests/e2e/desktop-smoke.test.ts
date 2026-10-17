@@ -12,7 +12,12 @@ import {
   type Page,
 } from "@playwright/test";
 import { afterAll, describe, expect, it } from "vitest";
-import { repoRoot, sleep, waitFor } from "./helpers/daemon-process";
+import {
+  repoRoot,
+  sleep,
+  waitFor,
+  waitForDaemonStatus,
+} from "./helpers/daemon-process";
 
 const desktopRoot = path.join(repoRoot, "apps", "desktop");
 const mainEntry = path.join(desktopRoot, "out", "main", "main.js");
@@ -134,7 +139,7 @@ describe("desktop app boot", () => {
     expect(metadata.pid).toBeGreaterThan(0);
     expect(metadata.token).toBeTruthy();
 
-    const status = await requestDaemon("daemon.status", { metadata });
+    const status = await waitForDaemonStatus(metadata);
     expect(status.pid).toBe(metadata.pid);
     expect(status.startedAt).toBe(metadata.startedAt);
 

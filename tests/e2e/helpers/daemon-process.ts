@@ -45,6 +45,25 @@ export async function waitFor(
   throw new Error("Timed out waiting for condition");
 }
 
+export async function waitForDaemonStatus(
+  metadata: DaemonMetadata,
+  timeoutMs = STARTUP_TIMEOUT_MS,
+) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown;
+  while (Date.now() < deadline) {
+    try {
+      return await requestDaemon("daemon.status", { metadata });
+    } catch (error) {
+      lastError = error;
+      await sleep(80);
+    }
+  }
+  const cause =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`Cocurdex daemon did not answer daemon.status: ${cause}`);
+}
+
 export async function requestDaemonShutdown(metadata: DaemonMetadata) {
   try {
     const result = await requestDaemon(
