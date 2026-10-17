@@ -61,10 +61,10 @@ export function ActivityBlock({
       <CollapsibleContent
         className={cn(
           "flex flex-col overflow-hidden",
-          variant === "turn" && "activity-timeline mt-1 mb-3",
+          variant === "turn" && "activity-timeline -mx-1.5 mt-1 mb-3 px-1.5",
           variant === "step" && "gap-1",
           variant === "step" &&
-            "ms-3 mt-0.5 mb-1 border-s border-chat-border-soft ps-2.5",
+            "ms-3 -me-1.5 mt-0.5 mb-1 border-s border-chat-border-soft ps-2.5 pe-1.5",
           // Height/margin interpolate between 0 and `auto` (interpolate-size)
           // in both directions so surrounding content glides instead of
           // snapping. `auto` resolves at layout time, so rows mounted late by
