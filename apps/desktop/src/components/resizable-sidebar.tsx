@@ -54,11 +54,7 @@ export function ResizableSidebar({
       >
         {children}
       </div>
-      <ResizeSeparator
-        ariaLabel={ariaLabel}
-        lineVisibility="hover"
-        onMouseDown={handleMouseDown}
-      />
+      <ResizeSeparator ariaLabel={ariaLabel} onMouseDown={handleMouseDown} />
     </>
   );
 }
