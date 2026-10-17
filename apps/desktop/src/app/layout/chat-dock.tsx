@@ -21,7 +21,10 @@ import {
 import { LeftSidebar } from "./sidebar";
 import { SidebarToggleButton } from "./titlebar-icon-button";
 import { useChatDockViewportWidth } from "./use-chat-dock-viewport";
-import { VIEW_SWITCHER_ROW_HEIGHT_PX } from "./view-switcher-tabs";
+import {
+  VIEW_SWITCHER_ROW_HEIGHT_PX,
+  VIEW_SWITCHER_ROW_OUTER_HEIGHT_PX,
+} from "./view-switcher-tabs";
 
 interface ChatDockProps {
   visibility: ChatDockVisibility;
@@ -249,7 +252,7 @@ export function ChatDock({
         // chat surface below stays clear of the header band.
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 border-b border-editor-border"
+          className="absolute inset-x-0 top-0 box-content border-b border-editor-border"
           style={{ height: VIEW_SWITCHER_ROW_HEIGHT_PX }}
         />
       ) : null}
@@ -266,7 +269,7 @@ export function ChatDock({
         )}
         style={
           pinned
-            ? { top: VIEW_SWITCHER_ROW_HEIGHT_PX }
+            ? { top: VIEW_SWITCHER_ROW_OUTER_HEIGHT_PX }
             : {
                 right: geometry.right,
                 bottom: geometry.bottom,

@@ -71,6 +71,8 @@ const DRAG_THRESHOLD_PX = 3;
 const TAB_STEP_PX = TITLEBAR_ICON_BUTTON_SIZE + TITLEBAR_ICON_BUTTON_GAP;
 /** Fixed title chrome height — same as OS titlebar / center spacer / pinned chat. */
 export const VIEW_SWITCHER_ROW_HEIGHT_PX = TITLEBAR_HEIGHT;
+export const VIEW_SWITCHER_ROW_OUTER_HEIGHT_PX =
+  VIEW_SWITCHER_ROW_HEIGHT_PX + 1;
 
 interface ViewSwitcherTabsProps {
   activeView: RightPanelView;
@@ -269,7 +271,7 @@ export function ViewSwitcherTabs({
         Split into: tabs (drag) | middle filler (drag) | toggle reserve (no-drag).
       */}
       <div
-        className="relative z-40 flex w-full shrink-0 items-center border-b border-editor-border"
+        className="relative z-40 box-content flex w-full shrink-0 items-center border-b border-editor-border"
         data-testid="editor-panel-view-switcher"
         style={{
           height: VIEW_SWITCHER_ROW_HEIGHT_PX,

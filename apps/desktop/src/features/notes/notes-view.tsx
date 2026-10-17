@@ -56,7 +56,7 @@ export function NotesView() {
         style={{ minWidth: MIN_NOTES_EDITOR_WIDTH_PX }}
       >
         {sidebarCollapsed ? (
-          <div className="absolute start-2 top-0 z-10 flex h-9 items-center">
+          <div className="absolute start-2 top-0 z-10 flex h-8 items-center">
             <SidebarToggleButton
               label={t("sidebar.expand")}
               open={false}

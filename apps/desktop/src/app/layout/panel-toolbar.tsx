@@ -9,7 +9,7 @@ export function PanelToolbar({
   return (
     <div
       className={cn(
-        "box-content flex h-9 shrink-0 items-center px-2",
+        "box-content flex h-8 shrink-0 items-center px-2",
         divided && "border-b border-editor-border",
         className,
       )}
