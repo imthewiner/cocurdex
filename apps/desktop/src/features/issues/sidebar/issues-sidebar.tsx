@@ -38,7 +38,6 @@ export function IssuesSidebar({
         title={t("sidebar.nav.title")}
         collapseLabel={t("sidebar.collapse")}
         onCollapse={onCollapse}
-        divided
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">

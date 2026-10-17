@@ -282,7 +282,7 @@ export function IssuesView({
             read as settings for the open view, not a panel-wide control. */}
         {boards.length > 0 || sidebarCollapsed ? (
           <div
-            className="flex h-8 shrink-0 items-center gap-1 border-b border-editor-border px-2"
+            className="flex h-8 shrink-0 items-center gap-1 px-2"
             data-testid="issues-view-display-bar"
           >
             {sidebarCollapsed ? (
