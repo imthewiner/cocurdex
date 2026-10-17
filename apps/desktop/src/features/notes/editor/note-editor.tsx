@@ -199,7 +199,7 @@ function NoteEditorBody({
       ref={editorChromeRef}
       className="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-0.5 pb-8">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-4 pb-8">
         <div className="mb-4 flex items-center gap-3">
           <NoteTitleInput
             key={titleEpoch}
@@ -277,7 +277,7 @@ function FolderPlaceholder({ note }: { note: NoteRecord }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-0.5 pb-8">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-4 pb-8">
         <input
           type="text"
           value={value}
