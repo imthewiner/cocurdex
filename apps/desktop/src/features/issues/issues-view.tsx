@@ -17,7 +17,7 @@ import {
 import { EmptyState, Text } from "@/components/ui";
 import { useDataSync } from "@/features/data-sync";
 import { activeWorkspaceIdAtom, workspacesAtom } from "@/features/workspaces";
-import { useMountEffect } from "@/lib";
+import { cn, useMountEffect } from "@/lib";
 import { IssuesBoard, ViewDisplayMenu, ViewFilterMenu } from "./board";
 import { buildComposeDraft } from "./compose-draft";
 import {
@@ -286,7 +286,7 @@ export function IssuesView({
             data-testid="issues-view-display-bar"
           >
             {sidebarCollapsed ? (
-              <div className="flex h-6 items-center ps-2 pe-1.5">
+              <div className="flex h-6 items-center ps-2">
                 <SidebarPanelToggle
                   onClick={() => setSidebarCollapsed(false)}
                   aria-label={t("sidebar.expand")}
@@ -296,7 +296,11 @@ export function IssuesView({
             <Text
               size="body"
               weight="medium"
-              className="me-auto min-w-0 truncate ps-1"
+              className={cn(
+                "me-auto min-w-0 truncate",
+                sidebarCollapsed && "ps-0.5",
+                !sidebarCollapsed && "ps-1",
+              )}
             >
               {navTitle}
             </Text>
