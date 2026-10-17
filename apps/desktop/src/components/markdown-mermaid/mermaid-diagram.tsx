@@ -52,26 +52,28 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
         role="img"
         style={{ "--mermaid-height": `${diagram.height}px` } as CSSProperties}
       />
-      <div className="absolute end-1.5 top-1.5 flex items-center gap-0.5 rounded-full border border-chat-border-soft bg-chat-surface-raised p-0.5 opacity-0 shadow-chat-soft transition-opacity duration-150 group-focus-within/mermaid:opacity-100 group-hover/mermaid:opacity-100">
-        <CodeBlockCopyButton
-          className="flex size-6 items-center justify-center rounded-full text-chat-fg-muted hover:bg-muted hover:text-chat-fg dark:hover:bg-muted/50"
-          code={code}
-        />
-        <PreviewToolbarButton
-          className="rounded-full"
-          label={t("mermaid.download")}
-          onClick={() => downloadMermaidSvg(diagram.svg)}
-        >
-          <Download className="size-3.5" />
-        </PreviewToolbarButton>
-        <PreviewToolbarButton
-          className="rounded-full"
-          label={t("mermaid.openPreview")}
-          onClick={() => setPreviewOpen(true)}
-        >
-          <Maximize2 className="size-3.5" />
-        </PreviewToolbarButton>
-      </div>
+      {isIncomplete ? null : (
+        <div className="absolute end-1.5 top-1.5 flex items-center gap-0.5 rounded-full border border-chat-border-soft bg-chat-surface-raised p-0.5 opacity-0 shadow-chat-soft transition-opacity duration-150 group-focus-within/mermaid:opacity-100 group-hover/mermaid:opacity-100">
+          <CodeBlockCopyButton
+            className="flex size-6 items-center justify-center rounded-full text-chat-fg-muted hover:bg-muted hover:text-chat-fg dark:hover:bg-muted/50"
+            code={code}
+          />
+          <PreviewToolbarButton
+            className="rounded-full"
+            label={t("mermaid.download")}
+            onClick={() => downloadMermaidSvg(diagram.svg)}
+          >
+            <Download className="size-3.5" />
+          </PreviewToolbarButton>
+          <PreviewToolbarButton
+            className="rounded-full"
+            label={t("mermaid.openPreview")}
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Maximize2 className="size-3.5" />
+          </PreviewToolbarButton>
+        </div>
+      )}
       {previewOpen ? (
         <MermaidPreviewDialog
           code={code}
