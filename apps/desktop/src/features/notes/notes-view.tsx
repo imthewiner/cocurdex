@@ -59,7 +59,7 @@ export function NotesView() {
         style={{ minWidth: MIN_NOTES_EDITOR_WIDTH_PX }}
       >
         {sidebarCollapsed ? (
-          <div className="absolute start-4 top-2 z-10 flex h-6 items-center">
+          <div className="absolute start-4 top-0 z-10 flex h-8 items-center">
             <SidebarPanelToggle
               onClick={() => setSidebarCollapsed(false)}
               aria-label={t("sidebar.expand")}

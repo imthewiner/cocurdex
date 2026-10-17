@@ -226,7 +226,7 @@ export function NotesSidebar({ onCollapse }: { onCollapse: () => void }) {
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-2 p-2">
+    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-2 px-2 pb-2">
       <SidebarPanelHeader
         title={t("sidebar.title")}
         collapseLabel={t("sidebar.collapse")}

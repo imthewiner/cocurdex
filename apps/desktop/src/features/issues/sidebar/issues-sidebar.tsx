@@ -33,7 +33,7 @@ export function IssuesSidebar({
   const agentSelection: IssueNavSelection = { kind: "agent" };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 px-2 pb-2">
       <SidebarPanelHeader
         title={t("sidebar.nav.title")}
         collapseLabel={t("sidebar.collapse")}

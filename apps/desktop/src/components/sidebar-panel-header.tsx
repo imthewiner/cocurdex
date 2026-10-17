@@ -16,7 +16,7 @@ export function SidebarPanelHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex h-6 shrink-0 items-center justify-between gap-1 px-2">
+    <div className="flex h-8 shrink-0 items-center justify-between gap-1 px-2">
       <div className="flex min-w-0 items-center gap-1.5">
         <SidebarPanelToggle onClick={onCollapse} aria-label={collapseLabel} />
         <Text
