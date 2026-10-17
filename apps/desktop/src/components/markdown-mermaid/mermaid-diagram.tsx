@@ -40,11 +40,7 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
   }
 
   if (!diagram) {
-    return (
-      <div className="my-4">
-        <MermaidSource code={code} />
-      </div>
-    );
+    return null;
   }
 
   return (
