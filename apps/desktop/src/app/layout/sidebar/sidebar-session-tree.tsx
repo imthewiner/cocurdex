@@ -19,6 +19,7 @@ import {
   sessionListViewAtom,
   visibleSessionProperties,
 } from "@/features/sessions/session-list-view";
+import { cn } from "@/lib";
 import { pendingRequestSessionIdsAtom } from "./pending-request-store";
 import {
   resetSessionRootLimitAtom,
@@ -29,6 +30,7 @@ import { SessionSidebarItem } from "./session-sidebar-item";
 
 interface SidebarSessionTreeProps {
   emptyLabel: string;
+  indented?: boolean;
   rootLimit?: SessionRootLimit;
   listKey: string;
   optimisticActiveSessionId: string | null;
@@ -39,6 +41,7 @@ interface SidebarSessionTreeProps {
 
 export function SidebarSessionTree({
   emptyLabel,
+  indented = false,
   rootLimit: rootLimitOverride,
   listKey,
   optimisticActiveSessionId,
@@ -82,7 +85,9 @@ export function SidebarSessionTree({
   const canShowLess = rootLimit > baseLimit;
 
   return (
-    <SidebarMenuSub className="ms-0 ps-0">
+    <SidebarMenuSub
+      className={cn("ms-0", !indented && "ps-0", indented && "ps-5")}
+    >
       {sessions.length === 0 ? (
         <div className="ps-1 pe-2 py-1 text-meta text-sidebar-fg-subtle">
           {emptyLabel}

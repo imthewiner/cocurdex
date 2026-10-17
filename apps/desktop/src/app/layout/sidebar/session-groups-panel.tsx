@@ -154,6 +154,7 @@ function SessionGroupSection({
       {expanded ? (
         <SidebarSessionTree
           emptyLabel={t("sidebar.view.noMatches")}
+          indented
           listKey={group.key}
           onSelectSession={onSelectSession}
           optimisticActiveSessionId={optimisticActiveSessionId}
