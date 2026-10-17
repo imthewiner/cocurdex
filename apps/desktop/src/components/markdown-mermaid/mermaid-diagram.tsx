@@ -7,8 +7,8 @@ import { Text } from "@/components/ui/text";
 import { useRenderReadinessHold } from "../render-readiness";
 import { downloadMermaidSvg } from "./mermaid-download";
 import { MermaidPreviewDialog } from "./mermaid-preview-dialog";
-import { useMermaidPartFade } from "./use-mermaid-part-fade";
 import { useMermaidRender } from "./use-mermaid-render";
+import { useMermaidStreamFrame } from "./use-mermaid-stream-frame";
 
 function MermaidSource({ code }: { code: string }) {
   return (
@@ -23,7 +23,7 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
   const { diagram, error } = useMermaidRender(code, !isIncomplete);
   const [previewOpen, setPreviewOpen] = useState(false);
   useRenderReadinessHold(!isIncomplete && !diagram && !error);
-  const svgContainerRef = useMermaidPartFade(
+  const svgContainerRef = useMermaidStreamFrame(
     diagram?.svg ?? null,
     isIncomplete,
   );
@@ -48,7 +48,7 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
       <div
         aria-label={t("mermaid.title")}
         ref={svgContainerRef}
-        className="flex justify-center [&>svg]:block [&>svg]:h-auto [&>svg]:max-h-[max(min(60vh,30rem),calc(var(--mermaid-height)*0.75))] [&>svg]:max-w-full"
+        className="flex items-center justify-center [&>svg]:block [&>svg]:h-auto [&>svg]:max-h-[max(min(60vh,30rem),calc(var(--mermaid-height)*0.75))] [&>svg]:max-w-full"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: Mermaid renders with securityLevel "strict", which sanitizes labels and disables scripts and click handlers.
         dangerouslySetInnerHTML={{ __html: diagram.svg }}
         role="img"
