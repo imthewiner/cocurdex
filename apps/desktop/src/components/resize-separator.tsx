@@ -19,6 +19,7 @@ export function ResizeSeparator({
   testId,
   onMouseDown,
   position = "relative",
+  lineVisibility = "always",
   className,
   style,
 }: {
@@ -26,13 +27,15 @@ export function ResizeSeparator({
   testId?: string;
   onMouseDown(event: MouseEvent): void;
   position?: ResizeSeparatorPosition;
+  lineVisibility?: "always" | "hover";
   className?: string;
   style?: CSSProperties;
 }) {
   return (
     <div
       className={cn(
-        "w-px bg-chrome-separator",
+        "w-px",
+        lineVisibility === "always" && "bg-chrome-separator",
         position === "relative" && "relative z-10 shrink-0",
         position === "absolute-start" && "absolute inset-y-0 start-0 z-10",
         position === "absolute-end" && "absolute inset-y-0 end-0 z-10",
@@ -47,7 +50,12 @@ export function ResizeSeparator({
         type="button"
         onMouseDown={onMouseDown}
       >
-        <div className="mx-auto h-full w-px bg-chrome-separator transition-colors duration-150 group-hover:bg-chrome-separator-hover" />
+        <div
+          className={cn(
+            "mx-auto h-full w-px transition-colors duration-150 group-hover:bg-chrome-separator-hover",
+            lineVisibility === "always" && "bg-chrome-separator",
+          )}
+        />
       </button>
     </div>
   );
