@@ -4,7 +4,6 @@ import {
   GalleryVertical,
   List,
   Minus,
-  PanelLeft,
   Plus,
   RectangleVertical,
   Scaling,
@@ -12,7 +11,9 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
 import {
+  SidebarToggleButton,
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
   titlebarIconButtonClassName,
@@ -117,16 +118,14 @@ export function PdfToolbar({
 
   return (
     <TooltipProvider>
-      <div className="flex items-center justify-between gap-2 border-b border-editor-border px-2 py-1">
+      <PanelToolbar className="justify-between gap-2">
         <div className="flex items-center gap-1">
           {hasOutline ? (
-            <ToolbarIconButton
-              active={isOutlineOpen}
+            <SidebarToggleButton
               label={t("pdf.toggleOutline")}
-              onClick={onToggleOutline}
-            >
-              <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
-            </ToolbarIconButton>
+              open={isOutlineOpen}
+              onToggle={onToggleOutline}
+            />
           ) : null}
           <ToolbarIconButton
             active={isThumbnailsOpen}
@@ -221,7 +220,7 @@ export function PdfToolbar({
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
           </ToolbarIconButton>
         </div>
-      </div>
+      </PanelToolbar>
     </TooltipProvider>
   );
 }

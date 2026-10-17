@@ -13,11 +13,11 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { NotebookPen, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SidebarPanelHeader } from "@/app/layout/sidebar-panel-header";
 import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "@/app/layout/titlebar-icon-button";
-import { SidebarPanelHeader } from "@/components";
 import { EmptyState, ScrollArea } from "@/components/ui";
 import { activeWorkspaceIdAtom, workspacesAtom } from "@/features/workspaces";
 import {
@@ -226,7 +226,7 @@ export function NotesSidebar({ onCollapse }: { onCollapse: () => void }) {
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-2 p-2">
+    <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-2 px-2 pb-2">
       <SidebarPanelHeader
         title={t("sidebar.title")}
         collapseLabel={t("sidebar.collapse")}

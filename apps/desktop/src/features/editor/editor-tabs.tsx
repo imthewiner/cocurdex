@@ -142,10 +142,11 @@ export function EditorTabs() {
       {isMarkdownFile ? (
         <button
           type="button"
+          aria-pressed={!isPreviewMode}
           onClick={() => setIsPreviewMode(!isPreviewMode)}
           className="app-no-drag me-2 shrink-0 rounded-control px-2 py-0.5 text-meta text-editor-fg-muted transition-colors hover:text-editor-fg-subtle"
         >
-          {isPreviewMode ? t("actions.edit") : t("actions.preview")}
+          {isPreviewMode ? t("actions.source") : t("actions.preview")}
         </button>
       ) : null}
     </div>

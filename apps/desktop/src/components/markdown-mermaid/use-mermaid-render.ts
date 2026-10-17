@@ -8,11 +8,13 @@ import {
 } from "./mermaid-render";
 import type { SizedMermaidSvg } from "./mermaid-svg";
 import type { MermaidAppearance } from "./mermaid-theme";
+import { useMermaidDraft } from "./use-mermaid-draft";
 
 export function useMermaidRender(chart: string, enabled: boolean) {
   const appearance: MermaidAppearance =
     useResolvedTheme() === "dark" ? "dark" : "light";
   const key = mermaidRenderKey(chart, appearance);
+  const draft = useMermaidDraft(chart, appearance, !enabled);
   const result = useSyncExternalStore(subscribeMermaidRenders, () =>
     readMermaidRender(key),
   );
@@ -33,5 +35,5 @@ export function useMermaidRender(chart: string, enabled: boolean) {
       ? { diagram: result.diagram, error: null }
       : { diagram: null, error: result.error };
   }
-  return { diagram: lastDiagram, error: null };
+  return { diagram: lastDiagram ?? draft, error: null };
 }

@@ -9,15 +9,13 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { ListTodo } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ResizableSidebar,
-  SidebarPanelToggle,
-  WORKBENCH_SIDEBAR_WIDTH_PX,
-} from "@/components";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
+import { SidebarToggleButton } from "@/app/layout/titlebar-icon-button";
+import { ResizableSidebar, WORKBENCH_SIDEBAR_WIDTH_PX } from "@/components";
 import { EmptyState, Text } from "@/components/ui";
 import { useDataSync } from "@/features/data-sync";
 import { activeWorkspaceIdAtom, workspacesAtom } from "@/features/workspaces";
-import { useMountEffect } from "@/lib";
+import { cn, useMountEffect } from "@/lib";
 import { IssuesBoard, ViewDisplayMenu, ViewFilterMenu } from "./board";
 import { buildComposeDraft } from "./compose-draft";
 import {
@@ -281,22 +279,26 @@ export function IssuesView({
         {/* View-scoped chrome: lives in the content column so layout/groupBy
             read as settings for the open view, not a panel-wide control. */}
         {boards.length > 0 || sidebarCollapsed ? (
-          <div
-            className="flex h-8 shrink-0 items-center gap-1 border-b border-editor-border px-2"
+          <PanelToolbar
+            className="gap-1"
             data-testid="issues-view-display-bar"
+            divided={false}
           >
             {sidebarCollapsed ? (
-              <div className="flex h-6 items-center ps-2 pe-1.5">
-                <SidebarPanelToggle
-                  onClick={() => setSidebarCollapsed(false)}
-                  aria-label={t("sidebar.expand")}
-                />
-              </div>
+              <SidebarToggleButton
+                label={t("sidebar.expand")}
+                open={false}
+                onToggle={() => setSidebarCollapsed(false)}
+              />
             ) : null}
             <Text
               size="body"
               weight="medium"
-              className="me-auto min-w-0 truncate ps-1"
+              className={cn(
+                "me-auto min-w-0 truncate",
+                sidebarCollapsed && "ps-0.5",
+                !sidebarCollapsed && "ps-1",
+              )}
             >
               {navTitle}
             </Text>
@@ -316,7 +318,7 @@ export function IssuesView({
                 />
               </>
             ) : null}
-          </div>
+          </PanelToolbar>
         ) : null}
         {viewBoard ? (
           <>

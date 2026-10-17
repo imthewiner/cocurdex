@@ -178,18 +178,6 @@ export function NoteTreeItem({
                 size="xs"
                 variant="ghost"
                 className="text-sidebar-fg-muted hover:bg-transparent hover:text-sidebar-fg"
-                aria-label={t("sidebar.newSubpage")}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                }}
-                onClick={() => onCreateChild(note.id)}
-              >
-                <Plus className="size-3.5" />
-              </IconButton>
-              <IconButton
-                size="xs"
-                variant="ghost"
-                className="text-sidebar-fg-muted hover:bg-transparent hover:text-sidebar-fg"
                 aria-label={t("sidebar.delete")}
                 onPointerDown={(event) => {
                   event.stopPropagation();
@@ -197,6 +185,18 @@ export function NoteTreeItem({
                 onClick={() => onDelete(note.id)}
               >
                 <Trash2 className="size-3.5" />
+              </IconButton>
+              <IconButton
+                size="xs"
+                variant="ghost"
+                className="text-sidebar-fg-muted hover:bg-transparent hover:text-sidebar-fg"
+                aria-label={t("sidebar.newSubpage")}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                }}
+                onClick={() => onCreateChild(note.id)}
+              >
+                <Plus className="size-3.5" />
               </IconButton>
             </SidebarListRowActions>
           ) : null}

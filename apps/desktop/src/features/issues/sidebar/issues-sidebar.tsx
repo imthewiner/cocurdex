@@ -1,7 +1,7 @@
 import type { ViewSummary } from "@cocurdex/shared";
 import { Bot } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { SidebarPanelHeader } from "@/components";
+import { SidebarPanelHeader } from "@/app/layout/sidebar-panel-header";
 import { type IssueNavSelection, isSameIssueNav } from "./issue-nav";
 import { IssueNavRow } from "./issue-nav-row";
 import { IssueViewsSection } from "./issue-views-section";
@@ -33,7 +33,7 @@ export function IssuesSidebar({
   const agentSelection: IssueNavSelection = { kind: "agent" };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 px-2 pb-2">
       <SidebarPanelHeader
         title={t("sidebar.nav.title")}
         collapseLabel={t("sidebar.collapse")}

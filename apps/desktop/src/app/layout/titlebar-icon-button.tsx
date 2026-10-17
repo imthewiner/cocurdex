@@ -1,7 +1,9 @@
+import { PanelLeft } from "lucide-react";
 import {
   type ButtonHTMLAttributes,
   type ComponentProps,
   forwardRef,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 import {
@@ -110,3 +112,30 @@ export const TitlebarIconButton = forwardRef<
 
 /** @deprecated Prefer `TitlebarIconButton` — kept as a stable alias. */
 export const TitlebarButton = TitlebarIconButton;
+
+export function SidebarToggleButton({
+  open,
+  label,
+  className,
+  onToggle,
+  onMouseDown,
+}: {
+  open: boolean;
+  label: string;
+  className?: string;
+  onToggle(): void;
+  onMouseDown?(event: MouseEvent<HTMLButtonElement>): void;
+}) {
+  return (
+    <TitlebarIconButton
+      active={open}
+      aria-label={label}
+      className={className}
+      tooltip={label}
+      onClick={onToggle}
+      onMouseDown={onMouseDown}
+    >
+      <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
+    </TitlebarIconButton>
+  );
+}

@@ -2,6 +2,7 @@ import type { TurnChangeSet } from "@cocurdex/shared";
 import { RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { PanelToolbar } from "@/app/layout/panel-toolbar";
 import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
@@ -103,10 +104,7 @@ export function GitChangesToolbar({
   onRefresh,
 }: GitChangesToolbarProps) {
   return (
-    <div
-      className="border-b border-editor-border"
-      data-testid="git-changes-toolbar"
-    >
+    <PanelToolbar className="group gap-2" data-testid="git-changes-toolbar">
       <BulkActionsRow
         branches={branches}
         commits={commits}
@@ -128,7 +126,7 @@ export function GitChangesToolbar({
         onWrapChange={onWrapChange}
         scope={scope}
       />
-    </div>
+    </PanelToolbar>
   );
 }
 
@@ -175,7 +173,7 @@ function BulkActionsRow({
 }) {
   const { t } = useTranslation("editor");
   return (
-    <div className="group flex min-h-9 items-center gap-2 ps-3 pe-4 py-1">
+    <>
       <div className="flex min-w-0 items-center">
         <GitChangesScopeMenu
           commits={commits}
@@ -235,6 +233,6 @@ function BulkActionsRow({
           onWrapChange={onWrapChange}
         />
       </div>
-    </div>
+    </>
   );
 }

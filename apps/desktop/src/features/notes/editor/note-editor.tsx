@@ -199,13 +199,13 @@ function NoteEditorBody({
       ref={editorChromeRef}
       className="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 py-8">
-        <NoteTitleInput
-          key={titleEpoch}
-          noteId={note.id}
-          initialTitle={note.title}
-        />
-        <div className="mt-1 mb-4 h-4">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-4 pb-8">
+        <div className="mb-4 flex items-center gap-3">
+          <NoteTitleInput
+            key={titleEpoch}
+            noteId={note.id}
+            initialTitle={note.title}
+          />
           <SaveIndicator status={saveStatus} />
         </div>
         {editor ? (
@@ -248,7 +248,7 @@ function NoteTitleInput({ noteId, initialTitle }: NoteTitleInputProps) {
       value={value}
       placeholder={t("editor.untitledPlaceholder")}
       className={cn(
-        "w-full bg-transparent text-title font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none",
+        "min-w-0 flex-1 bg-transparent text-title font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none",
       )}
       onChange={(event) => {
         const next = event.target.value;
@@ -277,7 +277,7 @@ function FolderPlaceholder({ note }: { note: NoteRecord }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 py-8">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-4 pb-8">
         <input
           type="text"
           value={value}

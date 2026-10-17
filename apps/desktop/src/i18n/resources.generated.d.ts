@@ -506,7 +506,6 @@ export default interface Resources {
       closeFile: "Close file {{fileName}}";
       detachedChatFabHint: "Show or hide the independent chat window. Drag to reposition this button. Hover and click × to hide the button; {{shortcut}} restores it.";
       dockEditorPanel: "Place panel beside chat";
-      edit: "Edit";
       enterEditorFullscreen: "Enter full screen";
       exitEditorFullscreen: "Exit full screen";
       explorer: "Explorer";
@@ -532,6 +531,7 @@ export default interface Resources {
       showNotes: "Notes";
       showPdf: "PDF";
       showTerminal: "Terminal";
+      source: "Source";
       toggleChat: "Toggle chat";
       toggleChatSessions: "Toggle session list";
       toggleDetachedChat: "Show or hide the chat window";

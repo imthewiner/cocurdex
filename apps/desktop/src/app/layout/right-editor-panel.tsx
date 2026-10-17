@@ -3,7 +3,7 @@ import {
   primaryWorkspaceRootPath,
 } from "@cocurdex/shared";
 import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
-import { PanelLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ResizeSeparator } from "@/components/resize-separator";
@@ -41,6 +41,7 @@ import {
 import { cn, desktopApi, useMountEffect } from "@/lib";
 import { IssuesPanel } from "./issues-panel";
 import { PanScrollbar } from "./pan-scrollbar";
+import { PanelToolbar } from "./panel-toolbar";
 import { PdfReaderView } from "./pdf-reader-view";
 import {
   fileTreeWidthAtom,
@@ -51,6 +52,7 @@ import {
   rightPanelViewTouchedAtom,
 } from "./right-editor-panel-store";
 import {
+  SidebarToggleButton,
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "./titlebar-icon-button";
@@ -340,17 +342,15 @@ export function RightEditorPanel({
       />
 
       {activeView === "editor" ? (
-        <div
-          className="app-drag relative z-30 flex items-center gap-1 border-b border-editor-border px-2 py-1"
+        <PanelToolbar
+          className="app-drag relative z-30 gap-1"
           data-testid="editor-panel-toolbar"
         >
-          <TitlebarIconButton
-            active={fileTreeVisible && !searchPanelVisible}
-            aria-label={t("actions.explorer")}
-            onClick={showFileTreePanel}
-          >
-            <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
-          </TitlebarIconButton>
+          <SidebarToggleButton
+            label={t("actions.explorer")}
+            open={fileTreeVisible && !searchPanelVisible}
+            onToggle={showFileTreePanel}
+          />
           <TitlebarIconButton
             active={searchPanelVisible}
             aria-label={tSearch("searchFiles")}
@@ -361,7 +361,7 @@ export function RightEditorPanel({
           <div className="min-w-0 flex-1">
             <EditorTabs />
           </div>
-        </div>
+        </PanelToolbar>
       ) : null}
 
       {/*

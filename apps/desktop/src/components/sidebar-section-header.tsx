@@ -25,7 +25,7 @@ export function SidebarSectionHeader({
   );
 
   return (
-    <div className="group/section flex h-6 items-center justify-between gap-1 ps-2 pe-1 pt-2">
+    <div className="group/section flex h-6 items-center justify-between gap-1 ps-2 pe-0.5 pt-2">
       {onToggle ? (
         <button
           type="button"

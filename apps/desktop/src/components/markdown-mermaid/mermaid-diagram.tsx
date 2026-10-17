@@ -8,6 +8,7 @@ import { useRenderReadinessHold } from "../render-readiness";
 import { downloadMermaidSvg } from "./mermaid-download";
 import { MermaidPreviewDialog } from "./mermaid-preview-dialog";
 import { useMermaidRender } from "./use-mermaid-render";
+import { useMermaidStreamFrame } from "./use-mermaid-stream-frame";
 
 function MermaidSource({ code }: { code: string }) {
   return (
@@ -22,6 +23,10 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
   const { diagram, error } = useMermaidRender(code, !isIncomplete);
   const [previewOpen, setPreviewOpen] = useState(false);
   useRenderReadinessHold(!isIncomplete && !diagram && !error);
+  const svgContainerRef = useMermaidStreamFrame(
+    diagram?.svg ?? null,
+    isIncomplete,
+  );
 
   if (error) {
     return (
@@ -35,43 +40,42 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
   }
 
   if (!diagram) {
-    return (
-      <div className="my-4">
-        <MermaidSource code={code} />
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="group/mermaid relative my-4">
       <div
         aria-label={t("mermaid.title")}
-        className="flex justify-center [&>svg]:block [&>svg]:h-auto [&>svg]:max-h-[max(min(60vh,30rem),calc(var(--mermaid-height)*0.75))] [&>svg]:max-w-full"
+        ref={svgContainerRef}
+        className="flex items-center justify-center [&>svg]:block [&>svg]:h-auto [&>svg]:max-h-[max(min(60vh,30rem),calc(var(--mermaid-height)*0.75))] [&>svg]:max-w-full"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: Mermaid renders with securityLevel "strict", which sanitizes labels and disables scripts and click handlers.
         dangerouslySetInnerHTML={{ __html: diagram.svg }}
         role="img"
         style={{ "--mermaid-height": `${diagram.height}px` } as CSSProperties}
       />
-      <div className="absolute end-1.5 top-1.5 flex items-center gap-0.5 rounded-full border border-chat-border-soft bg-chat-surface-raised p-0.5 opacity-0 shadow-chat-soft transition-opacity duration-150 group-focus-within/mermaid:opacity-100 group-hover/mermaid:opacity-100">
-        <CodeBlockCopyButton
-          className="flex size-6 items-center justify-center rounded-full text-chat-fg-muted hover:bg-muted hover:text-chat-fg dark:hover:bg-muted/50"
-          code={code}
-        />
-        <PreviewToolbarButton
-          className="rounded-full"
-          label={t("mermaid.download")}
-          onClick={() => downloadMermaidSvg(diagram.svg)}
-        >
-          <Download className="size-3.5" />
-        </PreviewToolbarButton>
-        <PreviewToolbarButton
-          className="rounded-full"
-          label={t("mermaid.openPreview")}
-          onClick={() => setPreviewOpen(true)}
-        >
-          <Maximize2 className="size-3.5" />
-        </PreviewToolbarButton>
-      </div>
+      {isIncomplete ? null : (
+        <div className="absolute end-1.5 top-1.5 flex items-center gap-0.5 rounded-full border border-chat-border-soft bg-chat-surface-raised p-0.5 opacity-0 shadow-chat-soft transition-opacity duration-150 group-focus-within/mermaid:opacity-100 group-hover/mermaid:opacity-100">
+          <CodeBlockCopyButton
+            className="flex size-6 items-center justify-center rounded-full text-chat-fg-muted hover:bg-muted hover:text-chat-fg dark:hover:bg-muted/50"
+            code={code}
+          />
+          <PreviewToolbarButton
+            className="rounded-full"
+            label={t("mermaid.download")}
+            onClick={() => downloadMermaidSvg(diagram.svg)}
+          >
+            <Download className="size-3.5" />
+          </PreviewToolbarButton>
+          <PreviewToolbarButton
+            className="rounded-full"
+            label={t("mermaid.openPreview")}
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Maximize2 className="size-3.5" />
+          </PreviewToolbarButton>
+        </div>
+      )}
       {previewOpen ? (
         <MermaidPreviewDialog
           code={code}

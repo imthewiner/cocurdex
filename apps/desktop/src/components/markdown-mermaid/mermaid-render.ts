@@ -54,6 +54,15 @@ export function requestMermaidRender(
     });
 }
 
+export function renderMermaidDraft(
+  chart: string,
+  appearance: MermaidAppearance,
+): Promise<MermaidRenderResult> {
+  const result = renderQueue.then(() => renderChart(chart, appearance));
+  renderQueue = result.then(() => undefined);
+  return result;
+}
+
 async function renderChart(
   chart: string,
   appearance: MermaidAppearance,

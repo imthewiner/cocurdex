@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { Text } from "@/components/ui";
-import { SidebarPanelToggle } from "./sidebar-panel-toggle";
-
-export const WORKBENCH_SIDEBAR_WIDTH_PX = 220;
+import { SidebarToggleButton } from "./titlebar-icon-button";
 
 export function SidebarPanelHeader({
   title,
@@ -16,9 +14,9 @@ export function SidebarPanelHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex h-6 shrink-0 items-center justify-between gap-1 px-2">
+    <div className="flex h-8 shrink-0 items-center justify-between gap-1 pe-0.5">
       <div className="flex min-w-0 items-center gap-1.5">
-        <SidebarPanelToggle onClick={onCollapse} aria-label={collapseLabel} />
+        <SidebarToggleButton label={collapseLabel} open onToggle={onCollapse} />
         <Text
           size="meta"
           weight="medium"
