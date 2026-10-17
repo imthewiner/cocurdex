@@ -182,6 +182,7 @@ export function WorkspaceSidebarItem({
           emptyLabel={
             filtered ? t("sidebar.view.noMatches") : t("sidebar.noAgentsYet")
           }
+          indented
           listKey={workspace.id}
           onSelectSession={onSelectSession}
           optimisticActiveSessionId={optimisticActiveSessionId}
