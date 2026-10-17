@@ -56,7 +56,7 @@ export function ResizableSidebar({
       </div>
       <ResizeSeparator
         ariaLabel={ariaLabel}
-        line={false}
+        lineVisibility="hover"
         onMouseDown={handleMouseDown}
       />
     </>

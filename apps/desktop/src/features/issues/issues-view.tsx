@@ -17,7 +17,7 @@ import {
 import { EmptyState, Text } from "@/components/ui";
 import { useDataSync } from "@/features/data-sync";
 import { activeWorkspaceIdAtom, workspacesAtom } from "@/features/workspaces";
-import { useMountEffect } from "@/lib";
+import { cn, useMountEffect } from "@/lib";
 import { IssuesBoard, ViewDisplayMenu, ViewFilterMenu } from "./board";
 import { buildComposeDraft } from "./compose-draft";
 import {
@@ -293,17 +293,17 @@ export function IssuesView({
                 />
               </div>
             ) : null}
-            {sidebarCollapsed ? (
-              <Text
-                size="body"
-                weight="medium"
-                className="me-auto min-w-0 truncate ps-0.5"
-              >
-                {navTitle}
-              </Text>
-            ) : (
-              <div className="flex-1" />
-            )}
+            <Text
+              size="body"
+              weight="medium"
+              className={cn(
+                "me-auto min-w-0 truncate",
+                sidebarCollapsed && "ps-0.5",
+                !sidebarCollapsed && "ps-1",
+              )}
+            >
+              {navTitle}
+            </Text>
             {boards.length > 0 ? (
               <>
                 <ViewFilterMenu
