@@ -23,11 +23,36 @@ async function openEditorPanel(session) {
     null,
     UI_TIMEOUT_MS,
   );
+  return session.run(async () => {
+    const S = window.__scenario;
+    const openButton = S.byLabel(await S.t("editor:actions.openEditorPanel"));
+    openButton?.click();
+    return { panelWasOpen: !openButton };
+  });
+}
+
+async function restoreEditorPanel(session, fileName, panelWasOpen) {
+  await session.run(async (name) => {
+    const S = window.__scenario;
+    S.byLabel(
+      await S.t("editor:actions.closeFile", { fileName: name }),
+    )?.click();
+    return true;
+  }, fileName);
+  if (panelWasOpen) return;
   await session.run(async () => {
     const S = window.__scenario;
-    S.byLabel(await S.t("editor:actions.openEditorPanel"))?.click();
+    S.byLabel(await S.t("editor:actions.closeEditorPanel"))?.click();
     return true;
   });
+  await session.waitUntil(
+    async () => {
+      const S = window.__scenario;
+      return Boolean(S.byLabel(await S.t("editor:actions.openEditorPanel")));
+    },
+    null,
+    UI_TIMEOUT_MS,
+  );
 }
 
 function readModeToggle() {
@@ -61,7 +86,7 @@ async function clickModeToggle(session, expectedLabel) {
 runScenario("markdown-preview", {
   open: () => openScenarioApp(args, { fixtures: [MARKDOWN_FIXTURE] }),
   async setup({ session }) {
-    await openEditorPanel(session);
+    const { panelWasOpen } = await openEditorPanel(session);
     await openWorkspaceFile(session, path.basename(MARKDOWN_FIXTURE));
     await session.waitUntil(
       () =>
@@ -80,7 +105,7 @@ runScenario("markdown-preview", {
         source: await S.t("editor:actions.source"),
       };
     });
-    return { labels };
+    return { labels, panelWasOpen };
   },
   steps: [
     [
@@ -117,5 +142,13 @@ runScenario("markdown-preview", {
       },
     ],
   ],
-  teardown: async () => ({}),
+  async teardown({ session, isolated, panelWasOpen }) {
+    if (isolated) return { restored: "isolated instance discarded" };
+    await restoreEditorPanel(
+      session,
+      path.basename(MARKDOWN_FIXTURE),
+      panelWasOpen,
+    );
+    return { restored: "closed the file and the panel the scenario opened" };
+  },
 });
