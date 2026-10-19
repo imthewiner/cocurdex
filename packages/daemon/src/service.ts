@@ -105,6 +105,7 @@ import {
 import { DaemonAttachmentStore } from "./attachment-store";
 import { DaemonCommitMessageService } from "./commit-message";
 import { DaemonDataService } from "./data-service";
+import { DaemonDeckService } from "./decks";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
@@ -236,6 +237,7 @@ export class CocurdexDaemonService {
   readonly team: TeamModule;
   readonly scriptRuns: ScriptRunModule;
   readonly dataService: DaemonDataService;
+  readonly decks: DaemonDeckService;
   readonly providerService: DaemonProviderService;
   readonly acpRegistry: AcpRegistryService;
   readonly providerCredentials: ProviderCredentials;
@@ -287,6 +289,7 @@ export class CocurdexDaemonService {
     this.hostAccessReady = this.hostAccess.initialize();
     this.workflows = new WorkflowModule(this.state.workflows);
     this.dataService = new DaemonDataService(this.state, this.events);
+    this.decks = new DaemonDeckService(this.state.data.decks, this.events);
     this.providerCredentials = new ProviderCredentials(
       this.state,
       options.userDataPath,

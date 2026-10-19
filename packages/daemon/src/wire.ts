@@ -22,6 +22,10 @@ import { prepareDaemonEndpoint, probeDaemonEndpoint } from "./daemon-endpoint";
 import { acquireDaemonOwnership } from "./daemon-ownership";
 import { DaemonShutdownGate } from "./daemon-shutdown-gate";
 import {
+  createDeckDownloadHttpHandler,
+  isDeckDownloadHttpRequest,
+} from "./decks";
+import {
   createDaemonEventJournal,
   type DaemonEventJournalEntry,
 } from "./event-journal";
@@ -296,10 +300,25 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     | ReturnType<typeof createAgentToolHttpHandler>
     | undefined;
   let pdfHandler: ReturnType<typeof createPdfHttpHandler> | undefined;
+  let deckDownloadHandler:
+    | ReturnType<typeof createDeckDownloadHttpHandler>
+    | undefined;
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot)
     : undefined;
   const httpServer = http.createServer((request, response) => {
+    if (isDeckDownloadHttpRequest(request)) {
+      if (!ready || !deckDownloadHandler) {
+        response.writeHead(503);
+        response.end();
+        return;
+      }
+      void deckDownloadHandler(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(500);
+        response.end();
+      });
+      return;
+    }
     if (isPdfHttpRequest(request)) {
       if (!ready || !pdfHandler) {
         response.writeHead(503);
@@ -433,11 +452,19 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       resolvePrincipal: (token) => hostAccess.resolve(token),
       resolvePdfPath,
     });
+    const redeemDeckDownload = service.decks.redeemDownload.bind(service.decks);
+    deckDownloadHandler = createDeckDownloadHttpHandler({
+      isAllowedRequest: (request) =>
+        isLoopbackHostHeader(request.headers.host) &&
+        isAllowedWebSocketOrigin(request.headers.origin),
+      redeem: redeemDeckDownload,
+    });
     remoteListener = createRemoteAccessListener(
       createRemoteServerFactory({
         hostAccess,
         machineName: os.hostname(),
         resolvePdfPath,
+        redeemDeckDownload,
         webRoot: options.webRoot,
         onWebSocket: (socket, request) =>
           attachWebSocketConnection(socket, {
