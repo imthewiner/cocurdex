@@ -133,7 +133,7 @@ export function TableSliceHandle({
         aria-label={label}
         data-table-axis={axis}
         className={cn(
-          "pointer-events-auto absolute flex cursor-grab touch-none items-center justify-center rounded-dense border border-border bg-background text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground active:cursor-grabbing data-popup-open:border-primary data-popup-open:bg-primary data-popup-open:text-primary-foreground",
+          "pointer-events-auto absolute flex cursor-grab touch-none items-center justify-center rounded-dense bg-background text-muted-foreground/70 hover:bg-accent hover:text-foreground active:cursor-grabbing data-popup-open:bg-primary data-popup-open:text-primary-foreground",
           isRow && "h-[22px] w-4",
           !isRow && "h-4 w-[22px]",
         )}

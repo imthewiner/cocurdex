@@ -1,5 +1,4 @@
 import type { Editor } from "@tiptap/core";
-import { CellSelection } from "@tiptap/pm/tables";
 
 export interface Span {
   start: number;
@@ -90,17 +89,6 @@ function isNear(
   );
 }
 
-function selectionCell(editor: Editor): HTMLTableCellElement | null {
-  const { selection } = editor.state;
-  const pos =
-    selection instanceof CellSelection
-      ? selection.$headCell.pos + 1
-      : selection.from;
-  const { node } = editor.view.domAtPos(pos);
-  const element = node instanceof Element ? node : node.parentElement;
-  return cellOf(element, editor.view.dom);
-}
-
 export function createTableHoverStore(
   editor: Editor,
   container: HTMLElement,
@@ -171,10 +159,8 @@ export function createTableHoverStore(
     }
   };
 
-  const onSelectionUpdate = () => {
-    if (pinned || !editor.isFocused) return;
-    const cell = selectionCell(editor);
-    if (cell) show(cell);
+  const onKeyDown = () => {
+    if (!pinned) publish(null);
   };
 
   const resizeObserver = new ResizeObserver(scheduleRemeasure);
@@ -185,7 +171,7 @@ export function createTableHoverStore(
     passive: true,
   });
   editor.on("update", scheduleRemeasure);
-  editor.on("selectionUpdate", onSelectionUpdate);
+  editor.view.dom.addEventListener("keydown", onKeyDown);
 
   return {
     subscribe: (listener) => {
@@ -205,7 +191,7 @@ export function createTableHoverStore(
         capture: true,
       });
       editor.off("update", scheduleRemeasure);
-      editor.off("selectionUpdate", onSelectionUpdate);
+      editor.view.dom.removeEventListener("keydown", onKeyDown);
       listeners.clear();
     },
   };

@@ -429,6 +429,59 @@ runScenario("note-table", {
       },
     ],
     [
+      "slice handles follow the pointer and hide while typing",
+      async ({ session }) => {
+        await openNote(session, "Checkout spec");
+        await waitForGrid(session, CHECKOUT_GRID);
+        const handleCount = () =>
+          session.run(
+            () => document.querySelectorAll("[data-table-axis]").length,
+          );
+        const waitForHandles = (count) =>
+          session.waitUntil(
+            (expected) =>
+              document.querySelectorAll("[data-table-axis]").length ===
+              expected,
+            count,
+            UI_TIMEOUT_MS,
+          );
+        const cell = await cellCenter(session, 1, 1);
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...cell,
+        });
+        await waitForHandles(2);
+        for (const type of ["mousePressed", "mouseReleased"]) {
+          await session.send("Input.dispatchMouseEvent", {
+            type,
+            ...cell,
+            button: "left",
+            clickCount: 1,
+          });
+        }
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: cell.x,
+          y: 5,
+        });
+        await waitForHandles(0);
+        await hoverCell(session, 1, 1);
+        await waitForHandles(2);
+        await session.send("Input.insertText", { text: "x" });
+        for (const type of ["keyDown", "keyUp"]) {
+          await session.send("Input.dispatchKeyEvent", {
+            type,
+            key: "Backspace",
+            code: "Backspace",
+            windowsVirtualKeyCode: 8,
+          });
+        }
+        await waitForHandles(0);
+        await waitForGrid(session, CHECKOUT_GRID);
+        return { afterTyping: await handleCount() };
+      },
+    ],
+    [
       "hovering a cell shows handles centered on its row and column",
       async ({ session }) => {
         await openNote(session, "Checkout spec");
