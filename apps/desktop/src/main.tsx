@@ -40,6 +40,13 @@ async function loadApp(): Promise<ComponentType> {
 }
 
 async function loadRoot(): Promise<ComponentType> {
+  if (
+    new URLSearchParams(window.location.search).get("window") ===
+    "deck-audience"
+  ) {
+    const { DeckAudienceApp } = await import("./features/decks/audience");
+    return DeckAudienceApp;
+  }
   const access = await webHostAccess;
   if (access?.kind !== "needsPairing") return loadApp();
   const { WebPairingScreen } = await import("./features/web-pairing");

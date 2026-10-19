@@ -69,6 +69,7 @@ import { registerAppUpdateHandlers, startAppUpdater } from "./updater";
 import {
   hasTitleBarOverlay,
   migrateLegacyRendererStorage,
+  registerAudienceWindowHandlers,
   registerChatWindowHandlers,
   registerRendererProtocol,
   rendererPageUrl,
@@ -560,6 +561,7 @@ app
       preloadPath,
       createPrimaryWindow: createWindow,
     });
+    registerAudienceWindowHandlers(ipcMain, { preloadPath });
     startAppUpdater({
       currentVersion: app.getVersion(),
       packaged: app.isPackaged,

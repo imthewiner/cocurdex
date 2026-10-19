@@ -123,3 +123,18 @@ describe("schemas.browserAnnotation", () => {
     expect(parsed.success).toBe(false);
   });
 });
+
+describe("schemas.audienceWindow", () => {
+  it("accepts a random channel id", () => {
+    expect(
+      schemas.audienceWindow.safeParse({ channel: crypto.randomUUID() })
+        .success,
+    ).toBe(true);
+  });
+
+  it("rejects channel values that could alter the audience URL", () => {
+    for (const channel of ["", "a&window=chat", "../index", "x".repeat(65)]) {
+      expect(schemas.audienceWindow.safeParse({ channel }).success).toBe(false);
+    }
+  });
+});

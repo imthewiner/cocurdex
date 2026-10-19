@@ -13,6 +13,7 @@ import { offlineApi } from "./offline-api";
 import type { HostBridge, HostCapabilities } from "./types";
 
 const TOKEN_STORAGE_KEY = "cocurdex.daemonToken";
+const AUDIENCE_WINDOW_NAME = "cocurdex-deck-audience";
 const DAEMON_URL_STORAGE_KEY = "cocurdex.daemonUrl";
 const DAEMON_URL_FRAGMENT_KEY = "daemon";
 const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -297,6 +298,13 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
+    },
+    openPresentationWindow: async ({ channel }) => {
+      const url = new URL(window.location.pathname, window.location.origin);
+      url.searchParams.set("window", "deck-audience");
+      url.searchParams.set("channel", channel);
+      const audience = window.open(url, AUDIENCE_WINDOW_NAME, "popup");
+      return { opened: audience !== null, externalDisplay: false };
     },
   };
   window.desktopApi = bridge;

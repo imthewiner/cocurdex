@@ -1,8 +1,9 @@
 import type { DeckRecord } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Play, Presentation } from "lucide-react";
+import { MonitorPlay, Play, Presentation } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
@@ -13,6 +14,11 @@ import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
 import { activeSlideIndexAtom, selectSlideAtom } from "./decks-store";
+import {
+  DeckPresenterView,
+  type PresenterSession,
+} from "./presenter/deck-presenter-view";
+import { startPresenterSession } from "./presenter/start-presenter-session";
 import { SlideCanvas } from "./slide-canvas";
 
 export function DeckViewer({ deck }: { deck: DeckRecord }) {
@@ -20,6 +26,7 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
   const activeIndex = useAtomValue(activeSlideIndexAtom);
   const selectSlide = useSetAtom(selectSlideAtom);
   const [presenting, setPresenting] = useState(false);
+  const [presenter, setPresenter] = useState<PresenterSession | null>(null);
   const slides = deck.content.slides;
   const slide = slides[activeIndex];
 
@@ -53,6 +60,19 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
           onClick={() => setPresenting(true)}
         >
           <Play className={TITLEBAR_ICON_GLYPH_CLASS} />
+        </TitlebarIconButton>
+        <TitlebarIconButton
+          aria-label={t("actions.presenterView")}
+          tooltip={t("actions.presenterView")}
+          disabled={slides.length === 0 || presenter !== null}
+          onClick={() => {
+            void startPresenterSession().then((session) => {
+              if (session) setPresenter(session);
+              else toast.error(t("errors.audienceWindow"));
+            });
+          }}
+        >
+          <MonitorPlay className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>
         <DeckExportMenu
           onExport={(format) =>
@@ -102,6 +122,17 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
           startIndex={activeIndex}
           onExit={(lastIndex) => {
             setPresenting(false);
+            selectSlide(lastIndex);
+          }}
+        />
+      ) : null}
+      {presenter ? (
+        <DeckPresenterView
+          content={deck.content}
+          session={presenter}
+          startIndex={activeIndex}
+          onExit={(lastIndex) => {
+            setPresenter(null);
             selectSlide(lastIndex);
           }}
         />

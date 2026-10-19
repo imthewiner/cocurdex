@@ -181,6 +181,98 @@ runScenario("decks", {
       },
     ],
     [
+      "presenter view drives a synced audience window",
+      async ({ session }) => {
+        const presenterButton = await translate(
+          session,
+          "decks:actions.presenterView",
+        );
+        await clickByRole(session, { role: "button", name: presenterButton });
+        const presenterLabel = await translate(
+          session,
+          "decks:presenter.label",
+        );
+        await waitForRole(session, { role: "dialog", name: presenterLabel });
+        const currentLabel = await translate(
+          session,
+          "decks:presenter.current",
+        );
+        const presenterSlide = () =>
+          session.run(
+            (label) =>
+              document
+                .querySelector(
+                  `[aria-label="${CSS.escape(label)}"] [data-slide-id]`,
+                )
+                ?.getAttribute("data-slide-id") ?? null,
+            currentLabel,
+          );
+        const audience = await session.openPage("window=deck-audience");
+        try {
+          const waitForAudience = (slideId) =>
+            audience.waitUntil(
+              (slideId) =>
+                document
+                  .querySelector("main [data-slide-id]")
+                  ?.getAttribute("data-slide-id") === slideId,
+              slideId,
+              UI_TIMEOUT_MS,
+            );
+          const first = await presenterSlide();
+          await waitForAudience(first);
+
+          await pressKey(session, "ArrowRight");
+          const second = await presenterSlide();
+          check(second && second !== first, "presenter advanced", {
+            first,
+            second,
+          });
+          await waitForAudience(second);
+
+          await audience.send("Input.dispatchKeyEvent", {
+            type: "keyDown",
+            key: "ArrowLeft",
+            code: "ArrowLeft",
+            windowsVirtualKeyCode: 37,
+          });
+          await audience.send("Input.dispatchKeyEvent", {
+            type: "keyUp",
+            key: "ArrowLeft",
+            code: "ArrowLeft",
+            windowsVirtualKeyCode: 37,
+          });
+          await session.waitUntil(
+            ({ label, slideId }) =>
+              document
+                .querySelector(
+                  `[aria-label="${CSS.escape(label)}"] [data-slide-id]`,
+                )
+                ?.getAttribute("data-slide-id") === slideId,
+            { label: currentLabel, slideId: first },
+            UI_TIMEOUT_MS,
+          );
+
+          const endLabel = await translate(session, "decks:presenter.end");
+          await clickByRole(session, { role: "button", name: endLabel });
+          await session.waitUntil(
+            () => !document.querySelector('[role="dialog"]'),
+            null,
+            UI_TIMEOUT_MS,
+          );
+          const deadline = Date.now() + UI_TIMEOUT_MS;
+          let urls = await session.pageUrls();
+          while (urls.some((url) => url.includes("window=deck-audience"))) {
+            check(Date.now() < deadline, "audience window stays open", urls);
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            urls = await session.pageUrls();
+          }
+          return { first, second, audienceFollowed: true };
+        } finally {
+          audience.close();
+        }
+      },
+    ],
+    [
       "export menu offers PPTX and PDF",
       async ({ session }) => {
         const [exportLabel, pptx, pdf] = await Promise.all(

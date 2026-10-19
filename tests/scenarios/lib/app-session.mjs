@@ -88,20 +88,55 @@ function invocation(fn, arg) {
   return `(${fn.toString()})(${JSON.stringify(arg ?? null)})`;
 }
 
-export async function openAppSession({ port, url }) {
-  const base = `http://127.0.0.1:${port}`;
-  const targets = await readEndpoint(base, "/json/list", 5_000);
-  const client = await connect(selectTarget(targets, { url }), 10_000);
+async function attachPage(target) {
+  const client = await connect(target, 10_000);
   await client.send("Page.addScriptToEvaluateOnNewDocument", {
     source: PAGE_HELPERS,
   });
   await evaluate(client, PAGE_HELPERS, EVAL_TIMEOUT_MS);
+  return client;
+}
+
+function pageSession(client) {
   return {
     run: (fn, arg) => evaluate(client, invocation(fn, arg), EVAL_TIMEOUT_MS),
     waitUntil: (fn, arg, timeout = 15_000) =>
       waitFor(client, invocation(fn, arg), timeout, WAIT_INTERVAL_MS),
     send: (method, params) => client.send(method, params, EVAL_TIMEOUT_MS),
     on: (method, handler) => client.on(method, handler),
+    close: () => client.close(),
+  };
+}
+
+async function waitForPage(base, urlFragment, timeout) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const targets = await readEndpoint(base, "/json/list", 5_000);
+    const page = targets.find(
+      (item) =>
+        item.type === "page" &&
+        item.webSocketDebuggerUrl &&
+        item.url.includes(urlFragment),
+    );
+    if (page) return page;
+    if (Date.now() >= deadline) {
+      throw new Error(`No page with "${urlFragment}" within ${timeout}ms`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, WAIT_INTERVAL_MS));
+  }
+}
+
+export async function openAppSession({ port, url }) {
+  const base = `http://127.0.0.1:${port}`;
+  const targets = await readEndpoint(base, "/json/list", 5_000);
+  const client = await attachPage(selectTarget(targets, { url }));
+  return {
+    ...pageSession(client),
+    async openPage(urlFragment, timeout = 30_000) {
+      return pageSession(
+        await attachPage(await waitForPage(base, urlFragment, timeout)),
+      );
+    },
     async reload() {
       const previousOrigin = await evaluate(
         client,
@@ -122,7 +157,12 @@ export async function openAppSession({ port, url }) {
       }
       throw new Error(`Page did not reload within ${RELOAD_TIMEOUT_MS}ms`);
     },
-    close: () => client.close(),
+    async pageUrls() {
+      const targets = await readEndpoint(base, "/json/list", 5_000);
+      return targets
+        .filter((item) => item.type === "page")
+        .map((item) => item.url);
+    },
   };
 }
 

@@ -3,15 +3,30 @@
     "export": "Export",
     "exportPdf": "Export PDF",
     "exportPptx": "Export PPTX",
-    "present": "Present"
+    "present": "Present",
+    "presenterView": "Presenter view"
   },
   "errors": {
+    "audienceWindow": "Could not open the audience window. Allow pop-ups for this page and try again.",
     "export": "Could not export the deck"
   },
   "present": {
+    "audience": "Audience view",
     "label": "Presentation",
     "next": "Next slide",
     "position": "Slide {{current}} of {{total}}"
+  },
+  "presenter": {
+    "current": "Current slide",
+    "elapsed": "Elapsed time",
+    "end": "End show",
+    "label": "Presenter view",
+    "lastSlide": "This is the last slide",
+    "moveAudienceHint": "Move the audience window to the projector or shared screen.",
+    "next": "Next",
+    "noNotes": "No speaker notes",
+    "previous": "Previous",
+    "upNext": "Up next"
   },
   "sidebar": {
     "collapse": "Hide deck list",

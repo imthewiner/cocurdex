@@ -148,6 +148,8 @@ const hostBridge: HostBridge = {
     ipcRenderer.invoke("diagnostics:setVerbose", enabled),
   openExternal: (url: string) => ipcRenderer.invoke("shell:openExternal", url),
   downloadUrl: (url: string) => ipcRenderer.invoke("shell:downloadUrl", url),
+  openPresentationWindow: (request: { channel: string }) =>
+    ipcRenderer.invoke("presentation:openAudienceWindow", request),
   getCliPathStatus: () => ipcRenderer.invoke("cli:getPathStatus"),
   installCliOnPath: () => ipcRenderer.invoke("cli:installOnPath"),
   uninstallCliFromPath: () => ipcRenderer.invoke("cli:uninstallFromPath"),

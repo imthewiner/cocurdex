@@ -93,6 +93,9 @@ export const schemas = {
   filePath: filesystemPathSchema,
   url: httpUrlSchema,
   loopbackUrl: loopbackHttpUrlSchema,
+  audienceWindow: z.object({
+    channel: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
+  }),
   browserAnnotation: browserAnnotationSchema,
   browserAnnotationAction: z.enum(["send", "clear", "exit"]),
   browserAnnotationMarkers: z.tuple([
