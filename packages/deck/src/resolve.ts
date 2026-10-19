@@ -170,6 +170,20 @@ export function slotSpecsFor(layout: SlideLayoutId) {
   return SLIDE_LAYOUTS[layout].slots;
 }
 
+export function resolveEmptySlots(
+  slide: Slide,
+  deck: DeckContent,
+): ResolvedText[] {
+  const theme = deckTheme(deck.theme);
+  const layout = SLIDE_LAYOUTS[slide.layout];
+  return SLIDE_SLOT_IDS.flatMap((slot) => {
+    const spec = layout.slots[slot];
+    if (slide.slots[slot] || !spec) return [];
+    const frame = slide.slotFrames?.[slot] ?? spec.frame;
+    return [resolveText({ kind: "slot", slot }, frame, [], spec, theme)];
+  });
+}
+
 export function resolveSlide(slide: Slide, deck: DeckContent): ResolvedSlide {
   const theme = deckTheme(deck.theme);
   const layout = SLIDE_LAYOUTS[slide.layout];

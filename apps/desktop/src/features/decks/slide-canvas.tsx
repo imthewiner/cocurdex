@@ -9,6 +9,7 @@ import {
   TEXT_INSET,
 } from "@cocurdex/deck";
 import type { DeckContent, Slide } from "@cocurdex/shared";
+import type { ReactNode } from "react";
 import { cn } from "@/lib";
 import {
   frameStyle,
@@ -119,7 +120,7 @@ function SlideItem({ item, theme }: { item: ResolvedItem; theme: DeckTheme }) {
   );
 }
 
-function itemKey(item: ResolvedItem): string {
+export function slideItemKey(item: ResolvedItem): string {
   if (item.source.kind === "slot") return `slot:${item.source.slot}`;
   if (item.source.kind === "element") return `element:${item.source.elementId}`;
   return `decoration:${item.source.index}`;
@@ -129,10 +130,14 @@ export function SlideCanvas({
   slide,
   content,
   className,
+  hiddenItemKey,
+  children,
 }: {
   slide: Slide;
   content: DeckContent;
   className?: string;
+  hiddenItemKey?: string | null;
+  children?: ReactNode;
 }) {
   const theme = deckTheme(content.theme);
   const resolved = resolveSlide(slide, content);
@@ -148,9 +153,12 @@ export function SlideCanvas({
         fontFamily: sansFontStack(theme),
       }}
     >
-      {resolved.items.map((item) => (
-        <SlideItem key={itemKey(item)} item={item} theme={theme} />
-      ))}
+      {resolved.items.map((item) => {
+        const key = slideItemKey(item);
+        if (key === hiddenItemKey) return null;
+        return <SlideItem key={key} item={item} theme={theme} />;
+      })}
+      {children}
     </div>
   );
 }

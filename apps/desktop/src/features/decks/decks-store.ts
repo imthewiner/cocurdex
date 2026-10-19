@@ -1,4 +1,9 @@
-import type { DeckRecord, DeckSummary } from "@cocurdex/shared";
+import {
+  type DeckOp,
+  type DeckRecord,
+  type DeckSummary,
+  isDeckConflictError,
+} from "@cocurdex/shared";
 import { atom, type Getter, type Setter } from "jotai";
 import { decksApi } from "./decks-api";
 
@@ -65,6 +70,40 @@ export const renameDeckAtom = atom(
       ),
     );
     if (get(activeDeckIdAtom) === deck.id) set(activeDeckAtom, deck);
+  },
+);
+
+export const editActiveDeckAtom = atom(
+  null,
+  async (get, set, ops: DeckOp[]): Promise<DeckRecord | null> => {
+    const current = get(activeDeckAtom);
+    if (!current) return null;
+    try {
+      const { deck } = await decksApi.edit({
+        id: current.id,
+        ops,
+        expectedRevision: current.revision,
+      });
+      set(deckSummariesAtom, (summaries) =>
+        summaries.map((summary) =>
+          summary.id === deck.id
+            ? {
+                ...summary,
+                revision: deck.revision,
+                slideCount: deck.slideCount,
+                updatedAt: deck.updatedAt,
+              }
+            : summary,
+        ),
+      );
+      if (get(activeDeckIdAtom) !== deck.id) return deck;
+      set(activeDeckAtom, deck);
+      clampSlideIndex(get, set, deck);
+      return deck;
+    } catch (error) {
+      if (isDeckConflictError(error)) await reloadActiveDeck(get, set);
+      throw error;
+    }
   },
 );
 

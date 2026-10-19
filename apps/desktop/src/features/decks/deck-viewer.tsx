@@ -8,8 +8,9 @@ import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "@/app/layout/titlebar-icon-button";
-import { EmptyState, ScrollArea, Text } from "@/components/ui";
+import { EmptyState, Text } from "@/components/ui";
 import { exportDeckWithFeedback } from "./deck-actions";
+import { AddSlideMenu, LayoutMenu, ThemeMenu } from "./deck-edit-menus";
 import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
@@ -19,7 +20,9 @@ import {
   type PresenterSession,
 } from "./presenter/deck-presenter-view";
 import { startPresenterSession } from "./presenter/start-presenter-session";
-import { SlideCanvas } from "./slide-canvas";
+import { EditableSlide } from "./slide-editor/editable-slide";
+import { SlideNotesEditor } from "./slide-notes-editor";
+import { useDeckEditing } from "./use-deck-editing";
 
 export function DeckViewer({ deck }: { deck: DeckRecord }) {
   const { t } = useTranslation("decks");
@@ -29,6 +32,7 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
   const [presenter, setPresenter] = useState<PresenterSession | null>(null);
   const slides = deck.content.slides;
   const slide = slides[activeIndex];
+  const editing = useDeckEditing(deck);
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -53,6 +57,13 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
             })}
           </Text>
         ) : null}
+        <AddSlideMenu onAdd={editing.addSlide} />
+        <LayoutMenu
+          layout={slide?.layout ?? null}
+          disabled={!slide}
+          onChange={editing.setLayout}
+        />
+        <ThemeMenu theme={deck.content.theme} onChange={editing.setTheme} />
         <TitlebarIconButton
           aria-label={t("actions.present")}
           tooltip={t("actions.present")}
@@ -86,25 +97,25 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
             aria-label={t("viewer.slide", { number: activeIndex + 1 })}
             className="flex min-h-0 flex-1 items-center justify-center p-4 [container-type:size]"
           >
-            <SlideCanvas
+            <EditableSlide
+              key={slide.id}
               slide={slide}
               content={deck.content}
               className="w-[min(100cqw,calc(100cqh*16/9))] rounded-dense shadow-md ring-1 ring-border"
+              onEditText={(target, paragraphs) =>
+                editing.editText(slide.id, target, paragraphs)
+              }
             />
           </section>
-          {slide.notes ? (
-            <ScrollArea className="max-h-24 shrink-0 border-t border-border">
-              <section aria-label={t("viewer.notes")} className="px-3 py-2">
-                <Text size="body" tone="muted" className="whitespace-pre-wrap">
-                  {slide.notes}
-                </Text>
-              </section>
-            </ScrollArea>
-          ) : null}
+          <SlideNotesEditor
+            slide={slide}
+            onCommit={(notes) => editing.setNotes(slide.id, notes)}
+          />
           <DeckFilmstrip
             content={deck.content}
             activeIndex={activeIndex}
             onSelect={selectSlide}
+            onSlideAction={editing.slideAction}
           />
         </>
       ) : (

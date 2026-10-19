@@ -43,15 +43,38 @@ function readStage() {
   };
 }
 
-async function pressKey(session, key) {
+const COMMIT_MODIFIER = process.platform === "darwin" ? 4 : 2;
+const KEY_CODES = {
+  ArrowRight: 39,
+  Backspace: 8,
+  End: 35,
+  Enter: 13,
+  Escape: 27,
+};
+
+async function pressKey(session, key, modifiers = 0) {
   for (const type of ["keyDown", "keyUp"]) {
     await session.send("Input.dispatchKeyEvent", {
       type,
       key,
       code: key,
-      windowsVirtualKeyCode: { ArrowRight: 39, Escape: 27, End: 35 }[key],
+      modifiers,
+      windowsVirtualKeyCode: KEY_CODES[key],
     });
   }
+}
+
+async function waitForStageText(session, expected, absent = null) {
+  await session.waitUntil(
+    ({ expected, absent }) => {
+      const text =
+        document.querySelector("section > [data-slide-id]")?.innerText ?? "";
+      return text.includes(expected) && !(absent && text.includes(absent));
+    },
+    { expected, absent },
+    UI_TIMEOUT_MS,
+  );
+  return session.run(readStage);
 }
 
 async function waitForActive(session, index) {
@@ -119,13 +142,14 @@ runScenario("decks", {
         const stage = await waitForActive(session, 1);
         const notesLabel = await translate(session, "decks:viewer.notes");
         const [notes] = await waitForRole(session, {
-          role: "region",
+          role: "textbox",
           name: notesLabel,
         });
         const notesText = await session.run(
           (label) =>
-            document.querySelector(`[aria-label="${CSS.escape(label)}"]`)
-              ?.textContent ?? "",
+            document.querySelector(
+              `textarea[aria-label="${CSS.escape(label)}"]`,
+            )?.value ?? "",
           notesLabel,
         );
         check(stage.text.includes("Discount codes"), "slide title", stage);
@@ -315,6 +339,201 @@ runScenario("decks", {
         } finally {
           audience.close();
         }
+      },
+    ],
+    [
+      "editing a title in place saves it and the edit can be reverted",
+      async ({ session }) => {
+        await clickByRole(session, {
+          role: "button",
+          name: await slideLabel(session, 2),
+        });
+        await waitForActive(session, 1);
+        const [edit, editorName] = await Promise.all([
+          translate(session, "decks:editor.edit", {
+            name: await translate(session, "decks:editor.slots.title"),
+          }),
+          translate(session, "decks:editor.slots.title"),
+        ]);
+        const typeIntoTitle = async (apply) => {
+          await clickByRole(session, { role: "button", name: edit });
+          await waitForRole(session, { role: "textbox", name: editorName });
+          await session.waitUntil(
+            () =>
+              document.activeElement?.closest("[data-slide-editor]") !== null,
+            null,
+            UI_TIMEOUT_MS,
+          );
+          await apply();
+          await pressKey(session, "Enter", COMMIT_MODIFIER);
+          await session.waitUntil(
+            () => !document.querySelector("[data-slide-editor]"),
+            null,
+            UI_TIMEOUT_MS,
+          );
+        };
+        await typeIntoTitle(() =>
+          session.send("Input.insertText", { text: " v2" }),
+        );
+        const edited = await waitForStageText(session, "Discount codes v2");
+        await typeIntoTitle(async () => {
+          for (let count = 0; count < 3; count += 1) {
+            await pressKey(session, "Backspace");
+          }
+        });
+        const reverted = await waitForStageText(
+          session,
+          "Discount codes",
+          "v2",
+        );
+        check(
+          reverted.count === SLIDE_COUNT,
+          "slide count after edit",
+          reverted,
+        );
+        return { edited: edited.text.split("\n")[0] };
+      },
+    ],
+    [
+      "toolbar adds a slide with placeholders and the filmstrip deletes it",
+      async ({ session }) => {
+        const [addLabel, layoutName, deleteLabel, titlePlaceholder] =
+          await Promise.all(
+            [
+              "decks:actions.addSlide",
+              "decks:layouts.title-only",
+              "decks:slideMenu.delete",
+              "decks:editor.placeholders.title",
+            ].map((key) => translate(session, key)),
+          );
+        await clickByRole(session, { role: "button", name: addLabel });
+        await clickByRole(
+          session,
+          { role: "menuitem", name: layoutName },
+          UI_TIMEOUT_MS,
+        );
+        const added = await waitForActive(session, 2);
+        check(added.count === SLIDE_COUNT + 1, "slide added", added);
+        check(
+          added.text.includes(titlePlaceholder),
+          "empty title placeholder",
+          added,
+        );
+        await clickByRole(
+          session,
+          { role: "button", name: await slideLabel(session, 3) },
+          UI_TIMEOUT_MS,
+          "right",
+        );
+        await clickByRole(
+          session,
+          { role: "menuitem", name: deleteLabel },
+          UI_TIMEOUT_MS,
+        );
+        await session.waitUntil(
+          (count) =>
+            document.querySelectorAll("nav button[data-slide-id]").length ===
+            count,
+          SLIDE_COUNT,
+          UI_TIMEOUT_MS,
+        );
+        const after = await session.run(readStage);
+        check(after.count === SLIDE_COUNT, "slide deleted", after);
+        return { added: added.count, after: after.count };
+      },
+    ],
+    [
+      "layout and theme menus restyle the slide and switch back",
+      async ({ session }) => {
+        await clickByRole(session, {
+          role: "button",
+          name: await slideLabel(session, 2),
+        });
+        await waitForActive(session, 1);
+        const [
+          layoutLabel,
+          themeLabel,
+          twoColumns,
+          titleContent,
+          midnight,
+          base,
+        ] = await Promise.all(
+          [
+            "decks:actions.layout",
+            "decks:actions.theme",
+            "decks:layouts.two-content",
+            "decks:layouts.title-content",
+            "decks:themes.midnight",
+            "decks:themes.default",
+          ].map((key) => translate(session, key)),
+        );
+        const choose = async (menu, item) => {
+          await clickByRole(session, { role: "button", name: menu });
+          await clickByRole(
+            session,
+            { role: "menuitemradio", name: item },
+            UI_TIMEOUT_MS,
+          );
+          await session.waitUntil(
+            () => !document.querySelector('[role="menu"]'),
+            null,
+            UI_TIMEOUT_MS,
+          );
+        };
+        const columnLefts = () =>
+          session.run(() => {
+            const stage = document.querySelector("section > [data-slide-id]");
+            const lefts = [
+              ...(stage?.querySelectorAll('[data-slide-item="text"]') ?? []),
+            ].map((box) => Math.round(box.getBoundingClientRect().left));
+            return new Set(lefts).size;
+          });
+        await choose(layoutLabel, twoColumns);
+        await session.waitUntil(
+          () =>
+            document.querySelector('[data-slide-target="slot:right"]') !== null,
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const columns = await session.run(readStage);
+        check(
+          columns.text.includes("Totals never drop below zero"),
+          "body kept in the left column",
+          columns,
+        );
+        await choose(layoutLabel, titleContent);
+        await session.waitUntil(
+          () => !document.querySelector('[data-slide-target="slot:right"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const background = () =>
+          session.run(
+            () =>
+              getComputedStyle(
+                document.querySelector("section > [data-slide-id]"),
+              ).backgroundColor,
+          );
+        await choose(themeLabel, midnight);
+        await session.waitUntil(
+          () =>
+            getComputedStyle(
+              document.querySelector("section > [data-slide-id]"),
+            ).backgroundColor === "rgb(15, 20, 27)",
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const dark = await background();
+        await choose(themeLabel, base);
+        await session.waitUntil(
+          () =>
+            getComputedStyle(
+              document.querySelector("section > [data-slide-id]"),
+            ).backgroundColor === "rgb(255, 255, 255)",
+          null,
+          UI_TIMEOUT_MS,
+        );
+        return { dark, distinctLefts: await columnLefts() };
       },
     ],
     [

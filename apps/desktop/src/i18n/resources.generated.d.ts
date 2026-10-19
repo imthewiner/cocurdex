@@ -496,15 +496,45 @@ export default interface Resources {
   };
   decks: {
     actions: {
+      addSlide: "Add slide";
       export: "Export";
       exportPdf: "Export PDF";
       exportPptx: "Export PPTX";
+      layout: "Layout";
       present: "Present";
       presenterView: "Presenter view";
+      theme: "Theme";
+    };
+    editor: {
+      edit: "Edit {{name}}";
+      notesPlaceholder: "Add speaker notes";
+      placeholders: {
+        subtitle: "Click to add subtitle";
+        text: "Click to add text";
+        title: "Click to add title";
+      };
+      slots: {
+        body: "text";
+        left: "left column";
+        right: "right column";
+        subtitle: "subtitle";
+        textBox: "text box";
+        title: "title";
+      };
     };
     errors: {
       audienceWindow: "Could not open the audience window. Allow pop-ups for this page and try again.";
+      edit: "Could not save the change";
       export: "Could not export the deck";
+    };
+    layouts: {
+      blank: "Blank";
+      closing: "Closing";
+      cover: "Cover";
+      section: "Section";
+      "title-content": "Title and content";
+      "title-only": "Title only";
+      "two-content": "Two columns";
     };
     present: {
       audience: "Audience view";
@@ -543,13 +573,25 @@ export default interface Resources {
       title: "Decks";
       untitled: "Untitled deck";
     };
+    slideMenu: {
+      delete: "Delete slide";
+      duplicate: "Duplicate slide";
+      moveEarlier: "Move earlier";
+      moveLater: "Move later";
+    };
+    themes: {
+      default: "Default";
+      forest: "Forest";
+      midnight: "Midnight";
+      sand: "Sand";
+    };
     viewer: {
       empty: {
         description: "Pick a deck from the list to view its slides.";
         title: "No deck selected";
       };
       emptyDeck: {
-        description: "Ask an agent to add slides to this deck.";
+        description: "Add a slide from the toolbar, or ask an agent to write the deck.";
         title: "This deck has no slides";
       };
       notes: "Speaker notes";

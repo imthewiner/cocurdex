@@ -55,11 +55,11 @@ export async function waitForRole(
   }
 }
 
-export async function clickPoint(session, point) {
+export async function clickPoint(session, point, button = "left") {
   for (const type of ["mousePressed", "mouseReleased"]) {
     await session.send("Input.dispatchMouseEvent", {
       type,
-      button: "left",
+      button,
       clickCount: 1,
       ...point,
     });
@@ -78,6 +78,7 @@ export async function clickByRole(
   session,
   query,
   timeout = DEFAULT_TIMEOUT_MS,
+  button = "left",
 ) {
   const matches = await waitForRole(session, query, timeout);
   if (matches.length > 1) {
@@ -86,6 +87,10 @@ export async function clickByRole(
       `${describeQuery(query)} is ambiguous: ${JSON.stringify(names)}`,
     );
   }
-  await clickPoint(session, await centerOf(session, matches[0].backendNodeId));
+  await clickPoint(
+    session,
+    await centerOf(session, matches[0].backendNodeId),
+    button,
+  );
   return matches[0];
 }

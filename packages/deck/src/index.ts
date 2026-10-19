@@ -8,6 +8,7 @@ export {
   type ResolvedSource,
   type ResolvedTable,
   type ResolvedText,
+  resolveEmptySlots,
   resolveSlide,
 } from "./resolve";
 export {
