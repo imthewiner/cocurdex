@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { createDecksSchemaSql } from "./decks/deck-schema";
 import { createHostAccessSchemaSql } from "./host-access/schema";
 import {
   ensureIssueIndexes,
@@ -14,7 +15,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 31;
+export const CURRENT_SCHEMA_VERSION = 32;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -425,6 +426,10 @@ function createCommandReceipts(database: DatabaseSync): void {
   database.exec(createCommandReceiptsSql());
 }
 
+function createDecksTable(database: DatabaseSync): void {
+  database.exec(createDecksSchemaSql());
+}
+
 function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
@@ -530,6 +535,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [28, addToolCallResultRefs],
   [29, createCommandReceipts],
   [30, ensureSyncTracking],
+  [31, createDecksTable],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {

@@ -4,6 +4,7 @@ import {
   type AgentCapabilityCacheRepository,
   createSqliteAgentCapabilityCacheRepository,
 } from "./agents";
+import { createSqliteDecksRepository, type DecksRepository } from "./decks";
 import {
   createSqliteHostAccessRepository,
   type HostAccessRepository,
@@ -78,6 +79,7 @@ import {
 
 export interface CocurdexDatabase {
   notes: NotesRepository;
+  decks: DecksRepository;
   issues: IssueTrackerRepository;
   search: SearchRepository;
   workspaces: WorkspaceRepository;
@@ -190,6 +192,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
 
   return {
     notes: createSqliteNotesRepository(database),
+    decks: createSqliteDecksRepository(database),
     issues: createSqliteIssueTrackerRepository(database),
     search: createSqliteSearchRepository(database),
     workspaces: createSqliteWorkspaceRepository(database),

@@ -1,4 +1,5 @@
 export * from "./agents";
+export * from "./decks";
 export * from "./host-access";
 export * from "./issues";
 export * from "./notes";
