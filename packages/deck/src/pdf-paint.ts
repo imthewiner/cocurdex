@@ -1,4 +1,5 @@
 import type { SlideFrame } from "@cocurdex/shared";
+import type PDFDocument from "pdfkit";
 import {
   type DeckPaint,
   type DeckShape,
@@ -10,7 +11,7 @@ import {
   type ShapeLine,
 } from "./theme";
 
-type Doc = PDFKit.PDFDocument;
+type Doc = InstanceType<typeof PDFDocument>;
 type Gradient = ReturnType<Doc["linearGradient"]>;
 
 export interface PdfShape {

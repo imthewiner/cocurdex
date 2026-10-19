@@ -3,7 +3,11 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { handleDaemonRequest } from "@cocurdex/daemon/internal/handler";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
-import type { DaemonMethod, DaemonRequest } from "@cocurdex/rpc";
+import type {
+  DaemonMethod,
+  DaemonRequest,
+  DaemonRequestPayloadByMethod,
+} from "@cocurdex/rpc";
 import type { HostPrincipal } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterAll, describe, expect, it } from "vitest";
@@ -42,12 +46,12 @@ async function setup() {
   copyFileSync(swatch, path.join(outside, "outside.png"));
   const call = <M extends DaemonMethod>(
     method: M,
-    params: DaemonRequest<M>["params"],
+    params: DaemonRequestPayloadByMethod[M],
     principal: HostPrincipal = { kind: "local" },
   ) =>
     handleDaemonRequest<M>(
       service,
-      { id: "1", method, params, token: "test" } as DaemonRequest<M>,
+      { id: "1", method, params, token: "test" } as unknown as DaemonRequest<M>,
       {
         principal,
         remoteAddress: principal.kind === "local" ? null : "10.0.0.2",
