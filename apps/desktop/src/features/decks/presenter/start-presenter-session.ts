@@ -27,13 +27,18 @@ export async function startPresenterSession(): Promise<PresenterSession | null> 
   const ready = waitForAudienceReady(port);
   try {
     const result = await desktopApi.openPresentationWindow({ channel });
-    if (!result.opened || !(await ready)) return null;
+    if (!result.opened) return null;
+    if (!(await ready)) {
+      await desktopApi.closePresentationWindow({ channel });
+      return null;
+    }
     return {
       channel,
       externalDisplay: result.externalDisplay,
       startedAt: Date.now(),
     };
   } catch {
+    await desktopApi.closePresentationWindow({ channel }).catch(() => {});
     return null;
   } finally {
     port.close();

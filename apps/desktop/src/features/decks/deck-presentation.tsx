@@ -18,8 +18,9 @@ export function DeckPresentation({
 }) {
   const { t } = useTranslation("decks");
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [index, setIndex] = useState(startIndex);
+  const [requestedIndex, setIndex] = useState(startIndex);
   const count = content.slides.length;
+  const index = Math.min(requestedIndex, Math.max(0, count - 1));
   const exit = useCallback(() => onExit(index), [onExit, index]);
 
   useFullscreenPresentation(rootRef, exit);
@@ -54,7 +55,7 @@ export function DeckPresentation({
         type="button"
         aria-label={t("present.next")}
         className="flex size-full items-center justify-center outline-none"
-        onClick={() => setIndex((current) => Math.min(current + 1, count - 1))}
+        onClick={() => setIndex(Math.min(index + 1, count - 1))}
       >
         {slide ? (
           <SlideCanvas

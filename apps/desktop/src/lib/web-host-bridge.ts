@@ -14,6 +14,8 @@ import type { HostBridge, HostCapabilities } from "./types";
 
 const TOKEN_STORAGE_KEY = "cocurdex.daemonToken";
 const AUDIENCE_WINDOW_NAME = "cocurdex-deck-audience";
+let audienceWindow: Window | null = null;
+let audienceChannel: string | null = null;
 const DAEMON_URL_STORAGE_KEY = "cocurdex.daemonUrl";
 const DAEMON_URL_FRAGMENT_KEY = "daemon";
 const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -305,8 +307,15 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
       const url = new URL(window.location.pathname, window.location.origin);
       url.searchParams.set("window", "deck-audience");
       url.searchParams.set("channel", channel);
-      const audience = window.open(url, AUDIENCE_WINDOW_NAME, "popup");
-      return { opened: audience !== null, externalDisplay: false };
+      audienceWindow = window.open(url, AUDIENCE_WINDOW_NAME, "popup");
+      audienceChannel = channel;
+      return { opened: audienceWindow !== null, externalDisplay: false };
+    },
+    closePresentationWindow: async ({ channel }) => {
+      if (audienceChannel !== channel) return;
+      audienceWindow?.close();
+      audienceWindow = null;
+      audienceChannel = null;
     },
   };
   window.desktopApi = bridge;

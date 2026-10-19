@@ -598,6 +598,7 @@ export const offlineApi: DesktopApi = {
     opened: false,
     externalDisplay: false,
   }),
+  closePresentationWindow: async () => {},
   ptySpawn: async (payload) => ({
     terminalId: payload.terminalId,
     workspaceId: payload.workspaceId,

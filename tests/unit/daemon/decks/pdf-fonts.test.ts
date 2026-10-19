@@ -44,6 +44,20 @@ describe("pdfFontCandidates", () => {
     expect(lastCjk).toBeGreaterThanOrEqual(0);
     expect(lastCjk).toBeLessThan(firstLatin);
   });
+
+  it("finds serif faces in Debian and Fedora package directories", () => {
+    const { serif, serifBold } = pdfFontCandidates("linux", {});
+    const paths = [...serif, ...serifBold].map((font) => font.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/dejavu-serif-fonts/DejaVuSerif.ttf",
+        "/usr/share/fonts/dejavu-serif-fonts/DejaVuSerif-Bold.ttf",
+        "/usr/share/fonts/liberation-serif/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/liberation-serif/LiberationSerif-Bold.ttf",
+      ]),
+    );
+  });
 });
 
 describe("choosePdfFonts", () => {

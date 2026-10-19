@@ -13,6 +13,7 @@ import { rendererPageUrl } from "./renderer-page";
 const AUDIENCE_BACKGROUND = "#000000";
 
 let audienceWindow: BrowserWindow | null = null;
+let audienceChannel: string | null = null;
 
 function presenterDisplayId(event: IpcMainInvokeEvent): number {
   const presenter = BrowserWindow.fromWebContents(event.sender);
@@ -45,8 +46,11 @@ async function openAudienceWindow(
     },
   });
   audienceWindow = window;
+  audienceChannel = channel;
   window.on("closed", () => {
-    if (audienceWindow === window) audienceWindow = null;
+    if (audienceWindow !== window) return;
+    audienceWindow = null;
+    audienceChannel = null;
   });
   denyWindowNavigation(window.webContents);
   window.once("ready-to-show", () => {
@@ -55,6 +59,10 @@ async function openAudienceWindow(
   });
   await window.loadURL(rendererPageUrl({ window: "deck-audience", channel }));
   return { opened: true, externalDisplay: placement.fullscreen };
+}
+
+function closeAudienceWindow(channel: string) {
+  if (audienceChannel === channel) audienceWindow?.destroy();
 }
 
 export function registerAudienceWindowHandlers(
@@ -67,5 +75,11 @@ export function registerAudienceWindowHandlers(
     schemas.audienceWindow,
     (event, request) =>
       openAudienceWindow(options.preloadPath, event, request.channel),
+  );
+  registerHandler(
+    ipc,
+    "presentation:closeAudienceWindow",
+    schemas.audienceWindow,
+    (_event, request) => closeAudienceWindow(request.channel),
   );
 }

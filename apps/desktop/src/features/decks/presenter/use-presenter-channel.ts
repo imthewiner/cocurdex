@@ -1,10 +1,26 @@
 import type { DeckContent } from "@cocurdex/shared";
 import { useCallback, useEffect, useRef } from "react";
+import { desktopApi } from "@/lib";
 import {
   type AudienceMessage,
   audienceChannelName,
   type PresenterMessage,
 } from "../audience/audience-channel";
+
+const pendingCloses = new Map<string, number>();
+
+function cancelAudienceClose(channel: string) {
+  window.clearTimeout(pendingCloses.get(channel));
+  pendingCloses.delete(channel);
+}
+
+function scheduleAudienceClose(channel: string) {
+  const timer = window.setTimeout(() => {
+    pendingCloses.delete(channel);
+    void desktopApi.closePresentationWindow({ channel });
+  }, 0);
+  pendingCloses.set(channel, timer);
+}
 
 interface PresenterChannelOptions {
   channel: string;
@@ -28,6 +44,7 @@ export function usePresenterChannel({
   });
 
   useEffect(() => {
+    cancelAudienceClose(channel);
     const port = new BroadcastChannel(audienceChannelName(channel));
     portRef.current = port;
     const show = () =>
@@ -50,6 +67,7 @@ export function usePresenterChannel({
       window.removeEventListener("pagehide", end);
       port.close();
       portRef.current = null;
+      scheduleAudienceClose(channel);
     };
   }, [channel]);
 

@@ -766,6 +766,7 @@ export interface HostApi {
   openPresentationWindow(request: {
     channel: string;
   }): Promise<PresentationWindowResult>;
+  closePresentationWindow(request: { channel: string }): Promise<void>;
 }
 
 export interface PresentationWindowResult {

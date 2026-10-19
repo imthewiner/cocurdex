@@ -25,11 +25,14 @@ const LINUX_DEJAVU_DIRS = [
   "/usr/share/fonts/TTF",
   "/usr/share/fonts/dejavu-sans-fonts",
   "/usr/share/fonts/dejavu-sans-mono-fonts",
+  "/usr/share/fonts/dejavu-serif-fonts",
 ];
 const LINUX_LIBERATION_DIRS = [
   "/usr/share/fonts/truetype/liberation",
   "/usr/share/fonts/liberation",
   "/usr/share/fonts/liberation-sans",
+  "/usr/share/fonts/liberation-mono",
+  "/usr/share/fonts/liberation-serif",
 ];
 
 function inDirs(dirs: string[], file: string, face?: string): PdfFontSource[] {

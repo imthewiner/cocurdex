@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { statSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import os, { homedir } from "node:os";
 import path from "node:path";
 import {
@@ -60,6 +60,7 @@ import {
   contextHandoffBudget,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
+  type HostPrincipal,
   isAgentEvent,
   isAgentId,
   isAssistantSessionId,
@@ -811,6 +812,26 @@ export class CocurdexDaemonService {
       );
     }
     return readTextFile(filePath);
+  }
+
+  async assertClientPathAccess(
+    principal: HostPrincipal,
+    filePath: string,
+    target: "file" | "outputFile",
+  ) {
+    if (principal.kind === "local") return;
+    const checked =
+      target === "outputFile" ? path.dirname(path.resolve(filePath)) : filePath;
+    const exists =
+      target === "file" ||
+      (await stat(checked).then(
+        (info) => info.isDirectory(),
+        () => false,
+      ));
+    if (exists && (await this.scanPolicy.canAccessFile(checked))) return;
+    throw new Error(
+      `Path is outside every registered workspace (path=${filePath})`,
+    );
   }
 
   async workspaceFileExists(filePath: string) {
