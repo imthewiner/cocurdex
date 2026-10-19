@@ -1,16 +1,13 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole, clickPoint, waitForRole } from "./lib/locate.mjs";
+import { showPanelView, translate } from "./lib/navigate.mjs";
 
 const FLYOUT_GAP = 4;
 const GAP_TOLERANCE = 0.5;
 const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
-
-async function translate(session, key) {
-  return session.run((text) => window.__scenario.t(text), key);
-}
 
 async function centerByRole(session, query) {
   const [match] = await waitForRole(session, query, UI_TIMEOUT_MS);
@@ -171,17 +168,11 @@ runScenario("menu-flyouts", {
     [
       "a context submenu matches its parent",
       async ({ session }) => {
-        const openPanel = await translate(
-          session,
-          "editor:actions.openEditorPanel",
-        );
         await clickByRole(session, {
           role: "button",
           name: /^Draft release notes /,
         });
-        await clickByRole(session, { role: "button", name: openPanel });
-        const notesTab = await translate(session, "editor:actions.showNotes");
-        await clickByRole(session, { role: "button", name: notesTab });
+        await showPanelView(session, "notes");
         const row = await centerByRole(session, {
           role: "button",
           name: "Checkout spec",

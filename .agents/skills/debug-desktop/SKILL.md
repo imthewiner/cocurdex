@@ -213,6 +213,18 @@ exit before removing the profile; the log is kept only when the run fails.
 Three instances, two isolated plus one attached to 9222, ran the PDF scenario
 in parallel without interference.
 
+Reach views through `tests/scenarios/lib/navigate.mjs` instead of rediscovering
+entry points: `showPanelView(session, "notes" | "issues" | "files" | "git" |
+"terminal" | "browser" | "pdf")` opens the editor panel and its tab,
+`openNote(session, title)` opens a note (the fixture database has "Checkout
+spec", "Acme Shop roadmap", and "Scratchpad"), and `openNewIssueDialog(session)`
+opens the new-issue dialog with its body editor at `BODY_EDITOR_IN_DIALOG`.
+When you find the path to another view, add it there in the same change. For
+ad-hoc exploration, start a scenario with `--fixture-db --keep` and drive the
+kept instance from a scratch script that imports these helpers and
+`openAppSession({ port, url })`; the kept dev server survives source edits, so
+reload the renderer instead of relaunching.
+
 Lessons from building it:
 
 - Keep the profile path short. On macOS a socket path over 103 bytes makes the

@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { openWorkspaceFile } from "./lib/file-tree.mjs";
+import { closeEditorPanel, showPanelView } from "./lib/navigate.mjs";
 
 const MARKDOWN_FIXTURE = fileURLToPath(
   new URL("./fixtures/readme-sample.md", import.meta.url),
@@ -10,26 +11,6 @@ const MARKDOWN_FIXTURE = fileURLToPath(
 const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
-
-async function openEditorPanel(session) {
-  await session.waitUntil(
-    async () => {
-      const S = window.__scenario;
-      return Boolean(
-        S.byLabel(await S.t("editor:actions.openEditorPanel")) ??
-          S.byLabel(await S.t("editor:actions.closeEditorPanel")),
-      );
-    },
-    null,
-    UI_TIMEOUT_MS,
-  );
-  return session.run(async () => {
-    const S = window.__scenario;
-    const openButton = S.byLabel(await S.t("editor:actions.openEditorPanel"));
-    openButton?.click();
-    return { panelWasOpen: !openButton };
-  });
-}
 
 async function restoreEditorPanel(session, fileName, panelWasOpen) {
   await session.run(async (name) => {
@@ -39,20 +20,7 @@ async function restoreEditorPanel(session, fileName, panelWasOpen) {
     )?.click();
     return true;
   }, fileName);
-  if (panelWasOpen) return;
-  await session.run(async () => {
-    const S = window.__scenario;
-    S.byLabel(await S.t("editor:actions.closeEditorPanel"))?.click();
-    return true;
-  });
-  await session.waitUntil(
-    async () => {
-      const S = window.__scenario;
-      return Boolean(S.byLabel(await S.t("editor:actions.openEditorPanel")));
-    },
-    null,
-    UI_TIMEOUT_MS,
-  );
+  if (!panelWasOpen) await closeEditorPanel(session);
 }
 
 function readModeToggle() {
@@ -86,7 +54,7 @@ async function clickModeToggle(session, expectedLabel) {
 runScenario("markdown-preview", {
   open: () => openScenarioApp(args, { fixtures: [MARKDOWN_FIXTURE] }),
   async setup({ session }) {
-    const { panelWasOpen } = await openEditorPanel(session);
+    const { wasOpen: panelWasOpen } = await showPanelView(session, "files");
     await openWorkspaceFile(session, path.basename(MARKDOWN_FIXTURE));
     await session.waitUntil(
       () =>

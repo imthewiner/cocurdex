@@ -23,6 +23,10 @@
   margin-top: 0;
 }
 
+.md-body-prose > .tableWrapper:last-child {
+  margin-bottom: 2.5em;
+}
+
 /* Paragraphs */
 .md-body-prose p {
   margin: 0.6em 0;
