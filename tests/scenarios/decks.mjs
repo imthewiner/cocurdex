@@ -19,6 +19,7 @@ const PPTX_FIXTURE = createRequire(import.meta.url).resolve(
   "./fixtures/deck-pptx/warehouse-rollout.pptx",
 );
 const IMPORTED_TITLE = "Warehouse rollout";
+const CREATED_TITLE = "Scratch deck";
 
 async function chooseFile(session, filePath, action) {
   await session.send("Page.enable");
@@ -158,6 +159,51 @@ async function waitForActive(session, index) {
     UI_TIMEOUT_MS,
   );
   return session.run(readStage);
+}
+
+async function deleteDeckFromSidebar(session, title) {
+  const [deleteLabel, confirmLabel, dialogTitle] = await Promise.all(
+    [
+      ["decks:sidebar.delete"],
+      ["decks:sidebar.deleteConfirm.confirm"],
+      ["decks:sidebar.deleteConfirm.title", { title }],
+    ].map(([key, options]) => translate(session, key, options)),
+  );
+  await clickByRole(
+    session,
+    { role: "button", name: title },
+    UI_TIMEOUT_MS,
+    "right",
+  );
+  await clickByRole(
+    session,
+    { role: "menuitem", name: deleteLabel },
+    UI_TIMEOUT_MS,
+  );
+  await clickByRole(
+    session,
+    {
+      role: "button",
+      name: confirmLabel,
+      within: { role: "dialog", name: dialogTitle },
+    },
+    UI_TIMEOUT_MS,
+  );
+  await session.waitUntil(
+    () => !document.querySelector('[role="dialog"]'),
+    null,
+    UI_TIMEOUT_MS,
+  );
+  await waitForNoRole(session, { role: "button", name: title }, UI_TIMEOUT_MS);
+}
+
+async function reopenSeededDeck(session) {
+  await clickByRole(
+    session,
+    { role: "button", name: DECK_TITLE },
+    UI_TIMEOUT_MS,
+  );
+  return waitForActive(session, 0);
 }
 
 runScenario("decks", {
@@ -697,17 +743,53 @@ runScenario("decks", {
       },
     ],
     [
+      "the new deck button creates a cover slide and starts renaming",
+      async ({ session }) => {
+        const [newLabel, renameLabel] = await Promise.all(
+          ["decks:sidebar.newDeck", "decks:sidebar.rename"].map((key) =>
+            translate(session, key),
+          ),
+        );
+        await clickByRole(session, { role: "button", name: newLabel });
+        await waitForRole(
+          session,
+          { role: "textbox", name: renameLabel },
+          UI_TIMEOUT_MS,
+        );
+        const focused = await session.run(() => {
+          const input = document.activeElement;
+          if (!(input instanceof HTMLInputElement)) return false;
+          input.select();
+          return true;
+        });
+        check(focused, "rename input focused", focused);
+        await session.send("Input.insertText", { text: CREATED_TITLE });
+        await pressKey(session, "Enter");
+        await waitForRole(
+          session,
+          { role: "button", name: CREATED_TITLE },
+          UI_TIMEOUT_MS,
+        );
+        const stage = await waitForActive(session, 0);
+        check(stage.count === 1, "new deck has one slide", stage);
+        check(
+          Math.abs(stage.ratio - 16 / 9) < 0.01,
+          "new deck aspect ratio",
+          stage,
+        );
+
+        await deleteDeckFromSidebar(session, CREATED_TITLE);
+        await reopenSeededDeck(session);
+        return { count: stage.count };
+      },
+    ],
+    [
       "a PowerPoint file imports as an editable deck that can be deleted",
       async ({ session }) => {
-        const [importLabel, deleteLabel, dialogConfirm, deleteTitle] =
-          await Promise.all(
-            [
-              ["decks:sidebar.importPptx"],
-              ["decks:sidebar.delete"],
-              ["decks:sidebar.deleteConfirm.confirm"],
-              ["decks:sidebar.deleteConfirm.title", { title: IMPORTED_TITLE }],
-            ].map(([key, options]) => translate(session, key, options)),
-          );
+        const importLabel = await translate(
+          session,
+          "decks:sidebar.importPptx",
+        );
         await chooseFile(session, PPTX_FIXTURE, () =>
           clickByRole(session, { role: "button", name: importLabel }),
         );
@@ -717,37 +799,8 @@ runScenario("decks", {
         check(stage.text.includes("Scanner refresh"), "body text", stage);
         check(image.centerX > 0.6, "picture kept its position", image);
 
-        await clickByRole(
-          session,
-          { role: "button", name: IMPORTED_TITLE },
-          UI_TIMEOUT_MS,
-          "right",
-        );
-        await clickByRole(
-          session,
-          { role: "menuitem", name: deleteLabel },
-          UI_TIMEOUT_MS,
-        );
-        await clickByRole(
-          session,
-          {
-            role: "button",
-            name: dialogConfirm,
-            within: { role: "dialog", name: deleteTitle },
-          },
-          UI_TIMEOUT_MS,
-        );
-        await waitForNoRole(
-          session,
-          { role: "button", name: IMPORTED_TITLE },
-          UI_TIMEOUT_MS,
-        );
-        await clickByRole(
-          session,
-          { role: "button", name: DECK_TITLE },
-          UI_TIMEOUT_MS,
-        );
-        await waitForActive(session, 0);
+        await deleteDeckFromSidebar(session, IMPORTED_TITLE);
+        await reopenSeededDeck(session);
         return { image, text: stage.text.slice(0, 40) };
       },
     ],

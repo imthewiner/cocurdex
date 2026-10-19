@@ -125,3 +125,15 @@ export const importDeckAtom = atom(null, async (_get, set, path: string) => {
   await set(openDeckAtom, result.deck.id);
   return result;
 });
+
+export const createDeckAtom = atom(null, async (_get, set, title: string) => {
+  const { deck } = await decksApi.create({ title });
+  const { deck: withCover } = await decksApi.edit({
+    id: deck.id,
+    ops: [{ op: "addSlide", layout: "cover" }],
+    expectedRevision: deck.revision,
+  });
+  await set(loadDecksAtom);
+  await set(openDeckAtom, withCover.id);
+  return withCover;
+});

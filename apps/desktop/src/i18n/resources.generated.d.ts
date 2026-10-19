@@ -527,6 +527,7 @@ export default interface Resources {
     };
     errors: {
       audienceWindow: "Could not open the audience window. Allow pop-ups for this page and try again.";
+      create: "Could not create the deck";
       edit: "Could not save the change";
       export: "Could not export the deck";
       image: "Could not add the image";
@@ -576,11 +577,14 @@ export default interface Resources {
         title: 'Delete "{{title}}"?';
       };
       empty: {
-        description: "Ask an agent to make a deck; it appears here.";
+        create: "New deck";
+        description: "Create a deck, import a PowerPoint file, or ask an agent to make one.";
+        import: "Import PowerPoint";
         title: "No decks yet";
       };
       expand: "Show deck list";
       importPptx: "Import PowerPoint (.pptx)";
+      newDeck: "New deck";
       rename: "Rename";
       resize: "Resize deck list";
       title: "Decks";

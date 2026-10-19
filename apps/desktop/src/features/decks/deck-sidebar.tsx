@@ -1,6 +1,6 @@
 import type { DeckSummary } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
-import { FileUp, Presentation } from "lucide-react";
+import { FileUp, Plus, Presentation } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -9,23 +9,23 @@ import {
   TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "@/app/layout/titlebar-icon-button";
-import { EmptyState, ScrollArea } from "@/components/ui";
+import { Button, EmptyState, ScrollArea } from "@/components/ui";
 import { exportDeckWithFeedback, reportImportWarnings } from "./deck-actions";
 import { DeckDeleteDialog } from "./deck-delete-dialog";
 import { DeckRow } from "./deck-row";
-import { canPickLocalFiles, pickLocalFilePath } from "./local-file-picker";
-
-const PPTX_ACCEPT =
-  ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation";
-
 import {
   activeDeckIdAtom,
+  createDeckAtom,
   deckSummariesAtom,
   deleteDeckAtom,
   importDeckAtom,
   openDeckAtom,
   renameDeckAtom,
 } from "./decks-store";
+import { canPickLocalFiles, pickLocalFilePath } from "./local-file-picker";
+
+const PPTX_ACCEPT =
+  ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
 export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
   const { t } = useTranslation("decks");
@@ -35,6 +35,8 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
   const renameDeck = useSetAtom(renameDeckAtom);
   const deleteDeck = useSetAtom(deleteDeckAtom);
   const importDeck = useSetAtom(importDeckAtom);
+  const createDeck = useSetAtom(createDeckAtom);
+  const canImport = canPickLocalFiles();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DeckSummary | null>(null);
 
@@ -45,6 +47,17 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
         await renameDeck({ id: deck.id, title: next });
     } finally {
       setRenamingId(null);
+    }
+  };
+
+  const createBlankDeck = async () => {
+    try {
+      const deck = await createDeck(t("sidebar.untitled"));
+      setRenamingId(deck.id);
+    } catch (error) {
+      toast.error(t("errors.create"), {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -68,14 +81,22 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
         collapseLabel={t("sidebar.collapse")}
         onCollapse={onCollapse}
         action={
-          canPickLocalFiles() ? (
+          <div className="flex items-center gap-0.5">
+            {canImport ? (
+              <TitlebarIconButton
+                aria-label={t("sidebar.importPptx")}
+                onClick={() => void importPptx()}
+              >
+                <FileUp className={TITLEBAR_ICON_GLYPH_CLASS} />
+              </TitlebarIconButton>
+            ) : null}
             <TitlebarIconButton
-              aria-label={t("sidebar.importPptx")}
-              onClick={() => void importPptx()}
+              aria-label={t("sidebar.newDeck")}
+              onClick={() => void createBlankDeck()}
             >
-              <FileUp className={TITLEBAR_ICON_GLYPH_CLASS} />
+              <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
             </TitlebarIconButton>
-          ) : null
+          </div>
         }
       />
       {decks.length === 0 ? (
@@ -83,6 +104,24 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
           icon={<Presentation />}
           title={t("sidebar.empty.title")}
           description={t("sidebar.empty.description")}
+          action={
+            <div className="flex flex-col items-center gap-2">
+              <Button size="sm" onClick={() => void createBlankDeck()}>
+                <Plus className="size-3.5" />
+                {t("sidebar.empty.create")}
+              </Button>
+              {canImport ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void importPptx()}
+                >
+                  <FileUp className="size-3.5" />
+                  {t("sidebar.empty.import")}
+                </Button>
+              ) : null}
+            </div>
+          }
         />
       ) : (
         <ScrollArea className="min-h-0 min-w-0 w-full flex-1">

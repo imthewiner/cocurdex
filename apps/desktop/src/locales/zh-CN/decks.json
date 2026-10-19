@@ -31,6 +31,7 @@
   },
   "errors": {
     "audienceWindow": "无法打开观众窗口。请允许此页面弹出窗口后重试。",
+    "create": "无法新建演示文稿",
     "edit": "无法保存更改",
     "export": "无法导出演示文稿",
     "image": "无法添加图片",
@@ -80,11 +81,14 @@
       "title": "删除“{{title}}”？"
     },
     "empty": {
-      "description": "让 Agent 制作演示文稿，完成后会显示在这里。",
+      "create": "新建演示文稿",
+      "description": "新建或导入 PowerPoint 演示文稿，也可以让 Agent 来制作。",
+      "import": "导入 PowerPoint",
       "title": "还没有演示文稿"
     },
     "expand": "显示演示文稿列表",
     "importPptx": "导入 PowerPoint (.pptx)",
+    "newDeck": "新建演示文稿",
     "rename": "重命名",
     "resize": "调整演示文稿列表宽度",
     "title": "演示文稿",

@@ -1,5 +1,6 @@
 import type {
   CreateDeckDownloadPayload,
+  CreateDeckPayload,
   DeleteDeckPayload,
   EditDeckPayload,
   GetDeckPayload,
@@ -12,6 +13,7 @@ import { requestDaemon } from "@/lib";
 export const decksApi = {
   list: () => requestDaemon("deck.list"),
   get: (payload: GetDeckPayload) => requestDaemon("deck.get", payload),
+  create: (payload: CreateDeckPayload) => requestDaemon("deck.create", payload),
   update: (payload: UpdateDeckPayload) => requestDaemon("deck.update", payload),
   edit: (payload: EditDeckPayload) => requestDaemon("deck.edit", payload),
   delete: async (payload: DeleteDeckPayload) => {
