@@ -20,9 +20,9 @@ async function slideLabel(session, number) {
 }
 
 function readStage() {
-  const thumbnails = [...document.querySelectorAll("nav button[data-slide-id]")].map(
-    (button) => button.getAttribute("aria-current") === "true",
-  );
+  const thumbnails = [
+    ...document.querySelectorAll("nav button[data-slide-id]"),
+  ].map((button) => button.getAttribute("aria-current") === "true");
   const stage = document.querySelector("section > [data-slide-id]");
   const rect = stage?.getBoundingClientRect();
   const boxes = [
@@ -81,7 +81,8 @@ runScenario("decks", {
       { role: "button", name: new RegExp(`^(${openPanel}|${closePanel})$`) },
       UI_TIMEOUT_MS,
     );
-    if (toggle.name === openPanel) {
+    const panelWasOpen = toggle.name === closePanel;
+    if (!panelWasOpen) {
       await clickByRole(session, { role: "button", name: openPanel });
     }
     await clickByRole(session, { role: "button", name: decksTab });
@@ -95,7 +96,7 @@ runScenario("decks", {
       { role: "button", name: await slideLabel(session, 1) },
       UI_TIMEOUT_MS,
     );
-    return {};
+    return { panelWasOpen, closePanel, openPanel };
   },
   steps: [
     [
@@ -190,5 +191,20 @@ runScenario("decks", {
       },
     ],
   ],
-  teardown: async () => ({}),
+  teardown: async ({ session, panelWasOpen, closePanel, openPanel }) => {
+    const editorTab = await translate(session, "editor:actions.showEditor");
+    await clickByRole(session, { role: "button", name: editorTab });
+    if (!panelWasOpen) {
+      await session.run((label) => {
+        window.__scenario.byLabel(label)?.click();
+        return true;
+      }, closePanel);
+      await waitForRole(
+        session,
+        { role: "button", name: openPanel },
+        UI_TIMEOUT_MS,
+      );
+    }
+    return {};
+  },
 });
