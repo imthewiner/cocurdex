@@ -27,6 +27,13 @@ export const httpUrlSchema = z
     "URL scheme not allowed",
   );
 
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+export const loopbackHttpUrlSchema = httpUrlSchema.refine((value) => {
+  const url = new URL(value);
+  return url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname);
+}, "URL must point at the local daemon");
+
 // Annotations originate from arbitrary web pages via the browser view's
 // preload bridge — the least trusted input in the app. Strict shape, capped
 // string lengths, and a data-URL-only screenshot keep a hostile page from
@@ -85,6 +92,10 @@ export const schemas = {
   rootPath: filesystemPathSchema,
   filePath: filesystemPathSchema,
   url: httpUrlSchema,
+  loopbackUrl: loopbackHttpUrlSchema,
+  audienceWindow: z.object({
+    channel: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
+  }),
   browserAnnotation: browserAnnotationSchema,
   browserAnnotationAction: z.enum(["send", "clear", "exit"]),
   browserAnnotationMarkers: z.tuple([

@@ -5,9 +5,6 @@ import "./code-textarea.css";
 
 // Both layers share this so the highlighted text lands exactly on the editable
 // text. Any change here must stay on both the <pre> and the <textarea>.
-const LAYER_CLASS =
-  "code-textarea-layer col-start-1 row-start-1 m-0 min-w-0 px-2.5 py-2 break-words whitespace-pre-wrap";
-
 // Shiki costs roughly 0.1ms per line, and the highlight re-runs on every
 // keystroke. Past this size the cost would block typing, so the field falls
 // back to a plain textarea instead.
@@ -44,8 +41,7 @@ export function CodeTextarea({
         <pre
           aria-hidden="true"
           className={cn(
-            LAYER_CLASS,
-            "pointer-events-none select-none overflow-hidden",
+            "code-textarea-layer col-start-1 row-start-1 m-0 min-w-0 px-2.5 py-2 break-words whitespace-pre-wrap pointer-events-none select-none overflow-hidden",
           )}
         >
           {tokenLines.map((line, lineIndex) => (
@@ -66,8 +62,7 @@ export function CodeTextarea({
       ) : null}
       <textarea
         className={cn(
-          LAYER_CLASS,
-          "w-full resize-none border-0 bg-transparent outline-none field-sizing-content placeholder:text-muted-foreground",
+          "code-textarea-layer col-start-1 row-start-1 m-0 min-w-0 px-2.5 py-2 break-words whitespace-pre-wrap w-full resize-none border-0 bg-transparent outline-none field-sizing-content placeholder:text-muted-foreground",
           isHighlighted
             ? "text-transparent caret-foreground selection:bg-foreground/25"
             : "text-foreground",

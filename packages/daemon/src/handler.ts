@@ -115,6 +115,51 @@ export async function handleDaemonRequest(
       return service.dataService.listNoteTags(request.params.noteId);
     case "note.backlinks":
       return service.dataService.listNoteBacklinks(request.params);
+    case "deck.list":
+      return service.decks.list();
+    case "deck.get":
+      return service.decks.get(request.params);
+    case "deck.create":
+      return service.decks.create(request.params);
+    case "deck.update":
+      return service.decks.update(request.params);
+    case "deck.edit":
+      return service.decks.edit(request.params);
+    case "deck.delete":
+      await service.decks.delete(request.params);
+      return null;
+    case "deck.check":
+      return service.decks.check(request.params);
+    case "deck.createDownload":
+      return service.decks.createDownload(request.params);
+    case "deck.exportFile":
+      await service.assertClientPathAccess(
+        context.principal,
+        request.params.outputPath,
+        "outputFile",
+      );
+      return service.decks.exportFile(request.params);
+    case "deck.importImage":
+      await service.assertClientPathAccess(
+        context.principal,
+        request.params.path,
+        "file",
+      );
+      return service.decks.importImage(request.params);
+    case "deck.import":
+      await service.assertClientPathAccess(
+        context.principal,
+        request.params.path,
+        "file",
+      );
+      return service.decks.importPptx(request.params);
+    case "deck.readPptx":
+      await service.assertClientPathAccess(
+        context.principal,
+        request.params.path,
+        "file",
+      );
+      return service.decks.readPptx(request.params);
     case "issue.listViews":
       return service.dataService.listIssueViews();
     case "issue.loadView":

@@ -2,10 +2,7 @@ import { useAtom } from "jotai";
 import { Maximize2, Minimize2, Pin, PinOff, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { rightPanelDockedAtom } from "../right-editor-panel-store";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "../titlebar-icon-button";
+import { TitlebarIconButton } from "../titlebar-icon-button";
 
 interface RightPanelWindowActionsProps {
   isRightPanelMaximized: boolean;
@@ -36,13 +33,12 @@ export function RightPanelWindowActions({
           active={isRightPanelDocked}
           aria-label={dockLabel}
           cursor="default"
-          tooltip={dockLabel}
           onClick={() => setRightPanelDocked(!isRightPanelDocked)}
         >
           {isRightPanelDocked ? (
-            <PinOff className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <PinOff className="size-3.5" />
           ) : (
-            <Pin className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Pin className="size-3.5" />
           )}
         </TitlebarIconButton>
       )}
@@ -50,22 +46,20 @@ export function RightPanelWindowActions({
         active={isRightPanelMaximized}
         aria-label={maximizeLabel}
         cursor="default"
-        tooltip={maximizeLabel}
         onClick={onToggleRightPanelMaximize}
       >
         {isRightPanelMaximized ? (
-          <Minimize2 className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Minimize2 className="size-3.5" />
         ) : (
-          <Maximize2 className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Maximize2 className="size-3.5" />
         )}
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={closeLabel}
         cursor="default"
-        tooltip={closeLabel}
         onClick={onCloseRightPanel}
       >
-        <X className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <X className="size-3.5" />
       </TitlebarIconButton>
     </div>
   );

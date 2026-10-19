@@ -32,12 +32,6 @@ interface SettingsSelectProps {
   onChange(value: string): void;
 }
 
-// Setting-row triggers sit on the trailing edge of the row. They are
-// content-sized (label + chevron, no fixed w-56 gap) and ghost by default —
-// no form-field chrome. Searchable pickers use SettingsSearchableSelect.
-export const settingsSelectTriggerClassName =
-  "h-8 w-auto max-w-56 gap-1 px-2 font-normal";
-
 export function SettingsSelect({
   ariaLabel,
   appearance = "ghost",
@@ -91,7 +85,7 @@ export function SettingsSelect({
       triggerAriaLabel={ariaLabel}
       triggerRadius="control"
       triggerClassName={cn(
-        settingsSelectTriggerClassName,
+        "h-8 w-auto max-w-56 gap-1 px-2 font-normal",
         !selectedOption && "text-muted-foreground",
         className,
       )}
@@ -135,7 +129,10 @@ export function SettingsSearchableSelect({
       options={options}
       searchPlaceholder={searchPlaceholder}
       triggerAriaLabel={ariaLabel}
-      triggerClassName={cn(settingsSelectTriggerClassName, className)}
+      triggerClassName={cn(
+        "h-8 w-auto max-w-56 gap-1 px-2 font-normal",
+        className,
+      )}
       triggerLabel={triggerLabel}
       value={value}
       onValueChange={onChange}

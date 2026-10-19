@@ -3,10 +3,7 @@ import { FolderKanban, ListFilter, Tag } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { AppDropdownRadioList } from "@/components";
 import {
   DropdownMenu,
@@ -74,7 +71,7 @@ export function ViewFilterMenu({
           aria-expanded={open}
           aria-label={t("filter.ariaLabel")}
         >
-          <ListFilter className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <ListFilter className="size-3.5" />
         </TitlebarIconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-96 min-w-52">

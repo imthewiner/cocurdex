@@ -321,24 +321,23 @@ const UserPrompt = memo(function UserPrompt({
     isContextVariant ||
     message.content.trim().length > 0 ||
     message.attachments.some(isContextAttachment);
-  const wrapperClassName = isContextVariant
-    ? "flex w-full justify-start"
-    : "flex w-full justify-end";
-  const containerClassName = isContextVariant
-    ? "group flex w-full min-w-0 max-w-3xl flex-col items-stretch gap-1"
-    : "group flex min-w-0 max-w-3xl flex-col items-end gap-1.5";
-  const articleClassName = isContextVariant
-    ? cn(
-        "w-full min-w-0 rounded-card border border-chat-border-soft bg-chat-surface-subtle px-4 py-3 text-chat-fg-secondary shadow-chat-soft",
-      )
-    : getMessageArticleClassName(message);
 
   return (
     <div
       ref={(element) => setUserMessageRef(message.id, element)}
-      className={wrapperClassName}
+      className={cn(
+        "flex w-full",
+        isContextVariant && "justify-start",
+        !isContextVariant && "justify-end",
+      )}
     >
-      <div className={containerClassName}>
+      <div
+        className={cn(
+          "group flex min-w-0 max-w-3xl flex-col",
+          isContextVariant && "w-full items-stretch gap-1",
+          !isContextVariant && "items-end gap-1.5",
+        )}
+      >
         {hasDocuments ? (
           <DocumentAttachmentChips attachments={message.attachments} />
         ) : null}
@@ -349,7 +348,13 @@ const UserPrompt = memo(function UserPrompt({
           />
         ) : null}
         {hasBubbleContent ? (
-          <article className={articleClassName}>
+          <article
+            className={cn(
+              isContextVariant &&
+                "w-full min-w-0 rounded-card border border-chat-border-soft bg-chat-surface-subtle px-4 py-3 text-chat-fg-secondary shadow-chat-soft",
+              !isContextVariant && getMessageArticleClassName(message),
+            )}
+          >
             <UserPromptBody
               isContextVariant={isContextVariant}
               message={message}
@@ -518,7 +523,6 @@ const MessageArticle = memo(function MessageArticle({
   const { activityDisplay } = useAtomValue(chatDisplaySettingsAtom);
   const turnChangeSet = useTurnChangeSet(message.id);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const articleClassName = getMessageArticleClassName(message);
   const hasAssistantBody =
     message.content.trim().length > 0 || message.attachments.length > 0;
   const showAssistantActions =
@@ -527,19 +531,21 @@ const MessageArticle = memo(function MessageArticle({
     message.role === "assistant" &&
     !isReasoning &&
     !(isRunning && isStreamingLatest);
-  const messageClassName = cn(
-    "flex w-full min-w-0",
-    message.role === "user" ? "justify-end" : "justify-start",
-  );
 
   if (isReasoning && activityDisplay === "hidden") {
     return null;
   }
 
   return (
-    <div className={messageClassName}>
+    <div
+      className={cn(
+        "flex w-full min-w-0",
+        message.role === "user" && "justify-end",
+        message.role !== "user" && "justify-start",
+      )}
+    >
       <div className="group w-full min-w-0 max-w-3xl">
-        <article className={articleClassName}>
+        <article className={getMessageArticleClassName(message)}>
           {isSystem ? (
             <div className="mb-1.5 text-meta font-medium uppercase tracking-[0.18em] text-chat-system-muted">
               {t("system")}

@@ -13,10 +13,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import {
   Button,
   Popover,
@@ -232,9 +229,10 @@ export function NetworkProxyStatusButton() {
         <TitlebarIconButton
           aria-label={t("network.proxy.status.label")}
           cursor="default"
+          tooltip={false}
           onClick={handleOpenSettings}
         >
-          <Icon className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Icon className="size-3.5" />
           {ALERT_TONES.has(tone) ? (
             <span
               className={cn(

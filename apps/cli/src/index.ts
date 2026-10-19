@@ -17,6 +17,7 @@ import {
   type WorkspaceRecord,
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
+import { handleDeckCommand } from "./deck-commands";
 import { handleHostCommand, hostUsageLines } from "./host-commands";
 import { handleIssueCommand } from "./issue-commands";
 import { handleNoteCommand } from "./note-commands";
@@ -102,6 +103,13 @@ async function main(rawArgs: string[]) {
 
   if (resource === "note") {
     const handled = await handleNoteCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
+  }
+
+  if (resource === "deck") {
+    const handled = await handleDeckCommand(action, args, parsed);
     if (handled) {
       return;
     }
@@ -490,6 +498,14 @@ function printUsage() {
       "  cocurdex note list|show|create|update|move|delete|backlinks|tags [--json]",
       "  cocurdex note create|update ... [--body <markdown> | --body - | --body-file <path>]",
       "  cocurdex note update <id> ... [--expected-revision <n>]",
+      "  cocurdex deck list|show|create|update|delete|check [--json]",
+      "  cocurdex deck create|update ... [--title <t>] [--markdown-file <path|-> | --content-file <path|->]",
+      "  cocurdex deck update <id> ... [--expected-revision <n>]",
+      "  cocurdex deck edit <id> --ops-file <path|-> [--expected-revision <n>]",
+      "  cocurdex deck image <id> --slide <slideId> --file <path.png|path.jpg> [--alt <text>] [--replace <elementId>]",
+      "  cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf]",
+      "  cocurdex deck import <file.pptx> [--title <t>] [--workspace <id>] [--json]",
+      "  cocurdex deck read <file.pptx> [--json]",
       "  cocurdex issue list|show|create|update|move|delete|comment|views [--view <id>] [--json]",
       "  cocurdex issue relate|unrelate <id> blocks|related|duplicate <id> [--json]",
       "  cocurdex issue labels | label create --name <name> | label delete <id|name> [--json]",

@@ -69,6 +69,7 @@ import { registerAppUpdateHandlers, startAppUpdater } from "./updater";
 import {
   hasTitleBarOverlay,
   migrateLegacyRendererStorage,
+  registerAudienceWindowHandlers,
   registerChatWindowHandlers,
   registerRendererProtocol,
   rendererPageUrl,
@@ -560,6 +561,7 @@ app
       preloadPath,
       createPrimaryWindow: createWindow,
     });
+    registerAudienceWindowHandlers(ipcMain, { preloadPath });
     startAppUpdater({
       currentVersion: app.getVersion(),
       packaged: app.isPackaged,
@@ -618,6 +620,14 @@ app
       schemas.url,
       async (_event, url) => {
         await shell.openExternal(url);
+      },
+    );
+    registerHandler(
+      ipcMain,
+      "shell:downloadUrl",
+      schemas.loopbackUrl,
+      async (event, url) => {
+        event.sender.downloadURL(url);
       },
     );
     // CLI cold-start: renderer pulls the path after bootstrap so jotai stores

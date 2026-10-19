@@ -25,13 +25,6 @@ import { applyProviderTemplate } from "./provider-templates";
 
 const NEW_PROVIDER_EDITOR_KEY = "__new__";
 
-const providerListItemClassName =
-  "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors";
-const activeProviderTabClassName =
-  "border-primary/40 bg-primary/10 font-medium text-foreground dark:bg-primary/15";
-const inactiveProviderTabClassName =
-  "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/45 hover:text-foreground dark:bg-white/[0.04]";
-
 function ProviderListItem({
   isActive,
   subtitle,
@@ -49,9 +42,11 @@ function ProviderListItem({
     <button
       aria-pressed={isActive}
       className={cn(
-        providerListItemClassName,
-        isActive && activeProviderTabClassName,
-        !isActive && inactiveProviderTabClassName,
+        "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors",
+        isActive &&
+          "border-primary/40 bg-primary/10 font-medium text-foreground dark:bg-primary/15",
+        !isActive &&
+          "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/45 hover:text-foreground dark:bg-white/[0.04]",
       )}
       type="button"
       onClick={onClick}
@@ -658,8 +653,7 @@ export function ProviderSettingsPanel() {
             filteredTemplates.length === 0 ? (
               <div
                 className={cn(
-                  providerListItemClassName,
-                  "cursor-default border-transparent bg-transparent",
+                  "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors cursor-default border-transparent bg-transparent",
                 )}
               >
                 <span className="text-body font-medium text-muted-foreground">

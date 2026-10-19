@@ -34,7 +34,6 @@ import {
   type CommitRuntimeSelection,
   createCommitSelection,
 } from "./git-commit-selection";
-import { settingsSelectTriggerClassName } from "./settings-select";
 
 export function GitSettingsPanel() {
   const { t } = useTranslation(["settings", "common", "sessions"]);
@@ -270,7 +269,7 @@ export function GitSettingsPanel() {
                 options={agentSelectOptions}
                 showChevron={!isLoading}
                 triggerAriaLabel={t("git.commitMessageModel.agentLabel")}
-                triggerClassName={settingsSelectTriggerClassName}
+                triggerClassName="h-8 w-auto max-w-56 gap-1 px-2 font-normal"
                 triggerLabel={
                   <>
                     <span className="min-w-0 truncate">
@@ -342,7 +341,7 @@ export function GitSettingsPanel() {
                 ]}
                 openCodeVariantValue={openCodeVariantValue}
                 showProviderGroupLabels={shouldShowProviderGroupLabels(agentId)}
-                triggerClassName={settingsSelectTriggerClassName}
+                triggerClassName="h-8 w-auto max-w-56 gap-1 px-2 font-normal"
                 triggerValues={triggerValues}
                 value={modelValue}
                 onChange={(next) => {

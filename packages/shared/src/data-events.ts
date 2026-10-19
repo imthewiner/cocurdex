@@ -11,6 +11,7 @@ import type { WorkspaceWatchDaemonEvent } from "./workspace-watch";
 // so clients resync from authoritative snapshots.
 export const cocurdexDataAreas = [
   "notes",
+  "decks",
   "issues",
   "agent",
   "workspace",

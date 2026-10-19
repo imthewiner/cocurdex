@@ -7,6 +7,7 @@ import {
   ListTodo,
   type LucideIcon,
   NotebookPen,
+  Presentation,
   TerminalSquare,
 } from "lucide-react";
 import { type ReactNode, useCallback, useRef } from "react";
@@ -32,15 +33,13 @@ import {
   type RightPanelView,
   rightPanelTabOrderAtom,
 } from "./right-editor-panel-store";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  titlebarIconButtonClassName,
-} from "./titlebar-icon-button";
+import { titlebarIconButtonClassName } from "./titlebar-icon-button";
 
 type ViewTabLabelKey =
   | "actions.showGitChanges"
   | "actions.showEditor"
   | "actions.showNotes"
+  | "actions.showDecks"
   | "actions.showIssues"
   | "actions.showBrowser"
   | "actions.showPdf"
@@ -56,6 +55,7 @@ const TAB_REGISTRY: Record<RightPanelView, TabDef> = {
   git: { id: "git", icon: GitCompare, labelKey: "actions.showGitChanges" },
   editor: { id: "editor", icon: FolderTree, labelKey: "actions.showEditor" },
   notes: { id: "notes", icon: NotebookPen, labelKey: "actions.showNotes" },
+  decks: { id: "decks", icon: Presentation, labelKey: "actions.showDecks" },
   issues: { id: "issues", icon: ListTodo, labelKey: "actions.showIssues" },
   browser: { id: "browser", icon: Globe, labelKey: "actions.showBrowser" },
   pdf: { id: "pdf", icon: FileText, labelKey: "actions.showPdf" },
@@ -235,6 +235,7 @@ export function ViewSwitcherTabs({
       if (
         value === "editor" ||
         value === "notes" ||
+        value === "decks" ||
         value === "issues" ||
         value === "browser" ||
         value === "git" ||
@@ -311,7 +312,7 @@ export function ViewSwitcherTabs({
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                   >
-                    <Icon className={TITLEBAR_ICON_GLYPH_CLASS} />
+                    <Icon className="size-3.5" />
                   </ToggleGroupItem>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>

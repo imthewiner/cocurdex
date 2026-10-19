@@ -2,10 +2,7 @@ import type { ViewGroupBy, ViewLayout } from "@cocurdex/shared";
 import { Columns3, LayoutList, Rows3, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { AppDropdownRadioList } from "@/components";
 import {
   DropdownMenu,
@@ -48,7 +45,7 @@ export function ViewDisplayMenu({
           aria-expanded={open}
           aria-label={t("board.displayOptions")}
         >
-          <Settings2 className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Settings2 className="size-3.5" />
         </TitlebarIconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">

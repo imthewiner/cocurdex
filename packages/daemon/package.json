@@ -17,6 +17,7 @@
     "@cocurdex/agent-adapters": "workspace:*",
     "@cocurdex/agent-core": "workspace:*",
     "@cocurdex/db": "workspace:*",
+    "@cocurdex/deck": "workspace:*",
     "@cocurdex/note-doc": "workspace:*",
     "@cocurdex/product-skills": "workspace:*",
     "@cocurdex/rpc": "workspace:*",

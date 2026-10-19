@@ -307,6 +307,7 @@ export interface HostCapabilities {
   terminal: boolean;
   browserView: boolean;
   localWebClient: boolean;
+  localFilePaths: boolean;
 }
 
 /**
@@ -761,6 +762,16 @@ export interface HostApi {
   getDiagnosticsVerbose(): Promise<boolean>;
   setDiagnosticsVerbose(enabled: boolean): Promise<boolean>;
   openExternal(url: string): Promise<void>;
+  downloadUrl(url: string): Promise<void>;
+  openPresentationWindow(request: {
+    channel: string;
+  }): Promise<PresentationWindowResult>;
+  closePresentationWindow(request: { channel: string }): Promise<void>;
+}
+
+export interface PresentationWindowResult {
+  opened: boolean;
+  externalDisplay: boolean;
 }
 
 export type ProductEventApi = Pick<

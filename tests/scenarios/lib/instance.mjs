@@ -1,5 +1,11 @@
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, openSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import net from "node:net";
@@ -11,6 +17,9 @@ import { stripVTControlCharacters } from "node:util";
 const DESKTOP_DIR = fileURLToPath(
   new URL("../../../apps/desktop/", import.meta.url),
 );
+const REPO_DIR = fileURLToPath(new URL("../../../", import.meta.url));
+const BUNDLED_DAEMON = path.join(DESKTOP_DIR, "resources", "cli", "daemon.cjs");
+const DAEMON_SOURCE_ROOTS = ["packages", path.join("apps", "cli")];
 const RENDERER_URL_PATTERN = /Local:\s+(http:\/\/localhost:\d+\/)/;
 const STARTUP_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 250;
@@ -25,6 +34,43 @@ function freePort() {
       server.close(() => resolve(port));
     });
   });
+}
+
+function newestSourceMtime() {
+  let newest = 0;
+  for (const root of DAEMON_SOURCE_ROOTS) {
+    const rootDir = path.join(REPO_DIR, root);
+    const sourceDirs =
+      root === "packages"
+        ? readdirSync(rootDir).map((name) => path.join(rootDir, name, "src"))
+        : [path.join(rootDir, "src")];
+    for (const dir of sourceDirs.filter((candidate) => existsSync(candidate))) {
+      for (const file of readdirSync(dir, { recursive: true })) {
+        newest = Math.max(newest, statSync(path.join(dir, file)).mtimeMs);
+      }
+    }
+  }
+  return newest;
+}
+
+let bundledDaemonCheck = null;
+
+function ensureBundledDaemon() {
+  bundledDaemonCheck ??= Promise.resolve().then(() => {
+    const builtAt = existsSync(BUNDLED_DAEMON)
+      ? statSync(BUNDLED_DAEMON).mtimeMs
+      : 0;
+    if (builtAt >= newestSourceMtime()) return;
+    const result = spawnSync(
+      process.execPath,
+      [path.join(DESKTOP_DIR, "scripts", "build-cli.mjs")],
+      { cwd: DESKTOP_DIR, stdio: ["ignore", "ignore", "inherit"] },
+    );
+    if (result.status !== 0) {
+      throw new Error(`Bundled daemon rebuild failed (${result.status})`);
+    }
+  });
+  return bundledDaemonCheck;
 }
 
 function electronViteBin() {
@@ -137,6 +183,7 @@ export async function stopIsolatedInstance(pid, userDataPath) {
 }
 
 export async function launchIsolatedInstance({ prepareUserData } = {}) {
+  await ensureBundledDaemon();
   const viteBin = electronViteBin();
   const port = await freePort();
   const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cocu-"));

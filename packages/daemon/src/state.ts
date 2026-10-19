@@ -265,6 +265,7 @@ export class DaemonState {
 
   get data() {
     return {
+      decks: this.database.decks,
       issues: this.database.issues,
       notes: this.database.notes,
       search: this.database.search,

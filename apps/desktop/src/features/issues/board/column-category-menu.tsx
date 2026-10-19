@@ -4,10 +4,7 @@ import {
 } from "@cocurdex/shared";
 import { Ellipsis } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { AppDropdownRadioList } from "@/components";
 import {
   DropdownMenu,
@@ -44,7 +41,7 @@ export function ColumnCategoryMenu({
           aria-label={t("board.columnMenu")}
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <Ellipsis className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Ellipsis className="size-3.5" />
         </TitlebarIconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">

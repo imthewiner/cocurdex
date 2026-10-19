@@ -18,6 +18,7 @@ import type {
   AppBootstrapData,
   ApplyNoteDocUpdatePayload,
   ArchiveSessionsResult,
+  CheckDeckPayload,
   CocurdexDaemonEvent,
   CodexAccountState,
   CodexLoginOutcome,
@@ -27,6 +28,8 @@ import type {
   CompatibleProviderModel,
   ContextTransferRecord,
   CreateColumnPayload,
+  CreateDeckDownloadPayload,
+  CreateDeckPayload,
   CreatedHostPairing,
   CreateHostPairingPayload,
   CreateIssueLabelPayload,
@@ -36,15 +39,26 @@ import type {
   CreateTeamPayload,
   CreateViewPayload,
   CreateWorkflowPayload,
+  DeckDownload,
+  DeckImage,
+  DeckIssue,
+  DeckRecord,
+  DeckSummary,
+  DeckWriteResult,
   DeleteColumnPayload,
+  DeleteDeckPayload,
   DeleteIssueLabelPayload,
   DeleteIssuePayload,
   DeleteNotePayload,
   DeleteViewPayload,
   DocumentAttachment,
+  EditDeckPayload,
   EditorViewRecord,
+  ExportDeckFilePayload,
+  ExportDeckFileResult,
   ForkSessionPayload,
   GenerateGitCommitMessagePayload,
+  GetDeckPayload,
   GetIssueDetailPayload,
   GetIssuePayload,
   GetNoteDocPayload,
@@ -62,6 +76,8 @@ import type {
   HostPairingRecord,
   HostRemoteAccessStatus,
   ImageAttachment,
+  ImportDeckImagePayload,
+  ImportDeckPayload,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
   IssueDetail,
@@ -91,6 +107,7 @@ import type {
   PeerSessionSummary,
   PendingSettingsChangeRecord,
   PiModelsJson,
+  PptxOutline,
   ProductSkillsInstallResult,
   ProductSkillsRemoveResult,
   ProductSkillsRequestPayload,
@@ -108,6 +125,7 @@ import type {
   PtySpawnPayload,
   PtySpawnResult,
   PtyWritePayload,
+  ReadPptxPayload,
   RefineSessionTitlePayload,
   RemoteAccessSettings,
   ResolvedCommitMessageModel,
@@ -149,6 +167,7 @@ import type {
   UndoTurnChangesInput,
   UndoTurnChangesResult,
   UpdateColumnPayload,
+  UpdateDeckPayload,
   UpdateIssueLabelPayload,
   UpdateIssuePayload,
   UpdateNotePayload,
@@ -420,6 +439,18 @@ export type DaemonRequestPayloadByMethod = {
   "note.delete": DeleteNotePayload;
   "note.listTags": { noteId?: string };
   "note.backlinks": NoteBacklinksPayload;
+  "deck.list": undefined;
+  "deck.get": GetDeckPayload;
+  "deck.create": CreateDeckPayload;
+  "deck.update": UpdateDeckPayload;
+  "deck.edit": EditDeckPayload;
+  "deck.delete": DeleteDeckPayload;
+  "deck.check": CheckDeckPayload;
+  "deck.createDownload": CreateDeckDownloadPayload;
+  "deck.exportFile": ExportDeckFilePayload;
+  "deck.importImage": ImportDeckImagePayload;
+  "deck.import": ImportDeckPayload;
+  "deck.readPptx": ReadPptxPayload;
   "issue.listViews": undefined;
   "issue.loadView": LoadViewPayload;
   "issue.createView": CreateViewPayload;
@@ -666,6 +697,18 @@ export type DaemonResultByMethod = {
   "note.delete": null;
   "note.listTags": NoteTag[];
   "note.backlinks": NoteLink[];
+  "deck.list": DeckSummary[];
+  "deck.get": DeckRecord | null;
+  "deck.create": DeckWriteResult;
+  "deck.update": DeckWriteResult;
+  "deck.edit": DeckWriteResult;
+  "deck.delete": null;
+  "deck.check": DeckIssue[];
+  "deck.createDownload": DeckDownload;
+  "deck.exportFile": ExportDeckFileResult;
+  "deck.importImage": DeckImage;
+  "deck.import": DeckWriteResult;
+  "deck.readPptx": PptxOutline;
   "issue.listViews": ViewSummary[];
   "issue.loadView": ViewFull | null;
   "issue.createView": ViewSummary;
@@ -774,6 +817,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "teamTemplate.list": true,
   "scriptRun.settings.get": true,
   "mcp.readConfig": true,
+  "deck.list": true,
   "note.list": true,
   "provider.listConfigs": true,
   "provider.listTemplates": true,

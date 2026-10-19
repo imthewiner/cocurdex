@@ -16,6 +16,7 @@ const PANEL_VIEW_KEYS = {
   pdf: "editor:actions.showPdf",
   notes: "editor:actions.showNotes",
   issues: "editor:actions.showIssues",
+  decks: "editor:actions.showDecks",
 };
 
 export const BODY_EDITOR_IN_DIALOG = '[role="dialog"] .md-body-prose';

@@ -42,7 +42,7 @@ export interface PdfHttpHandlerOptions {
 
 const CORS_EXPOSED_HEADERS = "Accept-Ranges, Content-Length, Content-Range";
 
-function readRequestUrl(request: http.IncomingMessage) {
+export function readRequestUrl(request: http.IncomingMessage) {
   try {
     return new URL(request.url ?? "/", "http://host");
   } catch {
@@ -54,7 +54,9 @@ export function isPdfHttpRequest(request: http.IncomingMessage) {
   return readRequestUrl(request)?.pathname === DAEMON_PDF_HTTP_PATH;
 }
 
-function corsHeaders(request: http.IncomingMessage): http.OutgoingHttpHeaders {
+export function corsHeaders(
+  request: http.IncomingMessage,
+): http.OutgoingHttpHeaders {
   const origin = request.headers.origin;
   if (!origin) return {};
   return {
@@ -64,7 +66,7 @@ function corsHeaders(request: http.IncomingMessage): http.OutgoingHttpHeaders {
   };
 }
 
-function preflightHeaders(
+export function preflightHeaders(
   request: http.IncomingMessage,
 ): http.OutgoingHttpHeaders {
   const privateNetwork =
@@ -80,7 +82,7 @@ function preflightHeaders(
   };
 }
 
-function endWith(
+export function endWith(
   response: http.ServerResponse,
   status: number,
   headers: http.OutgoingHttpHeaders,

@@ -7,6 +7,13 @@ import {
 import type { WebSocket } from "ws";
 import { isAgentToolHttpRequest } from "./agent-tools";
 import {
+  createDeckAssetHttpHandler,
+  createDeckDownloadHttpHandler,
+  type DeckFile,
+  isDeckAssetHttpRequest,
+  isDeckDownloadHttpRequest,
+} from "./decks";
+import {
   createFixedWindowRateLimiter,
   createPairingHttpHandler,
   createSessionHttpHandler,
@@ -31,6 +38,8 @@ export interface RemoteServerFactoryOptions {
   machineName: string;
   webRoot?: string;
   resolvePdfPath(filePath: string): Promise<string>;
+  redeemDeckDownload(ticket: string): Promise<DeckFile | null>;
+  locateDeckAsset(hash: string): Promise<{ path: string; size: number } | null>;
   onWebSocket(socket: WebSocket, request: http.IncomingMessage): void;
 }
 
@@ -74,6 +83,18 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     resolvePrincipal: (token) => options.hostAccess.resolve(token),
     resolvePdfPath: options.resolvePdfPath,
   });
+  const deckDownloadHandler = createDeckDownloadHttpHandler({
+    isAllowedRequest: (request) =>
+      isAllowedRemoteOrigin(request.headers.origin, request.headers.host),
+    redeem: options.redeemDeckDownload,
+  });
+  const deckAssetHandler = createDeckAssetHttpHandler({
+    remote: true,
+    isAllowedRequest: (request) =>
+      isAllowedRemoteOrigin(request.headers.origin, request.headers.host),
+    resolvePrincipal: (token) => options.hostAccess.resolve(token),
+    locate: options.locateDeckAsset,
+  });
 
   const handleRequest = async (
     request: http.IncomingMessage,
@@ -94,6 +115,14 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     }
     if (isPdfHttpRequest(request)) {
       await pdfHandler(request, response);
+      return;
+    }
+    if (isDeckDownloadHttpRequest(request)) {
+      await deckDownloadHandler(request, response);
+      return;
+    }
+    if (isDeckAssetHttpRequest(request)) {
+      await deckAssetHandler(request, response);
       return;
     }
     if (isAgentToolHttpRequest(request) || !webAssetHandler) {

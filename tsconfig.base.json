@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
@@ -28,6 +28,9 @@
       "@cocurdex/db": ["./packages/db/src/index.ts"],
       "@cocurdex/note-doc/bytes": ["./packages/note-doc/src/bytes.ts"],
       "@cocurdex/note-doc": ["./packages/note-doc/src/index.ts"],
+      "@cocurdex/deck": ["./packages/deck/src/index.ts"],
+      "@cocurdex/deck/markdown": ["./packages/deck/src/markdown.ts"],
+      "@cocurdex/deck/pptx": ["./packages/deck/src/pptx.ts"],
       "@cocurdex/product-skills": ["./packages/product-skills/src/index.ts"],
       "@cocurdex/api": ["./apps/api/src/index.ts"],
       "@cocurdex/agent-adapters/internal/*": [
@@ -40,6 +43,7 @@
       "@cocurdex/daemon/internal/*": ["./packages/daemon/src/*"],
       "@cocurdex/db/internal/*": ["./packages/db/src/*"],
       "@cocurdex/note-doc/internal/*": ["./packages/note-doc/src/*"],
+      "@cocurdex/deck/internal/*": ["./packages/deck/src/*"],
       "@cocurdex/product-skills/internal/*": [
         "./packages/product-skills/src/*"
       ],

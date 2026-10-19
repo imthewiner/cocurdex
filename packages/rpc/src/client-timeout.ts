@@ -11,6 +11,8 @@ const METHOD_TIMEOUTS: Partial<Record<DaemonMethod, number>> = {
   "codex.login.wait": 30 * 60_000,
   "attachment.importImage": 2 * 60_000,
   "attachment.importDocument": 2 * 60_000,
+  "deck.import": 2 * 60_000,
+  "deck.readPptx": 2 * 60_000,
   "git.generateCommitMessage": 2 * 60_000,
   "git.commit": 2 * 60_000,
   "git.push": 10 * 60_000,

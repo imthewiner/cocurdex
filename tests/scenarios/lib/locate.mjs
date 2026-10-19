@@ -55,11 +55,29 @@ export async function waitForRole(
   }
 }
 
-export async function clickPoint(session, point) {
+export async function waitForNoRole(
+  session,
+  query,
+  timeout = DEFAULT_TIMEOUT_MS,
+) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const matches = await queryAllByRole(session, query);
+    if (matches.length === 0) return;
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `${describeQuery(query)} still present after ${timeout}ms`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+}
+
+export async function clickPoint(session, point, button = "left") {
   for (const type of ["mousePressed", "mouseReleased"]) {
     await session.send("Input.dispatchMouseEvent", {
       type,
-      button: "left",
+      button,
       clickCount: 1,
       ...point,
     });
@@ -78,6 +96,7 @@ export async function clickByRole(
   session,
   query,
   timeout = DEFAULT_TIMEOUT_MS,
+  button = "left",
 ) {
   const matches = await waitForRole(session, query, timeout);
   if (matches.length > 1) {
@@ -86,6 +105,10 @@ export async function clickByRole(
       `${describeQuery(query)} is ambiguous: ${JSON.stringify(names)}`,
     );
   }
-  await clickPoint(session, await centerOf(session, matches[0].backendNodeId));
+  await clickPoint(
+    session,
+    await centerOf(session, matches[0].backendNodeId),
+    button,
+  );
   return matches[0];
 }

@@ -19,10 +19,7 @@ import {
 } from "@/components/ui";
 import { useCanSplitSessionPane } from "@/features/sessions";
 import { ChatWindowMenuItem } from "../chat-window";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "../titlebar-icon-button";
+import { TitlebarIconButton } from "../titlebar-icon-button";
 import { useSessionPaneActions } from "./use-session-pane-actions";
 
 interface SessionSplitMenuProps {
@@ -63,7 +60,7 @@ export function SessionSplitMenu({
           aria-label={t("split.menu")}
           cursor="default"
         >
-          <Ellipsis className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Ellipsis className="size-3.5" />
         </TitlebarIconButton>
       </DropdownMenuTrigger>
       <AppDropdownContent align="start" side="bottom">

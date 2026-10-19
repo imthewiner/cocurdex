@@ -39,6 +39,18 @@ Fix a look or behavior that every caller should share in the primitive itself, n
 - Support RTL with logical layout, spacing, positioning, corners, icon direction, and text alignment. Use physical `left`/`right` only when the behavior is physically directional.
 - Prefer `lucide-react`. Use explicit, consistent `size-3.5`, `size-4`, or `size-5` within a row or context. Conditionally render status icons; do not reserve them with `opacity-0`.
 
+### Window controls
+
+The window has no native title bar on any platform. macOS draws its traffic lights at the top-left (`html[data-traffic-lights]`), and Windows and Linux draw minimize, maximize, and close at the top-right over the page (`--titlebar-controls-inset`). Any surface that reaches the top edge of a window, including full-window overlays, dialogs sized to the window, and secondary windows with hidden title bars, must keep its controls and text clear of both areas and leave a draggable strip. Use `AppWindowOverlayHeader` from `@/components/app` for such a header, and mark its interactive children `app-no-drag`. CDP screenshots do not show native window controls, so verify clearance by measurement against `TITLEBAR_LEADING_RESERVE` and `--titlebar-controls-inset` (see `tests/scenarios/decks.mjs`), not by eye.
+
+### Collapsed sidebars
+
+When a sidebar collapses, its expand toggle (`SidebarToggleButton`) moves into the leading slot of the adjacent view's header, in the same flex row as the title, so the title shifts right by the toggle's width. Float it at the view's top-start corner only when that view shows no header, and keep the content's inset wider than the toggle; never float it over a header, which it would cover.
+
+### Secondary windows
+
+A window the renderer opens (presentation audience, pop-out views) belongs to the code that opened it. Identify it by a channel or id, close it explicitly when the owner unmounts, its handshake times out, or opening fails, and let a close request only destroy the window that matches its id. Make owner cleanup survive StrictMode's mount, unmount, mount sequence: defer the close and cancel it on remount, so development does not close the window the second mount still uses. Implement the same contract in `lib/web-host-bridge.ts` for the web client.
+
 ### Alignment and centering
 
 Misalignment of a few pixels is a visible bug. Design every row, header, and toolbar against the grid of the content around it, and check it by measurement rather than by eye.
@@ -64,7 +76,7 @@ Pick a component for what the control does, not for how it looks. A `Button` per
 
 | Intent | Component |
 | --- | --- |
-| Perform an action | `Button`; icon-only actions use `IconButton` with an `aria-label` and a `Tooltip` |
+| Perform an action | `Button`; icon-only actions use `IconButton` or `TitlebarIconButton`, whose `aria-label` is also its tooltip (`tooltip` overrides the text; `tooltip={false}` only for a trigger that opens its own hover surface) |
 | Turn a setting on or off immediately | `Switch` |
 | Include an item in a set, or multi-select | `Checkbox` |
 | Pressed state of a tool or view mode | `Toggle` / `ToggleGroup` |
@@ -139,7 +151,7 @@ Extend `AppSearchableSelect` or `AppSelect` props first. Extend primitives only 
 
 - Write complete literal class strings so classes copied from DevTools can be found in source. Do not split tokens with concatenation or template strings.
 - Use `cn` for conditions: one complete static base string, followed by conditional classes. Avoid ternaries in `className` and splitting the static base across arguments.
-- Write class names in JSX, on the element they style. Do not hoist them into constants or shared modules (`const rowClassName = "..."`, `cn(...)` assigned to a variable, exported class strings); the only exception is a lookup table that maps a component prop to complete class strings, such as `{ ghost: "...", outline: "..." }[appearance]`.
+- Write class names in JSX, on the element they style. Do not hoist them into constants or shared modules (`const rowClassName = "..."`, `cn(...)` assigned to a variable, exported class strings); the only exception is a lookup table that maps a component prop to complete class strings, such as `{ ghost: "...", outline: "..." }[appearance]`. `biome-plugins/no-hoisted-class-names.grit` flags strings, templates, ternaries, and `cn` calls assigned to `*ClassName`/`*_CLASS` names in `.tsx` files.
 - Remove duplication the way Tailwind recommends (https://tailwindcss.com/docs/styling-with-utility-classes#managing-duplication): render repeated elements in a loop, edit duplicates within one file together, and extract a component when the same styled structure appears in several files. The component, not a string, is the single source of truth.
 - Never put two conflicting utilities on one element. A component exposes props for its variants instead of relying on callers to override its classes; reach for `!` only for third-party styles you cannot otherwise beat.
 - For DOM string generation or third-party overrides, prefer functions or components; explain any necessary exception outside code comments.

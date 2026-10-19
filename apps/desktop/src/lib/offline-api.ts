@@ -92,6 +92,7 @@ export const offlineApi: DesktopApi = {
     terminal: false,
     browserView: false,
     localWebClient: false,
+    localFilePaths: false,
   },
   bootstrapApp: async () => ({
     workspaces: [],
@@ -592,6 +593,12 @@ export const offlineApi: DesktopApi = {
   getDiagnosticsVerbose: async () => false,
   setDiagnosticsVerbose: async () => false,
   openExternal: async () => {},
+  downloadUrl: async () => {},
+  openPresentationWindow: async () => ({
+    opened: false,
+    externalDisplay: false,
+  }),
+  closePresentationWindow: async () => {},
   ptySpawn: async (payload) => ({
     terminalId: payload.terminalId,
     workspaceId: payload.workspaceId,

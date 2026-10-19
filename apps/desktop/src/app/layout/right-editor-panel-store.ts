@@ -10,6 +10,7 @@ import {
 export type RightPanelView =
   | "editor"
   | "notes"
+  | "decks"
   | "issues"
   | "git"
   | "browser"
@@ -20,6 +21,7 @@ export const DEFAULT_TAB_ORDER: RightPanelView[] = [
   "editor",
   "git",
   "notes",
+  "decks",
   "issues",
   "browser",
   "pdf",

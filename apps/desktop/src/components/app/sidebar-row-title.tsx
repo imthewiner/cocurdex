@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui";
 
-export function NoteTitleButton({
+export function AppSidebarRowTitle({
   title,
   onOpen,
   onStartRename,

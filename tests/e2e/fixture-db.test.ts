@@ -4,6 +4,7 @@ import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type InstalledFixture, installFixtureDb } from "./fixture-db/install";
 import {
+  FIXTURE_DECKS,
   FIXTURE_ISSUES,
   FIXTURE_MULTI_FOLDER_WORKSPACE_ID,
   FIXTURE_NOTES,
@@ -160,6 +161,18 @@ describe("fixture database", () => {
     expect(notes.map((note) => note.title).sort()).toEqual(
       FIXTURE_NOTES.map((note) => note.title).sort(),
     );
+
+    const decks = await requestDaemon("deck.list", daemon.options);
+    expect(decks.map((deck) => deck.title).sort()).toEqual(
+      FIXTURE_DECKS.map((deck) => deck.title).sort(),
+    );
+    const [deck] = decks;
+    const issues = await requestDaemon(
+      "deck.check",
+      { id: deck?.id ?? "" },
+      daemon.options,
+    );
+    expect(issues).toEqual([]);
 
     const [view] = await requestDaemon("issue.listViews", daemon.options);
     const board = await requestDaemon(

@@ -19,6 +19,7 @@ export * from "./context-handoff";
 export * from "./context-transfer";
 export * from "./contracts";
 export * from "./data-events";
+export * from "./decks";
 export * from "./execution-tree";
 export * from "./files";
 export * from "./git";

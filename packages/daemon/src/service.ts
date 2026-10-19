@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { statSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import os, { homedir } from "node:os";
 import path from "node:path";
 import {
@@ -60,6 +60,7 @@ import {
   contextHandoffBudget,
   emptyWorktreeEnvironment,
   getNetworkProxySettings,
+  type HostPrincipal,
   isAgentEvent,
   isAgentId,
   isAssistantSessionId,
@@ -77,6 +78,7 @@ import {
   PLAN_EXECUTE_REVIEW_WORKFLOW_ID,
   parseAgentRunLimits,
   primaryWorkspaceRootPath,
+  principalHasScope,
   resolveSessionWorkingPath,
   resolveStartContext,
   resolveStoredAgentRunLimits,
@@ -105,6 +107,7 @@ import {
 import { DaemonAttachmentStore } from "./attachment-store";
 import { DaemonCommitMessageService } from "./commit-message";
 import { DaemonDataService } from "./data-service";
+import { DaemonDeckService, DeckAssetStore } from "./decks";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
@@ -236,6 +239,7 @@ export class CocurdexDaemonService {
   readonly team: TeamModule;
   readonly scriptRuns: ScriptRunModule;
   readonly dataService: DaemonDataService;
+  readonly decks: DaemonDeckService;
   readonly providerService: DaemonProviderService;
   readonly acpRegistry: AcpRegistryService;
   readonly providerCredentials: ProviderCredentials;
@@ -287,6 +291,11 @@ export class CocurdexDaemonService {
     this.hostAccessReady = this.hostAccess.initialize();
     this.workflows = new WorkflowModule(this.state.workflows);
     this.dataService = new DaemonDataService(this.state, this.events);
+    this.decks = new DaemonDeckService(
+      this.state.data.decks,
+      this.events,
+      DeckAssetStore.open(options.userDataPath),
+    );
     this.providerCredentials = new ProviderCredentials(
       this.state,
       options.userDataPath,
@@ -560,6 +569,7 @@ export class CocurdexDaemonService {
       await this.state.waitForStartupRecovery();
       await this.scriptRuns.recoverInterrupted();
       await this.team.recoverReports();
+      await this.decks.collectUnusedImages();
     } catch {
       logDaemonDiagnostic("warn", "daemon.recoveryUnavailable");
     }
@@ -803,6 +813,30 @@ export class CocurdexDaemonService {
       );
     }
     return readTextFile(filePath);
+  }
+
+  async assertClientPathAccess(
+    principal: HostPrincipal,
+    filePath: string,
+    target: "file" | "outputFile",
+  ) {
+    if (principal.kind === "local") return;
+    const scope = target === "file" ? "files.read" : "files.write";
+    if (!principalHasScope(principal, scope)) {
+      throw new Error(`This device is missing the ${scope} scope`);
+    }
+    const checked =
+      target === "outputFile" ? path.dirname(path.resolve(filePath)) : filePath;
+    const exists =
+      target === "file" ||
+      (await stat(checked).then(
+        (info) => info.isDirectory(),
+        () => false,
+      ));
+    if (exists && (await this.scanPolicy.canAccessFile(checked))) return;
+    throw new Error(
+      `Path is outside every registered workspace (path=${filePath})`,
+    );
   }
 
   async workspaceFileExists(filePath: string) {

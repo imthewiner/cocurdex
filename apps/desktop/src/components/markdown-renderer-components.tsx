@@ -68,6 +68,13 @@ function canOpenInSystemBrowser(href: string | undefined): href is string {
 // built-in CodeBlock (Shiki syntax highlighting) and MermaidBlock. We only
 // customize the surrounding markdown elements (headings, lists, tables, inline
 // code, etc.) so the chat surface tone tokens still apply.
+const linkToneClassNames: Record<MarkdownRendererTone, string> = {
+  assistant: "text-chat-link hover:text-chat-link-hover",
+  user: "text-chat-link hover:text-chat-fg",
+  system: "text-chat-system-fg hover:text-chat-fg",
+  editor: "text-editor-fg hover:text-editor-fg",
+};
+
 export function createMarkdownComponents(
   tone: MarkdownRendererTone,
   options?: MarkdownComponentOptions,
@@ -303,18 +310,6 @@ export function createMarkdownComponents(
       className?: string;
       href?: string;
     }) {
-      const linkClassName = cn(
-        "underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-current",
-        className?.includes("data-footnote-backref") ? "ml-1 text-xs" : null,
-        tone === "assistant"
-          ? "text-chat-link hover:text-chat-link-hover"
-          : tone === "system"
-            ? "text-chat-system-fg hover:text-chat-fg"
-            : tone === "editor"
-              ? "text-editor-fg hover:text-editor-fg"
-              : "text-chat-link hover:text-chat-fg",
-      );
-
       // Workspace-relative file links rewritten before render
       // (`https://cocurdex.workspace/open?path=...`). Same chip UI as bare
       // `path` tokens — open via filePathHandlers, never the OS browser.
@@ -352,7 +347,11 @@ export function createMarkdownComponents(
 
       return (
         <a
-          className={linkClassName}
+          className={cn(
+            "underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-current",
+            className?.includes("data-footnote-backref") && "ml-1 text-xs",
+            linkToneClassNames[tone],
+          )}
           href={href}
           onClick={isAnchorLink ? handleAnchorClick : handleExternalClick}
           rel={isAnchorLink ? undefined : "noreferrer"}
