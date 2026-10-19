@@ -135,6 +135,81 @@ describe("decks through the CLI and daemon", () => {
     expect(pdfBytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
+  it("edits slides with ops and reports the ids an agent targets", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const created = JSON.parse(
+      (
+        await runCli(["deck", "create", "--markdown-file", "-", "--json"], {
+          ...options,
+          input: MARKDOWN,
+        })
+      ).stdout,
+    ) as WriteJson;
+    const id = created.deck.id;
+    const before = JSON.parse(
+      (await runCli(["deck", "show", id, "--json"], options)).stdout,
+    ) as { content: { slides: { id: string }[] } };
+    const [cover, highlights] = before.content.slides;
+    const ops = [
+      { op: "setTheme", theme: "midnight" },
+      { op: "duplicateSlide", slideId: highlights?.id },
+      {
+        op: "setText",
+        slideId: cover?.id,
+        target: "slot:title",
+        markdown: "Acme **2027**",
+      },
+      { op: "setLayout", slideId: highlights?.id, layout: "two-content" },
+      { op: "moveSlide", slideId: cover?.id, index: 99 },
+    ];
+    const edited = await runCli(
+      ["deck", "edit", id, "--ops-file", "-", "--expected-revision", "1"],
+      { ...options, input: JSON.stringify(ops) },
+    );
+    expect(edited.stderr).toBe("");
+    const shown = JSON.parse(
+      (await runCli(["deck", "show", id, "--json"], options)).stdout,
+    ) as {
+      revision: number;
+      content: {
+        theme: string;
+        slides: { id: string; layout: string; slots: object }[];
+      };
+    };
+    expect(shown.revision).toBe(2);
+    expect(shown.content.theme).toBe("midnight");
+    expect(shown.content.slides.map((slide) => slide.layout)).toEqual([
+      "two-content",
+      "title-content",
+      "closing",
+      "cover",
+    ]);
+    expect(shown.content.slides[3]?.slots).toMatchObject({
+      title: {
+        paragraphs: [
+          { runs: [{ text: "Acme " }, { text: "2027", bold: true }] },
+        ],
+      },
+    });
+
+    const stale = await runCli(
+      ["deck", "edit", id, "--ops-file", "-", "--expected-revision", "1"],
+      {
+        ...options,
+        input: JSON.stringify([{ op: "deleteSlide", slideId: cover?.id }]),
+      },
+    );
+    expect(stale.code).not.toBe(0);
+    expect(stale.stderr).toContain("Deck was modified");
+
+    const invalid = await runCli(["deck", "edit", id, "--ops-file", "-"], {
+      ...options,
+      input: JSON.stringify([{ op: "deleteSlide", slideId: "missing" }]),
+    });
+    expect(invalid.code).not.toBe(0);
+    expect(invalid.stderr).toContain("Slide not found: missing");
+  });
+
   it("serves a deck download once per ticket without a bearer header", async () => {
     const { deck } = await requestDaemon(
       "deck.create",

@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./edit": "./src/edit.ts",
     "./markdown": "./src/markdown.ts",
     "./pdf": "./src/pdf.ts",
     "./pptx": "./src/pptx.ts",

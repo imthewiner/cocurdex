@@ -33,7 +33,6 @@ type Doc = PDFKit.PDFDocument;
 
 const PT_PER_PX = 0.75;
 const SYNTHETIC_BOLD_STROKE_EM = 0.03;
-const TABLE_BORDER_COLOR = "#D0D7DE";
 const FONT = { regular: "deck-regular", bold: "deck-bold", mono: "deck-mono" };
 
 interface TextStyle {
@@ -267,7 +266,7 @@ function drawTable(
       doc
         .rect(x, y, columnWidth, height)
         .lineWidth(1)
-        .stroke(TABLE_BORDER_COLOR);
+        .stroke(`#${theme.tableBorder}`);
       const cell = row[column];
       if (!cell) continue;
       drawParagraphs(

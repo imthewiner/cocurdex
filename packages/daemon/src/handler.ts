@@ -123,6 +123,8 @@ export async function handleDaemonRequest(
       return service.decks.create(request.params);
     case "deck.update":
       return service.decks.update(request.params);
+    case "deck.edit":
+      return service.decks.edit(request.params);
     case "deck.delete":
       await service.decks.delete(request.params);
       return null;

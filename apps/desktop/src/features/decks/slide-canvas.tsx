@@ -52,7 +52,7 @@ function SlideTable({
   item: ResolvedTable;
   theme: DeckTheme;
 }) {
-  const border = `${slideLength(1)} solid #D0D7DE`;
+  const border = `${slideLength(1)} solid #${theme.tableBorder}`;
   return (
     <div
       data-slide-item="table"

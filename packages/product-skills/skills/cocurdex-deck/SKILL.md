@@ -16,6 +16,7 @@ cocurdex deck list --json
 cocurdex deck show <id> --json
 cocurdex deck create [--title <title>] --markdown-file <path|-> [--workspace <id>] --json
 cocurdex deck update <id> [--title <title>] [--markdown-file <path|-> | --content-file <path|->] [--expected-revision <n>] --json
+cocurdex deck edit <id> --ops-file <path|-> [--expected-revision <n>] --json
 cocurdex deck check <id> --json
 cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf] --json
 cocurdex deck delete <id> --json
@@ -71,7 +72,7 @@ Questions?
 
 ## Check your work
 
-`create` and `update` return `{ deck, warnings, issues }`. `warnings` lists
+`create`, `update`, and `edit` return `{ deck, warnings, issues }`. `warnings` lists
 Markdown the compiler dropped; `issues` lists problems in the result:
 
 - `overflow`: text or a table does not fit even at the smallest font size.
@@ -81,6 +82,39 @@ Markdown the compiler dropped; `issues` lists problems in the result:
 
 Fix every issue before you report the deck as done. `deck show` includes the
 current `issues`, and `deck check` returns them alone.
+
+## Targeted edits with ops
+
+`deck edit` applies a JSON array of ops in order, atomically: if one op
+fails, nothing is saved. It keeps every slide and element id you do not
+touch, so the person's other work survives. Read ids from `deck show --json`
+(`content.slides[].id`, element `id`) or from the `target` of an issue.
+
+```json
+[
+  { "op": "setText", "slideId": "<id>", "target": "slot:title", "markdown": "Q3 **Review**" },
+  { "op": "setText", "slideId": "<id>", "target": "element:<element-id>", "paragraphs": [{ "runs": [{ "text": "Caption" }] }] },
+  { "op": "setNotes", "slideId": "<id>", "notes": "Open with the latency win." },
+  { "op": "insertSlides", "index": 2, "markdown": "## Risks\n- Latency" },
+  { "op": "addSlide", "layout": "title-content", "index": 3 },
+  { "op": "duplicateSlide", "slideId": "<id>" },
+  { "op": "moveSlide", "slideId": "<id>", "index": 0 },
+  { "op": "deleteSlide", "slideId": "<id>" },
+  { "op": "setLayout", "slideId": "<id>", "layout": "two-content" },
+  { "op": "setTheme", "theme": "midnight" }
+]
+```
+
+- `setText` replaces one slot or free text element. Give `markdown` (inline
+  marks and lists; one block per paragraph) or `paragraphs`, not both. A slot
+  target must be a slot the slide's layout has.
+- `insertSlides` compiles Markdown with the rules above and inserts the new
+  slides; its warnings use indexes in the edited deck. `index` is clamped;
+  without it, slides are appended.
+- `setLayout` keeps all content: matching slots stay, a single body moves to
+  the left column and two text columns merge into the body, and anything the
+  new layout cannot hold becomes a free element at its old position.
+- Themes: `default`, `midnight` (dark), `sand` (warm), `forest` (green).
 
 ## Precise edits with JSON content
 
@@ -101,12 +135,13 @@ deck without regenerating it, edit that JSON and send it back with
 - Coordinates (`slotFrames`, element `frame`) use a 1280×720 canvas.
 - Fonts are sized automatically to fit; there is no font size field.
 
-A Markdown update replaces every slide and its ids. Prefer JSON content for
-targeted edits to a deck the person has already worked on.
+A Markdown update replaces every slide and its ids, and a content update
+replaces the whole deck. Prefer `deck edit` ops for changes to a deck the
+person has already worked on.
 
 ## Concurrent edits
 
 People may edit a deck in the app while you work on it. When you send content
-based on an earlier `deck show`, pass its `revision` as
-`--expected-revision <n>`. The update fails with "Deck was modified" when the
+or ops based on an earlier `deck show`, pass its `revision` as
+`--expected-revision <n>`. The write fails with "Deck was modified" when the
 deck changed since then: run `deck show` again, reapply your change, and retry.

@@ -10,7 +10,12 @@ export {
   type ResolvedText,
   resolveSlide,
 } from "./resolve";
-export { deckContentSchema, parseDeckContent } from "./schema";
+export {
+  deckContentSchema,
+  deckOpSchema,
+  deckOpsSchema,
+  parseDeckContent,
+} from "./schema";
 export {
   LIST_INDENT_EM,
   PARAGRAPH_GAP_EM,

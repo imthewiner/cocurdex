@@ -51,6 +51,7 @@ import type {
   DeleteNotePayload,
   DeleteViewPayload,
   DocumentAttachment,
+  EditDeckPayload,
   EditorViewRecord,
   ExportDeckFilePayload,
   ExportDeckFileResult,
@@ -437,6 +438,7 @@ export type DaemonRequestPayloadByMethod = {
   "deck.get": GetDeckPayload;
   "deck.create": CreateDeckPayload;
   "deck.update": UpdateDeckPayload;
+  "deck.edit": EditDeckPayload;
   "deck.delete": DeleteDeckPayload;
   "deck.check": CheckDeckPayload;
   "deck.createDownload": CreateDeckDownloadPayload;
@@ -691,6 +693,7 @@ export type DaemonResultByMethod = {
   "deck.get": DeckRecord | null;
   "deck.create": DeckWriteResult;
   "deck.update": DeckWriteResult;
+  "deck.edit": DeckWriteResult;
   "deck.delete": null;
   "deck.check": DeckIssue[];
   "deck.createDownload": DeckDownload;

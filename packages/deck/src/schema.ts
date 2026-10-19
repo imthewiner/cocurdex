@@ -3,6 +3,7 @@ import {
   DECK_CONTENT_VERSION,
   DECK_THEME_IDS,
   type DeckContent,
+  type DeckOp,
   SLIDE_LAYOUT_IDS,
   SLIDE_SLOT_IDS,
 } from "@cocurdex/shared";
@@ -12,6 +13,8 @@ const MAX_SLIDES = 500;
 const MAX_ELEMENTS = 200;
 const MAX_TEXT = 20_000;
 const MAX_LEVEL = 4;
+const MAX_OPS = 500;
+const MAX_MARKDOWN = 2_000_000;
 
 const idSchema = z.string().min(1).max(128);
 const colorSchema = z.enum(DECK_COLORS);
@@ -109,3 +112,46 @@ export const deckContentSchema = z.object({
 export function parseDeckContent(value: unknown): DeckContent {
   return deckContentSchema.parse(value);
 }
+
+const slideIdSchema = z.object({ slideId: idSchema });
+const indexSchema = z.number().int();
+const layoutSchema = z.enum(SLIDE_LAYOUT_IDS);
+const textTargetSchema = z.union([
+  z.templateLiteral(["slot:", slotIdSchema]),
+  z.templateLiteral(["element:", idSchema]),
+]);
+const setTextSchema = slideIdSchema.extend({
+  op: z.literal("setText"),
+  target: textTargetSchema,
+});
+export const deckOpSchema = z.union([
+  z.object({
+    op: z.literal("addSlide"),
+    layout: layoutSchema,
+    index: indexSchema.optional(),
+  }),
+  z.object({
+    op: z.literal("insertSlides"),
+    markdown: z.string().max(MAX_MARKDOWN),
+    index: indexSchema.optional(),
+  }),
+  slideIdSchema.extend({ op: z.literal("duplicateSlide") }),
+  slideIdSchema.extend({ op: z.literal("deleteSlide") }),
+  slideIdSchema.extend({ op: z.literal("moveSlide"), index: indexSchema }),
+  slideIdSchema.extend({ op: z.literal("setLayout"), layout: layoutSchema }),
+  setTextSchema.extend({
+    paragraphs: paragraphsSchema,
+    markdown: z.undefined().optional(),
+  }),
+  setTextSchema.extend({
+    markdown: z.string().max(MAX_TEXT),
+    paragraphs: z.undefined().optional(),
+  }),
+  slideIdSchema.extend({
+    op: z.literal("setNotes"),
+    notes: z.string().max(MAX_TEXT),
+  }),
+  z.object({ op: z.literal("setTheme"), theme: z.enum(DECK_THEME_IDS) }),
+]) satisfies z.ZodType<DeckOp>;
+
+export const deckOpsSchema = z.array(deckOpSchema).min(1).max(MAX_OPS);

@@ -140,7 +140,7 @@ function addTable(slide: Slide, item: ResolvedTable, theme: DeckTheme) {
     color: color(theme, "text"),
     valign: "top",
     margin: points(TABLE_CELL_PADDING),
-    border: { type: "solid", pt: 0.75, color: "D0D7DE" },
+    border: { type: "solid", pt: 0.75, color: theme.tableBorder },
   });
 }
 

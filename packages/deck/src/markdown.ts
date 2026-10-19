@@ -319,6 +319,11 @@ function titleLikeDraft(parts: SlideParts, layout: SlideLayoutId): Draft {
   return { layout, slots, elements: [] };
 }
 
+export function compileMarkdownParagraphs(markdown: string): TextParagraph[] {
+  const doc = parseNoteMarkdown(markdown) as MarkdownNode;
+  return (doc.content ?? []).flatMap(blockParagraphs);
+}
+
 export function compileDeckMarkdown(
   markdown: string,
   newId: IdFactory = () => crypto.randomUUID(),

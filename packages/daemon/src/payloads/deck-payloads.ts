@@ -1,10 +1,11 @@
-import { deckContentSchema } from "@cocurdex/deck";
+import { deckContentSchema, deckOpsSchema } from "@cocurdex/deck";
 import {
   type CheckDeckPayload,
   type CreateDeckDownloadPayload,
   type CreateDeckPayload,
   DECK_EXPORT_FORMATS,
   type DeleteDeckPayload,
+  type EditDeckPayload,
   type ExportDeckFilePayload,
   type GetDeckPayload,
   type UpdateDeckPayload,
@@ -36,6 +37,12 @@ const updateDeck = z.object({
   expectedRevision: revisionSchema,
 }) satisfies z.ZodType<UpdateDeckPayload>;
 
+const editDeck = z.object({
+  id: idSchema,
+  ops: deckOpsSchema,
+  expectedRevision: revisionSchema,
+}) satisfies z.ZodType<EditDeckPayload>;
+
 const deleteDeck = z.object({
   id: idSchema,
   expectedRevision: revisionSchema,
@@ -56,6 +63,7 @@ export const deckPayloadSchemas = {
   "deck.get": byId satisfies z.ZodType<GetDeckPayload>,
   "deck.create": createDeck,
   "deck.update": updateDeck,
+  "deck.edit": editDeck,
   "deck.delete": deleteDeck,
   "deck.check": byId satisfies z.ZodType<CheckDeckPayload>,
   "deck.createDownload": createDownload,

@@ -4,6 +4,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { DecksRepository } from "@cocurdex/db";
 import { checkDeck, parseDeckContent } from "@cocurdex/deck";
+import { applyDeckOps } from "@cocurdex/deck/edit";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
 import {
   canLoadPdfFont,
@@ -27,6 +28,7 @@ import {
   type DeckSource,
   type DeckWriteResult,
   type DeleteDeckPayload,
+  type EditDeckPayload,
   type ExportDeckFilePayload,
   type ExportDeckFileResult,
   type GetDeckPayload,
@@ -156,6 +158,18 @@ export class DaemonDeckService {
     });
     this.emitChanged();
     return this.writeResult(deck, source?.warnings ?? []);
+  }
+
+  async edit(payload: EditDeckPayload): Promise<DeckWriteResult> {
+    const current = await this.require(payload.id);
+    const { content, warnings } = applyDeckOps(current.content, payload.ops);
+    const deck = await this.decks.update({
+      id: current.id,
+      content,
+      expectedRevision: payload.expectedRevision ?? current.revision,
+    });
+    this.emitChanged();
+    return this.writeResult(deck, warnings);
   }
 
   async delete(payload: DeleteDeckPayload) {

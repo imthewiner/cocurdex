@@ -5,6 +5,7 @@ import {
   DECK_EXPORT_FORMATS,
   type DeckContent,
   type DeckExportFormat,
+  type DeckOp,
   type DeckSource,
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
@@ -20,6 +21,7 @@ import { readStdin } from "./read-stdin";
 const USAGE = {
   show: "cocurdex deck show <id>",
   update: "cocurdex deck update <id>",
+  edit: "cocurdex deck edit <id> --ops-file <path|->",
   delete: "cocurdex deck delete <id>",
   check: "cocurdex deck check <id>",
   export:
@@ -79,6 +81,20 @@ export async function handleDeckCommand(
     return true;
   }
 
+  if (action === "edit") {
+    const id = requiredId(args, "edit");
+    const ops = await readOps(getRequiredFlag(parsed, "ops-file"));
+    const result = await withDaemon(() =>
+      requestDaemon("deck.edit", {
+        id,
+        ops,
+        expectedRevision: expectedRevisionFlag(parsed),
+      }),
+    );
+    printResult(result, parsed);
+    return true;
+  }
+
   if (action === "delete") {
     const id = requiredId(args, "delete");
     const expectedRevision = (await requireDeck(id)).revision;
@@ -130,6 +146,18 @@ function exportFormat(
 
 async function readInput(value: string) {
   return value === "-" ? readStdin() : readFile(value, "utf8");
+}
+
+async function readOps(file: string): Promise<DeckOp[]> {
+  const value: unknown = JSON.parse(await readInput(file));
+  const ops =
+    value && typeof value === "object" && "ops" in value ? value.ops : value;
+  if (!Array.isArray(ops)) {
+    throw new Error(
+      "--ops-file must hold a JSON array of ops or { ops: [...] }",
+    );
+  }
+  return ops as DeckOp[];
 }
 
 async function readSource(parsed: ParsedArgs): Promise<DeckSource> {

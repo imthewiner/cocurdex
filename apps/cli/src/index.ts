@@ -501,6 +501,7 @@ function printUsage() {
       "  cocurdex deck list|show|create|update|delete|check [--json]",
       "  cocurdex deck create|update ... [--title <t>] [--markdown-file <path|-> | --content-file <path|->]",
       "  cocurdex deck update <id> ... [--expected-revision <n>]",
+      "  cocurdex deck edit <id> --ops-file <path|-> [--expected-revision <n>]",
       "  cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf]",
       "  cocurdex issue list|show|create|update|move|delete|comment|views [--view <id>] [--json]",
       "  cocurdex issue relate|unrelate <id> blocks|related|duplicate <id> [--json]",

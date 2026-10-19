@@ -9,7 +9,12 @@ export function isDeckConflictError(error: unknown): boolean {
   );
 }
 
-export const DECK_THEME_IDS = ["default"] as const;
+export const DECK_THEME_IDS = [
+  "default",
+  "midnight",
+  "sand",
+  "forest",
+] as const;
 export type DeckThemeId = (typeof DECK_THEME_IDS)[number];
 
 export const DECK_COLORS = [
@@ -182,6 +187,33 @@ export interface DeckWriteResult {
   deck: DeckRecord;
   warnings: DeckCompileWarning[];
   issues: DeckIssue[];
+}
+
+export type DeckTextTarget = `slot:${SlideSlotId}` | `element:${string}`;
+
+export type DeckTextSource =
+  | { paragraphs: TextParagraph[]; markdown?: never }
+  | { markdown: string; paragraphs?: never };
+
+export type DeckOp =
+  | { op: "addSlide"; layout: SlideLayoutId; index?: number }
+  | { op: "insertSlides"; markdown: string; index?: number }
+  | { op: "duplicateSlide"; slideId: string }
+  | { op: "deleteSlide"; slideId: string }
+  | { op: "moveSlide"; slideId: string; index: number }
+  | { op: "setLayout"; slideId: string; layout: SlideLayoutId }
+  | ({
+      op: "setText";
+      slideId: string;
+      target: DeckTextTarget;
+    } & DeckTextSource)
+  | { op: "setNotes"; slideId: string; notes: string }
+  | { op: "setTheme"; theme: DeckThemeId };
+
+export interface EditDeckPayload {
+  id: string;
+  ops: DeckOp[];
+  expectedRevision?: number;
 }
 
 export interface CheckDeckPayload {

@@ -121,6 +121,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "note.delete": "interact",
   "deck.create": "interact",
   "deck.update": "interact",
+  "deck.edit": "interact",
   "deck.delete": "interact",
   "deck.exportFile": "files.write",
   "issue.createView": "interact",
