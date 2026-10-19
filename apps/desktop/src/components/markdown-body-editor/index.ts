@@ -9,3 +9,4 @@ export {
   type SlashCommandItem,
   type SlashCommandKey,
 } from "./slash-command-items";
+export { TableControls } from "./table/table-controls";

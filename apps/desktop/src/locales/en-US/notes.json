@@ -67,5 +67,31 @@
       "taskList": "To-do list"
     },
     "label": "Insert block"
+  },
+  "table": {
+    "addColumn": "Add column",
+    "addHint": "Click to add, drag to add more",
+    "addRow": "Add row",
+    "align": {
+      "center": "Center",
+      "label": "Align",
+      "left": "Left",
+      "right": "Right"
+    },
+    "clear": "Clear contents",
+    "columnOptions": "Column {{index}} options",
+    "deleteColumns_one": "Delete column",
+    "deleteColumns_other": "Delete {{count}} columns",
+    "deleteRows_one": "Delete row",
+    "deleteRows_other": "Delete {{count}} rows",
+    "deleteTable": "Delete table",
+    "duplicate": "Duplicate",
+    "insertAbove": "Insert row above",
+    "insertBelow": "Insert row below",
+    "insertLeft": "Insert column left",
+    "insertRight": "Insert column right",
+    "rowOptions": "Row {{index}} options",
+    "sortAscending": "Sort A → Z",
+    "sortDescending": "Sort Z → A"
   }
 }

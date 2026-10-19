@@ -8,7 +8,10 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { Folder, GripVertical } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { buildMarkdownBodyExtensions } from "@/components/markdown-body-editor";
+import {
+  buildMarkdownBodyExtensions,
+  TableControls,
+} from "@/components/markdown-body-editor";
 import "@/components/markdown-body-editor/markdown-body-editor.css";
 import { EmptyState, Text } from "@/components/ui";
 import { parsePdfNoteCitationHref } from "@/features/pdf-reader/pdf-note-citation";
@@ -40,15 +43,24 @@ import { useHideDragHandleOnLayoutShift } from "./use-hide-drag-handle-on-layout
 
 const NOTE_LINK_PREFIX = "note://";
 
-// left-start pins the handle to the block top. Negative mainAxis overlaps the
-// handle into the block so mouseleave relatedTarget stays on the handle — a
-// positive gap creates a dead zone where the grip vanishes before the cursor
-// can reach it. Module-level so DragHandle does not re-register every render.
-const DRAG_HANDLE_COMPUTE_POSITION = {
-  placement: "left-start" as const,
-  strategy: "absolute" as const,
-  middleware: [offset({ mainAxis: -6 })],
-};
+const BLOCK_GRIP_OVERLAP = -6;
+const TABLE_GRIP_GAP = 8;
+
+function createDragHandlePosition() {
+  const hovered = { isTable: false };
+  return {
+    hovered,
+    config: {
+      placement: "left-start" as const,
+      strategy: "absolute" as const,
+      middleware: [
+        offset(() => ({
+          mainAxis: hovered.isTable ? TABLE_GRIP_GAP : BLOCK_GRIP_OVERLAP,
+        })),
+      ],
+    },
+  };
+}
 
 export function NoteEditor() {
   const activeNote = useAtomValue(activeNoteAtom);
@@ -193,6 +205,7 @@ function NoteEditorBody({
   // DragHandle freezes its floating coords until the hovered node changes;
   // hide on editor-chrome resize so it re-anchors after sidebar/panel drags.
   const editorChromeRef = useHideDragHandleOnLayoutShift(editor);
+  const [dragHandlePosition] = useState(createDragHandlePosition);
 
   return (
     <div
@@ -211,7 +224,10 @@ function NoteEditorBody({
         {editor ? (
           <DragHandle
             editor={editor}
-            computePositionConfig={DRAG_HANDLE_COMPUTE_POSITION}
+            computePositionConfig={dragHandlePosition.config}
+            onNodeChange={({ node }) => {
+              dragHandlePosition.hovered.isTable = node?.type.name === "table";
+            }}
           >
             {/*
               Match .md-body-prose first-line height (line-height 1.7 × body
@@ -224,7 +240,10 @@ function NoteEditorBody({
             </div>
           </DragHandle>
         ) : null}
-        <EditorContent editor={editor} className="relative flex-1" />
+        <div className="relative flex flex-1 flex-col">
+          <EditorContent editor={editor} className="relative flex-1" />
+          {editor ? <TableControls editor={editor} /> : null}
+        </div>
       </div>
     </div>
   );
