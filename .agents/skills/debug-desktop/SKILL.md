@@ -156,6 +156,16 @@ The hook is installed at startup, so a renderer loaded before it existed needs a
 reload. Cover both themes when a change touches colors, backgrounds, or
 transparency.
 
+A screenshot does not prove that thin lines are visible. In each theme, measure
+the borders and dividers of the view you changed: read the computed
+`border-*-color` and the color of the surface the line sits on (the nearest
+ancestor with a non-transparent `background-color`), and composite translucent
+colors over that surface. Low-alpha tokens such as `--border` (10% white in
+dark) behave differently on every surface, so compare each surface the same
+line crosses, for example a table's header row against its body rows. A line
+that has clearly less contrast on one surface than on the page background is a
+defect; fix the surface or the token rather than the single element.
+
 ## Concurrent instances and scenarios
 
 Other worktrees and agents may be testing at the same time. For anything that
