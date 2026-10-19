@@ -21,6 +21,7 @@ describe("pdfFontCandidates", () => {
       face: "MicrosoftYaHei",
     });
     expect(candidates.mono[0]?.path).toBe("D:\\Win\\Fonts\\consola.ttf");
+    expect(candidates.serif[0]?.path).toBe("D:\\Win\\Fonts\\georgia.ttf");
   });
 
   it("falls back to SystemRoot and then the default Windows directory", () => {
@@ -50,6 +51,8 @@ describe("choosePdfFonts", () => {
     regular: [{ path: "/a.ttc", face: "A" }, { path: "/b.ttf" }],
     bold: [{ path: "/a-bold.ttf" }],
     mono: [{ path: "/mono.ttf" }],
+    serif: [{ path: "/serif.ttf" }],
+    serifBold: [{ path: "/serif-bold.ttf" }],
   };
 
   it("picks the first usable font for each role", () => {
@@ -57,6 +60,20 @@ describe("choosePdfFonts", () => {
     expect(choosePdfFonts(candidates, (font) => usable.has(font.path))).toEqual(
       { regular: { path: "/b.ttf" }, mono: { path: "/mono.ttf" } },
     );
+  });
+
+  it("keeps a serif bold face only alongside a usable serif face", () => {
+    const withSerif = new Set(["/b.ttf", "/serif.ttf", "/serif-bold.ttf"]);
+    const boldOnly = new Set(["/b.ttf", "/serif-bold.ttf"]);
+    expect(
+      choosePdfFonts(candidates, (font) => withSerif.has(font.path)),
+    ).toMatchObject({
+      serif: { path: "/serif.ttf" },
+      serifBold: { path: "/serif-bold.ttf" },
+    });
+    expect(
+      choosePdfFonts(candidates, (font) => boldOnly.has(font.path)),
+    ).toEqual({ regular: { path: "/b.ttf" } });
   });
 
   it("returns null when no regular font is usable", () => {

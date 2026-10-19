@@ -100,11 +100,32 @@
     "moveEarlier": "前移",
     "moveLater": "后移"
   },
+  "themeHints": {
+    "academic": "学院经典 · 教学与讲座",
+    "boardroom": "商务稳重 · 商业与咨询",
+    "default": "简洁，适合任何主题",
+    "editorial": "编辑杂志 · 研究与故事",
+    "ember": "深色渐变 · 创意与活动",
+    "forest": "沉静，适合任何主题",
+    "midnight": "深色，适合任何主题",
+    "nebula": "深色渐变 · AI 与发布会",
+    "pop": "大胆撞色 · 营销与提案",
+    "sand": "暖色，适合任何主题",
+    "tech": "极简科技 · 产品与技术"
+  },
   "themes": {
+    "academic": "讲堂",
+    "boardroom": "董事会",
     "default": "默认",
+    "editorial": "杂志",
+    "ember": "余烬",
     "forest": "森林",
     "midnight": "午夜",
-    "sand": "沙色"
+    "nebula": "星云",
+    "pop": "撞色",
+    "sample": "Aa",
+    "sand": "沙色",
+    "tech": "发布会"
   },
   "viewer": {
     "empty": {

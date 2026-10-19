@@ -9,8 +9,8 @@ import { DECK_COLORS, type TextParagraph } from "@cocurdex/shared";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { type CSSProperties, useRef } from "react";
 import {
+  fontStack,
   frameStyle,
-  monoFontStack,
   slideLength,
   themeColor,
 } from "../slide-geometry";
@@ -32,7 +32,7 @@ function themeVariables(theme: DeckTheme): CSSProperties {
     ]),
     ["--slide-paragraph-gap", `${PARAGRAPH_GAP_EM}em`],
     ["--slide-list-indent", `${LIST_INDENT_EM}em`],
-    ["--slide-mono-font", monoFontStack(theme)],
+    ["--slide-mono-font", fontStack("mono")],
   ]);
 }
 
@@ -105,6 +105,7 @@ export function SlideTextEditor({
         justifyContent: VALIGN_JUSTIFY[item.valign],
         textAlign: item.align,
         color: themeColor(theme, item.color),
+        fontFamily: fontStack(item.font),
         fontSize: slideLength(item.fontSize),
         fontWeight: item.bold ? 700 : 400,
         lineHeight: item.lineHeight,

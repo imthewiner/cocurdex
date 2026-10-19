@@ -15,7 +15,16 @@ import {
 } from "@cocurdex/shared";
 import { SLIDE_LAYOUTS, type SlotSpec } from "./layouts";
 import { fitTable, fitText } from "./text-fit";
-import { type DeckTheme, deckTheme, type RoleTypography } from "./theme";
+import {
+  type DeckFont,
+  type DeckPaint,
+  type DeckTheme,
+  type DecorationSpec,
+  fontForRole,
+  type RoleTypography,
+  type TextAlign,
+} from "./theme";
+import { deckTheme } from "./themes";
 
 export type ResolvedSource =
   | { kind: "slot"; slot: SlideSlotId }
@@ -30,8 +39,9 @@ export interface ResolvedText {
   role: TextRole;
   fontSize: number;
   color: DeckColor;
+  font: DeckFont;
   bold: boolean;
-  align: "left" | "center";
+  align: TextAlign;
   valign: "top" | "middle" | "bottom";
   lineHeight: number;
   overflow: boolean;
@@ -52,7 +62,8 @@ export interface ResolvedShape {
   source: ResolvedSource;
   frame: SlideFrame;
   shape: "rect" | "ellipse";
-  fill: DeckColor;
+  fill: DeckPaint;
+  opacity?: number;
 }
 
 export interface ResolvedImage {
@@ -72,7 +83,7 @@ export type ResolvedItem =
 export interface ResolvedSlide {
   id: string;
   layout: SlideLayoutId;
-  background: DeckColor;
+  background: DeckPaint;
   items: ResolvedItem[];
   notes: string;
 }
@@ -109,6 +120,7 @@ function resolveText(
     role: spec.role,
     fontSize: fit.fontSize,
     color: spec.color,
+    font: fontForRole(theme, spec.role),
     bold: typography.bold,
     align: spec.align,
     valign: spec.valign,
@@ -197,8 +209,57 @@ export function containFrame(
   return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
 }
 
-export function slotSpecsFor(layout: SlideLayoutId) {
-  return SLIDE_LAYOUTS[layout].slots;
+export function themedSlotSpec(
+  theme: DeckTheme,
+  layout: SlideLayoutId,
+  slot: SlideSlotId,
+): SlotSpec | undefined {
+  const base = SLIDE_LAYOUTS[layout].slots[slot];
+  if (!base) return undefined;
+  const style = theme.layouts[layout].slots?.[slot];
+  if (!style) return base;
+  return {
+    ...base,
+    ...(style.color ? { color: style.color } : {}),
+    ...(style.align ? { align: style.align } : {}),
+    typography: { ...base.typography, ...style.typography },
+  };
+}
+
+function resolveDecoration(
+  decoration: DecorationSpec,
+  index: number,
+  pageNumber: number,
+  theme: DeckTheme,
+): ResolvedItem {
+  const source: ResolvedSource = { kind: "decoration", index };
+  if (decoration.kind === "shape") {
+    return {
+      kind: "shape",
+      source,
+      frame: decoration.frame,
+      shape: decoration.shape,
+      fill: decoration.fill,
+      ...(decoration.opacity === undefined
+        ? {}
+        : { opacity: decoration.opacity }),
+    };
+  }
+  return {
+    kind: "text",
+    source,
+    frame: decoration.frame,
+    paragraphs: [{ runs: [{ text: String(pageNumber) }] }],
+    role: "caption",
+    fontSize: decoration.size,
+    color: decoration.color,
+    font: decoration.font,
+    bold: false,
+    align: decoration.align,
+    valign: "middle",
+    lineHeight: theme.roles.caption.lineHeight,
+    overflow: false,
+  };
 }
 
 export function resolveEmptySlots(
@@ -206,9 +267,8 @@ export function resolveEmptySlots(
   deck: DeckContent,
 ): ResolvedText[] {
   const theme = deckTheme(deck.theme);
-  const layout = SLIDE_LAYOUTS[slide.layout];
   return SLIDE_SLOT_IDS.flatMap((slot) => {
-    const spec = layout.slots[slot];
+    const spec = themedSlotSpec(theme, slide.layout, slot);
     if (slide.slots[slot] || !spec) return [];
     const frame = slide.slotFrames?.[slot] ?? spec.frame;
     return [resolveText({ kind: "slot", slot }, frame, [], spec, theme)];
@@ -217,17 +277,14 @@ export function resolveEmptySlots(
 
 export function resolveSlide(slide: Slide, deck: DeckContent): ResolvedSlide {
   const theme = deckTheme(deck.theme);
-  const layout = SLIDE_LAYOUTS[slide.layout];
-  const items: ResolvedItem[] = layout.decorations.map((decoration, index) => ({
-    kind: "shape",
-    source: { kind: "decoration", index },
-    frame: decoration.frame,
-    shape: decoration.shape,
-    fill: decoration.fill,
-  }));
+  const style = theme.layouts[slide.layout];
+  const pageNumber = deck.slides.findIndex((item) => item.id === slide.id) + 1;
+  const items: ResolvedItem[] = style.decorations.map((decoration, index) =>
+    resolveDecoration(decoration, index, pageNumber, theme),
+  );
   for (const slot of SLIDE_SLOT_IDS) {
     const content = slide.slots[slot];
-    const spec = layout.slots[slot];
+    const spec = themedSlotSpec(theme, slide.layout, slot);
     if (!content || !spec) continue;
     const frame = slide.slotFrames?.[slot] ?? spec.frame;
     items.push(resolveSlot(slot, content, spec, frame, theme));
@@ -238,7 +295,7 @@ export function resolveSlide(slide: Slide, deck: DeckContent): ResolvedSlide {
   return {
     id: slide.id,
     layout: slide.layout,
-    background: layout.background,
+    background: style.background,
     items,
     notes: slide.notes,
   };

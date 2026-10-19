@@ -14,6 +14,13 @@ export const DECK_THEME_IDS = [
   "midnight",
   "sand",
   "forest",
+  "tech",
+  "editorial",
+  "academic",
+  "pop",
+  "boardroom",
+  "nebula",
+  "ember",
 ] as const;
 export type DeckThemeId = (typeof DECK_THEME_IDS)[number];
 

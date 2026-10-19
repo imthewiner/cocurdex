@@ -10,7 +10,9 @@ import {
 import PDFDocument from "pdfkit";
 import { type DeckImageLoader, loadDeckImages } from "./images";
 import { listMarkers } from "./list-markers";
+import { fillPaint } from "./pdf-paint";
 import { type ResolvedImage, type ResolvedItem, resolveSlide } from "./resolve";
+import { splitCjk } from "./script-segments";
 import {
   LIST_INDENT_EM,
   PARAGRAPH_GAP_EM,
@@ -18,7 +20,8 @@ import {
   TABLE_CELL_PADDING,
   TEXT_INSET,
 } from "./text-fit";
-import { type DeckTheme, deckTheme } from "./theme";
+import type { DeckFont, DeckTheme, TextAlign } from "./theme";
+import { deckTheme } from "./themes";
 
 export interface PdfFontSource {
   path: string;
@@ -29,20 +32,31 @@ export interface PdfFontSet {
   regular: PdfFontSource;
   bold?: PdfFontSource;
   mono?: PdfFontSource;
+  serif?: PdfFontSource;
+  serifBold?: PdfFontSource;
 }
 
 type Doc = PDFKit.PDFDocument;
 
 const PT_PER_PX = 0.75;
 const SYNTHETIC_BOLD_STROKE_EM = 0.03;
-const FONT = { regular: "deck-regular", bold: "deck-bold", mono: "deck-mono" };
+const FONT = {
+  regular: "deck-regular",
+  bold: "deck-bold",
+  mono: "deck-mono",
+  serif: "deck-serif",
+  serifBold: "deck-serif-bold",
+} as const;
+const BOLD_FACES = new Set<string>([FONT.bold, FONT.serifBold]);
+const NO_PAGE_BREAK_HEIGHT = 100_000;
 
 interface TextStyle {
   fontSize: number;
   lineHeight: number;
   color: DeckColor;
+  font: DeckFont;
   bold: boolean;
-  align: "left" | "center";
+  align: TextAlign;
 }
 
 interface Painter {
@@ -60,12 +74,52 @@ function registerFonts(doc: Doc, fonts: PdfFontSet) {
   doc.registerFont(FONT.regular, fonts.regular.path, fonts.regular.face);
   if (fonts.bold) doc.registerFont(FONT.bold, fonts.bold.path, fonts.bold.face);
   if (fonts.mono) doc.registerFont(FONT.mono, fonts.mono.path, fonts.mono.face);
+  if (fonts.serif) {
+    doc.registerFont(FONT.serif, fonts.serif.path, fonts.serif.face);
+  }
+  if (fonts.serifBold) {
+    doc.registerFont(
+      FONT.serifBold,
+      fonts.serifBold.path,
+      fonts.serifBold.face,
+    );
+  }
 }
 
-function fontFor(painter: Painter, run: TextRun, style: TextStyle) {
-  if (run.code && painter.fonts.mono) return FONT.mono;
-  if ((run.bold || style.bold) && painter.fonts.bold) return FONT.bold;
-  return FONT.regular;
+function fontFor(
+  painter: Painter,
+  run: TextRun,
+  style: TextStyle,
+  cjk: boolean,
+): string {
+  const { fonts } = painter;
+  const bold = run.bold || style.bold;
+  const mono = run.code || style.font === "mono";
+  if (mono && fonts.mono && !cjk) return FONT.mono;
+  if (style.font === "serif" && fonts.serif && !cjk) {
+    return bold && fonts.serifBold ? FONT.serifBold : FONT.serif;
+  }
+  return bold && fonts.bold ? FONT.bold : FONT.regular;
+}
+
+interface RunPiece {
+  run: TextRun;
+  text: string;
+  font: string;
+}
+
+function runPieces(
+  painter: Painter,
+  runs: TextRun[],
+  style: TextStyle,
+): RunPiece[] {
+  return runs.flatMap((run) =>
+    splitCjk(run.text).map((segment) => ({
+      run,
+      text: segment.text,
+      font: fontFor(painter, run, style, segment.cjk),
+    })),
+  );
 }
 
 function useLineHeight(painter: Painter, style: TextStyle) {
@@ -116,21 +170,23 @@ function drawRuns(
 ) {
   const { doc, theme } = painter;
   const runs = paragraph.runs.length > 0 ? paragraph.runs : [{ text: " " }];
-  runs.forEach((run, index) => {
+  const pieces = runPieces(painter, runs, style);
+  pieces.forEach(({ run, text, font }, index) => {
     const bold = run.bold || style.bold;
-    const synthetic = bold && !painter.fonts.bold && !run.code;
+    const synthetic = bold && !BOLD_FACES.has(font) && font !== FONT.mono;
     const color = hex(theme, run.color ?? style.color);
     doc
-      .font(fontFor(painter, run, style))
+      .font(font)
       .fontSize(style.fontSize)
       .fillColor(color)
       .strokeColor(color)
       .lineWidth(style.fontSize * SYNTHETIC_BOLD_STROKE_EM);
     const options: PDFKit.Mixins.TextOptions = {
       width: box.w,
+      height: NO_PAGE_BREAK_HEIGHT,
       lineGap,
       align: paragraph.align ?? style.align,
-      continued: index < runs.length - 1,
+      continued: index < pieces.length - 1,
       underline: run.underline || Boolean(run.link),
       strike: run.strike,
       oblique: run.italic,
@@ -138,8 +194,8 @@ function drawRuns(
       fill: true,
       stroke: synthetic,
     };
-    if (index === 0) doc.text(run.text, box.x, box.y, options);
-    else doc.text(run.text, options);
+    if (index === 0) doc.text(text, box.x, box.y, options);
+    else doc.text(text, options);
   });
 }
 
@@ -196,6 +252,7 @@ function drawText(
     fontSize: item.fontSize,
     lineHeight: item.lineHeight,
     color: item.color,
+    font: item.font,
     bold: item.bold,
     align: item.align,
   };
@@ -248,6 +305,7 @@ function drawTable(
     fontSize: item.fontSize,
     lineHeight: item.lineHeight,
     color: "text",
+    font: painter.theme.fonts.body,
     bold: false,
     align: "left",
   };
@@ -291,13 +349,14 @@ function drawShape(
   painter: Painter,
   item: Extract<ResolvedItem, { kind: "shape" }>,
 ) {
-  const { doc, theme } = painter;
-  const { x, y, w, h } = item.frame;
-  if (item.shape === "ellipse") {
-    doc.ellipse(x + w / 2, y + h / 2, w / 2, h / 2).fill(hex(theme, item.fill));
-    return;
-  }
-  doc.rect(x, y, w, h).fill(hex(theme, item.fill));
+  fillPaint(
+    painter.doc,
+    painter.theme,
+    item.fill,
+    item.frame,
+    item.shape,
+    item.opacity,
+  );
 }
 
 function drawImage(painter: Painter, item: ResolvedImage) {
@@ -349,7 +408,12 @@ export async function exportDeckToPdf(
     doc.addPage({ size: [width * PT_PER_PX, height * PT_PER_PX], margin: 0 });
     doc.save();
     doc.scale(PT_PER_PX);
-    doc.rect(0, 0, width, height).fill(hex(painter.theme, resolved.background));
+    fillPaint(doc, painter.theme, resolved.background, {
+      x: 0,
+      y: 0,
+      w: width,
+      h: height,
+    });
     for (const item of resolved.items) drawItem(painter, item);
     doc.restore();
   }

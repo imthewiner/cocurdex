@@ -110,4 +110,27 @@ describe("exportDeckToPptx", () => {
     expect(media).toHaveLength(1);
     expect(await media[0]?.async("nodebuffer")).toEqual(PNG);
   });
+
+  it("carries theme backgrounds, decorations, fonts, and page numbers into layouts", async () => {
+    const { content } = compileDeckMarkdown(MARKDOWN);
+    const exportTheme = async (theme: "nebula" | "editorial") =>
+      JSZip.loadAsync(
+        await exportDeckToPptx({ ...content, theme }, { title: "T" }, noImages),
+      );
+    const nebula = await exportTheme("nebula");
+    const editorial = await exportTheme("editorial");
+    const layoutXml = async (zip: JSZip) =>
+      Promise.all(
+        zip
+          .file(/^ppt\/slideLayouts\/slideLayout\d+\.xml$/)
+          .map((file) => file.async("string")),
+      );
+    const nebulaLayouts = (await layoutXml(nebula)).join("\n");
+    const editorialLayouts = (await layoutXml(editorial)).join("\n");
+
+    expect(nebulaLayouts).toMatch(/<p:bg>[\s\S]*?<a:blip /);
+    expect(nebula.file(/^ppt\/media\/.+\.png$/).length).toBeGreaterThan(0);
+    expect(nebulaLayouts).toContain('type="sldNum"');
+    expect(editorialLayouts).toContain('typeface="Georgia"');
+  });
 });

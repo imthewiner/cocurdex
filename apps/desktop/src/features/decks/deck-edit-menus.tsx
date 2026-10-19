@@ -1,10 +1,5 @@
-import {
-  DECK_THEME_IDS,
-  type DeckThemeId,
-  SLIDE_LAYOUT_IDS,
-  type SlideLayoutId,
-} from "@cocurdex/shared";
-import { LayoutTemplate, Palette, Plus } from "lucide-react";
+import { SLIDE_LAYOUT_IDS, type SlideLayoutId } from "@cocurdex/shared";
+import { LayoutTemplate, Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-function ToolbarMenu({
+export function ToolbarMenu({
   label,
   icon,
   disabled,
@@ -118,33 +113,6 @@ export function LayoutMenu({
         {SLIDE_LAYOUT_IDS.map((id) => (
           <DropdownMenuRadioItem key={id} value={id}>
             {layoutLabel(id)}
-          </DropdownMenuRadioItem>
-        ))}
-      </DropdownMenuRadioGroup>
-    </ToolbarMenu>
-  );
-}
-
-export function ThemeMenu({
-  theme,
-  onChange,
-}: {
-  theme: DeckThemeId;
-  onChange: (theme: DeckThemeId) => void;
-}) {
-  const { t } = useTranslation("decks");
-  return (
-    <ToolbarMenu
-      label={t("actions.theme")}
-      icon={<Palette className={TITLEBAR_ICON_GLYPH_CLASS} />}
-    >
-      <DropdownMenuRadioGroup
-        value={theme}
-        onValueChange={(value: DeckThemeId) => onChange(value)}
-      >
-        {DECK_THEME_IDS.map((id) => (
-          <DropdownMenuRadioItem key={id} value={id}>
-            {t(`themes.${id}`)}
           </DropdownMenuRadioItem>
         ))}
       </DropdownMenuRadioGroup>

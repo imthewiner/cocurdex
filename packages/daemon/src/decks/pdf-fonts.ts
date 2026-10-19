@@ -5,6 +5,8 @@ export interface PdfFontCandidates {
   regular: PdfFontSource[];
   bold: PdfFontSource[];
   mono: PdfFontSource[];
+  serif: PdfFontSource[];
+  serifBold: PdfFontSource[];
 }
 
 type FontEnv = Partial<Record<"WINDIR" | "SystemRoot", string>>;
@@ -50,6 +52,14 @@ function macCandidates(): PdfFontCandidates {
       { path: path.posix.join(MAC_FONTS, "Menlo.ttc"), face: "Menlo-Regular" },
       { path: path.posix.join(MAC_SUPPLEMENTAL, "Courier New.ttf") },
     ],
+    serif: [
+      { path: path.posix.join(MAC_SUPPLEMENTAL, "Georgia.ttf") },
+      { path: path.posix.join(MAC_SUPPLEMENTAL, "Times New Roman.ttf") },
+    ],
+    serifBold: [
+      { path: path.posix.join(MAC_SUPPLEMENTAL, "Georgia Bold.ttf") },
+      { path: path.posix.join(MAC_SUPPLEMENTAL, "Times New Roman Bold.ttf") },
+    ],
   };
 }
 
@@ -70,6 +80,8 @@ function windowsCandidates(env: FontEnv): PdfFontCandidates {
     ],
     bold: [at("msyhbd.ttc", "MicrosoftYaHei-Bold"), at("arialbd.ttf")],
     mono: [at("consola.ttf"), at("cour.ttf")],
+    serif: [at("georgia.ttf"), at("times.ttf")],
+    serifBold: [at("georgiab.ttf"), at("timesbd.ttf")],
   };
 }
 
@@ -93,6 +105,14 @@ function linuxCandidates(): PdfFontCandidates {
       ...inDirs(LINUX_DEJAVU_DIRS, "DejaVuSansMono.ttf"),
       ...inDirs(LINUX_LIBERATION_DIRS, "LiberationMono-Regular.ttf"),
     ],
+    serif: [
+      ...inDirs(LINUX_DEJAVU_DIRS, "DejaVuSerif.ttf"),
+      ...inDirs(LINUX_LIBERATION_DIRS, "LiberationSerif-Regular.ttf"),
+    ],
+    serifBold: [
+      ...inDirs(LINUX_DEJAVU_DIRS, "DejaVuSerif-Bold.ttf"),
+      ...inDirs(LINUX_LIBERATION_DIRS, "LiberationSerif-Bold.ttf"),
+    ],
   };
 }
 
@@ -113,9 +133,13 @@ export function choosePdfFonts(
   if (!regular) return null;
   const bold = candidates.bold.find(usable);
   const mono = candidates.mono.find(usable);
+  const serif = candidates.serif.find(usable);
+  const serifBold = serif ? candidates.serifBold.find(usable) : undefined;
   return {
     regular,
     ...(bold ? { bold } : {}),
     ...(mono ? { mono } : {}),
+    ...(serif ? { serif } : {}),
+    ...(serifBold ? { serifBold } : {}),
   };
 }

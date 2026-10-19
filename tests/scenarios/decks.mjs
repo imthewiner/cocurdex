@@ -604,6 +604,7 @@ runScenario("decks", {
           twoColumns,
           titleContent,
           midnight,
+          nebula,
           base,
         ] = await Promise.all(
           [
@@ -612,6 +613,7 @@ runScenario("decks", {
             "decks:layouts.two-content",
             "decks:layouts.title-content",
             "decks:themes.midnight",
+            "decks:themes.nebula",
             "decks:themes.default",
           ].map((key) => translate(session, key)),
         );
@@ -672,6 +674,33 @@ runScenario("decks", {
           UI_TIMEOUT_MS,
         );
         const dark = await background();
+        await clickByRole(session, { role: "button", name: themeLabel });
+        await waitForRole(session, { role: "menuitemradio", name: nebula });
+        const previews = await session.run(() =>
+          [...document.querySelectorAll('[role="menuitemradio"]')].map(
+            (item) => item.querySelector("[data-slide-id]") !== null,
+          ),
+        );
+        check(
+          previews.length >= 11 && previews.every(Boolean),
+          "every theme option shows a slide preview",
+          previews,
+        );
+        await clickByRole(session, { role: "menuitemradio", name: nebula });
+        const glow = await session.waitUntil(
+          () => {
+            const stage = document.querySelector("section > [data-slide-id]");
+            const image = stage ? getComputedStyle(stage).backgroundImage : "";
+            const number = [
+              ...(stage?.querySelectorAll('[data-slide-item="text"]') ?? []),
+            ].some((item) => item.textContent === "2");
+            return image.includes("linear-gradient") && number
+              ? { image: image.slice(0, 40), number }
+              : null;
+          },
+          null,
+          UI_TIMEOUT_MS,
+        );
         await choose(themeLabel, base);
         await session.waitUntil(
           () =>
@@ -681,7 +710,7 @@ runScenario("decks", {
           null,
           UI_TIMEOUT_MS,
         );
-        return { dark, distinctLefts: await columnLefts() };
+        return { dark, glow, distinctLefts: await columnLefts() };
       },
     ],
     [

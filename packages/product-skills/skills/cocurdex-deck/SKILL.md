@@ -117,7 +117,17 @@ touch, so the person's other work survives. Read ids from `deck show --json`
 - `setLayout` keeps all content: matching slots stay, a single body moves to
   the left column and two text columns merge into the body, and anything the
   new layout cannot hold becomes a free element at its old position.
-- Themes: `default`, `midnight` (dark), `sand` (warm), `forest` (green).
+- Themes set colors, fonts, backgrounds, decorations, and page numbers for
+  every layout. Pick one that fits the audience:
+  - General purpose: `default` (clean), `midnight` (dark), `sand` (warm),
+    `forest` (green).
+  - `tech`: minimal tech, for product launches and engineering reviews.
+  - `editorial`: magazine serif, for research, reports, and stories.
+  - `academic`: classic serif headings, for teaching and lectures.
+  - `pop`: bold color blocks, for marketing and pitches.
+  - `boardroom`: navy and teal, for business and consulting reports.
+  - `nebula`: dark violet gradient, for AI talks and keynotes.
+  - `ember`: dark warm gradient, for creative work and events.
 
 ## Images
 

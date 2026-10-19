@@ -10,10 +10,11 @@ import {
 } from "@/app/layout/titlebar-icon-button";
 import { EmptyState, Text } from "@/components/ui";
 import { exportDeckWithFeedback } from "./deck-actions";
-import { AddSlideMenu, LayoutMenu, ThemeMenu } from "./deck-edit-menus";
+import { AddSlideMenu, LayoutMenu } from "./deck-edit-menus";
 import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
+import { ThemeMenu } from "./deck-theme-menu";
 import { activeSlideIndexAtom, selectSlideAtom } from "./decks-store";
 import { canPickLocalFiles } from "./local-file-picker";
 import {
@@ -74,7 +75,7 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
             <ImagePlus className={TITLEBAR_ICON_GLYPH_CLASS} />
           </TitlebarIconButton>
         ) : null}
-        <ThemeMenu theme={deck.content.theme} onChange={editing.setTheme} />
+        <ThemeMenu content={deck.content} onChange={editing.setTheme} />
         <TitlebarIconButton
           aria-label={t("actions.present")}
           tooltip={t("actions.present")}

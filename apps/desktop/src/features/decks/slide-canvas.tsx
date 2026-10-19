@@ -14,8 +14,9 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib";
 import { useDeckImageUrl } from "./deck-image-urls";
 import {
+  fontStack,
   frameStyle,
-  sansFontStack,
+  paintCss,
   slideLength,
   themeColor,
 } from "./slide-geometry";
@@ -38,6 +39,7 @@ function SlideText({ item, theme }: { item: ResolvedText; theme: DeckTheme }) {
         justifyContent: VALIGN_JUSTIFY[item.valign],
         textAlign: item.align,
         color: themeColor(theme, item.color),
+        fontFamily: fontStack(item.font),
         fontSize: slideLength(item.fontSize),
         fontWeight: item.bold ? 700 : 400,
         lineHeight: item.lineHeight,
@@ -142,7 +144,8 @@ function SlideItem({ item, theme }: { item: ResolvedItem; theme: DeckTheme }) {
       className={cn("absolute", item.shape === "ellipse" && "rounded-full")}
       style={{
         ...frameStyle(item.frame),
-        background: themeColor(theme, item.fill),
+        background: paintCss(theme, item.fill),
+        opacity: item.opacity,
       }}
     />
   );
@@ -177,8 +180,8 @@ export function SlideCanvas({
         className,
       )}
       style={{
-        background: themeColor(theme, resolved.background),
-        fontFamily: sansFontStack(theme),
+        background: paintCss(theme, resolved.background),
+        fontFamily: fontStack(theme.fonts.body),
       }}
     >
       {resolved.items.map((item) => {

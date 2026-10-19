@@ -1,4 +1,10 @@
-import type { DeckColor, DeckThemeId, TextRole } from "@cocurdex/shared";
+import type {
+  DeckColor,
+  SlideFrame,
+  SlideLayoutId,
+  SlideSlotId,
+  TextRole,
+} from "@cocurdex/shared";
 
 export interface RoleTypography {
   maxSize: number;
@@ -7,84 +13,98 @@ export interface RoleTypography {
   lineHeight: number;
 }
 
+export type DeckFont = "sans" | "serif" | "mono";
+export type TextAlign = "left" | "center" | "right";
+export type DeckPaintColor = DeckColor | `#${string}`;
+
+export interface GradientStop {
+  color: DeckPaintColor;
+  at: number;
+  opacity?: number;
+}
+
+export interface LinearGradient {
+  kind: "linear";
+  angle: number;
+  stops: GradientStop[];
+}
+
+export interface RadialGradient {
+  kind: "radial";
+  stops: GradientStop[];
+}
+
+export type DeckGradient = LinearGradient | RadialGradient;
+export type DeckPaint = DeckPaintColor | DeckGradient;
+
+export interface ShapeDecoration {
+  kind: "shape";
+  frame: SlideFrame;
+  shape: "rect" | "ellipse";
+  fill: DeckPaint;
+  opacity?: number;
+}
+
+export interface PageNumberDecoration {
+  kind: "pageNumber";
+  frame: SlideFrame;
+  color: DeckColor;
+  font: DeckFont;
+  size: number;
+  align: TextAlign;
+}
+
+export type DecorationSpec = ShapeDecoration | PageNumberDecoration;
+
+export interface SlotStyle {
+  color?: DeckColor;
+  align?: TextAlign;
+  typography?: Partial<RoleTypography>;
+}
+
+export interface LayoutStyle {
+  background: DeckPaint;
+  decorations: DecorationSpec[];
+  slots?: Partial<Record<SlideSlotId, SlotStyle>>;
+}
+
 export interface DeckTheme {
   colors: Record<DeckColor, string>;
   tableBorder: string;
-  fontFamily: string;
-  monoFontFamily: string;
+  fonts: { heading: DeckFont; body: DeckFont };
   roles: Record<TextRole, RoleTypography>;
+  layouts: Record<SlideLayoutId, LayoutStyle>;
 }
 
-const FONT_FAMILY = "Arial";
-const MONO_FONT_FAMILY = "Courier New";
+export const FONT_FACES: Record<DeckFont, string> = {
+  sans: "Arial",
+  serif: "Georgia",
+  mono: "Courier New",
+};
 
-const ROLES: Record<TextRole, RoleTypography> = {
+export const BASE_ROLES: Record<TextRole, RoleTypography> = {
   title: { maxSize: 44, minSize: 28, bold: true, lineHeight: 1.15 },
   subtitle: { maxSize: 28, minSize: 18, bold: false, lineHeight: 1.3 },
   body: { maxSize: 28, minSize: 16, bold: false, lineHeight: 1.3 },
   caption: { maxSize: 18, minSize: 12, bold: false, lineHeight: 1.3 },
 };
 
-function themeOf(
-  colors: Record<DeckColor, string>,
-  tableBorder: string,
-): DeckTheme {
-  return {
-    colors,
-    tableBorder,
-    fontFamily: FONT_FAMILY,
-    monoFontFamily: MONO_FONT_FAMILY,
-    roles: ROLES,
-  };
+export function fontForRole(theme: DeckTheme, role: TextRole): DeckFont {
+  return role === "title" ? theme.fonts.heading : theme.fonts.body;
 }
 
-export const DECK_THEMES: Record<DeckThemeId, DeckTheme> = {
-  default: themeOf(
-    {
-      text: "1F2328",
-      muted: "59636E",
-      accent: "2563EB",
-      page: "FFFFFF",
-      surface: "F1F3F5",
-      onAccent: "FFFFFF",
-    },
-    "D0D7DE",
-  ),
-  midnight: themeOf(
-    {
-      text: "E6EDF3",
-      muted: "9BA6B2",
-      accent: "6E8BFF",
-      page: "0F141B",
-      surface: "1C2430",
-      onAccent: "0F141B",
-    },
-    "3A4655",
-  ),
-  sand: themeOf(
-    {
-      text: "2B2118",
-      muted: "75665A",
-      accent: "B4471B",
-      page: "FBF7F0",
-      surface: "F0E7DA",
-      onAccent: "FFFFFF",
-    },
-    "DCCDBA",
-  ),
-  forest: themeOf(
-    {
-      text: "17251D",
-      muted: "56675C",
-      accent: "1E6B47",
-      page: "FFFFFF",
-      surface: "EAF2EC",
-      onAccent: "FFFFFF",
-    },
-    "C9D8CD",
-  ),
-};
+export function isGradient(paint: DeckPaint): paint is DeckGradient {
+  return typeof paint !== "string";
+}
 
-export function deckTheme(themeId: DeckThemeId): DeckTheme {
-  return DECK_THEMES[themeId];
+export function paintHex(theme: DeckTheme, color: DeckPaintColor): string {
+  return color.startsWith("#")
+    ? color.slice(1).toUpperCase()
+    : theme.colors[color as DeckColor];
+}
+
+export function solidPaint(theme: DeckTheme, paint: DeckPaint): string {
+  if (!isGradient(paint)) return paintHex(theme, paint);
+  const first = paint.stops[0];
+  return first ? paintHex(theme, first.color) : theme.colors.page;
 }

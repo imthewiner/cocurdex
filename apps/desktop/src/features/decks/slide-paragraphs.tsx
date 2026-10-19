@@ -7,7 +7,7 @@ import {
 } from "@cocurdex/deck";
 import type { TextParagraph, TextRun } from "@cocurdex/shared";
 import type { CSSProperties } from "react";
-import { monoFontStack, themeColor } from "./slide-geometry";
+import { fontStack, themeColor } from "./slide-geometry";
 
 function runStyle(run: TextRun, theme: DeckTheme): CSSProperties {
   const decorations = [
@@ -20,7 +20,7 @@ function runStyle(run: TextRun, theme: DeckTheme): CSSProperties {
     fontWeight: run.bold ? 700 : undefined,
     fontStyle: run.italic ? "italic" : undefined,
     textDecorationLine: decorations || undefined,
-    fontFamily: run.code ? monoFontStack(theme) : undefined,
+    fontFamily: run.code ? fontStack("mono") : undefined,
     color: run.color ? themeColor(theme, run.color) : undefined,
   };
 }

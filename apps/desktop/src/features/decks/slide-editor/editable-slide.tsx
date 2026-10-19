@@ -26,7 +26,12 @@ import {
 import { cn } from "@/lib";
 import { canPickLocalFiles } from "../local-file-picker";
 import { SlideCanvas, slideItemKey } from "../slide-canvas";
-import { frameStyle, slideLength, themeColor } from "../slide-geometry";
+import {
+  fontStack,
+  frameStyle,
+  slideLength,
+  themeColor,
+} from "../slide-geometry";
 import { SlideTextEditor } from "./slide-text-editor";
 
 const VALIGN_JUSTIFY = {
@@ -119,6 +124,7 @@ function TextTarget({
         justifyContent: VALIGN_JUSTIFY[item.valign],
         textAlign: item.align,
         color: themeColor(theme, item.color),
+        fontFamily: fontStack(item.font),
         fontSize: slideLength(item.fontSize),
         fontWeight: item.bold ? 700 : 400,
         lineHeight: item.lineHeight,
@@ -203,6 +209,7 @@ export function EditableSlide({
           );
         }
         if (!isText(item) || key === editingKey) return null;
+        if (item.source.kind === "decoration") return null;
         return (
           <TextTarget
             key={key}

@@ -26,4 +26,13 @@ export {
   TABLE_CELL_PADDING,
   TEXT_INSET,
 } from "./text-fit";
-export { DECK_THEMES, type DeckTheme, deckTheme } from "./theme";
+export {
+  type DeckFont,
+  type DeckGradient,
+  type DeckPaint,
+  type DeckPaintColor,
+  type DeckTheme,
+  isGradient,
+  paintHex,
+} from "./theme";
+export { DECK_THEMES, deckTheme } from "./themes";

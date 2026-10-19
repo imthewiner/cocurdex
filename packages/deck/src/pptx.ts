@@ -2,15 +2,18 @@ import {
   type DeckColor,
   type DeckContent,
   deckImageHashes,
-  SLIDE_LAYOUT_IDS,
-  SLIDE_SLOT_IDS,
-  type SlideFrame,
   type SlideLayoutId,
   type TextParagraph,
 } from "@cocurdex/shared";
 import PptxGenJS from "pptxgenjs";
 import { type DeckImageLoader, loadDeckImages } from "./images";
 import { SLIDE_LAYOUTS } from "./layouts";
+import {
+  defineMasters,
+  placeholderName,
+  points,
+  position,
+} from "./pptx-masters";
 import {
   type ResolvedImage,
   type ResolvedItem,
@@ -19,31 +22,13 @@ import {
   resolveSlide,
 } from "./resolve";
 import { TABLE_CELL_PADDING, TEXT_INSET } from "./text-fit";
-import { type DeckTheme, deckTheme } from "./theme";
+import { type DeckTheme, FONT_FACES, solidPaint } from "./theme";
+import { deckTheme } from "./themes";
 
-const PX_PER_INCH = 96;
-const PT_PER_PX = 0.75;
 const PARAGRAPH_GAP_EM = 0.3;
 
 type TextProps = PptxGenJS.TextProps;
 type Slide = PptxGenJS.Slide;
-
-function inches(px: number): number {
-  return Number((px / PX_PER_INCH).toFixed(4));
-}
-
-function points(px: number): number {
-  return Number((px * PT_PER_PX).toFixed(2));
-}
-
-function position(frame: SlideFrame) {
-  return {
-    x: inches(frame.x),
-    y: inches(frame.y),
-    w: inches(frame.w),
-    h: inches(frame.h),
-  };
-}
 
 function color(theme: DeckTheme, token: DeckColor): string {
   return theme.colors[token];
@@ -80,7 +65,7 @@ function paragraphsToRuns(
             italic: run.italic,
             underline: run.underline ? { style: "sng" } : undefined,
             strike: run.strike ? "sngStrike" : undefined,
-            fontFace: run.code ? theme.monoFontFamily : undefined,
+            fontFace: run.code ? FONT_FACES.mono : undefined,
             color: color(theme, run.color ?? baseColor),
             hyperlink: run.link ? { url: run.link } : undefined,
             softBreakBefore: pieceIndex > 0 ? true : undefined,
@@ -98,7 +83,7 @@ function paragraphsToRuns(
 
 function textOptions(item: ResolvedText, theme: DeckTheme) {
   return {
-    fontFace: theme.fontFamily,
+    fontFace: FONT_FACES[item.font],
     fontSize: points(item.fontSize),
     color: color(theme, item.color),
     bold: item.bold,
@@ -138,54 +123,13 @@ function addTable(slide: Slide, item: ResolvedTable, theme: DeckTheme) {
     colW: Array.from({ length: columns }, () =>
       Number((frame.w / columns).toFixed(4)),
     ),
-    fontFace: theme.fontFamily,
+    fontFace: FONT_FACES[theme.fonts.body],
     fontSize: points(item.fontSize),
     color: color(theme, "text"),
     valign: "top",
     margin: points(TABLE_CELL_PADDING),
     border: { type: "solid", pt: 0.75, color: theme.tableBorder },
   });
-}
-
-function placeholderName(layout: SlideLayoutId, slot: string): string {
-  return `${layout}-${slot}`;
-}
-
-function defineMasters(pptx: PptxGenJS, theme: DeckTheme) {
-  for (const layoutId of SLIDE_LAYOUT_IDS) {
-    const layout = SLIDE_LAYOUTS[layoutId];
-    const objects: PptxGenJS.SlideMasterProps["objects"] =
-      layout.decorations.map((decoration) => ({
-        rect: {
-          ...position(decoration.frame),
-          fill: { color: color(theme, decoration.fill) },
-        },
-      }));
-    for (const slot of SLIDE_SLOT_IDS) {
-      const spec = layout.slots[slot];
-      if (!spec) continue;
-      objects.push({
-        placeholder: {
-          options: {
-            name: placeholderName(layoutId, slot),
-            type: slot === "title" ? "title" : "body",
-            ...position(spec.frame),
-            fontFace: theme.fontFamily,
-            fontSize: points(theme.roles[spec.role].maxSize),
-            color: color(theme, spec.color),
-            align: spec.align,
-            valign: spec.valign,
-          },
-          text: "",
-        },
-      });
-    }
-    pptx.defineSlideMaster({
-      title: layoutId,
-      background: { color: color(theme, layout.background) },
-      objects,
-    });
-  }
 }
 
 function isAtLayoutFrame(layout: SlideLayoutId, item: ResolvedText): boolean {
@@ -225,11 +169,11 @@ function addItem(
     addImage(slide, item, images);
     return;
   }
+  if (item.source.kind === "decoration") return;
   if (item.kind === "shape") {
-    if (item.source.kind === "decoration") return;
     slide.addShape(item.shape === "ellipse" ? "ellipse" : "rect", {
       ...position(item.frame),
-      fill: { color: color(theme, item.fill) },
+      fill: { color: solidPaint(theme, item.fill) },
       line: { type: "none" },
     });
     return;
@@ -261,8 +205,8 @@ export async function exportDeckToPptx(
   pptx.layout = "LAYOUT_WIDE";
   pptx.title = meta.title;
   pptx.theme = {
-    headFontFace: theme.fontFamily,
-    bodyFontFace: theme.fontFamily,
+    headFontFace: FONT_FACES[theme.fonts.heading],
+    bodyFontFace: FONT_FACES[theme.fonts.body],
   };
   defineMasters(pptx, theme);
   for (const slide of deck.slides) {
