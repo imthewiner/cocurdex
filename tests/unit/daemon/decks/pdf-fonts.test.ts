@@ -37,9 +37,9 @@ describe("pdfFontCandidates", () => {
     const firstLatin = regular.findIndex((font) =>
       font.path.endsWith("DejaVuSans.ttf"),
     );
-    const lastCjk = regular.findLastIndex((font) =>
-      font.path.endsWith("NotoSansCJK-Regular.ttc"),
-    );
+    const lastCjk = regular
+      .map((font) => font.path.endsWith("NotoSansCJK-Regular.ttc"))
+      .lastIndexOf(true);
     expect(lastCjk).toBeGreaterThanOrEqual(0);
     expect(lastCjk).toBeLessThan(firstLatin);
   });

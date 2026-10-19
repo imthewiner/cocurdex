@@ -140,6 +140,26 @@ returns `{ stop() }`. Both use `scripts/cdp-screencast.mjs`.
   `Page.reload` and record. A fresh `electron-vite dev` server compiles large
   chunks for seconds on first request, which measures Vite, not the app.
 
+### Secondary windows
+
+A scenario session can attach to another window of the same instance:
+`await session.openPage("window=deck-audience")` waits for a page whose URL
+contains the fragment and returns a session with the same `run`, `waitUntil`,
+`send`, and `close`; `await session.pageUrls()` lists open pages, so a test can
+assert that a window opened or closed. Send keys to that window with its own
+`send("Input.dispatchKeyEvent", ...)`. `tests/scenarios/decks.mjs` drives a
+presenter window and its audience window this way.
+
+### Native window controls
+
+Screenshots over CDP capture only the page, never the macOS traffic lights or
+the Windows/Linux caption buttons drawn over it, so a header that sits under
+them looks fine in a screenshot. Measure instead: on macOS
+`html[data-traffic-lights]` is set and content must start at or after 80px;
+elsewhere resolve `--titlebar-controls-inset` with a probe element
+(`width: var(--titlebar-controls-inset)`) and keep controls left of
+`innerWidth - inset`.
+
 ### Light and dark themes
 
 `data-theme` on `<html>` is the only light/dark switch; CSS tokens and `dark:`

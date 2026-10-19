@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { AppWindowOverlayHeader } from "@/components/app";
 import { Button, ScrollArea, Text } from "@/components/ui";
 import { useDocumentEvent } from "@/lib/react-hooks";
 import { SlideCanvas } from "../slide-canvas";
@@ -77,7 +78,7 @@ export function DeckPresenterView({
       aria-label={t("presenter.label")}
       className="fixed inset-0 z-50 flex flex-col bg-background text-foreground"
     >
-      <header className="flex h-11 shrink-0 items-center gap-4 border-b border-border px-4">
+      <AppWindowOverlayHeader className="gap-4 border-border">
         <Text as="span" size="body" weight="medium" className="tabular-nums">
           {t("present.position", { current: index + 1, total: count })}
         </Text>
@@ -98,10 +99,15 @@ export function DeckPresenterView({
         >
           {session.externalDisplay ? "" : t("presenter.moveAudienceHint")}
         </Text>
-        <Button variant="outline" size="sm" onClick={exit}>
+        <Button
+          variant="outline"
+          size="xs"
+          className="app-no-drag"
+          onClick={exit}
+        >
           {t("presenter.end")}
         </Button>
-      </header>
+      </AppWindowOverlayHeader>
       <div className="flex min-h-0 flex-1 gap-4 p-4">
         <section
           aria-label={t("presenter.current")}

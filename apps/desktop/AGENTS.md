@@ -39,6 +39,10 @@ Fix a look or behavior that every caller should share in the primitive itself, n
 - Support RTL with logical layout, spacing, positioning, corners, icon direction, and text alignment. Use physical `left`/`right` only when the behavior is physically directional.
 - Prefer `lucide-react`. Use explicit, consistent `size-3.5`, `size-4`, or `size-5` within a row or context. Conditionally render status icons; do not reserve them with `opacity-0`.
 
+### Window controls
+
+The window has no native title bar on any platform. macOS draws its traffic lights at the top-left (`html[data-traffic-lights]`), and Windows and Linux draw minimize, maximize, and close at the top-right over the page (`--titlebar-controls-inset`). Any surface that reaches the top edge of a window, including full-window overlays, dialogs sized to the window, and secondary windows with hidden title bars, must keep its controls and text clear of both areas and leave a draggable strip. Use `AppWindowOverlayHeader` from `@/components/app` for such a header, and mark its interactive children `app-no-drag`. CDP screenshots do not show native window controls, so verify clearance by measurement against `TITLEBAR_LEADING_RESERVE` and `--titlebar-controls-inset` (see `tests/scenarios/decks.mjs`), not by eye.
+
 ### Alignment and centering
 
 Misalignment of a few pixels is a visible bug. Design every row, header, and toolbar against the grid of the content around it, and check it by measurement rather than by eye.

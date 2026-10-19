@@ -220,6 +220,21 @@ runScenario("decks", {
             );
           const first = await presenterSlide();
           await waitForAudience(first);
+          const elapsedLabel = await translate(
+            session,
+            "decks:presenter.elapsed",
+          );
+          await session.waitUntil(
+            (label) =>
+              document.querySelector(`[aria-label="${CSS.escape(label)}"]`)
+                ?.textContent !== "00:00",
+            elapsedLabel,
+            UI_TIMEOUT_MS,
+          );
+          const stillOpen = (await session.pageUrls()).some((url) =>
+            url.includes("window=deck-audience"),
+          );
+          check(stillOpen, "audience window closed itself after opening");
 
           await pressKey(session, "ArrowRight");
           const second = await presenterSlide();
@@ -253,6 +268,36 @@ runScenario("decks", {
           );
 
           const endLabel = await translate(session, "decks:presenter.end");
+          const chrome = await session.run((label) => {
+            const button = [
+              ...document.querySelectorAll('[role="dialog"] button'),
+            ].find((item) => item.textContent === label);
+            const first = button?.parentElement?.firstElementChild;
+            const probe = document.createElement("div");
+            probe.style.width = "var(--titlebar-controls-inset)";
+            document.body.append(probe);
+            const inset = probe.getBoundingClientRect().width;
+            probe.remove();
+            return {
+              trafficLights: document.documentElement.hasAttribute(
+                "data-traffic-lights",
+              ),
+              firstLeft: first?.getBoundingClientRect().left ?? -1,
+              buttonRight: button?.getBoundingClientRect().right ?? Infinity,
+              width: window.innerWidth,
+              inset,
+            };
+          }, endLabel);
+          check(
+            !chrome.trafficLights || chrome.firstLeft >= 80,
+            "header content under the macOS traffic lights",
+            chrome,
+          );
+          check(
+            chrome.buttonRight <= chrome.width - chrome.inset,
+            "header action under the window controls",
+            chrome,
+          );
           await clickByRole(session, { role: "button", name: endLabel });
           await session.waitUntil(
             () => !document.querySelector('[role="dialog"]'),

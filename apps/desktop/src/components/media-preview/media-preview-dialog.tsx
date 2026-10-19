@@ -6,6 +6,7 @@ import type {
 } from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AppWindowOverlayHeader } from "@/components/app";
 import { Dialog, DialogContent, DialogTitle, Text } from "@/components/ui";
 import {
   Tooltip,
@@ -224,7 +225,7 @@ export function MediaPreviewDialog({
           {subtitle ? `${title} ${subtitle}` : title}
         </DialogTitle>
         <TooltipProvider>
-          <div className="app-drag flex h-8 shrink-0 items-center justify-between gap-2 border-chat-border/40 border-b pr-[calc(0.75rem+var(--titlebar-controls-inset))] pl-3 [html[data-traffic-lights]_&]:pl-20">
+          <AppWindowOverlayHeader className="justify-between border-chat-border/40">
             <div className="flex min-w-0 items-center gap-2">
               <Text className="block truncate text-chat-fg" size="body">
                 {title}
@@ -300,7 +301,7 @@ export function MediaPreviewDialog({
                 <X className="size-3.5" />
               </PreviewToolbarButton>
             </div>
-          </div>
+          </AppWindowOverlayHeader>
         </TooltipProvider>
         <div
           className={cn(

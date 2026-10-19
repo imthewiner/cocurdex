@@ -24,6 +24,14 @@ export const repoRoot = path.resolve(
 );
 const daemonPackageDir = path.join(repoRoot, "packages", "daemon");
 const daemonBinPath = path.join(daemonPackageDir, "src", "bin.ts");
+export const bundledDaemonPath = path.join(
+  repoRoot,
+  "apps",
+  "desktop",
+  "resources",
+  "cli",
+  "daemon.cjs",
+);
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 20_000;
@@ -103,6 +111,21 @@ export interface SpawnDaemonOptions {
   userDataPath?: string;
   token?: string;
   nodeArgs?: string[];
+  entry?: "source" | "bundled";
+}
+
+function daemonCommand(options: SpawnDaemonOptions) {
+  const nodeArgs = options.nodeArgs ?? [];
+  if (options.entry === "bundled") {
+    return {
+      args: [...nodeArgs, bundledDaemonPath],
+      cwd: path.dirname(bundledDaemonPath),
+    };
+  }
+  return {
+    args: [...nodeArgs, "--import", "tsx", daemonBinPath],
+    cwd: daemonPackageDir,
+  };
 }
 
 export async function spawnDaemon(
@@ -111,22 +134,19 @@ export async function spawnDaemon(
   const userDataPath = options.userDataPath ?? tempDirs.createSync("cocu-e2e-");
   const token = options.token ?? "e2e-daemon-token";
   const stderrChunks: Buffer[] = [];
-  const child = spawn(
-    process.execPath,
-    [...(options.nodeArgs ?? []), "--import", "tsx", daemonBinPath],
-    {
-      cwd: daemonPackageDir,
-      env: {
-        ...process.env,
-        COCURDEX_USER_DATA_PATH: userDataPath,
-        COCURDEX_DAEMON_TOKEN: token,
-        COCURDEX_DAEMON_RUNTIME_FINGERPRINT: "e2e-runtime",
-        NO_COLOR: "1",
-        TZ: "UTC",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
+  const command = daemonCommand(options);
+  const child = spawn(process.execPath, command.args, {
+    cwd: command.cwd,
+    env: {
+      ...process.env,
+      COCURDEX_USER_DATA_PATH: userDataPath,
+      COCURDEX_DAEMON_TOKEN: token,
+      COCURDEX_DAEMON_RUNTIME_FINGERPRINT: "e2e-runtime",
+      NO_COLOR: "1",
+      TZ: "UTC",
     },
-  );
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   child.stderr?.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
   child.stdout?.resume();
   const exit = waitForExit(child);
