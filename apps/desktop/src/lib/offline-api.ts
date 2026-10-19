@@ -592,6 +592,7 @@ export const offlineApi: DesktopApi = {
   getDiagnosticsVerbose: async () => false,
   setDiagnosticsVerbose: async () => false,
   openExternal: async () => {},
+  downloadUrl: async () => {},
   ptySpawn: async (payload) => ({
     terminalId: payload.terminalId,
     workspaceId: payload.workspaceId,

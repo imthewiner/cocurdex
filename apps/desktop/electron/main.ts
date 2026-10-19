@@ -620,6 +620,14 @@ app
         await shell.openExternal(url);
       },
     );
+    registerHandler(
+      ipcMain,
+      "shell:downloadUrl",
+      schemas.loopbackUrl,
+      async (event, url) => {
+        event.sender.downloadURL(url);
+      },
+    );
     // CLI cold-start: renderer pulls the path after bootstrap so jotai stores
     // are ready. Live second-instance opens also push workspace:openFromCli.
     ipcMain.handle("workspace:consumeOpenFolder", () => {

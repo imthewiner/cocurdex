@@ -1,4 +1,8 @@
-import { httpUrlSchema, schemas } from "@desktop/electron/ipc/ipc-schemas";
+import {
+  httpUrlSchema,
+  loopbackHttpUrlSchema,
+  schemas,
+} from "@desktop/electron/ipc/ipc-schemas";
 import { describe, expect, it } from "vitest";
 
 describe("httpUrlSchema", () => {
@@ -22,6 +26,29 @@ describe("httpUrlSchema", () => {
     expect(httpUrlSchema.safeParse("javascript:alert(1)").success).toBe(false);
     expect(httpUrlSchema.safeParse("chrome://settings").success).toBe(false);
     expect(httpUrlSchema.safeParse("smb://host/share").success).toBe(false);
+  });
+});
+
+describe("loopbackHttpUrlSchema", () => {
+  it("accepts plain http URLs on loopback hosts", () => {
+    for (const url of [
+      "http://127.0.0.1:4100/decks/download?ticket=a",
+      "http://localhost:4100/decks/download",
+      "http://[::1]:4100/decks/download",
+    ]) {
+      expect(loopbackHttpUrlSchema.safeParse(url).success).toBe(true);
+    }
+  });
+
+  it("rejects remote hosts and lookalike hostnames", () => {
+    for (const url of [
+      "https://example.com/decks/download",
+      "http://127.0.0.1.example.com/decks/download",
+      "http://localhost@example.com/decks/download",
+      "file:///etc/passwd",
+    ]) {
+      expect(loopbackHttpUrlSchema.safeParse(url).success).toBe(false);
+    }
   });
 });
 

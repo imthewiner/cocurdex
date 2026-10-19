@@ -8,10 +8,12 @@ export {
   AppDropdownTriggerButton,
   AppDropdownTriggerLabel,
   AppGitBranchLabel,
+  AppInlineRenameInput,
   AppPreviewCardTooltipContent,
   AppSearchableSelect,
   type AppSearchableSelectOption,
   AppSelect,
+  AppSidebarRowTitle,
   SettingRow,
   SettingsGroup,
 } from "./app";

@@ -494,6 +494,53 @@ export default interface Resources {
       title: "Pair this browser";
     };
   };
+  decks: {
+    actions: {
+      exportPptx: "Export PPTX";
+      present: "Present";
+    };
+    errors: {
+      export: "Could not export the deck";
+    };
+    present: {
+      label: "Presentation";
+      next: "Next slide";
+      position: "Slide {{current}} of {{total}}";
+    };
+    sidebar: {
+      collapse: "Hide deck list";
+      delete: "Delete";
+      deleteConfirm: {
+        cancel: "Cancel";
+        confirm: "Delete";
+        description: "This deck and all its slides will be permanently deleted.";
+        title: 'Delete "{{title}}"?';
+      };
+      empty: {
+        description: "Ask an agent to make a deck; it appears here.";
+        title: "No decks yet";
+      };
+      expand: "Show deck list";
+      rename: "Rename";
+      resize: "Resize deck list";
+      title: "Decks";
+      untitled: "Untitled deck";
+    };
+    viewer: {
+      empty: {
+        description: "Pick a deck from the list to view its slides.";
+        title: "No deck selected";
+      };
+      emptyDeck: {
+        description: "Ask an agent to add slides to this deck.";
+        title: "This deck has no slides";
+      };
+      notes: "Speaker notes";
+      position: "{{current}} / {{total}}";
+      slide: "Slide {{number}}";
+      slides: "Slides";
+    };
+  };
   editor: {
     actions: {
       addToChat: "Add to Chat";
@@ -525,6 +572,7 @@ export default interface Resources {
       resizeSessionList: "Resize session list";
       resizeSidebar: "Resize sidebar";
       showBrowser: "Browser";
+      showDecks: "Decks";
       showEditor: "Files";
       showGitChanges: "Git";
       showIssues: "Issues";

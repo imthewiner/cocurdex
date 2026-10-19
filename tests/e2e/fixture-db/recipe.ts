@@ -53,6 +53,12 @@ export interface FixtureNote {
   inWorkspace?: boolean;
 }
 
+export interface FixtureDeck {
+  title: string;
+  markdown: string;
+  inWorkspace?: boolean;
+}
+
 export interface FixtureIssue {
   title: string;
   description: string;
@@ -392,6 +398,53 @@ export const FIXTURE_NOTES: FixtureNote[] = [
     key: "scratch",
     title: "Scratchpad",
     bodyMarkdown: "Ideas that are not tied to a workspace.\n",
+  },
+];
+
+export const FIXTURE_DECKS: FixtureDeck[] = [
+  {
+    title: "Checkout review",
+    inWorkspace: true,
+    markdown: `# Checkout review
+
+Acme Shop, Q1 demo
+
+---
+
+## Discount codes
+
+- Fixed amount codes are live
+- Percentage codes are in review
+  - \`SPRING10\` takes 10% off
+- Totals never drop below zero
+
+Notes: Mention that the zero floor came from support tickets.
+
+---
+
+## Before and after
+
+### Before
+- One code per cart
+- Errors without context
+
+### After
+- Clear error messages
+- Codes validated on entry
+
+---
+
+## Rollout
+
+| Code | Discount | Status |
+| --- | --- | --- |
+| \`SPRING10\` | 10% off | Live |
+| \`FIVEOFF\` | 5 off | Draft |
+
+---
+
+# Questions?
+`,
   },
 ];
 

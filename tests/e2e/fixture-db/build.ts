@@ -19,6 +19,7 @@ import {
 } from "../helpers/daemon-process";
 import { type StubLlmServer, startStubLlmServer } from "../helpers/llm-stub";
 import {
+  FIXTURE_DECKS,
   FIXTURE_ISSUES,
   FIXTURE_LABELS,
   FIXTURE_NOTES,
@@ -43,6 +44,7 @@ export interface FixtureManifest {
   workspaces: FixtureWorkspace[];
   sessionIds: string[];
   noteCount: number;
+  deckCount: number;
   issueCount: number;
 }
 
@@ -189,6 +191,20 @@ async function seedNotes(daemon: DaemonProcess) {
       daemon.options,
     );
     ids.set(note.key, created.id);
+  }
+}
+
+async function seedDecks(daemon: DaemonProcess) {
+  for (const deck of FIXTURE_DECKS) {
+    await requestDaemon(
+      "deck.create",
+      {
+        title: deck.title,
+        markdown: deck.markdown,
+        workspaceId: deck.inWorkspace ? FIXTURE_WORKSPACE_ID : null,
+      },
+      daemon.options,
+    );
   }
 }
 
@@ -344,6 +360,7 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
       await seedSession(daemon, stub, events, session);
     }
     await seedNotes(daemon);
+    await seedDecks(daemon);
     await seedIssues(daemon);
     await removeMachineAgents(daemon);
     subscription.close();
@@ -362,6 +379,7 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
       workspaces: FIXTURE_WORKSPACES,
       sessionIds: FIXTURE_SESSIONS.map((session) => session.id),
       noteCount: FIXTURE_NOTES.length,
+      deckCount: FIXTURE_DECKS.length,
       issueCount: FIXTURE_ISSUES.length,
     };
     await writeFile(

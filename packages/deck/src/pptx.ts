@@ -5,7 +5,6 @@ import {
   SLIDE_SLOT_IDS,
   type SlideFrame,
   type SlideLayoutId,
-  type TableData,
   type TextParagraph,
 } from "@cocurdex/shared";
 import PptxGenJS from "pptxgenjs";

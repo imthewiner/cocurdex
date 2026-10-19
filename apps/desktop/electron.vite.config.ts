@@ -42,6 +42,7 @@ const alias = {
     __dirname,
     "../../packages/agent-adapters/src/index.ts",
   ),
+  "@cocurdex/deck": path.resolve(__dirname, "../../packages/deck/src/index.ts"),
   "@cocurdex/db": path.resolve(__dirname, "../../packages/db/src/index.ts"),
   "@cocurdex/note-doc/bytes": path.resolve(
     __dirname,

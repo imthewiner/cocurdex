@@ -289,6 +289,15 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
     openExternal: async (url) => {
       window.open(url, "_blank", "noopener,noreferrer");
     },
+    downloadUrl: async (url) => {
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "";
+      anchor.rel = "noopener";
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+    },
   };
   window.desktopApi = bridge;
   return access.then((resolved) => {

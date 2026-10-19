@@ -1,0 +1,81 @@
+import type { DeckRecord, DeckSummary } from "@cocurdex/shared";
+import { atom, type Getter, type Setter } from "jotai";
+import { decksApi } from "./decks-api";
+
+export const deckSummariesAtom = atom<DeckSummary[]>([]);
+export const decksLoadedAtom = atom(false);
+export const activeDeckIdAtom = atom<string | null>(null);
+export const activeDeckAtom = atom<DeckRecord | null>(null);
+export const activeSlideIndexAtom = atom(0);
+
+function clampSlideIndex(get: Getter, set: Setter, deck: DeckRecord | null) {
+  const last = Math.max(0, (deck?.content.slides.length ?? 1) - 1);
+  if (get(activeSlideIndexAtom) > last) set(activeSlideIndexAtom, last);
+}
+
+async function reloadActiveDeck(get: Getter, set: Setter) {
+  const id = get(activeDeckIdAtom);
+  if (!id) return;
+  const deck = await decksApi.get({ id });
+  if (get(activeDeckIdAtom) !== id) return;
+  set(activeDeckAtom, deck);
+  if (!deck) set(activeDeckIdAtom, null);
+  clampSlideIndex(get, set, deck);
+}
+
+export const loadDecksAtom = atom(null, async (get, set) => {
+  const summaries = await decksApi.list();
+  set(deckSummariesAtom, summaries);
+  set(decksLoadedAtom, true);
+  const activeId = get(activeDeckIdAtom);
+  const active = summaries.find((deck) => deck.id === activeId);
+  if (activeId && active?.revision !== get(activeDeckAtom)?.revision) {
+    await reloadActiveDeck(get, set);
+  }
+});
+
+export const openDeckAtom = atom(null, async (get, set, id: string) => {
+  if (get(activeDeckIdAtom) === id) return;
+  set(activeDeckIdAtom, id);
+  set(activeSlideIndexAtom, 0);
+  set(activeDeckAtom, null);
+  await reloadActiveDeck(get, set);
+});
+
+export const selectSlideAtom = atom(null, (get, set, index: number) => {
+  const count = get(activeDeckAtom)?.content.slides.length ?? 0;
+  if (count === 0) return;
+  set(activeSlideIndexAtom, Math.min(Math.max(index, 0), count - 1));
+});
+
+export const renameDeckAtom = atom(
+  null,
+  async (get, set, input: { id: string; title: string }) => {
+    const current = get(deckSummariesAtom).find((deck) => deck.id === input.id);
+    const { deck } = await decksApi.update({
+      id: input.id,
+      title: input.title,
+      expectedRevision: current?.revision,
+    });
+    set(deckSummariesAtom, (summaries) =>
+      summaries.map((summary) =>
+        summary.id === deck.id
+          ? { ...summary, title: deck.title, revision: deck.revision }
+          : summary,
+      ),
+    );
+    if (get(activeDeckIdAtom) === deck.id) set(activeDeckAtom, deck);
+  },
+);
+
+export const deleteDeckAtom = atom(null, async (get, set, id: string) => {
+  const current = get(deckSummariesAtom).find((deck) => deck.id === id);
+  await decksApi.delete({ id, expectedRevision: current?.revision });
+  set(deckSummariesAtom, (summaries) =>
+    summaries.filter((deck) => deck.id !== id),
+  );
+  if (get(activeDeckIdAtom) === id) {
+    set(activeDeckIdAtom, null);
+    set(activeDeckAtom, null);
+  }
+});

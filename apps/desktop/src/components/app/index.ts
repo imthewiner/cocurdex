@@ -16,6 +16,7 @@ export {
   type AppDropdownRadioSection,
 } from "./dropdown-radio";
 export { AppGitBranchLabel } from "./git-branch-label";
+export { AppInlineRenameInput } from "./inline-rename-input";
 export { AppPreviewCardTooltipContent } from "./preview-card-tooltip";
 export {
   AppSearchableSelect,
@@ -23,3 +24,4 @@ export {
 } from "./searchable-select";
 export { AppSelect } from "./select";
 export { SettingRow, SettingsGroup } from "./settings-fields";
+export { AppSidebarRowTitle } from "./sidebar-row-title";

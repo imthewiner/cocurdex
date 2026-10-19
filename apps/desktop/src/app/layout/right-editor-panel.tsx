@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { ResizeSeparator } from "@/components/resize-separator";
 import { beginColumnResize } from "@/components/use-column-resize";
 import { BrowserPanel } from "@/features/browser";
+import { DecksView } from "@/features/decks";
 import {
   EditorBreadcrumb,
   EditorTabs,
@@ -164,6 +165,8 @@ export function RightEditorPanel({
   // (and any unsaved-but-debounced edits) survive view switches.
   const [notesKeepAlive, setNotesKeepAlive] = useState(false);
   const notesEverActive = notesKeepAlive || activeView === "notes";
+  const [decksKeepAlive, setDecksKeepAlive] = useState(false);
+  const decksEverActive = decksKeepAlive || activeView === "decks";
   const [issuesKeepAlive, setIssuesKeepAlive] = useState(false);
   const issuesEverActive = issuesKeepAlive || activeView === "issues";
   const setChatComposerAttachment = useSetAtom(setChatComposerAttachmentAtom);
@@ -335,6 +338,9 @@ export function RightEditorPanel({
           if (value === "notes") {
             setNotesKeepAlive(true);
           }
+          if (value === "decks") {
+            setDecksKeepAlive(true);
+          }
           if (value === "issues") {
             setIssuesKeepAlive(true);
           }
@@ -490,6 +496,20 @@ export function RightEditorPanel({
                 )}
               >
                 <NotesView />
+              </div>
+            ) : null}
+
+            {decksEverActive ? (
+              <div
+                data-testid="right-panel-decks-layer"
+                className={cn(
+                  "absolute inset-0 flex min-h-0 flex-col",
+                  activeView === "decks"
+                    ? "visible"
+                    : "hidden pointer-events-none",
+                )}
+              >
+                <DecksView />
               </div>
             ) : null}
 

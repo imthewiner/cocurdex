@@ -761,6 +761,7 @@ export interface HostApi {
   getDiagnosticsVerbose(): Promise<boolean>;
   setDiagnosticsVerbose(enabled: boolean): Promise<boolean>;
   openExternal(url: string): Promise<void>;
+  downloadUrl(url: string): Promise<void>;
 }
 
 export type ProductEventApi = Pick<
