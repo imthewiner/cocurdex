@@ -16,13 +16,18 @@ import {
 import { SLIDE_LAYOUTS, type SlotSpec } from "./layouts";
 import { fitTable, fitText } from "./text-fit";
 import {
+  type CounterFormat,
   type DeckFont,
   type DeckPaint,
+  type DeckShape,
   type DeckTheme,
   type DecorationSpec,
   fontForRole,
+  type PatternDecoration,
   type RoleTypography,
+  type ShapeLine,
   type TextAlign,
+  type TextStroke,
 } from "./theme";
 import { deckTheme } from "./themes";
 
@@ -45,6 +50,9 @@ export interface ResolvedText {
   valign: "top" | "middle" | "bottom";
   lineHeight: number;
   overflow: boolean;
+  italic?: boolean;
+  hollow?: boolean;
+  stroke?: TextStroke;
 }
 
 export interface ResolvedTable {
@@ -61,9 +69,19 @@ export interface ResolvedShape {
   kind: "shape";
   source: ResolvedSource;
   frame: SlideFrame;
-  shape: "rect" | "ellipse";
-  fill: DeckPaint;
+  shape: DeckShape;
+  fill?: DeckPaint;
   opacity?: number;
+  radius?: number;
+  rotate?: number;
+  line?: ShapeLine;
+}
+
+export interface ResolvedPattern
+  extends Omit<PatternDecoration, "kind" | "frame"> {
+  kind: "pattern";
+  source: ResolvedSource;
+  frame: SlideFrame;
 }
 
 export interface ResolvedImage {
@@ -78,7 +96,8 @@ export type ResolvedItem =
   | ResolvedText
   | ResolvedTable
   | ResolvedShape
-  | ResolvedImage;
+  | ResolvedImage
+  | ResolvedPattern;
 
 export interface ResolvedSlide {
   id: string;
@@ -226,40 +245,97 @@ export function themedSlotSpec(
   };
 }
 
+interface DecorationCounters {
+  page: number;
+  section: number;
+}
+
+const ROMAN_DIGITS: [number, string][] = [
+  [1000, "M"],
+  [900, "CM"],
+  [500, "D"],
+  [400, "CD"],
+  [100, "C"],
+  [90, "XC"],
+  [50, "L"],
+  [40, "XL"],
+  [10, "X"],
+  [9, "IX"],
+  [5, "V"],
+  [4, "IV"],
+  [1, "I"],
+];
+
+function romanNumeral(value: number): string {
+  let rest = value;
+  let result = "";
+  for (const [amount, digits] of ROMAN_DIGITS) {
+    while (rest >= amount) {
+      result += digits;
+      rest -= amount;
+    }
+  }
+  return result;
+}
+
+export function formatCounter(value: number, format: CounterFormat): string {
+  if (format === "roman") return romanNumeral(value);
+  if (format === "padded") return String(value).padStart(2, "0");
+  return String(value);
+}
+
+function decorationText(
+  decoration: Extract<DecorationSpec, { kind: "text" | "pageNumber" }>,
+  counters: DecorationCounters,
+): string {
+  if (decoration.kind === "pageNumber") return String(counters.page);
+  if (typeof decoration.text === "string") return decoration.text;
+  const value = counters[decoration.text.counter];
+  return formatCounter(value, decoration.text.format);
+}
+
 function resolveDecoration(
   decoration: DecorationSpec,
   index: number,
-  pageNumber: number,
+  counters: DecorationCounters,
   theme: DeckTheme,
 ): ResolvedItem {
   const source: ResolvedSource = { kind: "decoration", index };
   if (decoration.kind === "shape") {
-    return {
-      kind: "shape",
-      source,
-      frame: decoration.frame,
-      shape: decoration.shape,
-      fill: decoration.fill,
-      ...(decoration.opacity === undefined
-        ? {}
-        : { opacity: decoration.opacity }),
-    };
+    const { kind: _kind, ...shape } = decoration;
+    return { kind: "shape", source, ...shape };
   }
+  if (decoration.kind === "pattern") {
+    const { kind: _kind, ...pattern } = decoration;
+    return { kind: "pattern", source, ...pattern };
+  }
+  const label = decoration.kind === "text" ? decoration : undefined;
   return {
     kind: "text",
     source,
     frame: decoration.frame,
-    paragraphs: [{ runs: [{ text: String(pageNumber) }] }],
+    paragraphs: [{ runs: [{ text: decorationText(decoration, counters) }] }],
     role: "caption",
     fontSize: decoration.size,
     color: decoration.color,
     font: decoration.font,
-    bold: false,
+    bold: label?.bold ?? false,
     align: decoration.align,
     valign: "middle",
-    lineHeight: theme.roles.caption.lineHeight,
+    lineHeight: label ? 1 : theme.roles.caption.lineHeight,
     overflow: false,
+    ...(label?.italic ? { italic: true } : {}),
+    ...(label?.hollow ? { hollow: true } : {}),
+    ...(label?.stroke ? { stroke: label.stroke } : {}),
   };
+}
+
+function decorationCounters(slide: Slide, deck: DeckContent) {
+  const index = deck.slides.findIndex((item) => item.id === slide.id);
+  const section = deck.slides
+    .slice(0, index + 1)
+    .filter((item) => item.layout === "section").length;
+  return { page: index + 1, section };
 }
 
 export function resolveEmptySlots(
@@ -278,9 +354,9 @@ export function resolveEmptySlots(
 export function resolveSlide(slide: Slide, deck: DeckContent): ResolvedSlide {
   const theme = deckTheme(deck.theme);
   const style = theme.layouts[slide.layout];
-  const pageNumber = deck.slides.findIndex((item) => item.id === slide.id) + 1;
+  const counters = decorationCounters(slide, deck);
   const items: ResolvedItem[] = style.decorations.map((decoration, index) =>
-    resolveDecoration(decoration, index, pageNumber, theme),
+    resolveDecoration(decoration, index, counters, theme),
   );
   for (const slot of SLIDE_SLOT_IDS) {
     const content = slide.slots[slot];

@@ -3,8 +3,10 @@ export { type LayoutSpec, SLIDE_LAYOUTS, type SlotSpec } from "./layouts";
 export { listMarkers } from "./list-markers";
 export {
   containFrame,
+  formatCounter,
   type ResolvedImage,
   type ResolvedItem,
+  type ResolvedPattern,
   type ResolvedShape,
   type ResolvedSlide,
   type ResolvedSource,
@@ -32,6 +34,7 @@ export {
   type DeckPaint,
   type DeckPaintColor,
   type DeckTheme,
+  type DecorationSpec,
   isGradient,
   paintHex,
 } from "./theme";

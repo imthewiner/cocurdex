@@ -128,6 +128,20 @@ touch, so the person's other work survives. Read ids from `deck show --json`
   - `boardroom`: navy and teal, for business and consulting reports.
   - `nebula`: dark violet gradient, for AI talks and keynotes.
   - `ember`: dark warm gradient, for creative work and events.
+  - `swiss`: red circle and heavy rules, for strategy and consulting.
+  - `playful`: outlined shapes on dots, for classes and workshops.
+  - `noir`: black and gold serif, for finance and annual reports.
+  - `botanical`: organic sage shapes, for health, ESG, and nonprofits.
+  - `blueprint`: grid paper and dimension lines, for engineering reviews.
+  - `zen`: red sun and quiet rules, for culture, brands, and hospitality.
+  - `retro`: seventies rainbow arcs, for events and lifestyle.
+  - `terminal`: green-on-black shell, for developer talks and hackathons.
+  - `bauhaus`: primary geometry, for design, art, and architecture.
+  - `clinic`: soft teal cards, for healthcare and SaaS products.
+- Section slides in `swiss`, `playful`, `noir`, `botanical`, `blueprint`,
+  `zen`, `retro`, `terminal`, `bauhaus`, and `clinic` show a large chapter
+  number counted from the deck's section slides, so use the `section` layout
+  for chapter breaks instead of writing the number into the title.
 
 ## Images
 

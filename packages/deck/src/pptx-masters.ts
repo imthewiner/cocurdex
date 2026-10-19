@@ -5,7 +5,8 @@ import {
   type SlideLayoutId,
 } from "@cocurdex/shared";
 import type PptxGenJS from "pptxgenjs";
-import { rasterizeGradient } from "./paint-raster";
+import { rasterizeGradient, rasterizePattern } from "./paint-raster";
+import { insetForLine } from "./pdf-paint";
 import { themedSlotSpec } from "./resolve";
 import {
   type DeckPaint,
@@ -15,6 +16,7 @@ import {
   fontForRole,
   isGradient,
   paintHex,
+  type ShapeLine,
 } from "./theme";
 
 const PX_PER_INCH = 96;
@@ -51,34 +53,73 @@ function transparency(opacity: number | undefined) {
   return opacity === undefined ? {} : { transparency: (1 - opacity) * 100 };
 }
 
-function shapeObject(
-  theme: DeckTheme,
-  decoration: Extract<DecorationSpec, { kind: "shape" }>,
-): MasterObject {
-  const frame = position(decoration.frame);
-  if (isGradient(decoration.fill)) {
-    const { png } = rasterizeGradient(
-      theme,
-      decoration.fill,
-      decoration.frame,
-      decoration.shape,
-      decoration.opacity,
-    );
-    return { image: { ...frame, data: pngData(png) } };
-  }
-  const fill = {
-    color: paintHex(theme, decoration.fill),
-    ...transparency(decoration.opacity),
-  };
-  if (decoration.shape === "rect") {
-    return { rect: { ...frame, fill, line: { type: "none" } } };
-  }
+type ShapeSpec = Extract<DecorationSpec, { kind: "shape" }>;
+
+export function shapeLine(theme: DeckTheme, line: ShapeLine | undefined) {
+  if (!line) return { type: "none" as const };
   return {
-    text: {
-      text: "",
-      options: { ...frame, shape: "ellipse", fill, line: { type: "none" } },
-    },
+    color: paintHex(theme, line.color),
+    width: points(line.width),
+    ...transparency(line.opacity),
+    ...(line.dashed ? { dashType: "dash" as const } : {}),
   };
+}
+
+export function shapeOptions(theme: DeckTheme, spec: ShapeSpec) {
+  const fill =
+    spec.fill === undefined || isGradient(spec.fill)
+      ? { type: "none" as const }
+      : { color: paintHex(theme, spec.fill), ...transparency(spec.opacity) };
+  return {
+    ...position(insetForLine(spec.frame, spec.line)),
+    fill,
+    line: shapeLine(theme, spec.line),
+    ...(spec.rotate ? { rotate: spec.rotate } : {}),
+    ...(spec.shape === "roundRect"
+      ? { rectRadius: inches(spec.radius ?? 0) }
+      : {}),
+  };
+}
+
+function gradientImage(theme: DeckTheme, spec: ShapeSpec): MasterObject[] {
+  if (spec.fill === undefined || !isGradient(spec.fill)) return [];
+  const { png } = rasterizeGradient(
+    theme,
+    spec.fill,
+    spec.frame,
+    spec.shape === "ellipse" ? "ellipse" : "rect",
+    spec.opacity,
+  );
+  return [
+    {
+      image: {
+        ...position(spec.frame),
+        data: pngData(png),
+        ...(spec.rotate ? { rotate: spec.rotate } : {}),
+      },
+    },
+  ];
+}
+
+function shapeObjects(theme: DeckTheme, spec: ShapeSpec): MasterObject[] {
+  const images = gradientImage(theme, spec);
+  if (images.length > 0 && !spec.line) return images;
+  const options = shapeOptions(theme, spec);
+  if (spec.shape === "rect") return [...images, { rect: options }];
+  return [
+    ...images,
+    { text: { text: "", options: { ...options, shape: spec.shape } } },
+  ];
+}
+
+function decorationObjects(
+  theme: DeckTheme,
+  decoration: DecorationSpec,
+): MasterObject[] {
+  if (decoration.kind === "shape") return shapeObjects(theme, decoration);
+  if (decoration.kind !== "pattern") return [];
+  const { png } = rasterizePattern(theme, decoration);
+  return [{ image: { ...position(decoration.frame), data: pngData(png) } }];
 }
 
 function masterBackground(
@@ -115,7 +156,7 @@ export function defineMasters(pptx: PptxGenJS, theme: DeckTheme) {
   for (const layoutId of SLIDE_LAYOUT_IDS) {
     const style = theme.layouts[layoutId];
     const objects: MasterObject[] = style.decorations.flatMap((decoration) =>
-      decoration.kind === "shape" ? [shapeObject(theme, decoration)] : [],
+      decorationObjects(theme, decoration),
     );
     for (const slot of SLIDE_SLOT_IDS) {
       const spec = themedSlotSpec(theme, layoutId, slot);

@@ -682,7 +682,7 @@ runScenario("decks", {
           ),
         );
         check(
-          previews.length >= 11 && previews.every(Boolean),
+          previews.length >= 21 && previews.every(Boolean),
           "every theme option shows a slide preview",
           previews,
         );

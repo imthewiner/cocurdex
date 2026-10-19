@@ -17,7 +17,10 @@ import {
   fontStack,
   frameStyle,
   paintCss,
+  patternStyle,
+  shapeStyle,
   slideLength,
+  textEffectStyle,
   themeColor,
 } from "./slide-geometry";
 import { SlideParagraphs } from "./slide-paragraphs";
@@ -43,6 +46,7 @@ function SlideText({ item, theme }: { item: ResolvedText; theme: DeckTheme }) {
         fontSize: slideLength(item.fontSize),
         fontWeight: item.bold ? 700 : 400,
         lineHeight: item.lineHeight,
+        ...textEffectStyle(theme, item),
       }}
     >
       <SlideParagraphs paragraphs={item.paragraphs} theme={theme} />
@@ -138,16 +142,13 @@ function SlideItem({ item, theme }: { item: ResolvedItem; theme: DeckTheme }) {
   if (item.kind === "text") return <SlideText item={item} theme={theme} />;
   if (item.kind === "image") return <SlideImage item={item} />;
   if (item.kind === "table") return <SlideTable item={item} theme={theme} />;
+  if (item.kind === "pattern") {
+    return (
+      <div aria-hidden className="absolute" style={patternStyle(theme, item)} />
+    );
+  }
   return (
-    <div
-      aria-hidden
-      className={cn("absolute", item.shape === "ellipse" && "rounded-full")}
-      style={{
-        ...frameStyle(item.frame),
-        background: paintCss(theme, item.fill),
-        opacity: item.opacity,
-      }}
-    />
+    <div aria-hidden className="absolute" style={shapeStyle(theme, item)} />
   );
 }
 

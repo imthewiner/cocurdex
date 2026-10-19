@@ -21,6 +21,16 @@ export const DECK_THEME_IDS = [
   "boardroom",
   "nebula",
   "ember",
+  "swiss",
+  "playful",
+  "noir",
+  "botanical",
+  "blueprint",
+  "zen",
+  "retro",
+  "terminal",
+  "bauhaus",
+  "clinic",
 ] as const;
 export type DeckThemeId = (typeof DECK_THEME_IDS)[number];
 

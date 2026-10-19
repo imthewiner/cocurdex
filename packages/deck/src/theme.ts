@@ -37,12 +37,61 @@ export interface RadialGradient {
 export type DeckGradient = LinearGradient | RadialGradient;
 export type DeckPaint = DeckPaintColor | DeckGradient;
 
+export type DeckShape = "rect" | "ellipse" | "roundRect";
+
+export interface ShapeLine {
+  color: DeckPaintColor;
+  width: number;
+  opacity?: number;
+  dashed?: boolean;
+}
+
 export interface ShapeDecoration {
   kind: "shape";
   frame: SlideFrame;
-  shape: "rect" | "ellipse";
-  fill: DeckPaint;
+  shape: DeckShape;
+  fill?: DeckPaint;
   opacity?: number;
+  radius?: number;
+  rotate?: number;
+  line?: ShapeLine;
+}
+
+export type CounterFormat = "decimal" | "padded" | "roman";
+
+export interface DecorationCounter {
+  counter: "page" | "section";
+  format: CounterFormat;
+}
+
+export interface TextStroke {
+  color: DeckColor;
+  width: number;
+  opacity?: number;
+}
+
+export interface TextDecoration {
+  kind: "text";
+  frame: SlideFrame;
+  text: string | DecorationCounter;
+  color: DeckColor;
+  font: DeckFont;
+  size: number;
+  align: TextAlign;
+  bold?: boolean;
+  italic?: boolean;
+  hollow?: boolean;
+  stroke?: TextStroke;
+}
+
+export interface PatternDecoration {
+  kind: "pattern";
+  frame: SlideFrame;
+  pattern: "dots" | "grid" | "rows";
+  spacing: number;
+  size: number;
+  color: DeckPaintColor;
+  opacity: number;
 }
 
 export interface PageNumberDecoration {
@@ -54,7 +103,11 @@ export interface PageNumberDecoration {
   align: TextAlign;
 }
 
-export type DecorationSpec = ShapeDecoration | PageNumberDecoration;
+export type DecorationSpec =
+  | ShapeDecoration
+  | PageNumberDecoration
+  | TextDecoration
+  | PatternDecoration;
 
 export interface SlotStyle {
   color?: DeckColor;

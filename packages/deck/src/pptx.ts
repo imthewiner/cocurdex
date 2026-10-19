@@ -144,6 +144,37 @@ function isAtLayoutFrame(layout: SlideLayoutId, item: ResolvedText): boolean {
   );
 }
 
+function isSlideDecoration(
+  theme: DeckTheme,
+  layout: SlideLayoutId,
+  item: ResolvedItem,
+): item is ResolvedText {
+  if (item.kind !== "text" || item.source.kind !== "decoration") return false;
+  const spec = theme.layouts[layout].decorations[item.source.index];
+  return spec?.kind === "text";
+}
+
+function addLabel(slide: Slide, item: ResolvedText, theme: DeckTheme) {
+  const runs = paragraphsToRuns(item.paragraphs, theme, item.color);
+  slide.addText(runs, {
+    ...textOptions(item, theme),
+    ...position(item.frame),
+    fit: "none",
+    margin: 0,
+    lineSpacingMultiple: item.lineHeight,
+    italic: item.italic,
+    ...(item.hollow ? { transparency: 100 } : {}),
+    ...(item.stroke
+      ? {
+          outline: {
+            color: color(theme, item.stroke.color),
+            size: points(item.stroke.width),
+          },
+        }
+      : {}),
+  });
+}
+
 function addImage(
   slide: Slide,
   item: ResolvedImage,
@@ -169,11 +200,16 @@ function addItem(
     addImage(slide, item, images);
     return;
   }
-  if (item.source.kind === "decoration") return;
+  if (item.source.kind === "decoration") {
+    if (isSlideDecoration(theme, layout, item)) addLabel(slide, item, theme);
+    return;
+  }
   if (item.kind === "shape") {
-    slide.addShape(item.shape === "ellipse" ? "ellipse" : "rect", {
+    slide.addShape(item.shape, {
       ...position(item.frame),
-      fill: { color: solidPaint(theme, item.fill) },
+      fill: item.fill
+        ? { color: solidPaint(theme, item.fill) }
+        : { type: "none" },
       line: { type: "none" },
     });
     return;
@@ -182,6 +218,7 @@ function addItem(
     addTable(slide, item, theme);
     return;
   }
+  if (item.kind === "pattern") return;
   const runs = paragraphsToRuns(item.paragraphs, theme, item.color);
   const options = textOptions(item, theme);
   if (item.source.kind === "slot" && isAtLayoutFrame(layout, item)) {

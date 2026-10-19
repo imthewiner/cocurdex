@@ -1066,6 +1066,9 @@ importers:
       '@cocurdex/daemon':
         specifier: workspace:*
         version: link:../../../packages/daemon
+      '@cocurdex/deck':
+        specifier: workspace:*
+        version: link:../../../packages/deck
       '@cocurdex/desktop':
         specifier: workspace:*
         version: link:../../../apps/desktop

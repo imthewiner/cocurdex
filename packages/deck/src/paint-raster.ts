@@ -4,6 +4,7 @@ import {
   type DeckGradient,
   type DeckTheme,
   type GradientStop,
+  type PatternDecoration,
   paintHex,
 } from "./theme";
 
@@ -131,6 +132,44 @@ export function rasterizeGradient(
       rgba[offset + 1] = Math.round(g);
       rgba[offset + 2] = Math.round(b);
       rgba[offset + 3] = outside ? 0 : Math.round(a * opacity);
+    }
+  }
+  return { png: encodeRgbaPng(width, height, rgba), width, height };
+}
+
+function patternCoverage(
+  pattern: Omit<PatternDecoration, "kind">,
+  x: number,
+  y: number,
+): number {
+  const { spacing, size } = pattern;
+  const localX = x - Math.floor(x / spacing) * spacing;
+  const localY = y - Math.floor(y / spacing) * spacing;
+  if (pattern.pattern === "rows") return localY < size ? 1 : 0;
+  if (pattern.pattern === "grid") {
+    return localX < size || localY < size ? 1 : 0;
+  }
+  const distance = Math.hypot(localX - spacing / 2, localY - spacing / 2);
+  return Math.min(1, Math.max(0, size + 0.5 - distance));
+}
+
+export function rasterizePattern(
+  theme: DeckTheme,
+  pattern: Omit<PatternDecoration, "kind">,
+): { png: Buffer; width: number; height: number } {
+  const width = Math.max(1, Math.round(pattern.frame.w));
+  const height = Math.max(1, Math.round(pattern.frame.h));
+  const hex = paintHex(theme, pattern.color);
+  const rgb = [0, 2, 4].map((offset) =>
+    Number.parseInt(hex.slice(offset, offset + 2), 16),
+  );
+  const rgba = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const coverage = patternCoverage(pattern, x + 0.5, y + 0.5);
+      rgba.set(rgb, offset);
+      rgba[offset + 3] = Math.round(coverage * pattern.opacity * 255);
     }
   }
   return { png: encodeRgbaPng(width, height, rgba), width, height };

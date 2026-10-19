@@ -9,8 +9,9 @@ import {
 } from "@cocurdex/shared";
 import PDFDocument from "pdfkit";
 import { type DeckImageLoader, loadDeckImages } from "./images";
+import { lineWidth, wrapPieces } from "./line-wrap";
 import { listMarkers } from "./list-markers";
-import { fillPaint } from "./pdf-paint";
+import { drawPdfPattern, drawPdfShape, fillPaint } from "./pdf-paint";
 import { type ResolvedImage, type ResolvedItem, resolveSlide } from "./resolve";
 import { splitCjk } from "./script-segments";
 import {
@@ -20,7 +21,7 @@ import {
   TABLE_CELL_PADDING,
   TEXT_INSET,
 } from "./text-fit";
-import type { DeckFont, DeckTheme, TextAlign } from "./theme";
+import type { DeckFont, DeckTheme, TextAlign, TextStroke } from "./theme";
 import { deckTheme } from "./themes";
 
 export interface PdfFontSource {
@@ -57,6 +58,9 @@ interface TextStyle {
   font: DeckFont;
   bold: boolean;
   align: TextAlign;
+  italic?: boolean;
+  hollow?: boolean;
+  stroke?: TextStroke;
 }
 
 interface Painter {
@@ -161,6 +165,67 @@ function paragraphsHeight(
   );
 }
 
+function applyRunStyle(
+  painter: Painter,
+  run: TextRun,
+  font: string,
+  style: TextStyle,
+): PDFKit.Mixins.TextOptions {
+  const { doc, theme } = painter;
+  const bold = run.bold || style.bold;
+  const synthetic = bold && !BOLD_FACES.has(font) && font !== FONT.mono;
+  const color = hex(theme, run.color ?? style.color);
+  const stroke = style.stroke;
+  doc
+    .font(font)
+    .fontSize(style.fontSize)
+    .fillColor(color)
+    .strokeColor(stroke ? hex(theme, stroke.color) : color)
+    .strokeOpacity(stroke?.opacity ?? 1)
+    .lineWidth(stroke?.width ?? style.fontSize * SYNTHETIC_BOLD_STROKE_EM);
+  return {
+    underline: run.underline || Boolean(run.link),
+    strike: run.strike,
+    oblique: run.italic || style.italic,
+    link: run.link,
+    fill: !style.hollow,
+    stroke: synthetic || Boolean(stroke),
+  };
+}
+
+function measure(painter: Painter, piece: RunPiece, style: TextStyle) {
+  return painter.doc
+    .font(piece.font)
+    .fontSize(style.fontSize)
+    .widthOfString(piece.text);
+}
+
+function drawAlignedRuns(
+  painter: Painter,
+  pieces: RunPiece[],
+  box: { x: number; y: number; w: number },
+  style: TextStyle,
+  lineGap: number,
+  align: "center" | "right",
+) {
+  const { doc } = painter;
+  const lineHeight =
+    doc.font(FONT.regular).fontSize(style.fontSize).currentLineHeight(true) +
+    lineGap;
+  const share = align === "center" ? 0.5 : 1;
+  const width = (piece: RunPiece) => measure(painter, piece, style);
+  wrapPieces(pieces, width, box.w).forEach((line, lineIndex) => {
+    const free = box.w - lineWidth(line, width);
+    let x = box.x + Math.max(0, free) * share;
+    const y = box.y + lineIndex * lineHeight;
+    for (const piece of line) {
+      const options = applyRunStyle(painter, piece.run, piece.font, style);
+      doc.text(piece.text, x, y, { ...options, lineBreak: false });
+      x += piece.width;
+    }
+  });
+}
+
 function drawRuns(
   painter: Painter,
   paragraph: TextParagraph,
@@ -168,31 +233,22 @@ function drawRuns(
   style: TextStyle,
   lineGap: number,
 ) {
-  const { doc, theme } = painter;
+  const { doc } = painter;
   const runs = paragraph.runs.length > 0 ? paragraph.runs : [{ text: " " }];
   const pieces = runPieces(painter, runs, style);
+  const align = paragraph.align ?? style.align;
+  if (align === "center" || align === "right") {
+    drawAlignedRuns(painter, pieces, box, style, lineGap, align);
+    return;
+  }
   pieces.forEach(({ run, text, font }, index) => {
-    const bold = run.bold || style.bold;
-    const synthetic = bold && !BOLD_FACES.has(font) && font !== FONT.mono;
-    const color = hex(theme, run.color ?? style.color);
-    doc
-      .font(font)
-      .fontSize(style.fontSize)
-      .fillColor(color)
-      .strokeColor(color)
-      .lineWidth(style.fontSize * SYNTHETIC_BOLD_STROKE_EM);
     const options: PDFKit.Mixins.TextOptions = {
+      ...applyRunStyle(painter, run, font, style),
       width: box.w,
       height: NO_PAGE_BREAK_HEIGHT,
       lineGap,
-      align: paragraph.align ?? style.align,
+      align,
       continued: index < pieces.length - 1,
-      underline: run.underline || Boolean(run.link),
-      strike: run.strike,
-      oblique: run.italic,
-      link: run.link,
-      fill: true,
-      stroke: synthetic,
     };
     if (index === 0) doc.text(text, box.x, box.y, options);
     else doc.text(text, options);
@@ -255,6 +311,9 @@ function drawText(
     font: item.font,
     bold: item.bold,
     align: item.align,
+    italic: item.italic,
+    hollow: item.hollow,
+    stroke: item.stroke,
   };
   const inner = {
     x: item.frame.x + TEXT_INSET,
@@ -345,20 +404,6 @@ function drawTable(
   });
 }
 
-function drawShape(
-  painter: Painter,
-  item: Extract<ResolvedItem, { kind: "shape" }>,
-) {
-  fillPaint(
-    painter.doc,
-    painter.theme,
-    item.fill,
-    item.frame,
-    item.shape,
-    item.opacity,
-  );
-}
-
 function drawImage(painter: Painter, item: ResolvedImage) {
   const bytes = painter.images.get(item.image.hash);
   if (!bytes) return;
@@ -367,8 +412,10 @@ function drawImage(painter: Painter, item: ResolvedImage) {
 }
 
 function drawItem(painter: Painter, item: ResolvedItem) {
-  if (item.kind === "shape") drawShape(painter, item);
-  else if (item.kind === "image") drawImage(painter, item);
+  if (item.kind === "shape") drawPdfShape(painter.doc, painter.theme, item);
+  else if (item.kind === "pattern") {
+    drawPdfPattern(painter.doc, painter.theme, item);
+  } else if (item.kind === "image") drawImage(painter, item);
   else if (item.kind === "table") drawTable(painter, item);
   else drawText(painter, item);
 }

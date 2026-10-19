@@ -133,4 +133,41 @@ describe("exportDeckToPptx", () => {
     expect(nebulaLayouts).toContain('type="sldNum"');
     expect(editorialLayouts).toContain('typeface="Georgia"');
   });
+
+  it("keeps rotated, dashed, rounded, and patterned decorations editable as shapes", async () => {
+    const { content } = compileDeckMarkdown(
+      [
+        "# Review",
+        "---",
+        "# Part one",
+        "Intro",
+        "---",
+        "## Plan",
+        "- Step",
+      ].join("\n"),
+    );
+    const exportTheme = async (theme: "blueprint" | "playful") =>
+      JSZip.loadAsync(
+        await exportDeckToPptx({ ...content, theme }, { title: "T" }, noImages),
+      );
+    const layouts = async (zip: JSZip) =>
+      (
+        await Promise.all(
+          zip
+            .file(/^ppt\/slideLayouts\/slideLayout\d+\.xml$/)
+            .map((file) => file.async("string")),
+        )
+      ).join("\n");
+    const blueprint = await exportTheme("blueprint");
+    const playful = await exportTheme("playful");
+    const blueprintLayouts = await layouts(blueprint);
+    const playfulLayouts = await layouts(playful);
+
+    expect(blueprintLayouts).toMatch(/rot="2700000"/);
+    expect(blueprintLayouts).toContain('<a:prstDash val="dash"/>');
+    expect(blueprintLayouts).toMatch(/<p:pic>[\s\S]*?<a:blip /);
+    expect(playfulLayouts).toContain('prst="roundRect"');
+    const sectionSlide = await text(blueprint, "ppt/slides/slide2.xml");
+    expect(sectionSlide).toContain("<a:t>01</a:t>");
+  });
 });

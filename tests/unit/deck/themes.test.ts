@@ -1,5 +1,10 @@
 import type { DeckTheme } from "@cocurdex/deck";
-import { DECK_THEMES, paintHex, resolveSlide } from "@cocurdex/deck";
+import {
+  DECK_THEMES,
+  formatCounter,
+  paintHex,
+  resolveSlide,
+} from "@cocurdex/deck";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
 import {
   DECK_THEME_IDS,
@@ -77,7 +82,11 @@ describe.each(DECK_THEME_IDS)("theme %s", (themeId) => {
     const numbers = deck.slides.map((slide) =>
       resolveSlide(slide, deck)
         .items.filter(
-          (item) => item.kind === "text" && item.source.kind === "decoration",
+          (item) =>
+            item.kind === "text" &&
+            item.source.kind === "decoration" &&
+            theme.layouts[slide.layout].decorations[item.source.index]?.kind ===
+              "pageNumber",
         )
         .map((item) =>
           item.kind === "text" ? item.paragraphs[0]?.runs[0]?.text : "",
@@ -88,6 +97,47 @@ describe.each(DECK_THEME_IDS)("theme %s", (themeId) => {
 
     expect(numbers[coverIndex]).toEqual([]);
     expect(numbers[contentIndex]).toEqual([String(contentIndex + 1)]);
+  });
+});
+
+function sectionLabels(themeId: DeckContent["theme"]): string[] {
+  const { content } = compileDeckMarkdown("# Deck");
+  const [cover] = content.slides;
+  if (!cover) throw new Error("No slide");
+  const layouts = ["cover", "section", "title-content", "section"] as const;
+  const deck: DeckContent = {
+    ...content,
+    theme: themeId,
+    slides: layouts.map((layout, index) => ({
+      ...cover,
+      id: `slide-${index}`,
+      layout,
+    })),
+  };
+  return deck.slides
+    .filter((slide) => slide.layout === "section")
+    .flatMap((slide) =>
+      resolveSlide(slide, deck).items.flatMap((item) =>
+        item.kind === "text" && item.source.kind === "decoration"
+          ? [item.paragraphs[0]?.runs[0]?.text ?? ""]
+          : [],
+      ),
+    );
+}
+
+describe("section counters", () => {
+  it.each([
+    ["swiss", ["1", "2"]],
+    ["noir", ["I", "II"]],
+    ["blueprint", ["01", "02"]],
+  ] as const)("numbers %s sections in deck order", (themeId, expected) => {
+    expect(sectionLabels(themeId)).toEqual(expected);
+  });
+
+  it("formats roman numerals beyond the single digits", () => {
+    expect(formatCounter(14, "roman")).toBe("XIV");
+    expect(formatCounter(49, "roman")).toBe("XLIX");
+    expect(formatCounter(7, "padded")).toBe("07");
   });
 });
 

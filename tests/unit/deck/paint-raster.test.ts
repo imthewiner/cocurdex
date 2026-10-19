@@ -1,6 +1,9 @@
 import { inflateSync } from "node:zlib";
 import { DECK_THEMES } from "@cocurdex/deck";
-import { rasterizeGradient } from "@cocurdex/deck/internal/paint-raster";
+import {
+  rasterizeGradient,
+  rasterizePattern,
+} from "@cocurdex/deck/internal/paint-raster";
 import { splitCjk } from "@cocurdex/deck/internal/script-segments";
 import { describe, expect, it } from "vitest";
 
@@ -66,6 +69,55 @@ describe("rasterizeGradient", () => {
     expect(pixel(center, center)[3]).toBeGreaterThan(120);
     expect(pixel(center, center).slice(0, 3)).toEqual([0x25, 0x63, 0xeb]);
     expect(pixel(0, 0)[3]).toBe(0);
+  });
+});
+
+describe("rasterizePattern", () => {
+  const frame = { x: 0, y: 0, w: 64, h: 32 };
+
+  it("centers one dot per tile and leaves the gaps transparent", () => {
+    const { png } = rasterizePattern(theme, {
+      frame,
+      pattern: "dots",
+      spacing: 16,
+      size: 2,
+      color: "#000000",
+      opacity: 0.5,
+    });
+    const pixel = decodeRgba(png);
+
+    expect(pixel(8, 8)[3]).toBe(128);
+    expect(pixel(24, 24)[3]).toBe(128);
+    expect(pixel(0, 0)[3]).toBe(0);
+  });
+
+  it("draws grid lines on both axes but rows only horizontally", () => {
+    const grid = decodeRgba(
+      rasterizePattern(theme, {
+        frame,
+        pattern: "grid",
+        spacing: 16,
+        size: 1,
+        color: "#FFFFFF",
+        opacity: 1,
+      }).png,
+    );
+    const rows = decodeRgba(
+      rasterizePattern(theme, {
+        frame,
+        pattern: "rows",
+        spacing: 16,
+        size: 1,
+        color: "#FFFFFF",
+        opacity: 1,
+      }).png,
+    );
+
+    expect(grid(16, 8)[3]).toBe(255);
+    expect(grid(8, 16)[3]).toBe(255);
+    expect(grid(8, 8)[3]).toBe(0);
+    expect(rows(8, 16)[3]).toBe(255);
+    expect(rows(16, 8)[3]).toBe(0);
   });
 });
 

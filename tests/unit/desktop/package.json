@@ -10,6 +10,7 @@
     "@cocurdex/desktop": "workspace:*",
     "@cocurdex/client-runtime": "workspace:*",
     "@cocurdex/daemon": "workspace:*",
+    "@cocurdex/deck": "workspace:*",
     "@cocurdex/note-doc": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*"
