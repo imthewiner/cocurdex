@@ -14,10 +14,7 @@ import { NotebookPen, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SidebarPanelHeader } from "@/app/layout/sidebar-panel-header";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { EmptyState, ScrollArea } from "@/components/ui";
 import { activeWorkspaceIdAtom, workspacesAtom } from "@/features/workspaces";
 import {
@@ -234,10 +231,9 @@ export function NotesSidebar({ onCollapse }: { onCollapse: () => void }) {
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.newNote")}
-            tooltip={t("sidebar.newNote")}
             onClick={() => handleCreateInSection(preferredSection)}
           >
-            <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Plus className="size-3.5" />
           </TitlebarIconButton>
         }
       />

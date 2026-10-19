@@ -1,10 +1,7 @@
 import { PanelRight, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NetworkProxyStatusButton } from "@/features/settings";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "../titlebar-icon-button";
+import { TitlebarIconButton } from "../titlebar-icon-button";
 
 interface AppShellTitlebarActionsProps {
   isChatDetached: boolean;
@@ -31,20 +28,18 @@ export function AppShellTitlebarActions({
           active={isRightPanelOpen}
           aria-label={panelLabel}
           cursor="default"
-          tooltip={panelLabel}
           onClick={onToggleRightPanel}
         >
-          <PanelRight className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <PanelRight className="size-3.5" />
         </TitlebarIconButton>
       )}
       <NetworkProxyStatusButton />
       <TitlebarIconButton
         aria-label={t("sessions:sidebar.settings")}
         cursor="default"
-        tooltip={t("sessions:sidebar.settings")}
         onClick={onOpenSettings}
       >
-        <Settings className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <Settings className="size-3.5" />
       </TitlebarIconButton>
     </>
   );

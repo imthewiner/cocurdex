@@ -2,10 +2,7 @@ import type { IssueRecord, ViewFull } from "@cocurdex/shared";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -127,13 +124,12 @@ export function IssuesList({
                 </CollapsibleTrigger>
                 <TitlebarIconButton
                   aria-label={t("board.addCard")}
-                  tooltip={t("board.addCard")}
                   className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   onClick={() => {
                     onAddCard(column.id);
                   }}
                 >
-                  <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+                  <Plus className="size-3.5" />
                 </TitlebarIconButton>
               </div>
 

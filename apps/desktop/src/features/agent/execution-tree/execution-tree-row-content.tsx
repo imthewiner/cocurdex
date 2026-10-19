@@ -8,13 +8,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  IconButton,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui";
+import { IconButton, Text } from "@/components/ui";
 import { AgentIconLabel, getAgentDisplayLabel } from "@/features/sessions";
 import { formatDurationMs } from "../view/chat-activity-state";
 import { getRunDurationMs } from "./execution-tree-output";
@@ -128,21 +122,14 @@ function OpenSessionButton({
   const { t } = useTranslation("sessions");
   const label = t("executionTree.openSession", { title });
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <IconButton
-            aria-label={label}
-            className="shrink-0 text-muted-foreground"
-            onClick={onOpen}
-            size="xs"
-          >
-            <ArrowUpRight className="size-3.5" />
-          </IconButton>
-        }
-      />
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    <IconButton
+      aria-label={label}
+      className="shrink-0 text-muted-foreground"
+      onClick={onOpen}
+      size="xs"
+    >
+      <ArrowUpRight className="size-3.5" />
+    </IconButton>
   );
 }
 

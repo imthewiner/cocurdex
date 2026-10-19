@@ -2,10 +2,7 @@ import { SLIDE_LAYOUT_IDS, type SlideLayoutId } from "@cocurdex/shared";
 import { LayoutTemplate, Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +75,7 @@ export function AddSlideMenu({
   return (
     <ToolbarMenu
       label={t("actions.addSlide")}
-      icon={<Plus className={TITLEBAR_ICON_GLYPH_CLASS} />}
+      icon={<Plus className="size-3.5" />}
     >
       {SLIDE_LAYOUT_IDS.map((layout) => (
         <DropdownMenuItem key={layout} onClick={() => onAdd(layout)}>
@@ -103,7 +100,7 @@ export function LayoutMenu({
   return (
     <ToolbarMenu
       label={t("actions.layout")}
-      icon={<LayoutTemplate className={TITLEBAR_ICON_GLYPH_CLASS} />}
+      icon={<LayoutTemplate className="size-3.5" />}
       disabled={disabled}
     >
       <DropdownMenuRadioGroup

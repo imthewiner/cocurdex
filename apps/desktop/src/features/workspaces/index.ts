@@ -19,10 +19,7 @@ export { WorkspaceFolderDropOverlay } from "./workspace-folder-drop-overlay";
 export { workspaceIconFor } from "./workspace-icon";
 export { sortWorkspacesBySortOrder } from "./workspace-order";
 export { compactWorkspacePath } from "./workspace-path";
-export {
-  composerContextTriggerHoverClassName,
-  WorkspacePicker,
-} from "./workspace-picker";
+export { WorkspacePicker } from "./workspace-picker";
 export {
   WorkspaceRootsPreview,
   WorkspaceRootsTooltip,

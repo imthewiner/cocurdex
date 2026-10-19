@@ -3,15 +3,7 @@ import { RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PanelToolbar } from "@/app/layout/panel-toolbar";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import type { GitBranchInfo, GitCommitInfo } from "@/lib";
 import { cn } from "@/lib/utils";
 import type { GitDiffStyle } from "./git-changes-model";
@@ -62,23 +54,15 @@ export function ToolbarButton({
   onClick,
 }: ToolbarButtonProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <TitlebarIconButton
-            active={active}
-            aria-label={label}
-            disabled={disabled}
-            onClick={onClick}
-          >
-            {icon}
-          </TitlebarIconButton>
-        }
-      />
-      <TooltipContent side="top" sideOffset={6}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
+    <TitlebarIconButton
+      tooltipSide="top"
+      active={active}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {icon}
+    </TitlebarIconButton>
   );
 }
 
@@ -213,14 +197,7 @@ function BulkActionsRow({
       <div className="app-no-drag ms-auto flex items-center gap-1">
         <ToolbarButton
           disabled={disabled}
-          icon={
-            <RefreshCw
-              className={cn(
-                TITLEBAR_ICON_GLYPH_CLASS,
-                disabled && "animate-spin",
-              )}
-            />
-          }
+          icon={<RefreshCw className={cn(disabled && "animate-spin")} />}
           label={t("git.refresh")}
           onClick={onRefresh}
         />

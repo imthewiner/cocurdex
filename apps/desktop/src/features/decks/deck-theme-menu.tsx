@@ -7,7 +7,6 @@ import {
 import { Palette } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { TITLEBAR_ICON_GLYPH_CLASS } from "@/app/layout/titlebar-icon-button";
 import { Text } from "@/components/ui";
 import {
   DropdownMenuRadioGroup,
@@ -42,7 +41,7 @@ export function ThemeMenu({
   return (
     <ToolbarMenu
       label={t("actions.theme")}
-      icon={<Palette className={TITLEBAR_ICON_GLYPH_CLASS} />}
+      icon={<Palette className="size-3.5" />}
     >
       <DropdownMenuRadioGroup
         value={content.theme}

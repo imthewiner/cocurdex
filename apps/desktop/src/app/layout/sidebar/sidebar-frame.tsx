@@ -1,11 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { ResizeSeparator } from "@/components/resize-separator";
-import { cn } from "@/lib";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "../titlebar-icon-button";
+import { TitlebarIconButton } from "../titlebar-icon-button";
 
 export { ResizeSeparator } from "@/components/resize-separator";
 export {
@@ -27,12 +23,9 @@ export function ScreenBackButton({
     <TitlebarIconButton
       aria-label={label}
       disabled={!canGoBack}
-      tooltip={label}
       onClick={onGoBack}
     >
-      <ArrowLeft
-        className={cn(TITLEBAR_ICON_GLYPH_CLASS, "rtl:-scale-x-100")}
-      />
+      <ArrowLeft className="size-3.5 rtl:-scale-x-100" />
     </TitlebarIconButton>
   );
 }

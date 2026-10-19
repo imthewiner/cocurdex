@@ -14,10 +14,7 @@ import { Circle, Plus } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { ScrollArea, Text } from "@/components/ui";
 import { cn } from "@/lib";
 import { groupFieldColor } from "../group-field-color";
@@ -141,11 +138,10 @@ export function IssueColumn({
         <div className="ms-auto flex shrink-0 items-center gap-0.5">
           <TitlebarIconButton
             aria-label={t("board.addCard")}
-            tooltip={t("board.addCard")}
             onClick={() => onAddCard(column.id)}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Plus className="size-3.5" />
           </TitlebarIconButton>
           {column.category ? (
             <ColumnCategoryMenu

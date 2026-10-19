@@ -25,7 +25,6 @@ export function ChatWindowButton() {
   return (
     <TitlebarIconButton
       aria-label={label}
-      tooltip={label}
       disabled={busy || !canMove}
       onClick={() => void move()}
       onMouseDown={(event) => event.stopPropagation()}

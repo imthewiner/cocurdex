@@ -3,10 +3,7 @@ import { Plus, RotateCcw, TerminalSquare } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PanelToolbar } from "@/app/layout/panel-toolbar";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { Button, EmptyState } from "@/components/ui";
 import {
   useActiveTerminalStatus,
@@ -184,10 +181,9 @@ export function TerminalPanel({
           </div>
           <TitlebarIconButton
             aria-label={t("terminal.newTab")}
-            tooltip={t("terminal.newTab")}
             onClick={handleAddTab}
           >
-            <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Plus className="size-3.5" />
           </TitlebarIconButton>
         </div>
       </PanelToolbar>

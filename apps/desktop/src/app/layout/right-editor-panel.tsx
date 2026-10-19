@@ -54,7 +54,6 @@ import {
 } from "./right-editor-panel-store";
 import {
   SidebarToggleButton,
-  TITLEBAR_ICON_GLYPH_CLASS,
   TitlebarIconButton,
 } from "./titlebar-icon-button";
 import { ViewSwitcherTabs } from "./view-switcher-tabs";
@@ -360,10 +359,9 @@ export function RightEditorPanel({
           <TitlebarIconButton
             active={searchPanelVisible}
             aria-label={tSearch("searchFiles")}
-            tooltip={tSearch("searchFiles")}
             onClick={toggleSearchPanel}
           >
-            <Search className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Search className="size-3.5" />
           </TitlebarIconButton>
           <div className="min-w-0 flex-1">
             <EditorTabs />

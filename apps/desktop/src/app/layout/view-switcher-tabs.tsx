@@ -33,10 +33,7 @@ import {
   type RightPanelView,
   rightPanelTabOrderAtom,
 } from "./right-editor-panel-store";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  titlebarIconButtonClassName,
-} from "./titlebar-icon-button";
+import { titlebarIconButtonClassName } from "./titlebar-icon-button";
 
 type ViewTabLabelKey =
   | "actions.showGitChanges"
@@ -315,7 +312,7 @@ export function ViewSwitcherTabs({
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                   >
-                    <Icon className={TITLEBAR_ICON_GLYPH_CLASS} />
+                    <Icon className="size-3.5" />
                   </ToggleGroupItem>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={6}>

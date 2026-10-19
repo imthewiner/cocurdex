@@ -2,10 +2,7 @@ import type { ViewSummary } from "@cocurdex/shared";
 import { Layers, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { SidebarSectionHeader } from "@/components";
 import {
   IconButton,
@@ -43,10 +40,9 @@ export function IssueViewsSection({
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.addBoard")}
-            tooltip={t("sidebar.addBoard")}
             onClick={onCreateView}
           >
-            <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Plus className="size-3.5" />
           </TitlebarIconButton>
         }
       />

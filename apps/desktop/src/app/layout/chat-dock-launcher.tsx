@@ -43,30 +43,22 @@ export function ChatDockLauncher({
       )}
       style={{ right: fabPosition.right, bottom: fabPosition.bottom }}
     >
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <IconButton
-              aria-label={label}
-              className="cursor-grab rounded-full shadow-lg active:cursor-grabbing"
-              onClick={() => {
-                if (consumeFabDragClick()) {
-                  return;
-                }
-                onOpen();
-              }}
-              onMouseDown={beginFabDrag}
-              size="lg"
-              variant="default"
-            >
-              <MessageSquare className="size-4" />
-            </IconButton>
+      <IconButton
+        tooltip={toggleChatShortcut ? hint : label}
+        aria-label={label}
+        className="cursor-grab rounded-full shadow-lg active:cursor-grabbing"
+        onClick={() => {
+          if (consumeFabDragClick()) {
+            return;
           }
-        />
-        <TooltipContent side="top" sideOffset={6}>
-          {toggleChatShortcut ? hint : label}
-        </TooltipContent>
-      </Tooltip>
+          onOpen();
+        }}
+        onMouseDown={beginFabDrag}
+        size="lg"
+        variant="default"
+      >
+        <MessageSquare className="size-4" />
+      </IconButton>
       {onHideFab ? (
         <Tooltip>
           <TooltipTrigger

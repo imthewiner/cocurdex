@@ -4,10 +4,7 @@ import { ImagePlus, MonitorPlay, Play, Presentation } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { EmptyState, Text } from "@/components/ui";
 import { exportDeckWithFeedback } from "./deck-actions";
 import { AddSlideMenu, LayoutMenu } from "./deck-edit-menus";
@@ -75,25 +72,22 @@ export function DeckViewer({
         {canPickLocalFiles() ? (
           <TitlebarIconButton
             aria-label={t("actions.insertImage")}
-            tooltip={t("actions.insertImage")}
             disabled={!slide}
             onClick={editing.insertImage}
           >
-            <ImagePlus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <ImagePlus className="size-3.5" />
           </TitlebarIconButton>
         ) : null}
         <ThemeMenu content={deck.content} onChange={editing.setTheme} />
         <TitlebarIconButton
           aria-label={t("actions.present")}
-          tooltip={t("actions.present")}
           disabled={slides.length === 0}
           onClick={() => setPresenting(true)}
         >
-          <Play className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <Play className="size-3.5" />
         </TitlebarIconButton>
         <TitlebarIconButton
           aria-label={t("actions.presenterView")}
-          tooltip={t("actions.presenterView")}
           disabled={slides.length === 0 || presenter !== null}
           onClick={() => {
             void startPresenterSession().then((session) => {
@@ -102,7 +96,7 @@ export function DeckViewer({
             });
           }}
         >
-          <MonitorPlay className={TITLEBAR_ICON_GLYPH_CLASS} />
+          <MonitorPlay className="size-3.5" />
         </TitlebarIconButton>
         <DeckExportMenu
           onExport={(format) =>

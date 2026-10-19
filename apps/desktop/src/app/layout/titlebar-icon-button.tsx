@@ -38,9 +38,6 @@ export function titlebarIconButtonClassName(options?: {
   );
 }
 
-/** Lucide glyph size inside titlebar icon buttons / view-switcher tabs. */
-export const TITLEBAR_ICON_GLYPH_CLASS = "size-3.5";
-
 export type TitlebarIconButtonProps = Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "children" | "aria-label"
@@ -50,8 +47,7 @@ export type TitlebarIconButtonProps = Omit<
   cursor?: "pointer" | "default";
   /** Selected / pressed chrome (e.g. maximized, active toggle). */
   active?: boolean;
-  /** Hover hint; titlebar chrome sits at the window top so it opens downward. */
-  tooltip?: ReactNode;
+  tooltip?: ReactNode | false;
   tooltipSide?: ComponentProps<typeof TooltipContent>["side"];
 };
 
@@ -97,14 +93,14 @@ export const TitlebarIconButton = forwardRef<
     </button>
   );
 
-  if (tooltip == null) {
+  if (tooltip === false) {
     return button;
   }
   return (
     <Tooltip>
       <TooltipTrigger render={button} />
       <TooltipContent side={tooltipSide} sideOffset={6}>
-        {tooltip}
+        {tooltip ?? ariaLabel}
       </TooltipContent>
     </Tooltip>
   );
@@ -131,11 +127,10 @@ export function SidebarToggleButton({
       active={open}
       aria-label={label}
       className={className}
-      tooltip={label}
       onClick={onToggle}
       onMouseDown={onMouseDown}
     >
-      <PanelLeft className={TITLEBAR_ICON_GLYPH_CLASS} />
+      <PanelLeft className="size-3.5" />
     </TitlebarIconButton>
   );
 }

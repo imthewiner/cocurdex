@@ -77,6 +77,13 @@
     {
       "includes": ["apps/desktop/src/**", "!apps/desktop/src/components/ui/**"],
       "plugins": ["./biome-plugins/no-effect-outside-hooks.grit"]
+    },
+    {
+      "includes": [
+        "apps/desktop/src/**/*.tsx",
+        "!apps/desktop/src/components/ui/**"
+      ],
+      "plugins": ["./biome-plugins/no-hoisted-class-names.grit"]
     }
   ]
 }

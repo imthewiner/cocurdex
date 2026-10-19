@@ -1,9 +1,6 @@
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { Input, Text } from "@/components/ui";
 import type { PdfFindMatches } from "./renderer";
 
@@ -70,26 +67,20 @@ export function PdfSearchBar({
       </Text>
       <TitlebarIconButton
         aria-label={t("pdf.searchPrevious")}
-        tooltip={t("pdf.searchPrevious")}
         disabled={matches.total === 0}
         onClick={onPrevious}
       >
-        <ChevronUp className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <ChevronUp className="size-3.5" />
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={t("pdf.searchNext")}
-        tooltip={t("pdf.searchNext")}
         disabled={matches.total === 0}
         onClick={onNext}
       >
-        <ChevronDown className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <ChevronDown className="size-3.5" />
       </TitlebarIconButton>
-      <TitlebarIconButton
-        aria-label={t("pdf.searchClose")}
-        tooltip={t("pdf.searchClose")}
-        onClick={onClose}
-      >
-        <X className={TITLEBAR_ICON_GLYPH_CLASS} />
+      <TitlebarIconButton aria-label={t("pdf.searchClose")} onClick={onClose}>
+        <X className="size-3.5" />
       </TitlebarIconButton>
     </div>
   );

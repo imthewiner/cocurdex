@@ -1,10 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { SidebarSectionHeader } from "@/components";
 import { cn } from "@/lib";
 import { sectionDropId } from "./note-moves";
@@ -41,10 +38,9 @@ export function NoteSectionHeader({
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.newPageInSection", { section: title })}
-            tooltip={t("sidebar.newPageInSection", { section: title })}
             onClick={onCreate}
           >
-            <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+            <Plus className="size-3.5" />
           </TitlebarIconButton>
         }
       />

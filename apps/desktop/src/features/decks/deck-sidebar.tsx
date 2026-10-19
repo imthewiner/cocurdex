@@ -5,10 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { SidebarPanelHeader } from "@/app/layout/sidebar-panel-header";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { Button, EmptyState, ScrollArea } from "@/components/ui";
 import { exportDeckWithFeedback, reportImportWarnings } from "./deck-actions";
 import { DeckDeleteDialog } from "./deck-delete-dialog";
@@ -85,18 +82,16 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
             {canImport ? (
               <TitlebarIconButton
                 aria-label={t("sidebar.importPptx")}
-                tooltip={t("sidebar.importPptx")}
                 onClick={() => void importPptx()}
               >
-                <FileUp className={TITLEBAR_ICON_GLYPH_CLASS} />
+                <FileUp className="size-3.5" />
               </TitlebarIconButton>
             ) : null}
             <TitlebarIconButton
               aria-label={t("sidebar.newDeck")}
-              tooltip={t("sidebar.newDeck")}
               onClick={() => void createBlankDeck()}
             >
-              <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />
+              <Plus className="size-3.5" />
             </TitlebarIconButton>
           </div>
         }

@@ -36,7 +36,6 @@ function BrowserTabItem({
       </TabsTrigger>
       <TitlebarIconButton
         aria-label={t("actions.closeTab", { title })}
-        tooltip={t("actions.closeTab", { title })}
         title={t("actions.closeTab", { title })}
         onClick={() => onClose(id)}
       >
@@ -74,7 +73,6 @@ export function BrowserTabs({ onEmpty }: { onEmpty(): void }) {
       </TabsList>
       <TitlebarIconButton
         aria-label={t("actions.newTab")}
-        tooltip={t("actions.newTab")}
         title={t("actions.newTab")}
         onClick={() => void desktopApi.browserNewTab()}
       >

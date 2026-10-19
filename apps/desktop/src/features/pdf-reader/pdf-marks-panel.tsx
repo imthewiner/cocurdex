@@ -1,9 +1,6 @@
 import { Bookmark, Highlighter, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  TITLEBAR_ICON_GLYPH_CLASS,
-  TitlebarIconButton,
-} from "@/app/layout/titlebar-icon-button";
+import { TitlebarIconButton } from "@/app/layout/titlebar-icon-button";
 import { ScrollArea, Text } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type {
@@ -143,11 +140,10 @@ function BookmarkRow({
       </button>
       <TitlebarIconButton
         aria-label={t("pdf.removeBookmark")}
-        tooltip={t("pdf.removeBookmark")}
         className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         onClick={() => onRemove(bookmark.id)}
       >
-        <Trash2 className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <Trash2 className="size-3.5" />
       </TitlebarIconButton>
     </li>
   );
@@ -198,11 +194,10 @@ function HighlightRow({
       </button>
       <TitlebarIconButton
         aria-label={t("pdf.removeHighlight")}
-        tooltip={t("pdf.removeHighlight")}
         className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         onClick={() => onRemove(highlight.id)}
       >
-        <Trash2 className={TITLEBAR_ICON_GLYPH_CLASS} />
+        <Trash2 className="size-3.5" />
       </TitlebarIconButton>
     </li>
   );
