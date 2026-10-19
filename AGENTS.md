@@ -47,6 +47,8 @@ Reusable product capabilities belong in `packages/daemon`, exposed through `@coc
 
 Capabilities needed by the CLI must not exist only in IPC. When modifying IPC that contains product logic, move that logic into the daemon instead of extending it there.
 
+Right-panel features (files, Git, notes, issues, decks, browser, PDF, terminal) are agent-native, not human tools with agent access bolted on. Whatever a person can create, change, or read in such a view, an agent can do through the `cocurdex` CLI and a product skill, backed by the same daemon capability; design that capability and its CLI together with the UI, and do not ship UI-only actions. Agent output lands as ordinary product data that the person sees, edits, and undoes in the same view, and an agent can read back the structured state it needs to check its own work. When a host limitation keeps a feature from meeting this bar, say so in the PR.
+
 ## Data compatibility
 
 Persisted user data outlives any single release. Never delete, recreate, or rewrite a database because the application version changed.
