@@ -754,6 +754,59 @@ runScenario("note-table", {
       },
     ],
     [
+      "a note made of only a table accepts text above and below it",
+      async ({ session }) => {
+        await session.run(() =>
+          document
+            .querySelector(".md-body-prose")
+            .editor.commands.setContent(
+              "<table><tr><th><p>a</p></th><th><p>b</p></th></tr><tr><td><p>1</p></td><td><p>2</p></td></tr></table>",
+            ),
+        );
+        const blocks = () =>
+          session.run(() =>
+            [...document.querySelector(".md-body-prose").children].map(
+              (node) =>
+                node.classList.contains("tableWrapper")
+                  ? "table"
+                  : `${node.tagName}:${node.textContent}`,
+            ),
+          );
+        const table = await session.run(() =>
+          document
+            .querySelector(".md-body-prose .tableWrapper")
+            .getBoundingClientRect()
+            .toJSON(),
+        );
+        const below = { x: table.left + 40, y: table.bottom + 80 };
+        await clickPoint(session, below);
+        await session.send("Input.insertText", { text: "Below" });
+        await clickPoint(session, { x: below.x, y: below.y + 120 });
+        const afterBelow = await blocks();
+        check(
+          afterBelow.join("|") === "table|P:Below",
+          "clicking below the table did not start a paragraph",
+          afterBelow,
+        );
+        const titleLabel = await translate(session, "notes:editor.titleLabel");
+        await clickByRole(session, { role: "textbox", name: titleLabel });
+        await pressKey(session, "Enter");
+        await session.send("Input.insertText", { text: "Above" });
+        const afterAbove = await blocks();
+        check(
+          afterAbove.join("|") === "P:Above|table|P:Below",
+          "Enter in the title did not start a paragraph above the table",
+          afterAbove,
+        );
+        const title = await session.run(
+          (name) => document.querySelector(`input[aria-label="${name}"]`).value,
+          titleLabel,
+        );
+        check(title === "Scratchpad", "typing leaked into the title", title);
+        return { blocks: afterAbove };
+      },
+    ],
+    [
       "collapsed notes sidebar keeps the expand control in the content column",
       async ({ session }) => {
         const [collapse, expand] = await Promise.all(
