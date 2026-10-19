@@ -66,18 +66,21 @@ export function TerminalSearchOverlay({
       />
       <TitlebarIconButton
         aria-label={t("terminal.searchPrevious")}
+        tooltip={t("terminal.searchPrevious")}
         onClick={() => runSearch("previous")}
       >
         <ArrowUp className={TITLEBAR_ICON_GLYPH_CLASS} />
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={t("terminal.searchNext")}
+        tooltip={t("terminal.searchNext")}
         onClick={() => runSearch("next")}
       >
         <ArrowDown className={TITLEBAR_ICON_GLYPH_CLASS} />
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={t("terminal.searchClose")}
+        tooltip={t("terminal.searchClose")}
         onClick={handleClose}
       >
         <X className={TITLEBAR_ICON_GLYPH_CLASS} />

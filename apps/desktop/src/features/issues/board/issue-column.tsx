@@ -141,6 +141,7 @@ export function IssueColumn({
         <div className="ms-auto flex shrink-0 items-center gap-0.5">
           <TitlebarIconButton
             aria-label={t("board.addCard")}
+            tooltip={t("board.addCard")}
             onClick={() => onAddCard(column.id)}
             onPointerDown={(e) => e.stopPropagation()}
           >

@@ -70,6 +70,7 @@ export function PdfSearchBar({
       </Text>
       <TitlebarIconButton
         aria-label={t("pdf.searchPrevious")}
+        tooltip={t("pdf.searchPrevious")}
         disabled={matches.total === 0}
         onClick={onPrevious}
       >
@@ -77,12 +78,17 @@ export function PdfSearchBar({
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={t("pdf.searchNext")}
+        tooltip={t("pdf.searchNext")}
         disabled={matches.total === 0}
         onClick={onNext}
       >
         <ChevronDown className={TITLEBAR_ICON_GLYPH_CLASS} />
       </TitlebarIconButton>
-      <TitlebarIconButton aria-label={t("pdf.searchClose")} onClick={onClose}>
+      <TitlebarIconButton
+        aria-label={t("pdf.searchClose")}
+        tooltip={t("pdf.searchClose")}
+        onClick={onClose}
+      >
         <X className={TITLEBAR_ICON_GLYPH_CLASS} />
       </TitlebarIconButton>
     </div>

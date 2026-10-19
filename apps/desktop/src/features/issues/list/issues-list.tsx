@@ -127,6 +127,7 @@ export function IssuesList({
                 </CollapsibleTrigger>
                 <TitlebarIconButton
                   aria-label={t("board.addCard")}
+                  tooltip={t("board.addCard")}
                   className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   onClick={() => {
                     onAddCard(column.id);

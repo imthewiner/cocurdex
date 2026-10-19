@@ -73,6 +73,7 @@ export function ViewFilterMenu({
           active={open || active}
           aria-expanded={open}
           aria-label={t("filter.ariaLabel")}
+          tooltip={t("filter.ariaLabel")}
         >
           <ListFilter className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>

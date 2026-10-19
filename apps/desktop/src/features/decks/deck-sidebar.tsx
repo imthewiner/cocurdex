@@ -85,6 +85,7 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
             {canImport ? (
               <TitlebarIconButton
                 aria-label={t("sidebar.importPptx")}
+                tooltip={t("sidebar.importPptx")}
                 onClick={() => void importPptx()}
               >
                 <FileUp className={TITLEBAR_ICON_GLYPH_CLASS} />
@@ -92,6 +93,7 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
             ) : null}
             <TitlebarIconButton
               aria-label={t("sidebar.newDeck")}
+              tooltip={t("sidebar.newDeck")}
               onClick={() => void createBlankDeck()}
             >
               <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />

@@ -61,6 +61,7 @@ export function SessionSplitMenu({
           active={open}
           aria-expanded={open}
           aria-label={t("split.menu")}
+          tooltip={t("split.menu")}
           cursor="default"
         >
           <Ellipsis className={TITLEBAR_ICON_GLYPH_CLASS} />

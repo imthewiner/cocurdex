@@ -184,6 +184,7 @@ export function TerminalPanel({
           </div>
           <TitlebarIconButton
             aria-label={t("terminal.newTab")}
+            tooltip={t("terminal.newTab")}
             onClick={handleAddTab}
           >
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />

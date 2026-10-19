@@ -234,6 +234,7 @@ export function NotesSidebar({ onCollapse }: { onCollapse: () => void }) {
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.newNote")}
+            tooltip={t("sidebar.newNote")}
             onClick={() => handleCreateInSection(preferredSection)}
           >
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />

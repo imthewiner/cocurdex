@@ -42,6 +42,7 @@ export function ColumnCategoryMenu({
       <DropdownMenuTrigger asChild>
         <TitlebarIconButton
           aria-label={t("board.columnMenu")}
+          tooltip={t("board.columnMenu")}
           onPointerDown={(event) => event.stopPropagation()}
         >
           <Ellipsis className={TITLEBAR_ICON_GLYPH_CLASS} />

@@ -360,6 +360,7 @@ export function RightEditorPanel({
           <TitlebarIconButton
             active={searchPanelVisible}
             aria-label={tSearch("searchFiles")}
+            tooltip={tSearch("searchFiles")}
             onClick={toggleSearchPanel}
           >
             <Search className={TITLEBAR_ICON_GLYPH_CLASS} />

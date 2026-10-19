@@ -71,6 +71,7 @@ export function BrowserUrlBar({ actions }: { actions?: ReactNode }) {
     <PanelToolbar className="gap-1">
       <TitlebarIconButton
         aria-label={t("actions.back")}
+        tooltip={t("actions.back")}
         onClick={() => {
           void desktopApi.browserGoBack();
         }}
@@ -79,6 +80,7 @@ export function BrowserUrlBar({ actions }: { actions?: ReactNode }) {
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={t("actions.forward")}
+        tooltip={t("actions.forward")}
         onClick={() => {
           void desktopApi.browserGoForward();
         }}
@@ -87,6 +89,7 @@ export function BrowserUrlBar({ actions }: { actions?: ReactNode }) {
       </TitlebarIconButton>
       <TitlebarIconButton
         aria-label={navigating ? t("actions.stop") : t("actions.reload")}
+        tooltip={navigating ? t("actions.stop") : t("actions.reload")}
         disabled={streaming}
         onClick={() => {
           if (navigating) {

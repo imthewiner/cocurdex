@@ -143,6 +143,7 @@ function BookmarkRow({
       </button>
       <TitlebarIconButton
         aria-label={t("pdf.removeBookmark")}
+        tooltip={t("pdf.removeBookmark")}
         className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         onClick={() => onRemove(bookmark.id)}
       >
@@ -197,6 +198,7 @@ function HighlightRow({
       </button>
       <TitlebarIconButton
         aria-label={t("pdf.removeHighlight")}
+        tooltip={t("pdf.removeHighlight")}
         className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         onClick={() => onRemove(highlight.id)}
       >

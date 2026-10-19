@@ -47,6 +47,7 @@ export function ViewDisplayMenu({
           active={open}
           aria-expanded={open}
           aria-label={t("board.displayOptions")}
+          tooltip={t("board.displayOptions")}
         >
           <Settings2 className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>

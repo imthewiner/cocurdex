@@ -41,6 +41,7 @@ export function NoteSectionHeader({
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.newPageInSection", { section: title })}
+            tooltip={t("sidebar.newPageInSection", { section: title })}
             onClick={onCreate}
           >
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />

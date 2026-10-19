@@ -1,7 +1,7 @@
 import type { DeckRecord } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ImagePlus, MonitorPlay, Play, Presentation } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -26,7 +26,13 @@ import { EditableSlide } from "./slide-editor/editable-slide";
 import { SlideNotesEditor } from "./slide-notes-editor";
 import { useDeckEditing } from "./use-deck-editing";
 
-export function DeckViewer({ deck }: { deck: DeckRecord }) {
+export function DeckViewer({
+  deck,
+  leading,
+}: {
+  deck: DeckRecord;
+  leading?: ReactNode;
+}) {
   const { t } = useTranslation("decks");
   const activeIndex = useAtomValue(activeSlideIndexAtom);
   const selectSlide = useSetAtom(selectSlideAtom);
@@ -38,11 +44,12 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-1 ps-3 pe-1.5">
+      <div className="flex h-8 shrink-0 items-center gap-1 ps-2 pe-1.5">
+        {leading}
         <Text
           size="meta"
           weight="medium"
-          className="min-w-0 flex-1 truncate text-editor-fg"
+          className="min-w-0 flex-1 truncate ps-1 text-editor-fg"
         >
           {deck.title || t("sidebar.untitled")}
         </Text>

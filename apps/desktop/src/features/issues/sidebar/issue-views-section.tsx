@@ -43,6 +43,7 @@ export function IssueViewsSection({
         action={
           <TitlebarIconButton
             aria-label={t("sidebar.addBoard")}
+            tooltip={t("sidebar.addBoard")}
             onClick={onCreateView}
           >
             <Plus className={TITLEBAR_ICON_GLYPH_CLASS} />

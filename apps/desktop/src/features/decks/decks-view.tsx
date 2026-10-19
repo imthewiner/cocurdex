@@ -38,6 +38,14 @@ export function DecksView() {
     return null;
   }
 
+  const expandSidebar = (
+    <SidebarToggleButton
+      label={t("sidebar.expand")}
+      open={false}
+      onToggle={() => setSidebarCollapsed(false)}
+    />
+  );
+
   return (
     <div
       className="flex min-h-0 flex-1"
@@ -55,17 +63,16 @@ export function DecksView() {
         className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-editor-canvas"
         style={{ minWidth: MIN_DECK_VIEWER_WIDTH_PX }}
       >
-        {sidebarCollapsed ? (
+        {sidebarCollapsed && !activeDeck ? (
           <div className="absolute start-2 top-0 z-10 flex h-8 items-center">
-            <SidebarToggleButton
-              label={t("sidebar.expand")}
-              open={false}
-              onToggle={() => setSidebarCollapsed(false)}
-            />
+            {expandSidebar}
           </div>
         ) : null}
         {activeDeck ? (
-          <DeckViewer deck={activeDeck} />
+          <DeckViewer
+            deck={activeDeck}
+            leading={sidebarCollapsed ? expandSidebar : null}
+          />
         ) : activeDeckId ? null : (
           <div className="flex flex-1 items-center justify-center">
             <EmptyState

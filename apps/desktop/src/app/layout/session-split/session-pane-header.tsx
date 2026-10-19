@@ -81,6 +81,7 @@ export function SessionPaneHeader({
         {canClose && onClose ? (
           <TitlebarIconButton
             aria-label={t("split.close")}
+            tooltip={t("split.close")}
             cursor="default"
             onClick={onClose}
           >
