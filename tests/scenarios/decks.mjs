@@ -206,6 +206,37 @@ async function reopenSeededDeck(session) {
   return waitForActive(session, 0);
 }
 
+function sampleStageFrames() {
+  window.__deckFrames = [];
+  const sample = () => {
+    const stage = document.querySelector("section > [data-slide-id]");
+    window.__deckFrames.push({
+      stage: Boolean(stage),
+      text: stage?.innerText.split("\n")[0] ?? "",
+    });
+    if (window.__deckFrames.length < 30) requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+}
+
+async function switchDeckWithoutBlankFrames(session, title, expectedText) {
+  await session.run(sampleStageFrames);
+  await clickByRole(session, { role: "button", name: title }, UI_TIMEOUT_MS);
+  await waitForStageText(session, expectedText);
+  await session.waitUntil(
+    () => window.__deckFrames.length >= 30,
+    null,
+    UI_TIMEOUT_MS,
+  );
+  const frames = await session.run(() => window.__deckFrames);
+  check(
+    frames.every((frame) => frame.stage),
+    "a slide stays on stage while switching decks",
+    frames,
+  );
+  return frames;
+}
+
 runScenario("decks", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
@@ -778,9 +809,14 @@ runScenario("decks", {
           stage,
         );
 
+        const frames = await switchDeckWithoutBlankFrames(
+          session,
+          DECK_TITLE,
+          DECK_TITLE,
+        );
         await deleteDeckFromSidebar(session, CREATED_TITLE);
         await reopenSeededDeck(session);
-        return { count: stage.count };
+        return { count: stage.count, frames: frames.length };
       },
     ],
     [

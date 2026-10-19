@@ -42,9 +42,11 @@ export const loadDecksAtom = atom(null, async (get, set) => {
 export const openDeckAtom = atom(null, async (get, set, id: string) => {
   if (get(activeDeckIdAtom) === id) return;
   set(activeDeckIdAtom, id);
+  const deck = await decksApi.get({ id });
+  if (get(activeDeckIdAtom) !== id) return;
   set(activeSlideIndexAtom, 0);
-  set(activeDeckAtom, null);
-  await reloadActiveDeck(get, set);
+  set(activeDeckAtom, deck);
+  if (!deck) set(activeDeckIdAtom, null);
 });
 
 export const selectSlideAtom = atom(null, (get, set, index: number) => {
