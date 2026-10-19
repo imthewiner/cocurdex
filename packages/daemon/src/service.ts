@@ -78,6 +78,7 @@ import {
   PLAN_EXECUTE_REVIEW_WORKFLOW_ID,
   parseAgentRunLimits,
   primaryWorkspaceRootPath,
+  principalHasScope,
   resolveSessionWorkingPath,
   resolveStartContext,
   resolveStoredAgentRunLimits,
@@ -820,6 +821,10 @@ export class CocurdexDaemonService {
     target: "file" | "outputFile",
   ) {
     if (principal.kind === "local") return;
+    const scope = target === "file" ? "files.read" : "files.write";
+    if (!principalHasScope(principal, scope)) {
+      throw new Error(`This device is missing the ${scope} scope`);
+    }
     const checked =
       target === "outputFile" ? path.dirname(path.resolve(filePath)) : filePath;
     const exists =

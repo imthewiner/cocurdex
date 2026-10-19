@@ -1,10 +1,30 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
-import { clickByRole } from "./lib/locate.mjs";
+import { clickByRole, waitForRole } from "./lib/locate.mjs";
 import { showPanelView, translate } from "./lib/navigate.mjs";
 
 const HOVER_TIMEOUT_MS = 3_000;
 const REST_POINT = { x: 2, y: 400 };
+const MAX_GLYPH_RATIO = 0.75;
+const UI_TIMEOUT_MS = 30_000;
+const SEEDED_DECK_TITLE = "Checkout review";
+
+async function waitForButton(session, key) {
+  const name = await translate(session, key);
+  await waitForRole(session, { role: "button", name }, UI_TIMEOUT_MS);
+}
+
+const VIEW_READY = {
+  git: (session) => waitForButton(session, "editor:git.refresh"),
+  decks: async (session) => {
+    await clickByRole(
+      session,
+      { role: "button", name: SEEDED_DECK_TITLE },
+      UI_TIMEOUT_MS,
+    );
+    await waitForButton(session, "decks:actions.addSlide");
+  },
+};
 
 const args = readScenarioArgs();
 
@@ -22,6 +42,7 @@ function collectIconButtons() {
     (button) =>
       !button.disabled &&
       button.textContent.trim() === "" &&
+      button.querySelector("svg") &&
       !button.closest('[role="dialog"], [role="menu"]') &&
       visible(button),
   );
@@ -39,12 +60,23 @@ function iconButtonCenter(index) {
   };
 }
 
-function hoverSurfaceText() {
+function hoverSurfaces() {
   const surfaces = document.querySelectorAll(
     '[data-slot="tooltip-content"], [data-slot="popover-content"]',
   );
   const text = [...surfaces].map((surface) => surface.textContent.trim());
-  return text.find(Boolean) ?? null;
+  return text.some(Boolean) ? text : null;
+}
+
+function oversizedGlyphs(maxRatio) {
+  return window.__iconButtons
+    .filter((button) => {
+      const glyph = button.querySelector("svg");
+      if (!glyph) return false;
+      const buttonWidth = button.getBoundingClientRect().width;
+      return glyph.getBoundingClientRect().width > buttonWidth * maxRatio;
+    })
+    .map((button) => button.getAttribute("aria-label"));
 }
 
 function noHoverSurface() {
@@ -62,30 +94,41 @@ async function moveMouse(session, point) {
   });
 }
 
-async function buttonsWithoutHint(session) {
+async function inspectIconButtons(session) {
   const count = await session.run(collectIconButtons);
+  const oversized = await session.run(oversizedGlyphs, MAX_GLYPH_RATIO);
   const missing = [];
+  const stacked = [];
   for (let index = 0; index < count; index += 1) {
     const target = await session.run(iconButtonCenter, index);
     await moveMouse(session, target);
-    const hint = await session
-      .waitUntil(hoverSurfaceText, undefined, HOVER_TIMEOUT_MS)
+    const surfaces = await session
+      .waitUntil(hoverSurfaces, undefined, HOVER_TIMEOUT_MS)
       .catch(() => null);
-    if (!hint) missing.push(target.name);
+    if (!surfaces) missing.push(target.name);
+    else if (surfaces.length > 1) stacked.push(target.name);
     await moveMouse(session, REST_POINT);
     await session.waitUntil(noHoverSurface, undefined, HOVER_TIMEOUT_MS);
   }
-  return { count, missing };
+  return { count, missing, stacked, oversized };
 }
 
 function viewStep(view) {
   return [
-    `every icon-only button in the ${view} view shows a hover hint`,
+    `every icon-only button in the ${view} view shows one hover hint`,
     async ({ session }) => {
       await showPanelView(session, view);
-      const { count, missing } = await buttonsWithoutHint(session);
+      await VIEW_READY[view]?.(session);
+      const { count, missing, stacked, oversized } =
+        await inspectIconButtons(session);
       check(count > 0, `no icon-only buttons found in the ${view} view`);
       check(missing.length === 0, "icon-only buttons without a hint", missing);
+      check(stacked.length === 0, "icon-only buttons with stacked hints", {
+        stacked,
+      });
+      check(oversized.length === 0, "icon glyphs that fill their button", {
+        oversized,
+      });
       return { count };
     },
   ];

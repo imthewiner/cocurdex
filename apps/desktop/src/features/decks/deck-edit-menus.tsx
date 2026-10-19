@@ -11,11 +11,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export function ToolbarMenu({
   label,
@@ -31,28 +26,19 @@ export function ToolbarMenu({
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DropdownMenuTrigger
-              disabled={disabled}
-              render={
-                <TitlebarIconButton
-                  active={open}
-                  aria-expanded={open}
-                  aria-label={label}
-                  disabled={disabled}
-                >
-                  {icon}
-                </TitlebarIconButton>
-              }
-            />
-          }
-        />
-        <TooltipContent side="bottom" sideOffset={6}>
-          {label}
-        </TooltipContent>
-      </Tooltip>
+      <DropdownMenuTrigger
+        disabled={disabled}
+        render={
+          <TitlebarIconButton
+            active={open}
+            aria-expanded={open}
+            aria-label={label}
+            disabled={disabled}
+          >
+            {icon}
+          </TitlebarIconButton>
+        }
+      />
       <DropdownMenuContent align="end" className="min-w-44">
         {children}
       </DropdownMenuContent>

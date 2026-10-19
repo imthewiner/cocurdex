@@ -197,7 +197,9 @@ function BulkActionsRow({
       <div className="app-no-drag ms-auto flex items-center gap-1">
         <ToolbarButton
           disabled={disabled}
-          icon={<RefreshCw className={cn(disabled && "animate-spin")} />}
+          icon={
+            <RefreshCw className={cn("size-3.5", disabled && "animate-spin")} />
+          }
           label={t("git.refresh")}
           onClick={onRefresh}
         />

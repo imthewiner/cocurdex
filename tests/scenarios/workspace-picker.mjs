@@ -53,6 +53,27 @@ async function pressKey(session, key, keyCode) {
   }
 }
 
+const POINTER_STEPS = 4;
+
+async function glidePointer(session, from, to) {
+  for (let step = 1; step <= POINTER_STEPS; step += 1) {
+    const progress = step / POINTER_STEPS;
+    await session.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved",
+      x: from.x + (to.x - from.x) * progress,
+      y: from.y + (to.y - from.y) * progress,
+    });
+  }
+}
+
+function isHighlighted(text) {
+  return (
+    document
+      .querySelector('[data-slot="combobox-item"][data-highlighted]')
+      ?.innerText.trim() === text
+  );
+}
+
 async function clickAt(session, point) {
   await session.send("Input.dispatchMouseEvent", {
     type: "mouseMoved",
@@ -158,6 +179,7 @@ runScenario("workspace-picker", {
             text: item.innerText.trim(),
             point: center(item),
             otherPoint: center(other),
+            otherText: other.innerText.trim(),
           };
         }, workspaceName);
         check(
@@ -245,10 +267,8 @@ runScenario("workspace-picker", {
           "preview does not mark the primary folder and list the others",
           { lines, folderNames },
         );
-        await session.send("Input.dispatchMouseEvent", {
-          type: "mouseMoved",
-          ...option.otherPoint,
-        });
+        await glidePointer(session, option.point, option.otherPoint);
+        await session.waitUntil(isHighlighted, option.otherText, UI_TIMEOUT_MS);
         await session.waitUntil(
           () =>
             !document.querySelector('[data-slot="tooltip-content"][data-open]'),

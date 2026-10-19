@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { handleDaemonRequest } from "@cocurdex/daemon/internal/handler";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
+import { authorizeDaemonRequest } from "@cocurdex/daemon/internal/wire-request";
 import type {
   DaemonMethod,
   DaemonRequest,
@@ -98,6 +99,44 @@ describe("deck path RPC access", () => {
         device,
       ),
     ).rejects.toThrow(/outside every registered workspace/);
+  });
+
+  it("needs interact to import and the file scope to touch a path", async () => {
+    const { call, workspace, deckId } = await setup();
+    const fileReader: HostPrincipal = {
+      kind: "device",
+      deviceId: "reader-1",
+      scopes: ["read", "files.read"],
+    };
+    for (const method of ["deck.import", "deck.importImage"]) {
+      expect(authorizeDaemonRequest(fileReader, method, true)).toMatchObject({
+        ok: false,
+        code: "FORBIDDEN",
+        message: expect.stringContaining("interact"),
+      });
+    }
+
+    const interactor: HostPrincipal = {
+      kind: "device",
+      deviceId: "editor-1",
+      scopes: ["read", "interact"],
+    };
+    await expect(
+      call(
+        "deck.importImage",
+        { path: path.join(workspace, "inside.png") },
+        interactor,
+      ),
+    ).rejects.toThrow(/missing the files.read scope/);
+    const output = path.join(workspace, "export.pdf");
+    await expect(
+      call(
+        "deck.exportFile",
+        { id: deckId, outputPath: output, format: "pdf" },
+        { ...interactor, scopes: ["read", "files.read"] },
+      ),
+    ).rejects.toThrow(/missing the files.write scope/);
+    expect(existsSync(output)).toBe(false);
   });
 
   it("lets the local user import and export anywhere", async () => {
