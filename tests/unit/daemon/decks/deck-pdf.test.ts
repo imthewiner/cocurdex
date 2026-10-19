@@ -4,6 +4,7 @@ import { systemPdfFonts } from "@cocurdex/daemon/internal/decks/deck-service";
 import { applyDeckOps } from "@cocurdex/deck/edit";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
 import { exportDeckToPdf } from "@cocurdex/deck/pdf";
+import { DECK_THEME_IDS } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
 
 const MARKDOWN = `# Checkout review
@@ -52,6 +53,21 @@ describe("deck PDF export", () => {
     );
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(pageBoxes(pdf)).toEqual(Array(3).fill("0 0 960 540"));
+  });
+
+  it.each(DECK_THEME_IDS)("renders the %s theme", async (theme) => {
+    const fonts = systemPdfFonts();
+    if (!fonts) throw new Error("No system font");
+    const { content } = compileDeckMarkdown(MARKDOWN);
+    const pdf = await exportDeckToPdf(
+      { ...content, theme },
+      { title: "Checkout review" },
+      fonts,
+      async (hash) => {
+        throw new Error(`Unexpected image ${hash}`);
+      },
+    );
+    expect(pageBoxes(pdf)).toHaveLength(3);
   });
 
   it("embeds slide images", async () => {

@@ -78,6 +78,19 @@ describe.each(DECK_THEME_IDS)("theme %s", (themeId) => {
     }
   });
 
+  it("never draws a full-height stripe along the left edge", () => {
+    const stripes = SLIDE_LAYOUT_IDS.flatMap((layout) =>
+      theme.layouts[layout].decorations.flatMap((decoration) => {
+        if (decoration.kind !== "shape") return [];
+        const { x, w, h } = decoration.frame;
+        const hugsLeftEdge = x <= 40 && w <= 48;
+        return hugsLeftEdge && h >= 540 ? [layout] : [];
+      }),
+    );
+
+    expect(stripes).toEqual([]);
+  });
+
   it("numbers pages by slide position and never on the cover", () => {
     const numbers = deck.slides.map((slide) =>
       resolveSlide(slide, deck)

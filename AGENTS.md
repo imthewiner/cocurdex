@@ -33,6 +33,10 @@ Do not open a new branch unless it is necessary. Unrelated follow-up fixes found
 
 Land changes through a branch and a pull request: push, open the PR, watch its checks and review threads, then merge with `gh pr merge --merge`. Clear every review thread first — fix it, or reply with a reason and then resolve it. Docs, skills, and tooling changes take this path with no version bump and no tag; only an explicit release request bumps `apps/desktop/package.json` and pushes a `v<version>` tag. See `.agents/skills/desktop-release`.
 
+When a push starts no checks, read `gh pr view --json mergeStateStatus`: GitHub runs no `pull_request` workflow while the PR conflicts with its base (`DIRTY`). Merge `main` into the branch, resolve the conflicts, and push; do not rebase or force-push a shared branch.
+
+Address GitHub objects (review threads, comments, runs, check suites) only by IDs a query returned in this task. A guessed or remembered node ID can name an object in another repository, and a write through it posts there; after any write, confirm the response names this repository.
+
 CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/` and `.claude/`, and the desktop `version` field. When every job passes, it records that fingerprint, and a later run with the same fingerprint (in the same PR, or on `main`) skips the checks. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
 
 ## Architecture: daemon, host, and clients
@@ -47,6 +51,8 @@ Reusable product capabilities belong in `packages/daemon`, exposed through `@coc
 | Clients (renderer, CLI, future web/mobile) | UI and navigation orchestration; read and write product state through daemon contracts. No duplicate business protocols or client-owned product policies. |
 
 Capabilities needed by the CLI must not exist only in IPC. When modifying IPC that contains product logic, move that logic into the daemon instead of extending it there.
+
+The daemon serves remote principals (paired devices, the web client) as well as the local user. Every RPC that takes a filesystem path, for reading, writing, importing, or exporting, checks the caller's principal before touching disk: a non-local principal may only reach paths whose real path lies inside a registered workspace, and a write checks its existing parent directory. Enforce it in the daemon handler, not in a client, and cover it with a test that a device principal is refused outside every workspace and leaves nothing behind.
 
 Right-panel features (files, Git, notes, issues, decks, browser, PDF, terminal) are agent-native, not human tools with agent access bolted on. Whatever a person can create, change, or read in such a view, an agent can do through the `cocurdex` CLI and a product skill, backed by the same daemon capability; design that capability and its CLI together with the UI, and do not ship UI-only actions. Agent output lands as ordinary product data that the person sees, edits, and undoes in the same view, and an agent can read back the structured state it needs to check its own work. When a host limitation keeps a feature from meeting this bar, say so in the PR.
 
@@ -121,5 +127,6 @@ Final visual and UX acceptance stays with the user. After your end-to-end check,
 - PRDs, specs, notes, and issues live only in the daemon-owned `cocurdex.sqlite`. Never write them into the workspace or open the database directly; use the `cocurdex` CLI.
 - Use namespaced skills: `/cocurdex-note` for notes, PRDs, specs, and links -> `/cocurdex-issue` for issues and their status while you implement them. Parallel teammate agents: `/cocurdex-team`; scripted fan-out to background subagents: `/cocurdex-script-run`; slide decks: `/cocurdex-deck`; app settings: `/cocurdex-settings`. Todo and ticket mean issue.
 - Manage issues (list, show, create, move, delete, views) through `@cocurdex/cli` using `cocurdex issue ...`. Never invent IDs or manually rewrite status.
-- Distribute skills from `packages/product-skills` through Settings > Skills or `cocurdex skills install --scope project|global`; do not auto-install. This repository symlinks `.agents/skills/cocurdex-*` and `.claude/skills/cocurdex-*` to that source; never commit installed copies.
+- Distribute skills from `packages/product-skills` through Settings > Skills or `cocurdex skills install --scope project|global`; do not auto-install. This repository symlinks the product skills named in `PRODUCT_SKILL_NAMES` (`packages/product-skills/src/manifest.ts`) from `.agents/skills` and `.claude/skills` to that source; never commit installed copies.
+- Name new skills for developing this repository `cocurdex-<topic>` too. They live as real directories in `.agents/skills`, linked from `.claude/skills`, and stay out of `PRODUCT_SKILL_NAMES`, so they are never distributed. Record a lesson that recurs in one area (an invariant, a renderer pitfall, a verification routine) in such a skill; prefer a lint rule, a type, or a test when the lesson can be checked.
 - Product skills are part of the CLI contract. When a change adds, renames, or removes a `cocurdex` CLI command, flag, output field, or the daemon capability behind it, update the affected `packages/product-skills/skills/cocurdex-*` in the same PR. When adding a daemon capability agents should use, decide whether it needs a CLI command and skill coverage.
