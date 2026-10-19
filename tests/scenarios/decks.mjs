@@ -365,6 +365,18 @@ runScenario("decks", {
           "decks:presenter.label",
         );
         await waitForRole(session, { role: "dialog", name: presenterLabel });
+        const presentButton = await translate(session, "decks:actions.present");
+        const presentDisabled = await session.run(
+          (label) =>
+            document.querySelector(`button[aria-label="${CSS.escape(label)}"]`)
+              ?.disabled ?? null,
+          presentButton,
+        );
+        check(
+          presentDisabled === true,
+          "fullscreen present stays enabled during presenter view",
+          { presentDisabled },
+        );
         const currentLabel = await translate(
           session,
           "decks:presenter.current",

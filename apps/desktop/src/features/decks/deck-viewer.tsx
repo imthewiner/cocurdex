@@ -23,6 +23,12 @@ import { EditableSlide } from "./slide-editor/editable-slide";
 import { SlideNotesEditor } from "./slide-notes-editor";
 import { useDeckEditing } from "./use-deck-editing";
 
+type PresentationState =
+  | { kind: "idle" }
+  | { kind: "fullscreen" }
+  | { kind: "starting" }
+  | { kind: "presenter"; session: PresenterSession };
+
 export function DeckViewer({
   deck,
   leading,
@@ -33,8 +39,9 @@ export function DeckViewer({
   const { t } = useTranslation("decks");
   const activeIndex = useAtomValue(activeSlideIndexAtom);
   const selectSlide = useSetAtom(selectSlideAtom);
-  const [presenting, setPresenting] = useState(false);
-  const [presenter, setPresenter] = useState<PresenterSession | null>(null);
+  const [presentation, setPresentation] = useState<PresentationState>({
+    kind: "idle",
+  });
   const slides = deck.content.slides;
   const slide = slides[activeIndex];
   const editing = useDeckEditing(deck);
@@ -81,18 +88,23 @@ export function DeckViewer({
         <ThemeMenu content={deck.content} onChange={editing.setTheme} />
         <TitlebarIconButton
           aria-label={t("actions.present")}
-          disabled={slides.length === 0}
-          onClick={() => setPresenting(true)}
+          disabled={slides.length === 0 || presentation.kind !== "idle"}
+          onClick={() => setPresentation({ kind: "fullscreen" })}
         >
           <Play className="size-3.5" />
         </TitlebarIconButton>
         <TitlebarIconButton
           aria-label={t("actions.presenterView")}
-          disabled={slides.length === 0 || presenter !== null}
+          disabled={slides.length === 0 || presentation.kind !== "idle"}
           onClick={() => {
+            setPresentation({ kind: "starting" });
             void startPresenterSession().then((session) => {
-              if (session) setPresenter(session);
-              else toast.error(t("errors.audienceWindow"));
+              if (session) {
+                setPresentation({ kind: "presenter", session });
+                return;
+              }
+              setPresentation({ kind: "idle" });
+              toast.error(t("errors.audienceWindow"));
             });
           }}
         >
@@ -146,23 +158,23 @@ export function DeckViewer({
           />
         </div>
       )}
-      {presenting ? (
+      {presentation.kind === "fullscreen" ? (
         <DeckPresentation
           content={deck.content}
           startIndex={activeIndex}
           onExit={(lastIndex) => {
-            setPresenting(false);
+            setPresentation({ kind: "idle" });
             selectSlide(lastIndex);
           }}
         />
       ) : null}
-      {presenter ? (
+      {presentation.kind === "presenter" ? (
         <DeckPresenterView
           content={deck.content}
-          session={presenter}
+          session={presentation.session}
           startIndex={activeIndex}
           onExit={(lastIndex) => {
-            setPresenter(null);
+            setPresentation({ kind: "idle" });
             selectSlide(lastIndex);
           }}
         />
