@@ -35,7 +35,7 @@ jobs:
       - name: Fingerprint verified inputs
         id: fingerprint
         run: |
-          excluded='(^|/)(AGENTS|CLAUDE)[.]md$|^[^/]+[.]md$|^docs/|^[.](agents|claude)/.*[.]md$'
+          excluded='(^|/)(AGENTS|CLAUDE)[.]md$|^[^/]+[.]md$|^docs/|^[.](agents|claude|cursor)/.*[.]md$'
           fingerprint="$({
             git ls-tree -r HEAD |
               awk -F'\t' -v excluded="${excluded}" '$2 !~ excluded && $2 != "apps/desktop/package.json"'
