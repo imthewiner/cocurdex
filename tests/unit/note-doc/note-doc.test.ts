@@ -80,6 +80,32 @@ describe("note markdown", () => {
     expect(markdown).toContain("Source text");
   });
 
+  it("keeps the row count of a table without a header row", () => {
+    const cell = (text: string) => ({
+      type: "tableCell",
+      content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+    });
+    const headerless = {
+      type: "doc",
+      content: [
+        {
+          type: "table",
+          content: [
+            { type: "tableRow", content: [cell("name"), cell("qty")] },
+            { type: "tableRow", content: [cell("apple"), cell("3")] },
+          ],
+        },
+      ],
+    };
+
+    const markdown = serializeNoteMarkdown(headerless);
+    const table = parseNoteMarkdown(markdown).content?.[0];
+
+    expect(markdown).toContain("| name");
+    expect(table?.content).toHaveLength(2);
+    expect(table?.content?.[0]?.content?.[0]?.type).toBe("tableHeader");
+  });
+
   it("keeps wikilinks readable outside code", () => {
     const markdown = serializeNoteMarkdown(
       parseNoteMarkdown("See [[Release Plan]].\n\n```\n\\[\\[raw\\]\\]\n```"),

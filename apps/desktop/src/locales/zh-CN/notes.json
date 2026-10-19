@@ -67,5 +67,29 @@
       "taskList": "待办列表"
     },
     "label": "插入块"
+  },
+  "table": {
+    "addColumn": "添加列",
+    "addHint": "点击添加，拖动可添加多个",
+    "addRow": "添加行",
+    "align": {
+      "center": "居中",
+      "label": "对齐",
+      "left": "左对齐",
+      "right": "右对齐"
+    },
+    "clear": "清空内容",
+    "columnOptions": "第 {{index}} 列选项",
+    "deleteColumns_other": "删除 {{count}} 列",
+    "deleteRows_other": "删除 {{count}} 行",
+    "deleteTable": "删除表格",
+    "duplicate": "复制",
+    "insertAbove": "在上方插入行",
+    "insertBelow": "在下方插入行",
+    "insertLeft": "在左侧插入列",
+    "insertRight": "在右侧插入列",
+    "rowOptions": "第 {{index}} 行选项",
+    "sortAscending": "升序排列",
+    "sortDescending": "降序排列"
   }
 }

@@ -5,6 +5,7 @@ import { TableKit } from "@tiptap/extension-table";
 import { Markdown } from "@tiptap/markdown";
 import type { Schema } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
+import { NoteTable } from "./table";
 
 export const NOTE_DOC_FIELD = "default";
 export const NOTE_LINK_PROTOCOLS = ["cocurdex-pdf", "note"];
@@ -27,7 +28,8 @@ export function buildNoteDocExtensions({
     }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    TableKit,
+    TableKit.configure({ table: false }),
+    NoteTable,
     Image.configure({ inline: true }),
     Markdown,
   ];

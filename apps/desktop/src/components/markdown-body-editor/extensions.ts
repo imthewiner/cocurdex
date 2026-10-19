@@ -6,6 +6,7 @@ import { Placeholder } from "@tiptap/extensions";
 import type { Extensions } from "@tiptap/react";
 import { MarkdownPaste } from "./markdown-paste";
 import { createSlashCommand } from "./slash-command";
+import { TableEditing } from "./table/table-extension";
 
 export function buildMarkdownBodyExtensions(
   placeholder: string,
@@ -17,6 +18,7 @@ export function buildMarkdownBodyExtensions(
       placeholder: ({ node }) =>
         node.type.name === "paragraph" ? placeholder : "",
     }),
+    TableEditing,
     MarkdownPaste,
     createSlashCommand(),
   ];
