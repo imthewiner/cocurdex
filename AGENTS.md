@@ -33,11 +33,18 @@ Do not open a new branch unless it is necessary. Unrelated follow-up fixes found
 
 Land changes through a branch and a pull request: push, open the PR, watch its checks and review threads, then merge with `gh pr merge --merge`. Clear every review thread first — fix it, or reply with a reason and then resolve it. Docs, skills, and tooling changes take this path with no version bump and no tag; only an explicit release request bumps `apps/desktop/package.json` and pushes a `v<version>` tag. See `.agents/skills/desktop-release`.
 
+Review bots (Cursor Bugbot, the Cursor security review) comment on new commits, so every push invites another round. Converge instead of looping:
+
+- Read every open thread, handle them all, then push once. Do not push per thread.
+- Change code only for a finding you can state as a concrete trigger and a wrong, observable result, and add the test or scenario assertion that fails on it first. Answer false positives, style notes, and speculative risks with the reason and resolve them without a code change.
+- When a round brings only findings of that second kind, stop iterating: resolve them and merge once checks pass.
+- Record a fact that keeps causing false positives in `.cursor/BUGBOT.md`, and turn a class of real findings that recurs into a lint rule, type, or test.
+
 When a push starts no checks, read `gh pr view --json mergeStateStatus`: GitHub runs no `pull_request` workflow while the PR conflicts with its base (`DIRTY`). Merge `main` into the branch, resolve the conflicts, and push; do not rebase or force-push a shared branch.
 
 Address GitHub objects (review threads, comments, runs, check suites) only by IDs a query returned in this task. A guessed or remembered node ID can name an object in another repository, and a write through it posts there; after any write, confirm the response names this repository.
 
-CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/` and `.claude/`, and the desktop `version` field. When every job passes, it records that fingerprint, and a later run with the same fingerprint (in the same PR, or on `main`) skips the checks. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
+CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/`, `.claude/`, and `.cursor/`, and the desktop `version` field. When every job passes, it records that fingerprint, and a later run with the same fingerprint (in the same PR, or on `main`) skips the checks. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
 
 ## Architecture: daemon, host, and clients
 
