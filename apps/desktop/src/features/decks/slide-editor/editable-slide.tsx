@@ -72,7 +72,7 @@ function ImageTarget({
           type="button"
           aria-label={label}
           data-slide-target={slideItemKey(item)}
-          className="absolute rounded-dense outline-none transition-shadow hover:ring-1 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute rounded-dense outline-none transition-shadow hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_55%,transparent),0_0_0_2px_rgb(255_255_255/0.4)] focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_2px_rgb(255_255_255/0.7)]"
           style={frameStyle(item.frame)}
           onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
             if (!DELETE_KEYS.has(event.key)) return;
@@ -108,14 +108,16 @@ function TextTarget({
   label: { edit: string; placeholder: string };
   onEdit: () => void;
 }) {
-  const isEmpty = item.paragraphs.length === 0;
+  const isEmpty = item.paragraphs.every((paragraph) =>
+    paragraph.runs.every((run) => run.text.trim() === ""),
+  );
   return (
     <button
       type="button"
       aria-label={label.edit}
       data-slide-target={slideItemKey(item)}
       className={cn(
-        "absolute flex cursor-text flex-col rounded-dense outline-none transition-shadow hover:ring-1 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring",
+        "absolute flex cursor-text flex-col rounded-dense outline-none transition-shadow hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_55%,transparent),0_0_0_2px_rgb(255_255_255/0.4)] focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_2px_rgb(255_255_255/0.7)]",
         isEmpty && "border border-current border-dashed",
       )}
       style={{

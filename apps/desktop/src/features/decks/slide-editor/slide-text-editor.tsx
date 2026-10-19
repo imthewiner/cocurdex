@@ -97,7 +97,7 @@ export function SlideTextEditor({
   return (
     <div
       data-slide-editor
-      className="absolute z-10 flex flex-col bg-transparent ring-2 ring-ring"
+      className="absolute z-10 flex flex-col bg-transparent shadow-[0_0_0_1px_var(--primary),0_0_0_2px_rgb(255_255_255/0.7)]"
       style={{
         ...frameStyle(item.frame),
         ...themeVariables(theme),
