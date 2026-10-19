@@ -1,6 +1,7 @@
 import {
   type DeckColor,
   type DeckContent,
+  type DeckImage,
   type FreeElement,
   SLIDE_SLOT_IDS,
   type Slide,
@@ -54,7 +55,19 @@ export interface ResolvedShape {
   fill: DeckColor;
 }
 
-export type ResolvedItem = ResolvedText | ResolvedTable | ResolvedShape;
+export interface ResolvedImage {
+  kind: "image";
+  source: ResolvedSource;
+  frame: SlideFrame;
+  image: DeckImage;
+  alt: string;
+}
+
+export type ResolvedItem =
+  | ResolvedText
+  | ResolvedTable
+  | ResolvedShape
+  | ResolvedImage;
 
 export interface ResolvedSlide {
   id: string;
@@ -163,7 +176,25 @@ function resolveElement(element: FreeElement, theme: DeckTheme): ResolvedItem {
         shape: element.shape,
         fill: element.fill,
       };
+    case "image":
+      return {
+        kind: "image",
+        source,
+        frame: containFrame(element.frame, element.image),
+        image: element.image,
+        alt: element.alt ?? "",
+      };
   }
+}
+
+export function containFrame(
+  box: SlideFrame,
+  size: { width: number; height: number },
+): SlideFrame {
+  const scale = Math.min(box.w / size.width, box.h / size.height);
+  const w = size.width * scale;
+  const h = size.height * scale;
+  return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
 }
 
 export function slotSpecsFor(layout: SlideLayoutId) {

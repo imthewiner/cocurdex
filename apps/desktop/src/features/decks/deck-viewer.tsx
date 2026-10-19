@@ -1,6 +1,6 @@
 import type { DeckRecord } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
-import { MonitorPlay, Play, Presentation } from "lucide-react";
+import { ImagePlus, MonitorPlay, Play, Presentation } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
 import { activeSlideIndexAtom, selectSlideAtom } from "./decks-store";
+import { canPickImageFiles } from "./image-file-picker";
 import {
   DeckPresenterView,
   type PresenterSession,
@@ -63,6 +64,16 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
           disabled={!slide}
           onChange={editing.setLayout}
         />
+        {canPickImageFiles() ? (
+          <TitlebarIconButton
+            aria-label={t("actions.insertImage")}
+            tooltip={t("actions.insertImage")}
+            disabled={!slide}
+            onClick={editing.insertImage}
+          >
+            <ImagePlus className={TITLEBAR_ICON_GLYPH_CLASS} />
+          </TitlebarIconButton>
+        ) : null}
         <ThemeMenu theme={deck.content.theme} onChange={editing.setTheme} />
         <TitlebarIconButton
           aria-label={t("actions.present")}
@@ -104,6 +115,12 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
               className="w-[min(100cqw,calc(100cqh*16/9))] rounded-dense shadow-md ring-1 ring-border"
               onEditText={(target, paragraphs) =>
                 editing.editText(slide.id, target, paragraphs)
+              }
+              onReplaceImage={(elementId) =>
+                editing.replaceImage(slide.id, elementId)
+              }
+              onDeleteElement={(elementId) =>
+                editing.deleteElement(slide.id, elementId)
               }
             />
           </section>

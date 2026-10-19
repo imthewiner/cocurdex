@@ -40,8 +40,8 @@ slides with layouts; the result is ordinary deck data the person can edit.
 - A `##` heading with no body is a title-only slide.
 - A paragraph starting with `Notes:` (or `备注：`) starts the speaker notes;
   everything after it on that slide is notes, not slide content.
-- Inline bold, italic, strikethrough, code, and links are kept. Images are not
-  supported yet and are dropped with a warning.
+- Inline bold, italic, strikethrough, code, and links are kept. Markdown
+  images are dropped with a warning; add pictures with `deck image` (below).
 
 ```markdown
 # Q3 Review
@@ -101,7 +101,8 @@ touch, so the person's other work survives. Read ids from `deck show --json`
   { "op": "moveSlide", "slideId": "<id>", "index": 0 },
   { "op": "deleteSlide", "slideId": "<id>" },
   { "op": "setLayout", "slideId": "<id>", "layout": "two-content" },
-  { "op": "setTheme", "theme": "midnight" }
+  { "op": "setTheme", "theme": "midnight" },
+  { "op": "deleteElement", "slideId": "<id>", "elementId": "<element-id>" }
 ]
 ```
 
@@ -116,6 +117,25 @@ touch, so the person's other work survives. Read ids from `deck show --json`
   new layout cannot hold becomes a free element at its old position.
 - Themes: `default`, `midnight` (dark), `sand` (warm), `forest` (green).
 
+## Images
+
+Add a PNG or JPEG (up to 20 MB) to a slide; the daemon copies the file, so
+the deck keeps working when the source file moves:
+
+```bash
+cocurdex deck image <deck-id> --slide <slide-id> --file ./chart.png --alt "Q3 latency chart" --json
+cocurdex deck image <deck-id> --slide <slide-id> --file ./chart-v2.png --replace <element-id> --json
+```
+
+The result includes the new `image` (`hash`, `mimeType`, `width`, `height`)
+and the deck; the picture is a free element with `kind: "image"`. A new image
+is fitted inside the centre of the slide keeping its aspect ratio; move or
+resize it by editing the element `frame` in content JSON. `--replace` swaps
+the picture and keeps its frame. Remove one with the op
+`{ "op": "deleteElement", "slideId": "<id>", "elementId": "<id>" }`. Ops and
+content may only reference images already imported through `deck image`
+(or the `deck.importImage` RPC); an unknown `hash` is rejected.
+
 ## Precise edits with JSON content
 
 `deck show --json` returns `content`, the structured deck. To change part of a
@@ -128,6 +148,9 @@ deck without regenerating it, edit that JSON and send it back with
 - `slots`: `title`, `subtitle`, `body`, `left`, `right`, each
   `{ kind: "text", paragraphs }` or `{ kind: "table", table }`. Only the slots
   the layout defines are shown.
+- `elements[]`: free elements with an `id` and `frame`, one of
+  `{ kind: "text", role, paragraphs }`, `{ kind: "table", table }`,
+  `{ kind: "shape", shape, fill }`, or `{ kind: "image", image, alt? }`.
 - A paragraph is `{ runs, list?: "bullet" | "number", level?, align? }`; a
   run is `{ text, bold?, italic?, underline?, strike?, code?, link?, color? }`.
 - Colors are theme tokens: `text`, `muted`, `accent`, `page`, `surface`,

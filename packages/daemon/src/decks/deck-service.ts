@@ -28,12 +28,15 @@ import {
   type DeckSource,
   type DeckWriteResult,
   type DeleteDeckPayload,
+  deckImageHashes,
   type EditDeckPayload,
   type ExportDeckFilePayload,
   type ExportDeckFileResult,
   type GetDeckPayload,
+  type ImportDeckImagePayload,
   type UpdateDeckPayload,
 } from "@cocurdex/shared";
+import type { DeckAssetStore } from "./deck-assets";
 import { choosePdfFonts, pdfFontCandidates } from "./pdf-fonts";
 
 const DOWNLOAD_TICKET_TTL_MS = 60_000;
@@ -124,6 +127,7 @@ export class DaemonDeckService {
   constructor(
     private readonly decks: DecksRepository,
     private readonly events: EventEmitter,
+    readonly assets: DeckAssetStore,
     private readonly now: () => number = Date.now,
     private readonly resolvePdfFonts: PdfFontResolver = systemPdfFonts,
   ) {}
@@ -138,6 +142,7 @@ export class DaemonDeckService {
 
   async create(payload: CreateDeckPayload): Promise<DeckWriteResult> {
     const source = resolveSource(payload);
+    if (source) await this.requireNewImages(source.content, null);
     const deck = await this.decks.create({
       title: payload.title ?? source?.title ?? UNTITLED_DECK,
       workspaceId: payload.workspaceId ?? null,
@@ -149,6 +154,10 @@ export class DaemonDeckService {
 
   async update(payload: UpdateDeckPayload): Promise<DeckWriteResult> {
     const source = resolveSource(payload);
+    if (source) {
+      const current = await this.require(payload.id);
+      await this.requireNewImages(source.content, current.content);
+    }
     const deck = await this.decks.update({
       id: payload.id,
       title: payload.title,
@@ -163,6 +172,7 @@ export class DaemonDeckService {
   async edit(payload: EditDeckPayload): Promise<DeckWriteResult> {
     const current = await this.require(payload.id);
     const { content, warnings } = applyDeckOps(current.content, payload.ops);
+    await this.requireNewImages(content, current.content);
     const deck = await this.decks.update({
       id: current.id,
       content,
@@ -170,6 +180,21 @@ export class DaemonDeckService {
     });
     this.emitChanged();
     return this.writeResult(deck, warnings);
+  }
+
+  importImage(payload: ImportDeckImagePayload) {
+    return this.assets.importFile(payload.path);
+  }
+
+  async collectUnusedImages() {
+    const keep = new Set<string>();
+    for (const summary of await this.decks.list()) {
+      const deck = await this.decks.get(summary.id);
+      for (const hash of deck ? deckImageHashes(deck.content) : []) {
+        keep.add(hash);
+      }
+    }
+    return this.assets.collectUnused(keep);
   }
 
   async delete(payload: DeleteDeckPayload) {
@@ -234,10 +259,11 @@ export class DaemonDeckService {
     format: DeckExportFormat,
   ): Promise<DeckFile> {
     const meta = { title: deck.title };
+    const loadImage = (hash: string) => this.assets.load(hash);
     const bytes =
       format === "pdf"
-        ? await exportDeckToPdf(deck.content, meta, this.pdfFonts())
-        : await exportDeckToPptx(deck.content, meta);
+        ? await exportDeckToPdf(deck.content, meta, this.pdfFonts(), loadImage)
+        : await exportDeckToPptx(deck.content, meta, loadImage);
     return {
       fileName: deckFileName(deck.title, format),
       contentType: FORMAT_CONTENT_TYPES[format],
@@ -253,6 +279,16 @@ export class DaemonDeckService {
       );
     }
     return this.cachedPdfFonts;
+  }
+
+  private async requireNewImages(
+    next: DeckContent,
+    previous: DeckContent | null,
+  ) {
+    const known = new Set(previous ? deckImageHashes(previous) : []);
+    await this.assets.requireAll(
+      deckImageHashes(next).filter((hash) => !known.has(hash)),
+    );
   }
 
   private async require(id: string) {

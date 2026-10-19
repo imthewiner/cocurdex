@@ -22,7 +22,9 @@ import { prepareDaemonEndpoint, probeDaemonEndpoint } from "./daemon-endpoint";
 import { acquireDaemonOwnership } from "./daemon-ownership";
 import { DaemonShutdownGate } from "./daemon-shutdown-gate";
 import {
+  createDeckAssetHttpHandler,
   createDeckDownloadHttpHandler,
+  isDeckAssetHttpRequest,
   isDeckDownloadHttpRequest,
 } from "./decks";
 import {
@@ -303,10 +305,25 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   let deckDownloadHandler:
     | ReturnType<typeof createDeckDownloadHttpHandler>
     | undefined;
+  let deckAssetHandler:
+    | ReturnType<typeof createDeckAssetHttpHandler>
+    | undefined;
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot)
     : undefined;
   const httpServer = http.createServer((request, response) => {
+    if (isDeckAssetHttpRequest(request)) {
+      if (!ready || !deckAssetHandler) {
+        response.writeHead(503);
+        response.end();
+        return;
+      }
+      void deckAssetHandler(request, response).catch(() => {
+        if (!response.headersSent) response.writeHead(500);
+        response.end();
+      });
+      return;
+    }
     if (isDeckDownloadHttpRequest(request)) {
       if (!ready || !deckDownloadHandler) {
         response.writeHead(503);
@@ -459,12 +476,24 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
         isAllowedWebSocketOrigin(request.headers.origin),
       redeem: redeemDeckDownload,
     });
+    const locateDeckAsset = service.decks.assets.locate.bind(
+      service.decks.assets,
+    );
+    deckAssetHandler = createDeckAssetHttpHandler({
+      remote: false,
+      isAllowedRequest: (request) =>
+        isLoopbackHostHeader(request.headers.host) &&
+        isAllowedWebSocketOrigin(request.headers.origin),
+      resolvePrincipal: (token) => hostAccess.resolve(token),
+      locate: locateDeckAsset,
+    });
     remoteListener = createRemoteAccessListener(
       createRemoteServerFactory({
         hostAccess,
         machineName: os.hostname(),
         resolvePdfPath,
         redeemDeckDownload,
+        locateDeckAsset,
         webRoot: options.webRoot,
         onWebSocket: (socket, request) =>
           attachWebSocketConnection(socket, {

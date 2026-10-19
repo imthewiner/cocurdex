@@ -22,6 +22,8 @@ const USAGE = {
   show: "cocurdex deck show <id>",
   update: "cocurdex deck update <id>",
   edit: "cocurdex deck edit <id> --ops-file <path|->",
+  image:
+    "cocurdex deck image <id> --slide <slideId> --file <path.png|path.jpg> [--alt <text>] [--replace <elementId>]",
   delete: "cocurdex deck delete <id>",
   check: "cocurdex deck check <id>",
   export:
@@ -92,6 +94,29 @@ export async function handleDeckCommand(
       }),
     );
     printResult(result, parsed);
+    return true;
+  }
+
+  if (action === "image") {
+    const id = requiredId(args, "image");
+    const slideId = getRequiredFlag(parsed, "slide");
+    const filePath = path.resolve(getRequiredFlag(parsed, "file"));
+    const replace = stringFlag(parsed, "replace");
+    const alt = stringFlag(parsed, "alt");
+    const image = await withDaemon(() =>
+      requestDaemon("deck.importImage", { path: filePath }),
+    );
+    const op: DeckOp = replace
+      ? { op: "setImage", slideId, elementId: replace, image }
+      : { op: "addImage", slideId, image, ...(alt ? { alt } : {}) };
+    const result = await withDaemon(() =>
+      requestDaemon("deck.edit", {
+        id,
+        ops: [op],
+        expectedRevision: expectedRevisionFlag(parsed),
+      }),
+    );
+    printResult({ ...result, image }, parsed);
     return true;
   }
 

@@ -136,7 +136,7 @@ describe("applyDeckOps slide management", () => {
     expect(ids(content)[0]).toBe("a");
     expect(ids(content)[3]).toBe("b");
     expect(warnings).toEqual([
-      { slideIndex: 2, message: expect.stringContaining("Images") },
+      { slideIndex: 2, message: expect.stringContaining("x.png") },
     ]);
   });
 });
@@ -326,5 +326,73 @@ describe("applyDeckOps layout changes keep every piece of content", () => {
         paragraphs: text("Note"),
       },
     ]);
+  });
+});
+
+describe("applyDeckOps images", () => {
+  const image = {
+    hash: "b".repeat(64),
+    mimeType: "image/png" as const,
+    width: 1600,
+    height: 400,
+  };
+  const other = { ...image, hash: "c".repeat(64), width: 100, height: 100 };
+
+  it("adds an image fitted inside the slide centre with its aspect ratio", () => {
+    const { content } = applyDeckOps(
+      deckOf(slide("a")),
+      [{ op: "addImage", slideId: "a", image, alt: "Banner" }],
+      sequentialIds(),
+    );
+    expect(content.slides[0]?.elements).toEqual([
+      {
+        id: "new-1",
+        kind: "image",
+        frame: { x: 160, y: 260, w: 960, h: 240 },
+        image,
+        alt: "Banner",
+      },
+    ]);
+  });
+
+  it("replaces the picture but keeps the frame, then deletes it", () => {
+    const frame = { x: 10, y: 20, w: 300, h: 200 };
+    const start = deckOf(
+      slide("a", {
+        elements: [{ id: "pic", kind: "image", frame, image }],
+      }),
+    );
+    const replaced = applyDeckOps(start, [
+      { op: "setImage", slideId: "a", elementId: "pic", image: other },
+    ]).content;
+    expect(replaced.slides[0]?.elements).toEqual([
+      { id: "pic", kind: "image", frame, image: other },
+    ]);
+
+    const removed = applyDeckOps(replaced, [
+      { op: "deleteElement", slideId: "a", elementId: "pic" },
+    ]).content;
+    expect(removed.slides[0]?.elements).toEqual([]);
+  });
+
+  it("rejects replacing an element that is not an image", () => {
+    const start = deckOf(
+      slide("a", {
+        elements: [
+          {
+            id: "t",
+            kind: "text",
+            role: "body",
+            frame: { x: 0, y: 0, w: 10, h: 10 },
+            paragraphs: text("x"),
+          },
+        ],
+      }),
+    );
+    expect(() =>
+      applyDeckOps(start, [
+        { op: "setImage", slideId: "a", elementId: "t", image },
+      ]),
+    ).toThrow("is not an image");
   });
 });

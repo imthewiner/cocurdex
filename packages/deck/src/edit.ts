@@ -17,6 +17,7 @@ import {
   compileMarkdownParagraphs,
   type IdFactory,
 } from "./markdown";
+import { containFrame } from "./resolve";
 import { parseDeckContent } from "./schema";
 
 export interface DeckEditResult {
@@ -85,8 +86,7 @@ function setText(slide: Slide, op: Extract<DeckOp, { op: "setText" }>): Slide {
       slots: { ...slide.slots, [slot]: { kind: "text", paragraphs } },
     };
   }
-  const element = slide.elements.find((item) => item.id === name);
-  if (!element) throw new Error(`Element not found on ${slide.id}: ${name}`);
+  const element = elementOf(slide, name);
   if (element.kind !== "text") {
     throw new Error(`Element ${name} is not a text element`);
   }
@@ -95,6 +95,55 @@ function setText(slide: Slide, op: Extract<DeckOp, { op: "setText" }>): Slide {
     elements: slide.elements.map((item) =>
       item.id === name ? { ...element, paragraphs } : item,
     ),
+  };
+}
+
+const IMAGE_AREA: SlideFrame = { x: 160, y: 120, w: 960, h: 520 };
+
+function addImage(
+  slide: Slide,
+  op: Extract<DeckOp, { op: "addImage" }>,
+  newId: IdFactory,
+): Slide {
+  const element: FreeElement = {
+    id: newId(),
+    kind: "image",
+    frame: op.frame ?? containFrame(IMAGE_AREA, op.image),
+    image: op.image,
+    ...(op.alt ? { alt: op.alt } : {}),
+  };
+  return { ...slide, elements: [...slide.elements, element] };
+}
+
+function elementOf(slide: Slide, elementId: string): FreeElement {
+  const element = slide.elements.find((item) => item.id === elementId);
+  if (!element) {
+    throw new Error(`Element not found on ${slide.id}: ${elementId}`);
+  }
+  return element;
+}
+
+function setImage(
+  slide: Slide,
+  op: Extract<DeckOp, { op: "setImage" }>,
+): Slide {
+  const element = elementOf(slide, op.elementId);
+  if (element.kind !== "image") {
+    throw new Error(`Element ${op.elementId} is not an image`);
+  }
+  return {
+    ...slide,
+    elements: slide.elements.map((item) =>
+      item.id === op.elementId ? { ...element, image: op.image } : item,
+    ),
+  };
+}
+
+function deleteElement(slide: Slide, elementId: string): Slide {
+  elementOf(slide, elementId);
+  return {
+    ...slide,
+    elements: slide.elements.filter((item) => item.id !== elementId),
   };
 }
 
@@ -314,6 +363,27 @@ function applyOp(state: EditState, op: DeckOp, newId: IdFactory): EditState {
       };
     case "setTheme":
       return { ...state, theme: op.theme };
+    case "addImage":
+      return {
+        ...state,
+        slides: replaceSlide(slides, op.slideId, (slide) =>
+          addImage(slide, op, newId),
+        ),
+      };
+    case "setImage":
+      return {
+        ...state,
+        slides: replaceSlide(slides, op.slideId, (slide) =>
+          setImage(slide, op),
+        ),
+      };
+    case "deleteElement":
+      return {
+        ...state,
+        slides: replaceSlide(slides, op.slideId, (slide) =>
+          deleteElement(slide, op.elementId),
+        ),
+      };
   }
 }
 

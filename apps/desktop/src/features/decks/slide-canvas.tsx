@@ -1,6 +1,7 @@
 import {
   type DeckTheme,
   deckTheme,
+  type ResolvedImage,
   type ResolvedItem,
   type ResolvedTable,
   type ResolvedText,
@@ -11,6 +12,7 @@ import {
 import type { DeckContent, Slide } from "@cocurdex/shared";
 import type { ReactNode } from "react";
 import { cn } from "@/lib";
+import { useDeckImageUrl } from "./deck-image-urls";
 import {
   frameStyle,
   sansFontStack,
@@ -105,8 +107,34 @@ function SlideTable({
   );
 }
 
+function SlideImage({ item }: { item: ResolvedImage }) {
+  const url = useDeckImageUrl(item.image.hash);
+  if (!url) {
+    return (
+      <div
+        data-slide-item="image"
+        role="img"
+        aria-label={item.alt}
+        className="absolute"
+        style={frameStyle(item.frame)}
+      />
+    );
+  }
+  return (
+    <img
+      data-slide-item="image"
+      src={url}
+      alt={item.alt}
+      draggable={false}
+      className="absolute object-contain"
+      style={frameStyle(item.frame)}
+    />
+  );
+}
+
 function SlideItem({ item, theme }: { item: ResolvedItem; theme: DeckTheme }) {
   if (item.kind === "text") return <SlideText item={item} theme={theme} />;
+  if (item.kind === "image") return <SlideImage item={item} />;
   if (item.kind === "table") return <SlideTable item={item} theme={theme} />;
   return (
     <div

@@ -261,7 +261,7 @@ function contentDraft(
   const body = parts.body.filter((node) => {
     if (node.type !== "image") return true;
     warn(
-      `Images are not supported yet; dropped "${String(node.attrs?.src ?? "")}"`,
+      `Markdown images are dropped ("${String(node.attrs?.src ?? "")}"); add them with \`cocurdex deck image\``,
     );
     return false;
   });

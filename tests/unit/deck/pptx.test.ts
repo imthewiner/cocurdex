@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { applyDeckOps } from "@cocurdex/deck/edit";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
 import { exportDeckToPptx } from "@cocurdex/deck/pptx";
 import JSZip from "jszip";
@@ -21,10 +24,19 @@ const MARKDOWN = [
   "# Thanks",
 ].join("\n");
 
+const PNG = readFileSync(
+  createRequire(import.meta.url).resolve("./fixtures/swatch-3x2.png"),
+);
+const PNG_HASH = "a".repeat(64);
+
+async function noImages(hash: string): Promise<Buffer> {
+  throw new Error(`Unexpected image ${hash}`);
+}
+
 async function exportSample() {
   const { content } = compileDeckMarkdown(MARKDOWN);
   return JSZip.loadAsync(
-    await exportDeckToPptx(content, { title: "Launch plan" }),
+    await exportDeckToPptx(content, { title: "Launch plan" }, noImages),
   );
 }
 
@@ -66,5 +78,36 @@ describe("exportDeckToPptx", () => {
     expect(numbers).toContain("<a:tbl>");
     expect(numbers).toContain("120 ms");
     expect(notes.some((xml) => xml.includes("Lead with latency."))).toBe(true);
+  });
+
+  it("embeds slide images as pictures at their fitted frame", async () => {
+    const { content: base } = compileDeckMarkdown("## Chart");
+    const slideId = base.slides[0]?.id ?? "";
+    const { content } = applyDeckOps(base, [
+      {
+        op: "addImage",
+        slideId,
+        image: {
+          hash: PNG_HASH,
+          mimeType: "image/png",
+          width: 3,
+          height: 2,
+        },
+        alt: "Swatch",
+      },
+    ]);
+    const zip = await JSZip.loadAsync(
+      await exportDeckToPptx(content, { title: "Chart" }, async (hash) => {
+        if (hash !== PNG_HASH) throw new Error(hash);
+        return PNG;
+      }),
+    );
+    const xml = await text(zip, "ppt/slides/slide1.xml");
+    const media = zip.file(/^ppt\/media\/.+\.png$/);
+
+    expect(xml).toContain("<p:pic>");
+    expect(xml).toContain('descr="Swatch"');
+    expect(media).toHaveLength(1);
+    expect(await media[0]?.async("nodebuffer")).toEqual(PNG);
   });
 });

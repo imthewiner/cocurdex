@@ -33,7 +33,7 @@ export function checkDeck(deck: DeckContent): DeckIssue[] {
       push("empty-slide", "slide", "Slide has no content");
     }
     for (const item of resolveSlide(slide, deck).items) {
-      if (item.kind !== "shape" && item.overflow) {
+      if ((item.kind === "text" || item.kind === "table") && item.overflow) {
         push(
           "overflow",
           describe(item.source),

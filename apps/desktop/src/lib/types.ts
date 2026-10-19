@@ -307,6 +307,7 @@ export interface HostCapabilities {
   terminal: boolean;
   browserView: boolean;
   localWebClient: boolean;
+  localFilePaths: boolean;
 }
 
 /**

@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
-import { buildDaemonDeckDownloadUrl } from "@cocurdex/shared";
+import {
+  buildDaemonDeckAssetUrl,
+  buildDaemonDeckDownloadUrl,
+} from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runCli } from "./helpers/cli";
@@ -10,6 +14,9 @@ import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
 const tempDirs = createTempDirs();
 afterAll(() => tempDirs.cleanup());
 
+const SWATCH_PNG = createRequire(import.meta.url).resolve(
+  "./fixtures/deck-images/swatch-3x2.png",
+);
 const ZIP_SIGNATURE = Buffer.from("PK\u0003\u0004", "latin1");
 
 const MARKDOWN = [
@@ -238,5 +245,69 @@ describe("decks through the CLI and daemon", () => {
 
     const replay = await fetch(url);
     expect(replay.status).toBe(404);
+  });
+
+  it("adds an image from a file, serves it to clients, and exports it", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const { deck } = await requestDaemon(
+      "deck.create",
+      { markdown: "## Chart" },
+      daemon.options,
+    );
+    const slideId = deck.content.slides[0]?.id ?? "";
+    const added = await runCli(
+      [
+        "deck",
+        "image",
+        deck.id,
+        "--slide",
+        slideId,
+        "--file",
+        SWATCH_PNG,
+        "--alt",
+        "Swatch",
+        "--json",
+      ],
+      options,
+    );
+    expect(added.stderr).toBe("");
+    const result = JSON.parse(added.stdout) as {
+      image: { hash: string; mimeType: string; width: number };
+      deck: { content: { slides: { elements: object[] }[] } };
+    };
+    expect(result.image).toMatchObject({ mimeType: "image/png", width: 3 });
+    expect(result.deck.content.slides[0]?.elements).toEqual([
+      expect.objectContaining({ kind: "image", alt: "Swatch" }),
+    ]);
+
+    const assetUrl = buildDaemonDeckAssetUrl(
+      daemon.metadata.webSocketUrl,
+      result.image.hash,
+    );
+    expect((await fetch(assetUrl)).status).toBe(401);
+    const asset = await fetch(assetUrl, {
+      headers: { Authorization: `Bearer ${daemon.metadata.token}` },
+    });
+    expect(asset.status).toBe(200);
+    expect(Buffer.from(await asset.arrayBuffer())).toEqual(
+      await readFile(SWATCH_PNG),
+    );
+
+    const output = path.join(await tempDirs.create("deck-img-"), "c.pptx");
+    await runCli(["deck", "export", deck.id, "--output", output], options);
+    expect((await readFile(output)).toString("latin1")).toContain("ppt/media/");
+
+    const unknown = await runCli(["deck", "edit", deck.id, "--ops-file", "-"], {
+      ...options,
+      input: JSON.stringify([
+        {
+          op: "addImage",
+          slideId,
+          image: { ...result.image, hash: "0".repeat(64) },
+        },
+      ]),
+    });
+    expect(unknown.code).not.toBe(0);
+    expect(unknown.stderr).toContain("Deck image not found");
   });
 });

@@ -105,7 +105,7 @@ import {
 import { DaemonAttachmentStore } from "./attachment-store";
 import { DaemonCommitMessageService } from "./commit-message";
 import { DaemonDataService } from "./data-service";
-import { DaemonDeckService } from "./decks";
+import { DaemonDeckService, DeckAssetStore } from "./decks";
 import { logDaemonDiagnostic } from "./diagnostics";
 import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
@@ -289,7 +289,11 @@ export class CocurdexDaemonService {
     this.hostAccessReady = this.hostAccess.initialize();
     this.workflows = new WorkflowModule(this.state.workflows);
     this.dataService = new DaemonDataService(this.state, this.events);
-    this.decks = new DaemonDeckService(this.state.data.decks, this.events);
+    this.decks = new DaemonDeckService(
+      this.state.data.decks,
+      this.events,
+      DeckAssetStore.open(options.userDataPath),
+    );
     this.providerCredentials = new ProviderCredentials(
       this.state,
       options.userDataPath,
@@ -563,6 +567,7 @@ export class CocurdexDaemonService {
       await this.state.waitForStartupRecovery();
       await this.scriptRuns.recoverInterrupted();
       await this.team.recoverReports();
+      await this.decks.collectUnusedImages();
     } catch {
       logDaemonDiagnostic("warn", "daemon.recoveryUnavailable");
     }

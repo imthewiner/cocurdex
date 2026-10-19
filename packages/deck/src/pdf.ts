@@ -1,14 +1,16 @@
-import type {
-  DeckColor,
-  DeckContent,
-  SlideFrame,
-  TableData,
-  TextParagraph,
-  TextRun,
+import {
+  type DeckColor,
+  type DeckContent,
+  deckImageHashes,
+  type SlideFrame,
+  type TableData,
+  type TextParagraph,
+  type TextRun,
 } from "@cocurdex/shared";
 import PDFDocument from "pdfkit";
+import { type DeckImageLoader, loadDeckImages } from "./images";
 import { listMarkers } from "./list-markers";
-import { type ResolvedItem, resolveSlide } from "./resolve";
+import { type ResolvedImage, type ResolvedItem, resolveSlide } from "./resolve";
 import {
   LIST_INDENT_EM,
   PARAGRAPH_GAP_EM,
@@ -47,6 +49,7 @@ interface Painter {
   doc: Doc;
   theme: DeckTheme;
   fonts: PdfFontSet;
+  images: ReadonlyMap<string, Buffer>;
 }
 
 function hex(theme: DeckTheme, token: DeckColor): string {
@@ -297,8 +300,16 @@ function drawShape(
   doc.rect(x, y, w, h).fill(hex(theme, item.fill));
 }
 
+function drawImage(painter: Painter, item: ResolvedImage) {
+  const bytes = painter.images.get(item.image.hash);
+  if (!bytes) return;
+  const { x, y, w, h } = item.frame;
+  painter.doc.image(bytes, x, y, { width: w, height: h });
+}
+
 function drawItem(painter: Painter, item: ResolvedItem) {
   if (item.kind === "shape") drawShape(painter, item);
+  else if (item.kind === "image") drawImage(painter, item);
   else if (item.kind === "table") drawTable(painter, item);
   else drawText(painter, item);
 }
@@ -316,7 +327,9 @@ export async function exportDeckToPdf(
   deck: DeckContent,
   meta: { title: string },
   fonts: PdfFontSet,
+  loadImage: DeckImageLoader,
 ): Promise<Buffer> {
+  const images = await loadDeckImages(deckImageHashes(deck), loadImage);
   const { width, height } = deck.size;
   const doc = new PDFDocument({
     autoFirstPage: false,
@@ -325,7 +338,12 @@ export async function exportDeckToPdf(
   });
   const output = collect(doc);
   registerFonts(doc, fonts);
-  const painter: Painter = { doc, theme: deckTheme(deck.theme), fonts };
+  const painter: Painter = {
+    doc,
+    theme: deckTheme(deck.theme),
+    fonts,
+    images,
+  };
   for (const slide of deck.slides) {
     const resolved = resolveSlide(slide, deck);
     doc.addPage({ size: [width * PT_PER_PX, height * PT_PER_PX], margin: 0 });

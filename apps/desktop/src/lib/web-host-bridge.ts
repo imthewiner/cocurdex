@@ -261,6 +261,7 @@ export function webHostCapabilities(access: WebHostAccess): HostCapabilities {
     terminal,
     browserView: false,
     localWebClient: false,
+    localFilePaths: false,
   };
 }
 
@@ -285,6 +286,7 @@ export function installWebHostBridge(): Promise<WebHostAccess> | null {
       terminal: false,
       browserView: false,
       localWebClient: false,
+      localFilePaths: false,
     },
     getDaemonConnection: createConnectionResolver(access, savedHosts),
     openExternal: async (url) => {

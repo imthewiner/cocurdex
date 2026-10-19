@@ -500,6 +500,7 @@ export default interface Resources {
       export: "Export";
       exportPdf: "Export PDF";
       exportPptx: "Export PPTX";
+      insertImage: "Insert image";
       layout: "Layout";
       present: "Present";
       presenterView: "Presenter view";
@@ -507,6 +508,8 @@ export default interface Resources {
     };
     editor: {
       edit: "Edit {{name}}";
+      image: "Image";
+      imageNamed: "Image: {{name}}";
       notesPlaceholder: "Add speaker notes";
       placeholders: {
         subtitle: "Click to add subtitle";
@@ -526,6 +529,11 @@ export default interface Resources {
       audienceWindow: "Could not open the audience window. Allow pop-ups for this page and try again.";
       edit: "Could not save the change";
       export: "Could not export the deck";
+      image: "Could not add the image";
+    };
+    imageMenu: {
+      delete: "Delete image";
+      replace: "Replace image…";
     };
     layouts: {
       blank: "Blank";

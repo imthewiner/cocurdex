@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
@@ -7,6 +8,67 @@ const SLIDE_COUNT = 5;
 const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
+const fixture = (name) =>
+  createRequire(import.meta.url).resolve(`./fixtures/deck-images/${name}`);
+
+async function chooseFile(session, filePath, action) {
+  await session.send("Page.enable");
+  await session.send("Page.setInterceptFileChooserDialog", { enabled: true });
+  let unsubscribe = () => {};
+  const chosen = new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error("File chooser did not open")),
+      UI_TIMEOUT_MS,
+    );
+    unsubscribe = session.on("Page.fileChooserOpened", (event) => {
+      clearTimeout(timer);
+      session
+        .send("DOM.setFileInputFiles", {
+          files: [filePath],
+          backendNodeId: event.backendNodeId,
+        })
+        .then(resolve, reject);
+    });
+  });
+  chosen.catch(() => {});
+  try {
+    await action();
+    await chosen;
+  } finally {
+    unsubscribe();
+    await session.send("Page.setInterceptFileChooserDialog", {
+      enabled: false,
+    });
+  }
+}
+
+function readStageImage() {
+  const stage = document.querySelector("section > [data-slide-id]");
+  const image = stage?.querySelector('img[data-slide-item="image"]');
+  if (!image?.complete || !image.naturalWidth) return null;
+  const box = image.getBoundingClientRect();
+  const frame = stage.getBoundingClientRect();
+  return {
+    src: image.src.slice(0, 5),
+    naturalWidth: image.naturalWidth,
+    ratio: box.width / box.height,
+    centerX: (box.left + box.width / 2 - frame.left) / frame.width,
+  };
+}
+
+async function waitForStageImage(session, naturalWidth) {
+  await session.waitUntil(
+    (width) => {
+      const image = document.querySelector(
+        'section > [data-slide-id] img[data-slide-item="image"]',
+      );
+      return image?.complete && image.naturalWidth === width;
+    },
+    naturalWidth,
+    UI_TIMEOUT_MS,
+  );
+  return session.run(readStageImage);
+}
 
 function translate(session, key, options) {
   return session.run(({ key, options }) => window.__scenario.t(key, options), {
@@ -534,6 +596,95 @@ runScenario("decks", {
           UI_TIMEOUT_MS,
         );
         return { dark, distinctLefts: await columnLefts() };
+      },
+    ],
+    [
+      "an image is inserted from a file, replaced, and deleted",
+      async ({ session }) => {
+        await clickByRole(session, {
+          role: "button",
+          name: await slideLabel(session, 2),
+        });
+        await waitForActive(session, 1);
+        const [insertLabel, imageLabel, replaceLabel, deleteLabel] =
+          await Promise.all(
+            [
+              "decks:actions.insertImage",
+              "decks:editor.image",
+              "decks:imageMenu.replace",
+              "decks:imageMenu.delete",
+            ].map((key) => translate(session, key)),
+          );
+        await chooseFile(session, fixture("swatch-3x2.png"), () =>
+          clickByRole(session, { role: "button", name: insertLabel }),
+        );
+        const inserted = await waitForStageImage(session, 3);
+        check(inserted.src === "blob:", "image served as a blob", inserted);
+        check(Math.abs(inserted.ratio - 1.5) < 0.02, "aspect kept", inserted);
+        check(Math.abs(inserted.centerX - 0.5) < 0.01, "centred", inserted);
+
+        const [presenterButton, endLabel] = await Promise.all(
+          ["decks:actions.presenterView", "decks:presenter.end"].map((key) =>
+            translate(session, key),
+          ),
+        );
+        await clickByRole(session, { role: "button", name: presenterButton });
+        const audience = await session.openPage("window=deck-audience");
+        try {
+          await audience.waitUntil(
+            () =>
+              document.querySelector('main img[data-slide-item="image"]')
+                ?.naturalWidth === 3,
+            null,
+            UI_TIMEOUT_MS,
+          );
+        } finally {
+          audience.close();
+        }
+        await clickByRole(session, { role: "button", name: endLabel });
+        await session.waitUntil(
+          () => !document.querySelector('[role="dialog"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+
+        const openImageMenu = () =>
+          clickByRole(
+            session,
+            { role: "button", name: imageLabel },
+            UI_TIMEOUT_MS,
+            "right",
+          );
+        await openImageMenu();
+        await chooseFile(session, fixture("photo-40x50.jpg"), () =>
+          clickByRole(
+            session,
+            { role: "menuitem", name: replaceLabel },
+            UI_TIMEOUT_MS,
+          ),
+        );
+        const replaced = await waitForStageImage(session, 40);
+        check(
+          Math.abs(replaced.ratio - 0.8) < 0.02,
+          "replacement fitted in the same frame",
+          replaced,
+        );
+
+        await openImageMenu();
+        await clickByRole(
+          session,
+          { role: "menuitem", name: deleteLabel },
+          UI_TIMEOUT_MS,
+        );
+        await session.waitUntil(
+          () =>
+            !document.querySelector(
+              'section > [data-slide-id] [data-slide-item="image"]',
+            ),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        return { inserted, replaced };
       },
     ],
     [

@@ -134,6 +134,8 @@ export async function handleDaemonRequest(
       return service.decks.createDownload(request.params);
     case "deck.exportFile":
       return service.decks.exportFile(request.params);
+    case "deck.importImage":
+      return service.decks.importImage(request.params);
     case "issue.listViews":
       return service.dataService.listIssueViews();
     case "issue.loadView":

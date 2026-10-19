@@ -110,7 +110,29 @@ export interface FreeTableElement {
   table: TableData;
 }
 
-export type FreeElement = FreeTextElement | FreeShapeElement | FreeTableElement;
+export const DECK_IMAGE_MIME_TYPES = ["image/png", "image/jpeg"] as const;
+export type DeckImageMimeType = (typeof DECK_IMAGE_MIME_TYPES)[number];
+
+export interface DeckImage {
+  hash: string;
+  mimeType: DeckImageMimeType;
+  width: number;
+  height: number;
+}
+
+export interface FreeImageElement {
+  id: string;
+  kind: "image";
+  frame: SlideFrame;
+  image: DeckImage;
+  alt?: string;
+}
+
+export type FreeElement =
+  | FreeTextElement
+  | FreeShapeElement
+  | FreeTableElement
+  | FreeImageElement;
 
 export interface Slide {
   id: string;
@@ -208,6 +230,15 @@ export type DeckOp =
       target: DeckTextTarget;
     } & DeckTextSource)
   | { op: "setNotes"; slideId: string; notes: string }
+  | {
+      op: "addImage";
+      slideId: string;
+      image: DeckImage;
+      frame?: SlideFrame;
+      alt?: string;
+    }
+  | { op: "setImage"; slideId: string; elementId: string; image: DeckImage }
+  | { op: "deleteElement"; slideId: string; elementId: string }
   | { op: "setTheme"; theme: DeckThemeId };
 
 export interface EditDeckPayload {
@@ -244,6 +275,28 @@ export interface ExportDeckFilePayload {
 export interface ExportDeckFileResult {
   outputPath: string;
   sizeBytes: number;
+}
+
+export interface ImportDeckImagePayload {
+  path: string;
+}
+
+export const DAEMON_DECK_ASSET_HTTP_PATH = "/decks/assets";
+export const DAEMON_DECK_ASSET_HASH_QUERY = "hash";
+
+export function buildDaemonDeckAssetUrl(webSocketUrl: string, hash: string) {
+  const url = new URL(DAEMON_DECK_ASSET_HTTP_PATH, webSocketUrl);
+  url.protocol = url.protocol === "wss:" ? "https:" : "http:";
+  url.searchParams.set(DAEMON_DECK_ASSET_HASH_QUERY, hash);
+  return url.toString();
+}
+
+export function deckImageHashes(content: DeckContent): string[] {
+  return content.slides.flatMap((slide) =>
+    slide.elements.flatMap((element) =>
+      element.kind === "image" ? [element.image.hash] : [],
+    ),
+  );
 }
 
 export const DAEMON_DECK_DOWNLOAD_HTTP_PATH = "/decks/download";

@@ -1,6 +1,7 @@
 import {
   DECK_COLORS,
   DECK_CONTENT_VERSION,
+  DECK_IMAGE_MIME_TYPES,
   DECK_THEME_IDS,
   type DeckContent,
   type DeckOp,
@@ -65,6 +66,15 @@ const slotContentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("table"), table: tableSchema }),
 ]);
 
+const imageSchema = z.object({
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  mimeType: z.enum(DECK_IMAGE_MIME_TYPES),
+  width: z.number().int().positive().max(100_000),
+  height: z.number().int().positive().max(100_000),
+});
+
+const altSchema = z.string().max(1_000);
+
 const elementSchema = z.discriminatedUnion("kind", [
   z.object({
     id: idSchema,
@@ -85,6 +95,13 @@ const elementSchema = z.discriminatedUnion("kind", [
     kind: z.literal("table"),
     frame: frameSchema,
     table: tableSchema,
+  }),
+  z.object({
+    id: idSchema,
+    kind: z.literal("image"),
+    frame: frameSchema,
+    image: imageSchema,
+    alt: altSchema.optional(),
   }),
 ]);
 
@@ -152,6 +169,21 @@ export const deckOpSchema = z.union([
     notes: z.string().max(MAX_TEXT),
   }),
   z.object({ op: z.literal("setTheme"), theme: z.enum(DECK_THEME_IDS) }),
+  slideIdSchema.extend({
+    op: z.literal("addImage"),
+    image: imageSchema,
+    frame: frameSchema.optional(),
+    alt: altSchema.optional(),
+  }),
+  slideIdSchema.extend({
+    op: z.literal("setImage"),
+    elementId: idSchema,
+    image: imageSchema,
+  }),
+  slideIdSchema.extend({
+    op: z.literal("deleteElement"),
+    elementId: idSchema,
+  }),
 ]) satisfies z.ZodType<DeckOp>;
 
 export const deckOpsSchema = z.array(deckOpSchema).min(1).max(MAX_OPS);

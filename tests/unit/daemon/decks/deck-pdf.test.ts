@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { systemPdfFonts } from "@cocurdex/daemon/internal/decks/deck-service";
+import { applyDeckOps } from "@cocurdex/deck/edit";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
 import { exportDeckToPdf } from "@cocurdex/deck/pdf";
 import { describe, expect, it } from "vitest";
@@ -43,8 +46,35 @@ describe("deck PDF export", () => {
       content,
       { title: "Checkout review" },
       fonts,
+      async (hash) => {
+        throw new Error(`Unexpected image ${hash}`);
+      },
     );
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(pageBoxes(pdf)).toEqual(Array(3).fill("0 0 960 540"));
+  });
+
+  it("embeds slide images", async () => {
+    const fonts = systemPdfFonts();
+    if (!fonts) throw new Error("No system font");
+    const png = readFileSync(
+      createRequire(import.meta.url).resolve("./fixtures/swatch-3x2.png"),
+    );
+    const { content: base } = compileDeckMarkdown("## Chart");
+    const hash = "f".repeat(64);
+    const { content } = applyDeckOps(base, [
+      {
+        op: "addImage",
+        slideId: base.slides[0]?.id ?? "",
+        image: { hash, mimeType: "image/png", width: 3, height: 2 },
+      },
+    ]);
+    const pdf = await exportDeckToPdf(
+      content,
+      { title: "Chart" },
+      fonts,
+      async () => png,
+    );
+    expect(pdf.toString("latin1")).toMatch(/\/Subtype \/Image/);
   });
 });

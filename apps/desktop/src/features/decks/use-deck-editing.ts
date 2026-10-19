@@ -1,4 +1,5 @@
 import type {
+  DeckImage,
   DeckOp,
   DeckRecord,
   DeckTextTarget,
@@ -9,11 +10,13 @@ import type {
 import { useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { decksApi } from "./decks-api";
 import {
   activeSlideIndexAtom,
   editActiveDeckAtom,
   selectSlideAtom,
 } from "./decks-store";
+import { pickImageFilePath } from "./image-file-picker";
 
 export type SlideAction = "duplicate" | "moveEarlier" | "moveLater" | "delete";
 
@@ -58,6 +61,19 @@ export function useDeckEditing(deck: DeckRecord) {
     }
   };
 
+  const withPickedImage = async (build: (image: DeckImage) => DeckOp[]) => {
+    try {
+      const path = await pickImageFilePath();
+      if (!path) return;
+      const image = await decksApi.importImage({ path });
+      await edit(build(image));
+    } catch (error) {
+      toast.error(t("errors.image"), {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
   const activeSlideId = slides[activeIndex]?.id;
 
   return {
@@ -77,6 +93,20 @@ export function useDeckEditing(deck: DeckRecord) {
       target: DeckTextTarget,
       paragraphs: TextParagraph[],
     ) => apply([{ op: "setText", slideId, target, paragraphs }]),
+    insertImage: () => {
+      if (!activeSlideId) return;
+      void withPickedImage((image) => [
+        { op: "addImage", slideId: activeSlideId, image },
+      ]);
+    },
+    replaceImage: (slideId: string, elementId: string) => {
+      void withPickedImage((image) => [
+        { op: "setImage", slideId, elementId, image },
+      ]);
+    },
+    deleteElement: (slideId: string, elementId: string) => {
+      void apply([{ op: "deleteElement", slideId, elementId }]);
+    },
     setNotes: (slideId: string, notes: string) => {
       void apply([{ op: "setNotes", slideId, notes }]);
     },

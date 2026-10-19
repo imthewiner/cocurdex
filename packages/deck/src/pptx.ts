@@ -1,6 +1,7 @@
 import {
   type DeckColor,
   type DeckContent,
+  deckImageHashes,
   SLIDE_LAYOUT_IDS,
   SLIDE_SLOT_IDS,
   type SlideFrame,
@@ -8,8 +9,10 @@ import {
   type TextParagraph,
 } from "@cocurdex/shared";
 import PptxGenJS from "pptxgenjs";
+import { type DeckImageLoader, loadDeckImages } from "./images";
 import { SLIDE_LAYOUTS } from "./layouts";
 import {
+  type ResolvedImage,
   type ResolvedItem,
   type ResolvedTable,
   type ResolvedText,
@@ -197,12 +200,31 @@ function isAtLayoutFrame(layout: SlideLayoutId, item: ResolvedText): boolean {
   );
 }
 
+function addImage(
+  slide: Slide,
+  item: ResolvedImage,
+  images: ReadonlyMap<string, Buffer>,
+) {
+  const bytes = images.get(item.image.hash);
+  if (!bytes) return;
+  slide.addImage({
+    ...position(item.frame),
+    data: `${item.image.mimeType};base64,${bytes.toString("base64")}`,
+    ...(item.alt ? { altText: item.alt } : {}),
+  });
+}
+
 function addItem(
   slide: Slide,
   layout: SlideLayoutId,
   item: ResolvedItem,
   theme: DeckTheme,
+  images: ReadonlyMap<string, Buffer>,
 ) {
+  if (item.kind === "image") {
+    addImage(slide, item, images);
+    return;
+  }
   if (item.kind === "shape") {
     if (item.source.kind === "decoration") return;
     slide.addShape(item.shape === "ellipse" ? "ellipse" : "rect", {
@@ -231,8 +253,10 @@ function addItem(
 export async function exportDeckToPptx(
   deck: DeckContent,
   meta: { title: string },
+  loadImage: DeckImageLoader,
 ): Promise<Buffer> {
   const theme = deckTheme(deck.theme);
+  const images = await loadDeckImages(deckImageHashes(deck), loadImage);
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.title = meta.title;
@@ -245,7 +269,7 @@ export async function exportDeckToPptx(
     const resolved = resolveSlide(slide, deck);
     const target = pptx.addSlide({ masterName: slide.layout });
     for (const item of resolved.items) {
-      addItem(target, slide.layout, item, theme);
+      addItem(target, slide.layout, item, theme, images);
     }
     if (resolved.notes) target.addNotes(resolved.notes);
   }

@@ -3,6 +3,7 @@ import type {
   DeleteDeckPayload,
   EditDeckPayload,
   GetDeckPayload,
+  ImportDeckImagePayload,
   UpdateDeckPayload,
 } from "@cocurdex/shared";
 import { requestDaemon } from "@/lib";
@@ -17,4 +18,6 @@ export const decksApi = {
   },
   createDownload: (payload: CreateDeckDownloadPayload) =>
     requestDaemon("deck.createDownload", payload),
+  importImage: (payload: ImportDeckImagePayload) =>
+    requestDaemon("deck.importImage", payload),
 };

@@ -4,6 +4,7 @@
     "export": "导出",
     "exportPdf": "导出 PDF",
     "exportPptx": "导出 PPTX",
+    "insertImage": "插入图片",
     "layout": "版式",
     "present": "放映",
     "presenterView": "演讲者视图",
@@ -11,6 +12,8 @@
   },
   "editor": {
     "edit": "编辑{{name}}",
+    "image": "图片",
+    "imageNamed": "图片：{{name}}",
     "notesPlaceholder": "添加演讲者备注",
     "placeholders": {
       "subtitle": "单击添加副标题",
@@ -29,7 +32,12 @@
   "errors": {
     "audienceWindow": "无法打开观众窗口。请允许此页面弹出窗口后重试。",
     "edit": "无法保存更改",
-    "export": "无法导出演示文稿"
+    "export": "无法导出演示文稿",
+    "image": "无法添加图片"
+  },
+  "imageMenu": {
+    "delete": "删除图片",
+    "replace": "替换图片…"
   },
   "layouts": {
     "blank": "空白",

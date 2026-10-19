@@ -21,6 +21,7 @@ export interface ContentAddressedStore {
   put(bytes: Buffer): Promise<PutBlobResult>;
   get(hash: string): Promise<Buffer | null>;
   has(hash: string): Promise<boolean>;
+  locate(hash: string): Promise<{ path: string; size: number } | null>;
   usage(): Promise<number>;
   listHashes(): Promise<string[]>;
   gc(keep: Set<string>, options?: { minAgeMs?: number }): Promise<number>;
@@ -162,6 +163,14 @@ export function createContentAddressedStore(
       return bytes != null && hashBytes(bytes) === hash ? bytes : null;
     },
     has,
+    async locate(hash) {
+      if (!HASH_PATTERN.test(hash)) {
+        return null;
+      }
+      const target = blobPath(hash);
+      const fileStat = await stat(target).catch(() => null);
+      return fileStat?.isFile() ? { path: target, size: fileStat.size } : null;
+    },
     usage,
     listHashes,
     gc(keep, options = {}) {

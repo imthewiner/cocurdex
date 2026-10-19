@@ -5,6 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./edit": "./src/edit.ts",
+    "./image-info": "./src/image-info.ts",
+    "./images": "./src/images.ts",
     "./markdown": "./src/markdown.ts",
     "./pdf": "./src/pdf.ts",
     "./pptx": "./src/pptx.ts",

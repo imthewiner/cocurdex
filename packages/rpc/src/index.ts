@@ -40,6 +40,7 @@ import type {
   CreateViewPayload,
   CreateWorkflowPayload,
   DeckDownload,
+  DeckImage,
   DeckIssue,
   DeckRecord,
   DeckSummary,
@@ -75,6 +76,7 @@ import type {
   HostPairingRecord,
   HostRemoteAccessStatus,
   ImageAttachment,
+  ImportDeckImagePayload,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
   IssueDetail,
@@ -443,6 +445,7 @@ export type DaemonRequestPayloadByMethod = {
   "deck.check": CheckDeckPayload;
   "deck.createDownload": CreateDeckDownloadPayload;
   "deck.exportFile": ExportDeckFilePayload;
+  "deck.importImage": ImportDeckImagePayload;
   "issue.listViews": undefined;
   "issue.loadView": LoadViewPayload;
   "issue.createView": CreateViewPayload;
@@ -698,6 +701,7 @@ export type DaemonResultByMethod = {
   "deck.check": DeckIssue[];
   "deck.createDownload": DeckDownload;
   "deck.exportFile": ExportDeckFileResult;
+  "deck.importImage": DeckImage;
   "issue.listViews": ViewSummary[];
   "issue.loadView": ViewFull | null;
   "issue.createView": ViewSummary;

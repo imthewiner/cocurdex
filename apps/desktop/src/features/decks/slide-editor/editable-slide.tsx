@@ -1,5 +1,7 @@
 import {
+  type DeckTheme,
   deckTheme,
+  type ResolvedImage,
   type ResolvedItem,
   type ResolvedText,
   resolveEmptySlots,
@@ -12,9 +14,17 @@ import type {
   Slide,
   TextParagraph,
 } from "@cocurdex/shared";
-import { useState } from "react";
+import { ImageUp, Trash2 } from "lucide-react";
+import { type KeyboardEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui";
 import { cn } from "@/lib";
+import { canPickImageFiles } from "../image-file-picker";
 import { SlideCanvas, slideItemKey } from "../slide-canvas";
 import { frameStyle, slideLength, themeColor } from "../slide-geometry";
 import { SlideTextEditor } from "./slide-text-editor";
@@ -27,6 +37,98 @@ const VALIGN_JUSTIFY = {
 
 function isText(item: ResolvedItem): item is ResolvedText {
   return item.kind === "text";
+}
+
+function isElementImage(
+  item: ResolvedItem,
+): item is ResolvedImage & { source: { kind: "element"; elementId: string } } {
+  return item.kind === "image" && item.source.kind === "element";
+}
+
+const DELETE_KEYS = new Set(["Delete", "Backspace"]);
+
+function ImageTarget({
+  item,
+  onReplace,
+  onDelete,
+}: {
+  item: ResolvedImage;
+  onReplace: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation("decks");
+  const label = item.alt
+    ? t("editor.imageNamed", { name: item.alt })
+    : t("editor.image");
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          data-slide-target={slideItemKey(item)}
+          className="absolute rounded-dense outline-none transition-shadow hover:ring-1 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+          style={frameStyle(item.frame)}
+          onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+            if (!DELETE_KEYS.has(event.key)) return;
+            event.preventDefault();
+            onDelete();
+          }}
+        />
+      </ContextMenuTrigger>
+      <ContextMenuContent className="min-w-44">
+        {canPickImageFiles() ? (
+          <ContextMenuItem onClick={onReplace}>
+            <ImageUp className="size-3.5" />
+            {t("imageMenu.replace")}
+          </ContextMenuItem>
+        ) : null}
+        <ContextMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2 className="size-3.5" />
+          {t("imageMenu.delete")}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function TextTarget({
+  item,
+  theme,
+  label,
+  onEdit,
+}: {
+  item: ResolvedText;
+  theme: DeckTheme;
+  label: { edit: string; placeholder: string };
+  onEdit: () => void;
+}) {
+  const isEmpty = item.paragraphs.length === 0;
+  return (
+    <button
+      type="button"
+      aria-label={label.edit}
+      data-slide-target={slideItemKey(item)}
+      className={cn(
+        "absolute flex cursor-text flex-col rounded-dense outline-none transition-shadow hover:ring-1 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring",
+        isEmpty && "border border-current border-dashed",
+      )}
+      style={{
+        ...frameStyle(item.frame),
+        padding: slideLength(TEXT_INSET),
+        justifyContent: VALIGN_JUSTIFY[item.valign],
+        textAlign: item.align,
+        color: themeColor(theme, item.color),
+        fontSize: slideLength(item.fontSize),
+        fontWeight: item.bold ? 700 : 400,
+        lineHeight: item.lineHeight,
+        opacity: isEmpty ? 0.45 : undefined,
+      }}
+      onClick={onEdit}
+    >
+      {isEmpty ? label.placeholder : null}
+    </button>
+  );
 }
 
 function placeholderKey(item: ResolvedText) {
@@ -56,6 +158,8 @@ export function EditableSlide({
   content,
   className,
   onEditText,
+  onReplaceImage,
+  onDeleteElement,
 }: {
   slide: Slide;
   content: DeckContent;
@@ -64,15 +168,19 @@ export function EditableSlide({
     target: DeckTextTarget,
     paragraphs: TextParagraph[],
   ) => Promise<void>;
+  onReplaceImage: (elementId: string) => void;
+  onDeleteElement: (elementId: string) => void;
 }) {
   const labels = useTargetLabels();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const theme = deckTheme(content.theme);
-  const targets = [
-    ...resolveSlide(slide, content).items.filter(isText),
+  const layers: ResolvedItem[] = [
     ...resolveEmptySlots(slide, content),
+    ...resolveSlide(slide, content).items,
   ];
-  const editing = targets.find((item) => slideItemKey(item) === editingKey);
+  const editing = layers
+    .filter(isText)
+    .find((item) => slideItemKey(item) === editingKey);
   const stopEditing = () => setEditingKey(null);
 
   return (
@@ -82,36 +190,27 @@ export function EditableSlide({
       className={className}
       hiddenItemKey={editing ? editingKey : null}
     >
-      {targets.map((item) => {
+      {layers.map((item) => {
         const key = slideItemKey(item);
-        if (key === editingKey) return null;
-        const label = labels(item);
-        const isEmpty = item.paragraphs.length === 0;
+        if (isElementImage(item)) {
+          return (
+            <ImageTarget
+              key={key}
+              item={item}
+              onReplace={() => onReplaceImage(item.source.elementId)}
+              onDelete={() => onDeleteElement(item.source.elementId)}
+            />
+          );
+        }
+        if (!isText(item) || key === editingKey) return null;
         return (
-          <button
+          <TextTarget
             key={key}
-            type="button"
-            aria-label={label.edit}
-            data-slide-target={key}
-            className={cn(
-              "absolute flex cursor-text flex-col rounded-dense outline-none transition-shadow hover:ring-1 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring",
-              isEmpty && "border border-current border-dashed",
-            )}
-            style={{
-              ...frameStyle(item.frame),
-              padding: slideLength(TEXT_INSET),
-              justifyContent: VALIGN_JUSTIFY[item.valign],
-              textAlign: item.align,
-              color: themeColor(theme, item.color),
-              fontSize: slideLength(item.fontSize),
-              fontWeight: item.bold ? 700 : 400,
-              lineHeight: item.lineHeight,
-              opacity: isEmpty ? 0.45 : undefined,
-            }}
-            onClick={() => setEditingKey(key)}
-          >
-            {isEmpty ? label.placeholder : null}
-          </button>
+            item={item}
+            theme={theme}
+            label={labels(item)}
+            onEdit={() => setEditingKey(key)}
+          />
         );
       })}
       {editing ? (

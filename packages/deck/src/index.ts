@@ -2,6 +2,8 @@ export { checkDeck } from "./check";
 export { type LayoutSpec, SLIDE_LAYOUTS, type SlotSpec } from "./layouts";
 export { listMarkers } from "./list-markers";
 export {
+  containFrame,
+  type ResolvedImage,
   type ResolvedItem,
   type ResolvedShape,
   type ResolvedSlide,
