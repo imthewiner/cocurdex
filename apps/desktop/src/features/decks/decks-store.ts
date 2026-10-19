@@ -118,3 +118,10 @@ export const deleteDeckAtom = atom(null, async (get, set, id: string) => {
     set(activeDeckAtom, null);
   }
 });
+
+export const importDeckAtom = atom(null, async (_get, set, path: string) => {
+  const result = await decksApi.importPptx({ path });
+  await set(loadDecksAtom);
+  await set(openDeckAtom, result.deck.id);
+  return result;
+});

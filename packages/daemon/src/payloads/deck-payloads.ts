@@ -9,6 +9,8 @@ import {
   type ExportDeckFilePayload,
   type GetDeckPayload,
   type ImportDeckImagePayload,
+  type ImportDeckPayload,
+  type ReadPptxPayload,
   type UpdateDeckPayload,
 } from "@cocurdex/shared";
 import { z } from "zod";
@@ -64,6 +66,16 @@ const importImage = z.object({
   path: z.string().min(1).max(4096),
 }) satisfies z.ZodType<ImportDeckImagePayload>;
 
+const importDeck = z.object({
+  path: z.string().min(1).max(4096),
+  title: titleSchema.optional(),
+  workspaceId: idSchema.nullable().optional(),
+}) satisfies z.ZodType<ImportDeckPayload>;
+
+const readPptx = z.object({
+  path: z.string().min(1).max(4096),
+}) satisfies z.ZodType<ReadPptxPayload>;
+
 export const deckPayloadSchemas = {
   "deck.get": byId satisfies z.ZodType<GetDeckPayload>,
   "deck.create": createDeck,
@@ -74,4 +86,6 @@ export const deckPayloadSchemas = {
   "deck.createDownload": createDownload,
   "deck.exportFile": exportFile,
   "deck.importImage": importImage,
+  "deck.import": importDeck,
+  "deck.readPptx": readPptx,
 } satisfies PayloadSchemas;

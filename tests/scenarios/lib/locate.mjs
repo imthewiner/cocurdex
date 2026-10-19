@@ -55,6 +55,24 @@ export async function waitForRole(
   }
 }
 
+export async function waitForNoRole(
+  session,
+  query,
+  timeout = DEFAULT_TIMEOUT_MS,
+) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const matches = await queryAllByRole(session, query);
+    if (matches.length === 0) return;
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `${describeQuery(query)} still present after ${timeout}ms`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+}
+
 export async function clickPoint(session, point, button = "left") {
   for (const type of ["mousePressed", "mouseReleased"]) {
     await session.send("Input.dispatchMouseEvent", {

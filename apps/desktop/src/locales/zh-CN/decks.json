@@ -33,11 +33,15 @@
     "audienceWindow": "无法打开观众窗口。请允许此页面弹出窗口后重试。",
     "edit": "无法保存更改",
     "export": "无法导出演示文稿",
-    "image": "无法添加图片"
+    "image": "无法添加图片",
+    "import": "无法导入演示文稿"
   },
   "imageMenu": {
     "delete": "删除图片",
     "replace": "替换图片…"
+  },
+  "import": {
+    "warnings": "已导入，部分内容未能保留"
   },
   "layouts": {
     "blank": "空白",
@@ -80,6 +84,7 @@
       "title": "还没有演示文稿"
     },
     "expand": "显示演示文稿列表",
+    "importPptx": "导入 PowerPoint (.pptx)",
     "rename": "重命名",
     "resize": "调整演示文稿列表宽度",
     "title": "演示文稿",

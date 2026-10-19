@@ -4,6 +4,7 @@ import type {
   EditDeckPayload,
   GetDeckPayload,
   ImportDeckImagePayload,
+  ImportDeckPayload,
   UpdateDeckPayload,
 } from "@cocurdex/shared";
 import { requestDaemon } from "@/lib";
@@ -20,4 +21,6 @@ export const decksApi = {
     requestDaemon("deck.createDownload", payload),
   importImage: (payload: ImportDeckImagePayload) =>
     requestDaemon("deck.importImage", payload),
+  importPptx: (payload: ImportDeckPayload) =>
+    requestDaemon("deck.import", payload),
 };

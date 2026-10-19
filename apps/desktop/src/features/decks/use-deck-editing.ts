@@ -1,11 +1,12 @@
-import type {
-  DeckImage,
-  DeckOp,
-  DeckRecord,
-  DeckTextTarget,
-  DeckThemeId,
-  SlideLayoutId,
-  TextParagraph,
+import {
+  DECK_IMAGE_MIME_TYPES,
+  type DeckImage,
+  type DeckOp,
+  type DeckRecord,
+  type DeckTextTarget,
+  type DeckThemeId,
+  type SlideLayoutId,
+  type TextParagraph,
 } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,7 @@ import {
   editActiveDeckAtom,
   selectSlideAtom,
 } from "./decks-store";
-import { pickImageFilePath } from "./image-file-picker";
+import { pickLocalFilePath } from "./local-file-picker";
 
 export type SlideAction = "duplicate" | "moveEarlier" | "moveLater" | "delete";
 
@@ -63,7 +64,7 @@ export function useDeckEditing(deck: DeckRecord) {
 
   const withPickedImage = async (build: (image: DeckImage) => DeckOp[]) => {
     try {
-      const path = await pickImageFilePath();
+      const path = await pickLocalFilePath(DECK_IMAGE_MIME_TYPES.join(","));
       if (!path) return;
       const image = await decksApi.importImage({ path });
       await edit(build(image));

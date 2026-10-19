@@ -10,6 +10,7 @@
     "./markdown": "./src/markdown.ts",
     "./pdf": "./src/pdf.ts",
     "./pptx": "./src/pptx.ts",
+    "./pptx-import": "./src/pptx-import-entry.ts",
     "./internal/*": "./src/*.ts"
   },
   "scripts": {
@@ -19,6 +20,8 @@
   "dependencies": {
     "@cocurdex/note-doc": "workspace:*",
     "@cocurdex/shared": "workspace:*",
+    "fast-xml-parser": "^5.11.2",
+    "jszip": "^3.10.2",
     "pdfkit": "0.20.2",
     "pptxgenjs": "4.0.1",
     "zod": "^4.6.5"

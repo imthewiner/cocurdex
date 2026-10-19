@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { EventEmitter } from "node:events";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { DecksRepository } from "@cocurdex/db";
 import { checkDeck, parseDeckContent } from "@cocurdex/deck";
@@ -12,6 +12,7 @@ import {
   type PdfFontSet,
 } from "@cocurdex/deck/pdf";
 import { exportDeckToPptx } from "@cocurdex/deck/pptx";
+import { pptxOutline, pptxToDeck, readPptx } from "@cocurdex/deck/pptx-import";
 import {
   type CheckDeckPayload,
   type CreateDeckDownloadPayload,
@@ -34,12 +35,16 @@ import {
   type ExportDeckFileResult,
   type GetDeckPayload,
   type ImportDeckImagePayload,
+  type ImportDeckPayload,
+  type PptxOutline,
+  type ReadPptxPayload,
   type UpdateDeckPayload,
 } from "@cocurdex/shared";
 import type { DeckAssetStore } from "./deck-assets";
 import { choosePdfFonts, pdfFontCandidates } from "./pdf-fonts";
 
 const DOWNLOAD_TICKET_TTL_MS = 60_000;
+const MAX_PPTX_BYTES = 200 * 1024 * 1024;
 const UNTITLED_DECK = "Untitled deck";
 const UNSAFE_FILE_NAME_CHARS = new Set('<>:"/\\|?*');
 const FIRST_PRINTABLE_CODE = 0x20;
@@ -90,6 +95,22 @@ function emptyDeck(): DeckContent {
     theme: "default",
     slides: [],
   };
+}
+
+async function readPptxFile(filePath: string) {
+  if (!path.isAbsolute(filePath)) {
+    throw new Error("Presentation path must be absolute");
+  }
+  const info = await stat(filePath).catch(() => null);
+  if (!info?.isFile()) throw new Error(`Presentation not found: ${filePath}`);
+  if (info.size > MAX_PPTX_BYTES) {
+    throw new Error("Presentation is larger than 200 MB");
+  }
+  return readPptx(await readFile(filePath));
+}
+
+function fileTitle(filePath: string) {
+  return path.basename(filePath, path.extname(filePath)).trim();
 }
 
 function resolveSource(source: DeckSource): ResolvedSource | null {
@@ -184,6 +205,27 @@ export class DaemonDeckService {
 
   importImage(payload: ImportDeckImagePayload) {
     return this.assets.importFile(payload.path);
+  }
+
+  async importPptx(payload: ImportDeckPayload): Promise<DeckWriteResult> {
+    const document = await readPptxFile(payload.path);
+    const imported = await pptxToDeck(document, (bytes) =>
+      this.assets.putImage(bytes),
+    );
+    const deck = await this.decks.create({
+      title:
+        payload.title ??
+        imported.title ??
+        (fileTitle(payload.path) || UNTITLED_DECK),
+      workspaceId: payload.workspaceId ?? null,
+      content: imported.content,
+    });
+    this.emitChanged();
+    return this.writeResult(deck, imported.warnings);
+  }
+
+  async readPptx(payload: ReadPptxPayload): Promise<PptxOutline> {
+    return pptxOutline(await readPptxFile(payload.path));
   }
 
   async collectUnusedImages() {

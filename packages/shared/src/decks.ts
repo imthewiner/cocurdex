@@ -281,6 +281,29 @@ export interface ImportDeckImagePayload {
   path: string;
 }
 
+export interface ImportDeckPayload {
+  path: string;
+  title?: string;
+  workspaceId?: string | null;
+}
+
+export interface ReadPptxPayload {
+  path: string;
+}
+
+export interface PptxSlideText {
+  index: number;
+  title: string;
+  text: string[];
+  notes: string;
+}
+
+export interface PptxOutline {
+  title: string | null;
+  slides: PptxSlideText[];
+  markdown: string;
+}
+
 export const DAEMON_DECK_ASSET_HTTP_PATH = "/decks/assets";
 export const DAEMON_DECK_ASSET_HASH_QUERY = "hash";
 

@@ -310,4 +310,62 @@ describe("decks through the CLI and daemon", () => {
     expect(unknown.code).not.toBe(0);
     expect(unknown.stderr).toContain("Deck image not found");
   });
+
+  it("imports a .pptx as an editable deck and reads its text for agents", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const { deck: source } = await requestDaemon(
+      "deck.create",
+      { title: "Acme roadmap", markdown: MARKDOWN },
+      daemon.options,
+    );
+    await runCli(
+      [
+        "deck",
+        "image",
+        source.id,
+        "--slide",
+        source.content.slides[1]?.id ?? "",
+        "--file",
+        SWATCH_PNG,
+        "--alt",
+        "Swatch",
+      ],
+      options,
+    );
+    const file = path.join(await tempDirs.create("deck-import-"), "Q3.pptx");
+    await runCli(["deck", "export", source.id, "--output", file], options);
+
+    const imported = await runCli(
+      ["deck", "import", file, "--title", "Imported", "--json"],
+      options,
+    );
+    expect(imported.stderr).toBe("");
+    const result = JSON.parse(imported.stdout) as WriteJson & {
+      deck: {
+        content: {
+          slides: { layout: string; notes: string; elements: object[] }[];
+        };
+      };
+    };
+    expect(result.deck).toMatchObject({ title: "Imported", slideCount: 3 });
+    expect(result.warnings).toEqual([]);
+    const slides = result.deck.content.slides;
+    expect(slides.map((slide) => slide.layout)).toEqual([
+      "cover",
+      "title-content",
+      "closing",
+    ]);
+    expect(slides[1]?.notes).toBe("Mention the latency win.");
+    expect(slides[1]?.elements).toEqual([
+      expect.objectContaining({ kind: "image", alt: "Swatch" }),
+    ]);
+
+    const outline = await runCli(["deck", "read", file], options);
+    expect(outline.stdout).toContain("## Highlights");
+    expect(outline.stdout).toContain("- Faster checkout");
+    expect(outline.stdout).toContain("Notes: Mention the latency win.");
+
+    const notPptx = await runCli(["deck", "import", SWATCH_PNG], options);
+    expect(notPptx.code).not.toBe(0);
+  });
 });

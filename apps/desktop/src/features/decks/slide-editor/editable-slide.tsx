@@ -24,7 +24,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui";
 import { cn } from "@/lib";
-import { canPickImageFiles } from "../image-file-picker";
+import { canPickLocalFiles } from "../local-file-picker";
 import { SlideCanvas, slideItemKey } from "../slide-canvas";
 import { frameStyle, slideLength, themeColor } from "../slide-geometry";
 import { SlideTextEditor } from "./slide-text-editor";
@@ -77,7 +77,7 @@ function ImageTarget({
         />
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-44">
-        {canPickImageFiles() ? (
+        {canPickLocalFiles() ? (
           <ContextMenuItem onClick={onReplace}>
             <ImageUp className="size-3.5" />
             {t("imageMenu.replace")}

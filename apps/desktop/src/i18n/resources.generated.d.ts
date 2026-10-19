@@ -530,10 +530,14 @@ export default interface Resources {
       edit: "Could not save the change";
       export: "Could not export the deck";
       image: "Could not add the image";
+      import: "Could not import the presentation";
     };
     imageMenu: {
       delete: "Delete image";
       replace: "Replace image…";
+    };
+    import: {
+      warnings: "Imported with some content left out";
     };
     layouts: {
       blank: "Blank";
@@ -576,6 +580,7 @@ export default interface Resources {
         title: "No decks yet";
       };
       expand: "Show deck list";
+      importPptx: "Import PowerPoint (.pptx)";
       rename: "Rename";
       resize: "Resize deck list";
       title: "Decks";

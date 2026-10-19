@@ -10,9 +10,19 @@ import {
 } from "@cocurdex/shared";
 import { z } from "zod";
 
-const MAX_SLIDES = 500;
-const MAX_ELEMENTS = 200;
-const MAX_TEXT = 20_000;
+export const DECK_LIMITS = {
+  slides: 500,
+  elements: 200,
+  text: 20_000,
+  paragraphs: 200,
+  runs: 500,
+  tableRows: 50,
+  tableColumns: 20,
+} as const;
+
+const MAX_SLIDES = DECK_LIMITS.slides;
+const MAX_ELEMENTS = DECK_LIMITS.elements;
+const MAX_TEXT = DECK_LIMITS.text;
 const MAX_LEVEL = 4;
 const MAX_OPS = 500;
 const MAX_MARKDOWN = 2_000_000;
@@ -40,13 +50,13 @@ const runSchema = z.object({
 });
 
 const paragraphSchema = z.object({
-  runs: z.array(runSchema).max(500),
+  runs: z.array(runSchema).max(DECK_LIMITS.runs),
   list: z.enum(["bullet", "number"]).optional(),
   level: z.number().int().min(0).max(MAX_LEVEL).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
 });
 
-const paragraphsSchema = z.array(paragraphSchema).max(200);
+const paragraphsSchema = z.array(paragraphSchema).max(DECK_LIMITS.paragraphs);
 
 const tableSchema = z.object({
   header: z.boolean(),
@@ -55,10 +65,10 @@ const tableSchema = z.object({
       z
         .array(z.object({ paragraphs: paragraphsSchema }))
         .min(1)
-        .max(20),
+        .max(DECK_LIMITS.tableColumns),
     )
     .min(1)
-    .max(50),
+    .max(DECK_LIMITS.tableRows),
 });
 
 const slotContentSchema = z.discriminatedUnion("kind", [

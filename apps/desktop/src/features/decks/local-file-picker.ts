@@ -1,15 +1,14 @@
-import { DECK_IMAGE_MIME_TYPES } from "@cocurdex/shared";
 import { desktopApi } from "@/lib";
 
-export function canPickImageFiles() {
+export function canPickLocalFiles() {
   return desktopApi.capabilities.localFilePaths;
 }
 
-export function pickImageFilePath(): Promise<string | null> {
+export function pickLocalFilePath(accept: string): Promise<string | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = DECK_IMAGE_MIME_TYPES.join(",");
+    input.accept = accept;
     input.addEventListener("cancel", () => resolve(null), { once: true });
     input.addEventListener(
       "change",

@@ -34,9 +34,15 @@ export class DeckAssetStore {
     if (info.size > MAX_DECK_IMAGE_BYTES) {
       throw new Error("Image is larger than 20 MB");
     }
-    const bytes = await readFile(filePath);
-    const image = readImageInfo(bytes);
+    const image = await this.putImage(await readFile(filePath));
     if (!image) throw new Error("Only PNG and JPEG images are supported");
+    return image;
+  }
+
+  async putImage(bytes: Buffer): Promise<DeckImage | null> {
+    if (bytes.length > MAX_DECK_IMAGE_BYTES) return null;
+    const image = readImageInfo(bytes);
+    if (!image) return null;
     const stored = await this.store.put(bytes);
     if (!stored.stored) throw new Error("Image could not be stored");
     return { hash: stored.hash, ...image };

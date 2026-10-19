@@ -19,6 +19,8 @@ cocurdex deck update <id> [--title <title>] [--markdown-file <path|-> | --conten
 cocurdex deck edit <id> --ops-file <path|-> [--expected-revision <n>] --json
 cocurdex deck check <id> --json
 cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf] --json
+cocurdex deck import <file.pptx> [--title <title>] [--workspace <id>] --json
+cocurdex deck read <file.pptx> [--json]
 cocurdex deck delete <id> --json
 ```
 
@@ -135,6 +137,22 @@ the picture and keeps its frame. Remove one with the op
 `{ "op": "deleteElement", "slideId": "<id>", "elementId": "<id>" }`. Ops and
 content may only reference images already imported through `deck image`
 (or the `deck.importImage` RPC); an unknown `hash` is rejected.
+
+## Existing PowerPoint files
+
+To read what a `.pptx` says (summaries, reviews, answering questions), run
+`deck read`: it prints the slide text and speaker notes as deck Markdown, with
+`---` between slides and pictures as `![alt](file)`. `--json` adds per-slide
+`title`, `text` lines, and `notes`. Reading does not create a deck.
+
+To work on a `.pptx` in Cocurdex, run `deck import`; it creates a new deck and
+leaves the file untouched. Title slides, title-and-content, two-column, and
+title-only slides map to deck layouts at their original positions; other
+shapes become free text, table, and image elements. Charts, SmartArt, video,
+and pictures other than PNG/JPEG are skipped and listed in `warnings`; tell the
+user what was dropped. Fonts, colors, and backgrounds follow the deck theme,
+not the source file. Run `deck check` afterwards, since imported text may not
+fit the theme's sizes.
 
 ## Precise edits with JSON content
 

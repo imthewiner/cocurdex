@@ -24,6 +24,8 @@ const USAGE = {
   edit: "cocurdex deck edit <id> --ops-file <path|->",
   image:
     "cocurdex deck image <id> --slide <slideId> --file <path.png|path.jpg> [--alt <text>] [--replace <elementId>]",
+  import: "cocurdex deck import <file.pptx> [--title <t>] [--workspace <id>]",
+  read: "cocurdex deck read <file.pptx> [--json]",
   delete: "cocurdex deck delete <id>",
   check: "cocurdex deck check <id>",
   export:
@@ -117,6 +119,29 @@ export async function handleDeckCommand(
       }),
     );
     printResult({ ...result, image }, parsed);
+    return true;
+  }
+
+  if (action === "import") {
+    const filePath = path.resolve(requiredId(args, "import"));
+    const result = await withDaemon(() =>
+      requestDaemon("deck.import", {
+        path: filePath,
+        title: stringFlag(parsed, "title"),
+        workspaceId: stringFlag(parsed, "workspace") ?? null,
+      }),
+    );
+    printResult(result, parsed);
+    return true;
+  }
+
+  if (action === "read") {
+    const filePath = path.resolve(requiredId(args, "read"));
+    const outline = await withDaemon(() =>
+      requestDaemon("deck.readPptx", { path: filePath }),
+    );
+    if (parsed.flags.has("json")) printResult(outline, parsed);
+    else process.stdout.write(outline.markdown);
     return true;
   }
 

@@ -504,6 +504,8 @@ function printUsage() {
       "  cocurdex deck edit <id> --ops-file <path|-> [--expected-revision <n>]",
       "  cocurdex deck image <id> --slide <slideId> --file <path.png|path.jpg> [--alt <text>] [--replace <elementId>]",
       "  cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf]",
+      "  cocurdex deck import <file.pptx> [--title <t>] [--workspace <id>] [--json]",
+      "  cocurdex deck read <file.pptx> [--json]",
       "  cocurdex issue list|show|create|update|move|delete|comment|views [--view <id>] [--json]",
       "  cocurdex issue relate|unrelate <id> blocks|related|duplicate <id> [--json]",
       "  cocurdex issue labels | label create --name <name> | label delete <id|name> [--json]",

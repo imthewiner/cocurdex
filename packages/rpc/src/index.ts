@@ -77,6 +77,7 @@ import type {
   HostRemoteAccessStatus,
   ImageAttachment,
   ImportDeckImagePayload,
+  ImportDeckPayload,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
   IssueDetail,
@@ -106,6 +107,7 @@ import type {
   PeerSessionSummary,
   PendingSettingsChangeRecord,
   PiModelsJson,
+  PptxOutline,
   ProductSkillsInstallResult,
   ProductSkillsRemoveResult,
   ProductSkillsRequestPayload,
@@ -123,6 +125,7 @@ import type {
   PtySpawnPayload,
   PtySpawnResult,
   PtyWritePayload,
+  ReadPptxPayload,
   RefineSessionTitlePayload,
   RemoteAccessSettings,
   ResolvedCommitMessageModel,
@@ -446,6 +449,8 @@ export type DaemonRequestPayloadByMethod = {
   "deck.createDownload": CreateDeckDownloadPayload;
   "deck.exportFile": ExportDeckFilePayload;
   "deck.importImage": ImportDeckImagePayload;
+  "deck.import": ImportDeckPayload;
+  "deck.readPptx": ReadPptxPayload;
   "issue.listViews": undefined;
   "issue.loadView": LoadViewPayload;
   "issue.createView": CreateViewPayload;
@@ -702,6 +707,8 @@ export type DaemonResultByMethod = {
   "deck.createDownload": DeckDownload;
   "deck.exportFile": ExportDeckFileResult;
   "deck.importImage": DeckImage;
+  "deck.import": DeckWriteResult;
+  "deck.readPptx": PptxOutline;
   "issue.listViews": ViewSummary[];
   "issue.loadView": ViewFull | null;
   "issue.createView": ViewSummary;

@@ -15,7 +15,7 @@ import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
 import { activeSlideIndexAtom, selectSlideAtom } from "./decks-store";
-import { canPickImageFiles } from "./image-file-picker";
+import { canPickLocalFiles } from "./local-file-picker";
 import {
   DeckPresenterView,
   type PresenterSession,
@@ -64,7 +64,7 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
           disabled={!slide}
           onChange={editing.setLayout}
         />
-        {canPickImageFiles() ? (
+        {canPickLocalFiles() ? (
           <TitlebarIconButton
             aria-label={t("actions.insertImage")}
             tooltip={t("actions.insertImage")}
