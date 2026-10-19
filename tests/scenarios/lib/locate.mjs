@@ -66,7 +66,7 @@ export async function clickPoint(session, point) {
   }
 }
 
-async function centerOf(session, backendNodeId) {
+export async function centerOf(session, backendNodeId) {
   await session.send("DOM.getDocument", { depth: 0 });
   await session.send("DOM.scrollIntoViewIfNeeded", { backendNodeId });
   const { model } = await session.send("DOM.getBoxModel", { backendNodeId });

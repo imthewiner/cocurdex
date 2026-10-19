@@ -3,13 +3,14 @@ import type { NoteRecord } from "@cocurdex/shared";
 import { offset } from "@floating-ui/dom";
 import Collaboration from "@tiptap/extension-collaboration";
 import DragHandle from "@tiptap/extension-drag-handle-react";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { Folder, GripVertical } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   buildMarkdownBodyExtensions,
+  focusParagraphAtStart,
   TableControls,
 } from "@/components/markdown-body-editor";
 import "@/components/markdown-body-editor/markdown-body-editor.css";
@@ -218,6 +219,7 @@ function NoteEditorBody({
             key={titleEpoch}
             noteId={note.id}
             initialTitle={note.title}
+            editor={editor}
           />
           <SaveIndicator status={saveStatus} />
         </div>
@@ -252,11 +254,12 @@ function NoteEditorBody({
 interface NoteTitleInputProps {
   noteId: string;
   initialTitle: string;
+  editor: Editor | null;
 }
 
 // Title lives outside the Tiptap document as a controlled input, debounced into
 // the note's save queue.
-function NoteTitleInput({ noteId, initialTitle }: NoteTitleInputProps) {
+function NoteTitleInput({ noteId, initialTitle, editor }: NoteTitleInputProps) {
   const { t } = useTranslation("notes");
   const [value, setValue] = useState(initialTitle);
   const rename = useDebouncedNoteRename({ noteId });
@@ -266,6 +269,7 @@ function NoteTitleInput({ noteId, initialTitle }: NoteTitleInputProps) {
       type="text"
       value={value}
       placeholder={t("editor.untitledPlaceholder")}
+      aria-label={t("editor.titleLabel")}
       className={cn(
         "min-w-0 flex-1 bg-transparent text-title font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none",
       )}
@@ -273,6 +277,17 @@ function NoteTitleInput({ noteId, initialTitle }: NoteTitleInputProps) {
         const next = event.target.value;
         setValue(next);
         rename(next);
+      }}
+      onKeyDown={(event) => {
+        if (!editor || event.nativeEvent.isComposing) return;
+        if (event.key === "Enter") {
+          event.preventDefault();
+          focusParagraphAtStart(editor.state, editor.view.dispatch);
+          editor.view.focus();
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          editor.commands.focus("start");
+        }
       }}
     />
   );

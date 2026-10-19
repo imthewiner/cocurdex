@@ -3,6 +3,7 @@ import { PDF_FIXTURES } from "./fixtures/index.mjs";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { openWorkspaceFile } from "./lib/file-tree.mjs";
+import { openEditorPanel } from "./lib/navigate.mjs";
 
 const PDF_REQUEST_FRAGMENT = "/files/pdf";
 const PDF_STORE_MODULE = "/src/features/pdf-reader/pdf-reader-store.ts";
@@ -172,29 +173,6 @@ async function resetRequests(session) {
   });
 }
 
-async function ensureEditorPanelOpen(session) {
-  await session.waitUntil(
-    async () => {
-      const S = window.__scenario;
-      return Boolean(
-        S.byLabel(await S.t("editor:actions.openEditorPanel")) ??
-          S.byLabel(await S.t("editor:actions.closeEditorPanel")),
-      );
-    },
-    null,
-    30_000,
-  );
-  await session.run(async () => {
-    const S = window.__scenario;
-    S.byLabel(await S.t("editor:actions.openEditorPanel"))?.click();
-    return true;
-  });
-  await session.waitUntil(async () => {
-    const S = window.__scenario;
-    return Boolean(S.byLabel(await S.t("editor:actions.closeEditorPanel")));
-  });
-}
-
 runScenario("pdf-reader", {
   open: () =>
     openScenarioApp(args, { fixtures: fixture ? [fixture.path] : [] }),
@@ -205,7 +183,7 @@ runScenario("pdf-reader", {
       path.dirname(pdfPath),
       "__scenario-missing__.pdf",
     );
-    await ensureEditorPanelOpen(session);
+    await openEditorPanel(session);
     const initial = await readViewerState(session, fileName);
     await resetRequests(session);
     await openWorkspaceFile(session, fileName);

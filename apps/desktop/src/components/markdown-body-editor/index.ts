@@ -1,3 +1,4 @@
+export { focusParagraphAtStart } from "./boundary-paragraph";
 export { buildMarkdownBodyExtensions } from "./extensions";
 export {
   MarkdownBodyEditor,

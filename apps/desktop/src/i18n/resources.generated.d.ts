@@ -920,6 +920,7 @@ export default interface Resources {
         saved: "Saved";
         saving: "Saving…";
       };
+      titleLabel: "Note title";
       untitledPlaceholder: "Untitled";
     };
     scope: {
