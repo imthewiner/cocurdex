@@ -1,10 +1,13 @@
-import type { DeckTheme } from "@cocurdex/deck";
+import {
+  type DeckTheme,
+  LIST_INDENT_EM,
+  listMarkers,
+  PARAGRAPH_GAP_EM,
+  paragraphIndentEm,
+} from "@cocurdex/deck";
 import type { TextParagraph, TextRun } from "@cocurdex/shared";
 import type { CSSProperties } from "react";
-import { listMarkers } from "./list-markers";
 import { monoFontStack, themeColor } from "./slide-geometry";
-
-const LIST_INDENT_EM = 1.25;
 
 function runStyle(run: TextRun, theme: DeckTheme): CSSProperties {
   const decorations = [
@@ -33,15 +36,14 @@ export function SlideParagraphs({
   return paragraphs.map((paragraph, paragraphIndex) => {
     const level = paragraph.level ?? 0;
     const marker = markers[paragraphIndex];
-    const indent = paragraph.list ? level + 1 : level;
     return (
       <p
         // biome-ignore lint/suspicious/noArrayIndexKey: paragraphs have no identity beyond their position
         key={paragraphIndex}
         className="relative m-0 whitespace-pre-wrap break-words"
         style={{
-          marginBlockEnd: "0.3em",
-          paddingInlineStart: `${indent * LIST_INDENT_EM}em`,
+          marginBlockEnd: `${PARAGRAPH_GAP_EM}em`,
+          paddingInlineStart: `${paragraphIndentEm(paragraph)}em`,
           textAlign: paragraph.align,
         }}
       >

@@ -1,5 +1,6 @@
 export { checkDeck } from "./check";
 export { type LayoutSpec, SLIDE_LAYOUTS, type SlotSpec } from "./layouts";
+export { listMarkers } from "./list-markers";
 export {
   type ResolvedItem,
   type ResolvedShape,
@@ -10,5 +11,11 @@ export {
   resolveSlide,
 } from "./resolve";
 export { deckContentSchema, parseDeckContent } from "./schema";
-export { TABLE_CELL_PADDING, TEXT_INSET } from "./text-fit";
+export {
+  LIST_INDENT_EM,
+  PARAGRAPH_GAP_EM,
+  paragraphIndentEm,
+  TABLE_CELL_PADDING,
+  TEXT_INSET,
+} from "./text-fit";
 export { DECK_THEMES, type DeckTheme, deckTheme } from "./theme";

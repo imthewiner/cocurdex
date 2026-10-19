@@ -3,8 +3,8 @@ import type { TableData, TextParagraph } from "@cocurdex/shared";
 const WIDE_CHARACTER = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/u;
 const NARROW_EM = 0.55;
 const WIDE_EM = 1;
-const LIST_INDENT_EM = 1.5;
-const PARAGRAPH_GAP_EM = 0.3;
+export const LIST_INDENT_EM = 1.25;
+export const PARAGRAPH_GAP_EM = 0.3;
 const SIZE_STEP = 2;
 
 export const TEXT_INSET = 8;
@@ -18,9 +18,9 @@ function textWidthEm(text: string): number {
   return width;
 }
 
-function paragraphIndentEm(paragraph: TextParagraph): number {
-  if (!paragraph.list) return 0;
-  return LIST_INDENT_EM * (1 + (paragraph.level ?? 0));
+export function paragraphIndentEm(paragraph: TextParagraph): number {
+  const level = paragraph.level ?? 0;
+  return LIST_INDENT_EM * (paragraph.list ? level + 1 : level);
 }
 
 export function estimateTextHeight(
