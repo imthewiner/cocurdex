@@ -1,12 +1,13 @@
 import { deckContentSchema } from "@cocurdex/deck";
-import type {
-  CheckDeckPayload,
-  CreateDeckDownloadPayload,
-  CreateDeckPayload,
-  DeleteDeckPayload,
-  ExportDeckFilePayload,
-  GetDeckPayload,
-  UpdateDeckPayload,
+import {
+  type CheckDeckPayload,
+  type CreateDeckDownloadPayload,
+  type CreateDeckPayload,
+  DECK_EXPORT_FORMATS,
+  type DeleteDeckPayload,
+  type ExportDeckFilePayload,
+  type GetDeckPayload,
+  type UpdateDeckPayload,
 } from "@cocurdex/shared";
 import { z } from "zod";
 import type { PayloadSchemas } from "./primitives";
@@ -15,7 +16,7 @@ const idSchema = z.string().min(1).max(256);
 const titleSchema = z.string().max(512);
 const markdownSchema = z.string().max(2_000_000);
 const revisionSchema = z.number().int().positive().optional();
-const formatSchema = z.enum(["pptx"]);
+const formatSchema = z.enum(DECK_EXPORT_FORMATS);
 
 const byId = z.object({ id: idSchema });
 

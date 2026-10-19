@@ -64,8 +64,12 @@ export function DeckSidebar({ onCollapse }: { onCollapse: () => void }) {
                 onStartRename={() => setRenamingId(deck.id)}
                 onCancelRename={() => setRenamingId(null)}
                 onCommitRename={(title) => commitRename(deck, title)}
-                onExport={() =>
-                  void exportDeckWithFeedback(deck.id, t("errors.export"))
+                onExport={(format) =>
+                  void exportDeckWithFeedback(
+                    deck.id,
+                    format,
+                    t("errors.export"),
+                  )
                 }
                 onDelete={() => setPendingDelete(deck)}
               />

@@ -120,6 +120,19 @@ describe("decks through the CLI and daemon", () => {
       sizeBytes: bytes.byteLength,
     });
     expect(bytes.subarray(0, 4)).toEqual(ZIP_SIGNATURE);
+
+    const pdfPath = path.join(path.dirname(outputPath), "plan.pdf");
+    const pdf = await runCli(
+      ["deck", "export", result.deck.id, "--output", pdfPath, "--json"],
+      options,
+    );
+    expect(pdf.stderr).toBe("");
+    const pdfBytes = await readFile(pdfPath);
+    expect(JSON.parse(pdf.stdout)).toEqual({
+      outputPath: pdfPath,
+      sizeBytes: pdfBytes.byteLength,
+    });
+    expect(pdfBytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
   it("serves a deck download once per ticket without a bearer header", async () => {

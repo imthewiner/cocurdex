@@ -1,7 +1,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
-import type { DeckContent, DeckSource } from "@cocurdex/shared";
+import {
+  DECK_EXPORT_FORMATS,
+  type DeckContent,
+  type DeckExportFormat,
+  type DeckSource,
+} from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
 import type { ParsedArgs } from "./parse-args";
 import {
@@ -17,7 +22,8 @@ const USAGE = {
   update: "cocurdex deck update <id>",
   delete: "cocurdex deck delete <id>",
   check: "cocurdex deck check <id>",
-  export: "cocurdex deck export <id> --output <path.pptx>",
+  export:
+    "cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf]",
 } as const;
 
 export async function handleDeckCommand(
@@ -94,11 +100,8 @@ export async function handleDeckCommand(
 
   if (action === "export") {
     const id = requiredId(args, "export");
-    const format = stringFlag(parsed, "format") ?? "pptx";
-    if (format !== "pptx") {
-      throw new Error("--format must be pptx");
-    }
     const outputPath = path.resolve(getRequiredFlag(parsed, "output"));
+    const format = exportFormat(stringFlag(parsed, "format"), outputPath);
     printResult(
       await withDaemon(() =>
         requestDaemon("deck.exportFile", { id, format, outputPath }),
@@ -109,6 +112,20 @@ export async function handleDeckCommand(
   }
 
   return false;
+}
+
+function exportFormat(
+  flag: string | undefined,
+  outputPath: string,
+): DeckExportFormat {
+  const value = flag ?? path.extname(outputPath).slice(1).toLowerCase();
+  const format = DECK_EXPORT_FORMATS.find((candidate) => candidate === value);
+  if (!format) {
+    throw new Error(
+      `--format must be one of: ${DECK_EXPORT_FORMATS.join(", ")}`,
+    );
+  }
+  return format;
 }
 
 async function readInput(value: string) {

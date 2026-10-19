@@ -1,12 +1,14 @@
+import type { DeckExportFormat } from "@cocurdex/shared";
 import { toast } from "sonner";
-import { downloadDeckPptx } from "./deck-download";
+import { downloadDeck } from "./deck-download";
 
 export async function exportDeckWithFeedback(
   id: string,
+  format: DeckExportFormat,
   failureMessage: string,
 ) {
   try {
-    await downloadDeckPptx(id);
+    await downloadDeck(id, format);
   } catch (error) {
     toast.error(failureMessage, {
       description: error instanceof Error ? error.message : String(error),

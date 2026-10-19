@@ -5,6 +5,11 @@ import path from "node:path";
 import type { DecksRepository } from "@cocurdex/db";
 import { checkDeck, parseDeckContent } from "@cocurdex/deck";
 import { compileDeckMarkdown } from "@cocurdex/deck/markdown";
+import {
+  canLoadPdfFont,
+  exportDeckToPdf,
+  type PdfFontSet,
+} from "@cocurdex/deck/pdf";
 import { exportDeckToPptx } from "@cocurdex/deck/pptx";
 import {
   type CheckDeckPayload,
@@ -27,6 +32,7 @@ import {
   type GetDeckPayload,
   type UpdateDeckPayload,
 } from "@cocurdex/shared";
+import { choosePdfFonts, pdfFontCandidates } from "./pdf-fonts";
 
 const DOWNLOAD_TICKET_TTL_MS = 60_000;
 const UNTITLED_DECK = "Untitled deck";
@@ -60,7 +66,17 @@ interface ResolvedSource {
 
 const FORMAT_CONTENT_TYPES: Record<DeckExportFormat, string> = {
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  pdf: "application/pdf",
 };
+
+export type PdfFontResolver = () => PdfFontSet | null;
+
+export function systemPdfFonts(): PdfFontSet | null {
+  return choosePdfFonts(
+    pdfFontCandidates(process.platform, process.env),
+    canLoadPdfFont,
+  );
+}
 
 function emptyDeck(): DeckContent {
   return {
@@ -101,11 +117,13 @@ export function deckFileName(title: string, format: DeckExportFormat): string {
 
 export class DaemonDeckService {
   private readonly tickets = new Map<string, DownloadTicket>();
+  private cachedPdfFonts: PdfFontSet | null = null;
 
   constructor(
     private readonly decks: DecksRepository,
     private readonly events: EventEmitter,
     private readonly now: () => number = Date.now,
+    private readonly resolvePdfFonts: PdfFontResolver = systemPdfFonts,
   ) {}
 
   list() {
@@ -201,11 +219,26 @@ export class DaemonDeckService {
     deck: DeckRecord,
     format: DeckExportFormat,
   ): Promise<DeckFile> {
+    const meta = { title: deck.title };
+    const bytes =
+      format === "pdf"
+        ? await exportDeckToPdf(deck.content, meta, this.pdfFonts())
+        : await exportDeckToPptx(deck.content, meta);
     return {
       fileName: deckFileName(deck.title, format),
       contentType: FORMAT_CONTENT_TYPES[format],
-      bytes: await exportDeckToPptx(deck.content, { title: deck.title }),
+      bytes,
     };
+  }
+
+  private pdfFonts(): PdfFontSet {
+    this.cachedPdfFonts ??= this.resolvePdfFonts();
+    if (!this.cachedPdfFonts) {
+      throw new Error(
+        "PDF export needs a TrueType font; none of the known system fonts were found",
+      );
+    }
+    return this.cachedPdfFonts;
   }
 
   private async require(id: string) {

@@ -1,6 +1,6 @@
 import type { DeckRecord } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Download, Play, Presentation } from "lucide-react";
+import { Play, Presentation } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/app/layout/titlebar-icon-button";
 import { EmptyState, ScrollArea, Text } from "@/components/ui";
 import { exportDeckWithFeedback } from "./deck-actions";
+import { DeckExportMenu } from "./deck-export-menu";
 import { DeckFilmstrip } from "./deck-filmstrip";
 import { DeckPresentation } from "./deck-presentation";
 import { activeSlideIndexAtom, selectSlideAtom } from "./decks-store";
@@ -53,15 +54,11 @@ export function DeckViewer({ deck }: { deck: DeckRecord }) {
         >
           <Play className={TITLEBAR_ICON_GLYPH_CLASS} />
         </TitlebarIconButton>
-        <TitlebarIconButton
-          aria-label={t("actions.exportPptx")}
-          tooltip={t("actions.exportPptx")}
-          onClick={() =>
-            void exportDeckWithFeedback(deck.id, t("errors.export"))
+        <DeckExportMenu
+          onExport={(format) =>
+            void exportDeckWithFeedback(deck.id, format, t("errors.export"))
           }
-        >
-          <Download className={TITLEBAR_ICON_GLYPH_CLASS} />
-        </TitlebarIconButton>
+        />
       </div>
       {slide ? (
         <>

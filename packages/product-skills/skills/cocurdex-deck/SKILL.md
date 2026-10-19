@@ -7,7 +7,9 @@ description: Create, revise, check, and export Cocurdex slide decks (presentatio
 
 Decks are app-owned SQLite records with stable ids, shown in the Decks panel.
 Use `cocurdex deck`; do not write `.pptx` files by hand or open the SQLite
-file. Export a `.pptx` only when the user asks for a file.
+file. Export a `.pptx` (editable in PowerPoint, Keynote, WPS) or a `.pdf` only
+when the user asks for a file; the format follows the output extension unless
+`--format` says otherwise.
 
 ```bash
 cocurdex deck list --json
@@ -15,7 +17,7 @@ cocurdex deck show <id> --json
 cocurdex deck create [--title <title>] --markdown-file <path|-> [--workspace <id>] --json
 cocurdex deck update <id> [--title <title>] [--markdown-file <path|-> | --content-file <path|->] [--expected-revision <n>] --json
 cocurdex deck check <id> --json
-cocurdex deck export <id> --output <path.pptx> --json
+cocurdex deck export <id> --output <path.pptx|path.pdf> [--format pptx|pdf] --json
 cocurdex deck delete <id> --json
 ```
 

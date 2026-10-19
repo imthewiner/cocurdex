@@ -181,6 +181,33 @@ runScenario("decks", {
       },
     ],
     [
+      "export menu offers PPTX and PDF",
+      async ({ session }) => {
+        const [exportLabel, pptx, pdf] = await Promise.all(
+          [
+            "decks:actions.export",
+            "decks:actions.exportPptx",
+            "decks:actions.exportPdf",
+          ].map((key) => translate(session, key)),
+        );
+        await clickByRole(session, { role: "button", name: exportLabel });
+        const items = await waitForRole(
+          session,
+          { role: "menuitem", name: new RegExp(`^(${pptx}|${pdf})$`) },
+          UI_TIMEOUT_MS,
+        );
+        const names = items.map((item) => item.name).sort();
+        check(names.length === 2, "export formats", names);
+        await pressKey(session, "Escape");
+        await session.waitUntil(
+          () => !document.querySelector('[role="menu"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        return { names };
+      },
+    ],
+    [
       "renderer has no errors",
       async ({ session }) => {
         const errors = await session.run(() => window.__scenario.errors);

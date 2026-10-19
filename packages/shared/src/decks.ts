@@ -188,7 +188,9 @@ export interface CheckDeckPayload {
   id: string;
 }
 
-export type DeckExportFormat = "pptx";
+export const DECK_EXPORT_FORMATS = ["pptx", "pdf"] as const;
+
+export type DeckExportFormat = (typeof DECK_EXPORT_FORMATS)[number];
 
 export interface CreateDeckDownloadPayload {
   id: string;

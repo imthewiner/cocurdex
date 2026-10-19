@@ -1,5 +1,5 @@
-import type { DeckSummary } from "@cocurdex/shared";
-import { Download, Pencil, Presentation, Trash2 } from "lucide-react";
+import type { DeckExportFormat, DeckSummary } from "@cocurdex/shared";
+import { FileText, Pencil, Presentation, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AppInlineRenameInput, AppSidebarRowTitle } from "@/components/app";
 import {
@@ -32,7 +32,7 @@ export function DeckRow({
   onStartRename: () => void;
   onCancelRename: () => void;
   onCommitRename: (title: string) => Promise<void>;
-  onExport: () => void;
+  onExport: (format: DeckExportFormat) => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation("decks");
@@ -86,9 +86,13 @@ export function DeckRow({
           <Pencil className="size-3.5" />
           {t("sidebar.rename")}
         </ContextMenuItem>
-        <ContextMenuItem onClick={onExport}>
-          <Download className="size-3.5" />
+        <ContextMenuItem onClick={() => onExport("pptx")}>
+          <Presentation className="size-3.5" />
           {t("actions.exportPptx")}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onExport("pdf")}>
+          <FileText className="size-3.5" />
+          {t("actions.exportPdf")}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" onClick={onDelete}>

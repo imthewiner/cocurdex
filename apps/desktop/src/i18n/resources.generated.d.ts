@@ -496,6 +496,8 @@ export default interface Resources {
   };
   decks: {
     actions: {
+      export: "Export";
+      exportPdf: "Export PDF";
       exportPptx: "Export PPTX";
       present: "Present";
     };

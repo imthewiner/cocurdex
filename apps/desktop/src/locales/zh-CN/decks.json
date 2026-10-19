@@ -1,5 +1,7 @@
 {
   "actions": {
+    "export": "导出",
+    "exportPdf": "导出 PDF",
     "exportPptx": "导出 PPTX",
     "present": "放映"
   },
