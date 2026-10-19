@@ -1,6 +1,7 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole } from "./lib/locate.mjs";
+import { openEditorPanel } from "./lib/navigate.mjs";
 
 const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
 const DIALOG_MODULE =
@@ -580,10 +581,7 @@ runScenario("execution-tree", {
           open: await window.__scenario.t("editor:actions.openEditorPanel"),
           close: await window.__scenario.t("editor:actions.closeEditorPanel"),
         }));
-        await session.run((labels) => {
-          window.__scenario.byLabel(labels.open)?.click();
-          return true;
-        }, labels);
+        await openEditorPanel(session);
         const panelClose = (labels) =>
           [
             ...document.querySelectorAll(

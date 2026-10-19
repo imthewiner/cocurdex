@@ -48,15 +48,32 @@ export async function openEditorPanel(session) {
   return { wasOpen: false };
 }
 
+export async function closeEditorPanel(session) {
+  const [open, close] = await Promise.all(
+    ["editor:actions.openEditorPanel", "editor:actions.closeEditorPanel"].map(
+      (key) => translate(session, key),
+    ),
+  );
+  if ((await queryAllByRole(session, { role: "button", name: close })).length) {
+    await clickByRole(session, { role: "button", name: close });
+  }
+  await waitForRole(
+    session,
+    { role: "button", name: open },
+    NAVIGATION_TIMEOUT_MS,
+  );
+}
+
 export async function showPanelView(session, view) {
   const key = PANEL_VIEW_KEYS[view];
   if (!key) throw new Error(`Unknown panel view "${view}"`);
-  await openEditorPanel(session);
+  const panel = await openEditorPanel(session);
   await clickByRole(
     session,
     { role: "button", name: await translate(session, key) },
     NAVIGATION_TIMEOUT_MS,
   );
+  return panel;
 }
 
 export async function openNote(session, title) {
