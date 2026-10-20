@@ -106,6 +106,7 @@ export async function launchSharedScenarioInstance() {
   const { port, url } = instance;
   return {
     port,
+    pid: instance.pid,
     env: {
       [SHARED_INSTANCE_ENV]: JSON.stringify({
         port,

@@ -6,7 +6,7 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { copyFile, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import net from "node:net";
 import os from "node:os";
@@ -104,6 +104,42 @@ function descendantPids(rootPid) {
     }
   }
   return found;
+}
+
+function processKind(command) {
+  const type = /--type=([\w-]+)/.exec(command)?.[1];
+  if (type === "utility") {
+    return /--utility-sub-type=([\w.]+)/.exec(command)?.[1] ?? type;
+  }
+  if (type) return type;
+  if (command.includes("daemon.cjs")) return "daemon";
+  if (/electron-vite|vite/.test(command)) return "vite";
+  if (/electron/i.test(command)) return "browser";
+  return "other";
+}
+
+export function processTreeMemory(rootPid) {
+  if (process.platform === "win32") return null;
+  const pids = new Set([rootPid, ...descendantPids(rootPid)]);
+  const result = spawnSync("ps", ["-axo", "pid=,rss=,args="], {
+    encoding: "utf8",
+  });
+  const byKind = {};
+  for (const line of result.stdout.split(/\r?\n/)) {
+    const match = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line);
+    if (!match || !pids.has(Number(match[1]))) continue;
+    const kind = processKind(match[3]);
+    const entry = byKind[kind] ?? { count: 0, rssMb: 0 };
+    byKind[kind] = {
+      count: entry.count + 1,
+      rssMb: entry.rssMb + Math.round(Number(match[2]) / 1024),
+    };
+  }
+  const totalMb = Object.values(byKind).reduce(
+    (total, entry) => total + entry.rssMb,
+    0,
+  );
+  return { totalMb, byKind };
 }
 
 function treePids(rootPid) {
@@ -206,12 +242,23 @@ export async function launchIsolatedInstance({ prepareUserData } = {}) {
   });
   closeSync(logFd);
   const stop = async ({ keepLog = false } = {}) => {
-    await stopIsolatedInstance(child.pid, userDataPath);
     const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+    const tree = treePids(child.pid);
+    killTree(child.pid);
+    await waitForExit(tree);
     if (keepLog && artifacts) {
       await mkdir(artifacts, { recursive: true });
       await copyFile(logPath, path.join(artifacts, path.basename(logPath)));
+      const appLogs = path.join(userDataPath, "logs");
+      if (existsSync(appLogs)) {
+        await cp(
+          appLogs,
+          path.join(artifacts, `${path.basename(userDataPath)}-logs`),
+          { recursive: true },
+        );
+      }
     }
+    await rm(userDataPath, { recursive: true, force: true });
     if (!keepLog) await rm(logPath, { force: true });
   };
   try {

@@ -9,6 +9,10 @@ import {
   waitFor,
 } from "../../../.agents/skills/debug-desktop/scripts/cdp-client.mjs";
 import { startScreencast } from "../../../.agents/skills/debug-desktop/scripts/cdp-screencast.mjs";
+import {
+  collectFailureDiagnostics,
+  watchPageEvents,
+} from "./page-diagnostics.mjs";
 
 export const DEFAULT_URL = "http://localhost:5173/";
 const EVAL_TIMEOUT_MS = 30_000;
@@ -130,8 +134,11 @@ export async function openAppSession({ port, url }) {
   const base = `http://127.0.0.1:${port}`;
   const targets = await readEndpoint(base, "/json/list", 5_000);
   const client = await attachPage(selectTarget(targets, { url }));
+  const pageEvents = await watchPageEvents(client);
   return {
     ...pageSession(client),
+    pageEvents,
+    rendererUrl: url,
     async openPage(urlFragment, timeout = 30_000) {
       return pageSession(
         await attachPage(await waitForPage(base, urlFragment, timeout)),
@@ -245,6 +252,18 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
         );
       } catch (error) {
         report.screenshotError = errorMessage(error);
+      }
+      try {
+        const diagnostics = await collectFailureDiagnostics(
+          opened.session,
+          opened.session.rendererUrl,
+        );
+        await writeFile(
+          path.join(artifacts, `${name}.diagnostics.json`),
+          JSON.stringify(diagnostics, null, 2),
+        );
+      } catch (error) {
+        report.diagnosticsError = errorMessage(error);
       }
     }
     if (context) {
