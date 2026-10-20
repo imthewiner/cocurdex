@@ -22,17 +22,29 @@ export function useMcpLogin({
 }) {
   const [state, setState] = useState<McpLoginState>({ phase: "idle" });
   const activeLoginRef = useRef<string | null>(null);
+  const attemptRef = useRef(0);
 
-  useMountEffect(() => () => {
+  function abandonLogin() {
+    attemptRef.current += 1;
     const loginId = activeLoginRef.current;
     activeLoginRef.current = null;
     if (loginId) void desktopApi.cancelMcpLogin(loginId).catch(() => {});
-  });
+  }
+
+  useMountEffect(() => abandonLogin);
 
   async function start() {
+    const attempt = attemptRef.current + 1;
+    attemptRef.current = attempt;
     setState({ phase: "starting" });
     try {
       const started = await desktopApi.startMcpLogin(name, workspaceId);
+      if (attemptRef.current !== attempt) {
+        if (started.loginId) {
+          void desktopApi.cancelMcpLogin(started.loginId).catch(() => {});
+        }
+        return;
+      }
       if (!started.loginId || !started.authUrl) {
         setState({ phase: "idle" });
         onSignedIn();
@@ -52,16 +64,15 @@ export function useMcpLogin({
       }
       setState({ phase: "failed", error: outcome.error ?? "" });
     } catch (error) {
+      if (attemptRef.current !== attempt) return;
       activeLoginRef.current = null;
       setState({ phase: "failed", error: errorMessage(error) });
     }
   }
 
   function cancel() {
-    const loginId = activeLoginRef.current;
-    activeLoginRef.current = null;
+    abandonLogin();
     setState({ phase: "idle" });
-    if (loginId) void desktopApi.cancelMcpLogin(loginId).catch(() => {});
   }
 
   async function signOut() {

@@ -33,6 +33,18 @@ function assertLocalPrincipal(context: DaemonRequestContext, method: string) {
   }
 }
 
+function assertWorkspaceForRemote(
+  context: DaemonRequestContext,
+  method: string,
+  workspaceId: string | undefined,
+) {
+  if (context.principal.kind !== "local" && !workspaceId) {
+    throw new Error(
+      `${method} from another device must run in a registered workspace`,
+    );
+  }
+}
+
 function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
   return value === "oauth" || value === "api_key";
 }
@@ -283,11 +295,21 @@ export async function handleDaemonRequest(
     case "mcp.servers.merge":
       return service.mcp.config.mergeServers(request.params.servers);
     case "mcp.status":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.status",
+        request.params.workspaceId,
+      );
       return service.mcp.status(
         request.params.workspaceId,
         request.params.names,
       );
     case "mcp.server.test":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.server.test",
+        request.params.workspaceId,
+      );
       return service.mcp.test(
         request.params.name,
         request.params.config,
