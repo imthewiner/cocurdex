@@ -43,6 +43,7 @@ export * from "./search";
 export * from "./session-attention";
 export * from "./session-observation";
 export * from "./settings-changes";
+export * from "./skill-library";
 export * from "./skills";
 export * from "./subagent-session";
 export type {

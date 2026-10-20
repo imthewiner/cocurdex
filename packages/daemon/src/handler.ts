@@ -26,6 +26,10 @@ import {
 } from "./host-access";
 import { parseDaemonRequest } from "./payloads";
 import type { CocurdexDaemonService } from "./service";
+import {
+  handleSkillRequest,
+  isSkillRequest,
+} from "./skills/handle-skill-request";
 
 function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
   return value === "oauth" || value === "api_key";
@@ -45,6 +49,9 @@ export async function handleDaemonRequest(
   await service.hostAccessReady;
   if (isHostRequest(request)) {
     return handleHostRequest(service.hostAccess, request, context);
+  }
+  if (isSkillRequest(request)) {
+    return handleSkillRequest(service, request, context);
   }
   await service.acpRegistry.ready;
   switch (request.method) {
@@ -259,12 +266,6 @@ export async function handleDaemonRequest(
       return service.mcpConfigService.readConfig();
     case "mcp.saveConfig":
       return service.mcpConfigService.saveConfig(request.params.content);
-    case "skills.getStatus":
-      return service.skillsService.getStatus(request.params);
-    case "skills.install":
-      return service.skillsService.install(request.params);
-    case "skills.remove":
-      return service.skillsService.remove(request.params);
     case "pdf.loadAnnotations":
       return service.pdfAnnotationsService.loadAnnotations(
         request.params.filePath,

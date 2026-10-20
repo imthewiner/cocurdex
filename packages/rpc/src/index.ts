@@ -80,6 +80,7 @@ import type {
   ImportDeckPayload,
   ImportDocumentAttachmentPayload,
   ImportImageAttachmentPayload,
+  InstalledSkillDetail,
   IssueDetail,
   IssueLabel,
   IssueRecord,
@@ -148,6 +149,29 @@ import type {
   SessionObservationSnapshot,
   SessionRecord,
   SetSessionPinnedPayload,
+  SkillAddRequest,
+  SkillAddResult,
+  SkillAgentLinkPayload,
+  SkillCatalogAuditPayload,
+  SkillCatalogAuditResult,
+  SkillCatalogSearchPayload,
+  SkillCatalogSearchResult,
+  SkillCatalogSourcesResult,
+  SkillLibraryList,
+  SkillListPayload,
+  SkillRef,
+  SkillRemoveResult,
+  SkillResolveDuplicatePayload,
+  SkillSourceInspectPayload,
+  SkillSourceShowPayload,
+  SkillSourceSkillDetail,
+  SkillSourceSnapshot,
+  SkillUpdateCheckResult,
+  SkillUpdatePreview,
+  SkillUpdateSkipPayload,
+  SkillUpdateSkipResult,
+  SkillUpdatesApplyPayload,
+  SkillUpdatesApplyResult,
   SpawnTeammatePayload,
   SpawnTeamTemplatePayload,
   StartScriptRunPayload,
@@ -199,7 +223,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 29;
+export const DAEMON_PROTOCOL_VERSION = 30;
 
 export interface DaemonMetadata {
   pid: number;
@@ -421,9 +445,25 @@ export type DaemonRequestPayloadByMethod = {
   "search.cancel": { searchId: string };
   "mcp.readConfig": undefined;
   "mcp.saveConfig": { content: string };
-  "skills.getStatus": ProductSkillsRequestPayload;
-  "skills.install": ProductSkillsRequestPayload;
-  "skills.remove": ProductSkillsRequestPayload;
+  "skills.pack.getStatus": ProductSkillsRequestPayload;
+  "skills.pack.install": ProductSkillsRequestPayload;
+  "skills.pack.remove": ProductSkillsRequestPayload;
+  "skills.list": SkillListPayload;
+  "skills.show": SkillRef;
+  "skills.remove": SkillRef;
+  "skills.setAgentLink": SkillAgentLinkPayload;
+  "skills.share": SkillRef;
+  "skills.resolveDuplicate": SkillResolveDuplicatePayload;
+  "skills.catalog.search": SkillCatalogSearchPayload;
+  "skills.catalog.sources": undefined;
+  "skills.catalog.audit": SkillCatalogAuditPayload;
+  "skills.source.inspect": SkillSourceInspectPayload;
+  "skills.source.show": SkillSourceShowPayload;
+  "skills.add": SkillAddRequest;
+  "skills.updates.check": SkillListPayload;
+  "skills.updates.preview": SkillRef;
+  "skills.updates.apply": SkillUpdatesApplyPayload;
+  "skills.updates.skip": SkillUpdateSkipPayload;
   "pdf.loadAnnotations": { filePath: string };
   "pdf.updateAnnotations": {
     filePath: string;
@@ -682,9 +722,25 @@ export type DaemonResultByMethod = {
   "search.cancel": null;
   "mcp.readConfig": McpConfigFile;
   "mcp.saveConfig": McpConfigFile;
-  "skills.getStatus": ProductSkillsStatusResult;
-  "skills.install": ProductSkillsInstallResult;
-  "skills.remove": ProductSkillsRemoveResult;
+  "skills.pack.getStatus": ProductSkillsStatusResult;
+  "skills.pack.install": ProductSkillsInstallResult;
+  "skills.pack.remove": ProductSkillsRemoveResult;
+  "skills.list": SkillLibraryList;
+  "skills.show": InstalledSkillDetail;
+  "skills.remove": SkillRemoveResult;
+  "skills.setAgentLink": InstalledSkillDetail;
+  "skills.share": InstalledSkillDetail;
+  "skills.resolveDuplicate": InstalledSkillDetail;
+  "skills.catalog.search": SkillCatalogSearchResult;
+  "skills.catalog.sources": SkillCatalogSourcesResult;
+  "skills.catalog.audit": SkillCatalogAuditResult;
+  "skills.source.inspect": SkillSourceSnapshot;
+  "skills.source.show": SkillSourceSkillDetail;
+  "skills.add": SkillAddResult;
+  "skills.updates.check": SkillUpdateCheckResult;
+  "skills.updates.preview": SkillUpdatePreview;
+  "skills.updates.apply": SkillUpdatesApplyResult;
+  "skills.updates.skip": SkillUpdateSkipResult;
   "pdf.loadAnnotations": PdfDocumentAnnotations;
   "pdf.updateAnnotations": PdfDocumentAnnotations;
   "note.list": NoteSummary[];
@@ -817,6 +873,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "teamTemplate.list": true,
   "scriptRun.settings.get": true,
   "mcp.readConfig": true,
+  "skills.catalog.sources": true,
   "deck.list": true,
   "note.list": true,
   "provider.listConfigs": true,
