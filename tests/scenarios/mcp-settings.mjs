@@ -230,7 +230,9 @@ runScenario("mcp-settings", {
           UI_TIMEOUT_MS,
         );
         await session.waitUntil(
-          () => Boolean(document.querySelector('[data-mcp-server="remote"]')),
+          () =>
+            Boolean(document.querySelector('[data-mcp-server="remote"]')) &&
+            !document.querySelector('[role="dialog"]'),
           null,
           UI_TIMEOUT_MS,
         );

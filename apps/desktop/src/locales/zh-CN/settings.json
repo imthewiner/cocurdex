@@ -378,11 +378,11 @@
         "title": "审批"
       },
       "credentials": {
-        "description": "管理模型提供方登录、API Key 和 MCP 服务器。",
+        "description": "管理模型提供方登录和 API Key，查看 MCP 服务器。",
         "title": "凭据"
       },
       "execute": {
-        "description": "启动会话、团队、脚本运行和工作流。",
+        "description": "启动会话、团队、脚本运行和工作流，修改或运行 MCP 服务器。",
         "title": "启动任务"
       },
       "filesRead": {

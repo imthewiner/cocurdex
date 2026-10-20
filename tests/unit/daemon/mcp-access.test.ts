@@ -69,7 +69,15 @@ function markerServer(marker: string) {
 
 describe("MCP RPC access", () => {
   it("requires the execute scope to start MCP servers", () => {
-    for (const method of ["mcp.server.test", "mcp.status"]) {
+    for (const method of [
+      "mcp.server.test",
+      "mcp.status",
+      "mcp.login.start",
+      "mcp.saveConfig",
+      "mcp.server.save",
+      "mcp.server.setEnabled",
+      "mcp.servers.merge",
+    ]) {
       expect(
         authorizeDaemonRequest(credentialsDevice, method, true),
       ).toMatchObject({
@@ -98,6 +106,9 @@ describe("MCP RPC access", () => {
     await expect(call("mcp.status", {}, executeDevice)).rejects.toThrow(
       /registered workspace/,
     );
+    await expect(
+      call("mcp.login.start", { name: "probe" }, executeDevice),
+    ).rejects.toThrow(/registered workspace/);
     expect(existsSync(marker)).toBe(false);
   });
 });

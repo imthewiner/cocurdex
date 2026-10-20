@@ -2110,11 +2110,11 @@ export default interface Resources {
           title: "Approvals";
         };
         credentials: {
-          description: "Manage provider logins, API keys, and MCP servers.";
+          description: "Manage provider logins and API keys, and view MCP servers.";
           title: "Credentials";
         };
         execute: {
-          description: "Start sessions, teams, script runs, and workflows.";
+          description: "Start sessions, teams, script runs, and workflows, and change or run MCP servers.";
           title: "Start work";
         };
         filesRead: {

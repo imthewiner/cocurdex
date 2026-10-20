@@ -316,6 +316,11 @@ export async function handleDaemonRequest(
         request.params.workspaceId,
       );
     case "mcp.login.start":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.login.start",
+        request.params.workspaceId,
+      );
       return service.mcp.startLogin(
         request.params.name,
         request.params.workspaceId,
