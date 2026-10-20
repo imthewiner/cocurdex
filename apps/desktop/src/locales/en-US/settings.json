@@ -556,8 +556,8 @@
       "nameInvalid": "Names may only contain letters, digits, \"_\", and \"-\".",
       "nameRequired": "Enter a server name.",
       "nameTaken": "A server with this name already exists.",
-      "urlRequired": "Enter a URL.",
-      "urlInvalid": "Enter an http:// or https:// URL."
+      "urlInvalid": "Enter an http:// or https:// URL.",
+      "urlRequired": "Enter a URL."
     },
     "fields": {
       "addEnv": "Add variable",

@@ -555,8 +555,8 @@
       "nameInvalid": "名称只能包含字母、数字、\"_\" 和 \"-\"。",
       "nameRequired": "请输入服务器名称。",
       "nameTaken": "已存在同名服务器。",
-      "urlRequired": "请输入 URL。",
-      "urlInvalid": "请输入以 http:// 或 https:// 开头的 URL。"
+      "urlInvalid": "请输入以 http:// 或 https:// 开头的 URL。",
+      "urlRequired": "请输入 URL。"
     },
     "fields": {
       "addEnv": "添加变量",
