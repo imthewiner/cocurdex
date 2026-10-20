@@ -21,6 +21,12 @@ export const SKILL_LINK_AGENTS = ["claude-code", "antigravity"] as const;
 
 export type SkillLinkAgent = (typeof SKILL_LINK_AGENTS)[number];
 
+export function skillLinkAgentsForScope(
+  scope: SkillLibraryScope,
+): SkillLinkAgent[] {
+  return scope === "global" ? ["claude-code", "antigravity"] : ["claude-code"];
+}
+
 export type SkillAgentAccess = "native" | "home" | "link" | "copy" | "none";
 
 export interface SkillAgentVisibility {
@@ -155,6 +161,7 @@ export interface SkillSourceSkill {
   skillPath: string;
   description: string | null;
   issues: SkillManifestIssue[];
+  installable: boolean;
   fileCount: number;
   scriptCount: number;
 }

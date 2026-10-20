@@ -2771,43 +2771,200 @@ export default interface Resources {
     };
     skills: {
       actions: {
+        cancel: "Cancel";
         install: "Install";
-        refresh: "Refresh";
         reinstall: "Reinstall";
         remove: "Remove";
         update: "Update";
       };
-      cliHint: "CLI: cocurdex skills install --scope project|global  ·  cocurdex skills status --scope project|global";
+      add: {
+        builtin: "Built in";
+        chooseFolder: "Choose folder";
+        description: "Read skills from a GitHub repository (owner/repo or URL) or a folder on this computer, then pick the ones to install.";
+        found_one: "{{count}} skill found";
+        found_other: "{{count}} skills found";
+        install_one: "Install {{count}} skill";
+        install_other: "Install {{count}} skills";
+        installed: "Installed";
+        installedToast_one: "Installed {{count}} skill";
+        installedToast_other: "Installed {{count}} skills";
+        invalid: "Invalid SKILL.md";
+        none: "No skills were found in this source.";
+        open: "Add from GitHub or folder";
+        read: "Read";
+        replaces: "Replaces installed";
+        skippedToast: "Skipped: {{names}}";
+        sourceLabel: "Skill source";
+        sourcePlaceholder: "owner/repo, GitHub URL, or folder path";
+        title: "Add skills";
+      };
+      agents: {
+        access: {
+          copy: "A separate copy at {{path}}";
+          home: "Installed in this agent's own folder at {{path}}";
+          link: "Linked to the shared folder at {{path}}";
+          native: "Reads the shared folder {{path}}";
+          none: "Not available to this agent";
+        };
+        share: "Move to shared folder";
+        sharedMissing: "Only installed at {{path}}. Move it to the shared folder so these agents can use it.";
+        sharedNative: "Read from the shared folder {{path}}";
+        title: "Visible to agents";
+      };
+      audit: {
+        description: "Security audits published by skills.sh for this skill.";
+        none: "No audit results yet.";
+        risk: {
+          critical: "Critical risk";
+          high: "High risk";
+          low: "Low risk";
+          medium: "Medium risk";
+          safe: "Safe";
+        };
+        title: "Security audits";
+      };
+      description: "Skills teach agents how to do specialized work. Install them once and every agent that reads the shared skills folder can use them.";
+      detail: {
+        label: "{{name}} details";
+        removeDescription: "Removes {{name}} and its links from every agent folder in this scope. A backup of the folder is kept.";
+        removeTitle: "Remove {{name}}?";
+        reviewUpdate: "Review update";
+        updateBadge: "Update available";
+      };
+      discover: {
+        chooseSkills: "Choose skills to install";
+        install: "Install";
+        installSkill: "Install {{name}}";
+        official: "Official sources";
+        poweredBy: "Search results come from skills.sh.";
+        reading: "Reading {{source}}…";
+        resultMeta_one: "{{source}} · {{count}} install";
+        resultMeta_other: "{{source}} · {{count}} installs";
+        results_one: "{{count}} result";
+        results_other: "{{count}} results";
+        search: "Search skills.sh";
+        sourceSkills_one: "{{count}} skill";
+        sourceSkills_other: "{{count}} skills";
+      };
+      document: {
+        truncated: "Preview shortened. Open the file to read all of it.";
+      };
+      files: {
+        reveal: "Show in file manager";
+        scriptWarning_one: "Contains {{count}} script. Agents may run it; review it before use.";
+        scriptWarning_other: "Contains {{count}} scripts. Agents may run them; review them before use.";
+        title_one: "Files ({{count}})";
+        title_other: "Files ({{count}})";
+      };
       groupTitle: "Install location";
+      info: {
+        installed: "Installed";
+        latest: "Latest commit";
+        license: "License";
+        location: "Location";
+        openSource: "Open source";
+        ref: "Branch or tag";
+        source: "Source";
+      };
+      install: {
+        agents: "Agents";
+        global: "All workspaces";
+        linkAgent: "Also link for {{agent}}";
+        scope: "Install for";
+        sharedAgents: "{{agents}} read the shared folder automatically.";
+        workspace: "Workspace {{workspace}}";
+      };
       intro: "Install cocurdex product skills so agents (Claude, OpenCode, Pi, and others) can run Notes and Issues workflows. Installation is manual — nothing is written until you install.";
-      loading: "Checking skill install…";
+      list: {
+        builtin: "Cocurdex";
+        checkFailed: "Could not check {{source}}: {{error}}";
+        checkUpdates: "Check for updates";
+        empty: "No other skills installed yet.";
+        filter: "Filter skills";
+        global: "Global";
+        noMatches: "No matching skills";
+        problems: "Needs attention";
+        workspace: "Workspace · {{workspace}}";
+      };
+      pack: {
+        included_one: "Includes {{count}} skill";
+        included_other: "Includes {{count}} skills";
+        subtitle_one: "{{count}} skill · v{{version}}";
+        subtitle_other: "{{count}} skills · v{{version}}";
+        title: "Cocurdex skills";
+      };
+      problems: {
+        brokenLinkDescription: "This link points to a folder that no longer exists. Remove the skill to clean it up.";
+        brokenLinkTitle: "Broken link";
+        copyMeta_one: "{{count}} file · modified {{modified}}";
+        copyMeta_other: "{{count}} files · modified {{modified}}";
+        duplicateDescription: "Agents see different versions of this skill. Keep one copy; the others become links to it and are backed up.";
+        duplicateTitle: "Different copies";
+        invalidDescription: "Agents may ignore this skill until its SKILL.md is fixed.";
+        invalidTitle: "SKILL.md needs fixing";
+        issue: {
+          descriptionTooLong: "The description is longer than 1024 characters.";
+          invalidName: "The name may only use lowercase letters, digits, and hyphens.";
+          missingDescription: "The frontmatter has no description.";
+          missingFrontmatter: "The file has no YAML frontmatter.";
+          missingName: "The frontmatter has no name.";
+          nameMismatch: "The name does not match the folder name.";
+          nameTooLong: "The name is longer than 64 characters.";
+        };
+        keepCopy: "Keep this copy";
+      };
       scope: {
         global: {
-          description: "Install under ~/.agents/skills and ~/.claude/skills for every workspace on this machine.";
           title: "Global (all workspaces)";
         };
         project: {
-          description: "Install into the active workspace (.agents/skills and .claude/skills). Good for team repos you commit.";
           title: "This workspace";
         };
+      };
+      source: {
+        unknown: "Added manually";
+      };
+      state: {
+        ok: "Up to date";
+        problem: "Needs attention";
+        update: "Update available";
       };
       status: {
         conflict: "Unmanaged cocurdex skill folders already exist ({{skills}}). Remove or rename them under {{path}}, then install again.";
         installed: "Installed v{{version}} at {{path}}";
-        noWorkspace: "Select a workspace first to install workspace-level skills.";
         notInstalled: "Not installed. Would write to {{path}}";
         updateAvailable: "Installed v{{installed}}; pack v{{latest}} is available at {{path}}";
       };
+      tabs: {
+        discover: "Discover";
+        installed_one: "Installed ({{count}})";
+        installed_other: "Installed ({{count}})";
+      };
       toast: {
-        alreadyInstalled: "Skills are already up to date";
         conflict: "Could not install: conflict with existing skills ({{skills}})";
         installFailed: "Could not install skills";
         installed: "cocurdex skills installed";
         removeFailed: "Could not remove skills";
         removed: "cocurdex skills removed";
+        skipped: "Skills are already up to date";
         updated: "cocurdex skills updated";
       };
-      workspaceLabel: "Active workspace: {{name}}";
+      update: {
+        changes: "Changed files";
+        confirm: "Update";
+        description: "Update from {{source}} to {{commit}}. Review the changes before applying them.";
+        localModified: "This skill was edited locally. Updating replaces those edits; a backup is kept.";
+        noChanges: "No file changes.";
+        noPreview: "No preview";
+        script: "Script";
+        skip: "Skip this version";
+        status: {
+          added: "Added";
+          modified: "Modified";
+          removed: "Removed";
+        };
+        title: "Update {{name}}";
+      };
     };
     teams: {
       addMember: "Add teammate";

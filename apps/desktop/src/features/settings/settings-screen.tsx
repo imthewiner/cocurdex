@@ -39,7 +39,7 @@ import {
   settingsSections,
 } from "./settings-sections";
 import { SettingsSidebar } from "./settings-sidebar";
-import { SkillsSettingsPanel } from "./skills-settings";
+import { SkillsSettingsPanel } from "./skills";
 import type { AppearanceSettings, ThemeMode } from "./theme";
 import { WorkflowSettingsPanel } from "./workflows";
 import {
@@ -279,7 +279,8 @@ export function SettingsScreen({
     activeSection === "archived" ||
     activeSection === "workflows" ||
     activeSection === "providers" ||
-    activeSection === "mcp";
+    activeSection === "mcp" ||
+    activeSection === "skills";
   const [scrolledSection, setScrolledSection] =
     useState<SettingsSectionId | null>(null);
   const isContentScrolled = scrolledSection === activeSection;
@@ -355,6 +356,7 @@ export function SettingsScreen({
                 activeSection === "licenses" && "max-w-5xl gap-6",
                 activeSection === "providers" && "max-w-6xl gap-6",
                 activeSection === "mcp" && "max-w-6xl gap-6",
+                activeSection === "skills" && "max-w-6xl gap-6",
                 activeSection === "archived" && "max-w-3xl gap-8",
               )}
             >

@@ -73,10 +73,6 @@ export function skillRoots(
   return workspaceRoots(workspaceRoot);
 }
 
-export function linkAgentsForScope(scope: SkillLibraryScope): SkillLinkAgent[] {
-  return scope === "global" ? ["claude-code", "antigravity"] : ["claude-code"];
-}
-
 const LINK_AGENT_ROOTS: Record<SkillLinkAgent, SkillRootId> = {
   "claude-code": "claude",
   antigravity: "antigravity",

@@ -17,7 +17,7 @@ import type { SnapshotFile } from "./skill-snapshots";
 const MAX_DISCOVERY_DEPTH = 6;
 const SKIPPED_DIRECTORIES = new Set([".git", "node_modules"]);
 
-export interface DiscoveredSkill extends SkillSourceSkill {
+export interface DiscoveredSkill extends Omit<SkillSourceSkill, "installable"> {
   absoluteDir: string;
   files: SkillFileEntry[];
 }

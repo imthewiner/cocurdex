@@ -7,6 +7,7 @@ import type {
   SkillRef,
   SkillTarget,
 } from "@cocurdex/shared";
+import { skillLinkAgentsForScope } from "@cocurdex/shared";
 import {
   readScopeLock,
   refIn,
@@ -27,7 +28,6 @@ import { type ScannedSkill, scanInstalledSkills } from "./skill-inventory";
 import { createSkillLink, readSkillEntry } from "./skill-links";
 import {
   linkAgentRoot,
-  linkAgentsForScope,
   rootDir,
   type SkillLocationEnv,
 } from "./skill-locations";
@@ -145,7 +145,7 @@ export class SkillLibrary {
 
   async setAgentLink(ref: SkillRef, agent: SkillLinkAgent, enabled: boolean) {
     const { context, found } = await this.find(ref);
-    if (!linkAgentsForScope(context.scope).includes(agent)) {
+    if (!skillLinkAgentsForScope(context.scope).includes(agent)) {
       throw new Error(`${agent} reads this scope's shared skills directly`);
     }
     const visibility = found.skill.agents.find((row) => row.agent === agent);

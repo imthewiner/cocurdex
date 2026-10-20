@@ -10,6 +10,7 @@ import type {
   SkillProblem,
   SkillRootId,
 } from "@cocurdex/shared";
+import { skillLinkAgentsForScope } from "@cocurdex/shared";
 import {
   computeSkillContentHash,
   countScripts,
@@ -18,11 +19,7 @@ import {
   toSkillFileEntries,
 } from "./skill-files";
 import { readSkillEntry, type SkillEntryState } from "./skill-links";
-import {
-  linkAgentRoot,
-  linkAgentsForScope,
-  type SkillRootLocation,
-} from "./skill-locations";
+import { linkAgentRoot, type SkillRootLocation } from "./skill-locations";
 import { type SkillLockEntry, sourceInfoFromLock } from "./skill-locks";
 import { parseSkillManifest, SKILL_FILE_NAME } from "./skill-manifest";
 
@@ -289,7 +286,7 @@ async function buildSkill(
       source: sourceInfoFromLock(input.lockEntries[name]),
       agents: [
         shared,
-        ...linkAgentsForScope(input.scope).map((agent) =>
+        ...skillLinkAgentsForScope(input.scope).map((agent) =>
           agentVisibility(agent, canonical, entries, relations),
         ),
       ],

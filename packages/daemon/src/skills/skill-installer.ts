@@ -4,6 +4,7 @@ import type {
   SkillAddResult,
   SkillLinkAgent,
 } from "@cocurdex/shared";
+import { skillLinkAgentsForScope } from "@cocurdex/shared";
 import {
   readScopeLock,
   refIn,
@@ -21,7 +22,7 @@ import {
 import type { ScannedSkill } from "./skill-inventory";
 import type { SkillLibrary } from "./skill-library-service";
 import { createSkillLink } from "./skill-links";
-import { linkAgentRoot, linkAgentsForScope, rootDir } from "./skill-locations";
+import { linkAgentRoot, rootDir } from "./skill-locations";
 import {
   type SkillLockEntry,
   type SkillLockFile,
@@ -114,7 +115,7 @@ export class SkillInstaller {
     sharedDir: string,
     agents: SkillLinkAgent[],
   ) {
-    const allowed = linkAgentsForScope(context.scope);
+    const allowed = skillLinkAgentsForScope(context.scope);
     for (const agent of agents.filter((candidate) =>
       allowed.includes(candidate),
     )) {

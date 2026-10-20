@@ -39,7 +39,9 @@ export interface SkillSourceLoaderDeps {
 
 const BLOCKING_ISSUES = new Set(["missingFrontmatter", "missingDescription"]);
 
-export function isInstallable(skill: SkillSourceSkill) {
+export function isInstallable(
+  skill: Pick<SkillSourceSkill, "name" | "issues">,
+) {
   return (
     isValidSkillName(skill.name) &&
     !skill.issues.some((issue) => BLOCKING_ISSUES.has(issue))
@@ -52,6 +54,7 @@ function publicSkill(skill: DiscoveredSkill): SkillSourceSkill {
     skillPath: skill.skillPath,
     description: skill.description,
     issues: skill.issues,
+    installable: isInstallable(skill),
     fileCount: skill.fileCount,
     scriptCount: skill.scriptCount,
   };
