@@ -36,7 +36,6 @@ export function syncLanguageMode(
 ) {
   const resolvedLanguage = resolveLanguageMode(languageMode, systemLocale);
 
-  document.documentElement.lang = resolvedLanguage;
   document.documentElement.dir = "ltr";
   window.localStorage.setItem(LANGUAGE_MODE_STORAGE_KEY, languageMode);
 

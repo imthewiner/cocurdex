@@ -2,6 +2,7 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
 const TOOLTIP_DELAY_MS = 900;
@@ -21,8 +22,8 @@ if (args.port) {
 }
 
 async function workspaceTrigger(session) {
-  return session.run(async () => {
-    const label = await window.__scenario.t("sessions:workspace.workspace");
+  const label = await translate(session, "sessions:workspace.workspace");
+  return session.run((label) => {
     const trigger = [
       ...document.querySelectorAll('[data-slot="combobox-trigger"]'),
     ].find((element) => element.getAttribute("aria-label") === label);
@@ -33,7 +34,7 @@ async function workspaceTrigger(session) {
       y: rect.top + rect.height / 2,
       insideTooltip: Boolean(trigger.closest('[data-slot="tooltip-trigger"]')),
     };
-  });
+  }, label);
 }
 
 function previewOpen(session) {
@@ -103,8 +104,9 @@ runScenario("workspace-picker", {
       (workspace) => workspace.id === MULTI_FOLDER_WORKSPACE_ID,
     );
     check(suite, "fixture database lacks the multi-folder workspace");
-    const newSessionLabel = await session.run(() =>
-      window.__scenario.t("sessions:sidebar.newSession"),
+    const newSessionLabel = await translate(
+      session,
+      "sessions:sidebar.newSession",
     );
     await session.waitUntil(
       (label) => Boolean(window.__scenario.byLabel(label)),
@@ -212,7 +214,17 @@ runScenario("workspace-picker", {
           null,
           UI_TIMEOUT_MS,
         );
-        const preview = await session.run(async () => {
+        const labels = {
+          primaryLabel: await translate(
+            session,
+            "sessions:workspace.rootsPrimary",
+          ),
+          additionalLabel: await translate(
+            session,
+            "sessions:workspace.rootsAdditional",
+          ),
+        };
+        const preview = await session.run((labels) => {
           const panel = document.querySelector(
             '[data-slot="tooltip-content"][data-open]',
           );
@@ -224,12 +236,7 @@ runScenario("workspace-picker", {
               .split("\n")
               .map((line) => line.trim())
               .filter(Boolean),
-            primaryLabel: await window.__scenario.t(
-              "sessions:workspace.rootsPrimary",
-            ),
-            additionalLabel: await window.__scenario.t(
-              "sessions:workspace.rootsAdditional",
-            ),
+            ...labels,
             gap:
               panel.getBoundingClientRect().left -
               popup.getBoundingClientRect().right,
@@ -243,7 +250,7 @@ runScenario("workspace-picker", {
             }),
             panelPadding: getComputedStyle(panel).padding,
           };
-        });
+        }, labels);
         const [primaryName, ...additionalNames] = folderNames;
         const { lines } = preview;
         const primaryIndex = lines.indexOf(preview.primaryLabel);
@@ -435,16 +442,21 @@ runScenario("workspace-picker", {
           null,
           UI_TIMEOUT_MS,
         );
-        const preview = await session.run(async () => ({
-          lines: document
-            .querySelector('[data-slot="tooltip-content"][data-open]')
-            .innerText.split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean),
-          primaryLabel: await window.__scenario.t(
-            "sessions:workspace.rootsPrimary",
-          ),
-        }));
+        const primaryLabel = await translate(
+          session,
+          "sessions:workspace.rootsPrimary",
+        );
+        const preview = await session.run(
+          (primaryLabel) => ({
+            lines: document
+              .querySelector('[data-slot="tooltip-content"][data-open]')
+              .innerText.split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean),
+            primaryLabel,
+          }),
+          primaryLabel,
+        );
         check(
           preview.lines[0] === preview.primaryLabel &&
             !preview.lines.includes(workspaceName),

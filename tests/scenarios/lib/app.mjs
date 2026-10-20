@@ -5,33 +5,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { openAppSession } from "./app-session.mjs";
+import { daemonRequest } from "./daemon-rpc.mjs";
 import { launchIsolatedInstance } from "./instance.mjs";
 
 const E2E_DIR = fileURLToPath(new URL("../../e2e/", import.meta.url));
 const FIXTURE_DB_TIMEOUT_MS = 120_000;
 
 const SCENARIO_WORKSPACE_ID = "scenario-workspace";
-const PRODUCT_API_MODULE = "/src/lib/product-api.ts";
 
 async function seedWorkspaces(session, workspaces) {
-  await session.waitUntil(() => Boolean(window.desktopApi), null, 30_000);
-  await session.run(
-    async ({ workspaces, productApiModule }) => {
-      const { daemonProductApi } = await import(productApiModule);
-      for (const [index, workspace] of workspaces.entries()) {
-        const now = new Date(Date.now() + index).toISOString();
-        await daemonProductApi.saveWorkspace({
-          ...workspace,
-          createdAt: now,
-          updatedAt: now,
-          lastOpenedAt: now,
-          sortOrder: (workspaces.length - 1 - index) * 1000,
-        });
-      }
-      return true;
-    },
-    { workspaces, productApiModule: PRODUCT_API_MODULE },
-  );
+  for (const [index, workspace] of workspaces.entries()) {
+    const now = new Date(Date.now() + index).toISOString();
+    await daemonRequest(session, "workspace.save", {
+      workspace: {
+        ...workspace,
+        createdAt: now,
+        updatedAt: now,
+        lastOpenedAt: now,
+        sortOrder: (workspaces.length - 1 - index) * 1000,
+      },
+    });
+  }
   await session.reload();
 }
 
@@ -106,6 +100,7 @@ export async function launchSharedScenarioInstance() {
   const { port, url } = instance;
   return {
     port,
+    pid: instance.pid,
     env: {
       [SHARED_INSTANCE_ENV]: JSON.stringify({
         port,

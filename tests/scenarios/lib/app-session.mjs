@@ -9,6 +9,10 @@ import {
   waitFor,
 } from "../../../.agents/skills/debug-desktop/scripts/cdp-client.mjs";
 import { startScreencast } from "../../../.agents/skills/debug-desktop/scripts/cdp-screencast.mjs";
+import {
+  collectFailureDiagnostics,
+  watchPageEvents,
+} from "./page-diagnostics.mjs";
 
 export const DEFAULT_URL = "http://localhost:5173/";
 const EVAL_TIMEOUT_MS = 30_000;
@@ -21,29 +25,8 @@ const PAGE_HELPERS = `(() => {
   const errors = [];
   window.addEventListener("error", (event) => errors.push(String(event.message)));
   window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
-  const depCache = new Map();
-  const dep = async (modulePath, name) => {
-    const key = modulePath + "|" + name;
-    if (!depCache.has(key)) {
-      const source = await (await fetch(modulePath)).text();
-      const pattern = new RegExp('from "(/node_modules/\\\\.vite/deps/' + name + '\\\\.js[^"]*)"');
-      const match = pattern.exec(source);
-      if (!match) throw new Error("Cannot find dependency " + name + " in " + modulePath);
-      depCache.set(key, await import(match[1]));
-    }
-    return depCache.get(key);
-  };
   window.__scenario = {
     errors,
-    dep,
-    async t(key, options) {
-      const i18next = await dep("/src/i18n/index.ts", "i18next");
-      return i18next.default.t(key, options);
-    },
-    async store(modulePath) {
-      const jotai = await dep(modulePath, "jotai");
-      return jotai.getDefaultStore();
-    },
     resetRequests() {
       performance.setResourceTimingBufferSize(20000);
       performance.clearResourceTimings();
@@ -130,8 +113,11 @@ export async function openAppSession({ port, url }) {
   const base = `http://127.0.0.1:${port}`;
   const targets = await readEndpoint(base, "/json/list", 5_000);
   const client = await attachPage(selectTarget(targets, { url }));
+  const pageEvents = await watchPageEvents(client);
   return {
     ...pageSession(client),
+    pageEvents,
+    rendererUrl: url,
     async openPage(urlFragment, timeout = 30_000) {
       return pageSession(
         await attachPage(await waitForPage(base, urlFragment, timeout)),
@@ -245,6 +231,18 @@ export async function runScenario(name, { open, setup, steps, teardown }) {
         );
       } catch (error) {
         report.screenshotError = errorMessage(error);
+      }
+      try {
+        const diagnostics = await collectFailureDiagnostics(
+          opened.session,
+          opened.session.rendererUrl,
+        );
+        await writeFile(
+          path.join(artifacts, `${name}.diagnostics.json`),
+          JSON.stringify(diagnostics, null, 2),
+        );
+      } catch (error) {
+        report.diagnosticsError = errorMessage(error);
       }
     }
     if (context) {

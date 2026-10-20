@@ -8,6 +8,7 @@ import {
   useSubmenuAnchor,
   useSubmenuTriggerRef,
 } from "@/components/ui/_submenu-anchor";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 function DropdownMenu({
@@ -338,6 +339,24 @@ function DropdownMenuSubContent({
   );
 }
 
+function DropdownMenuSearchInput({
+  className,
+  onKeyDown,
+  ...props
+}: React.ComponentProps<typeof Input>) {
+  return (
+    <Input
+      autoFocus
+      className={cn("mb-1 h-8 shrink-0", className)}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (event.key !== "Escape") event.stopPropagation();
+      }}
+      {...props}
+    />
+  );
+}
+
 export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -348,6 +367,7 @@ export {
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSearchInput,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,

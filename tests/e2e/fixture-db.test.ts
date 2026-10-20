@@ -6,8 +6,11 @@ import { type InstalledFixture, installFixtureDb } from "./fixture-db/install";
 import {
   FIXTURE_DECKS,
   FIXTURE_ISSUES,
+  FIXTURE_MISSING_CHECKOUT_PATH,
   FIXTURE_MULTI_FOLDER_WORKSPACE_ID,
   FIXTURE_NOTES,
+  FIXTURE_TEAM_SESSION,
+  FIXTURE_TEAMMATE_TOOL_CALLS,
   FIXTURE_WORKSPACE_ID,
 } from "./fixture-db/recipe";
 import {
@@ -147,6 +150,56 @@ describe("fixture database", () => {
       daemon.options,
     );
     expect(failed.map((call) => call.status)).toEqual(["failed"]);
+
+    const tree = await requestDaemon(
+      "session.executionTree",
+      { sessionId: FIXTURE_TEAM_SESSION.id },
+      daemon.options,
+    );
+    const runs = tree?.root.runs ?? [];
+    expect(runs.at(0)?.toolCalls.map((node) => node.toolCall.status)).toEqual([
+      "completed",
+    ]);
+    expect(
+      runs
+        .at(-1)
+        ?.toolCalls.map((node) => [
+          node.toolCall.status,
+          node.toolCall.rawInput,
+        ]),
+    ).toEqual([
+      ["completed", { path: "src/cart.ts" }],
+      ["failed", { path: FIXTURE_MISSING_CHECKOUT_PATH }],
+      ["completed", { path: "src/discount.ts" }],
+    ]);
+    expect(
+      runs.slice(1, -1).map((node) => [node.run.status, node.toolCalls]),
+    ).toEqual([
+      ["completed", []],
+      ["completed", []],
+    ]);
+    const byTitle = (left: { title: string }, right: { title: string }) =>
+      left.title.localeCompare(right.title);
+    expect(
+      (tree?.root.children ?? [])
+        .map((child) => ({
+          title: child.session.title,
+          statuses: child.runs.flatMap((run) =>
+            run.toolCalls.map((node) => node.toolCall.status),
+          ),
+        }))
+        .sort(byTitle),
+    ).toEqual(
+      (FIXTURE_TEAM_SESSION.teammates ?? [])
+        .map((teammate) => ({
+          title: teammate.name,
+          statuses: [
+            ...Array(FIXTURE_TEAMMATE_TOOL_CALLS - 1).fill("completed"),
+            "failed",
+          ],
+        }))
+        .sort(byTitle),
+    );
 
     const { messages } = await requestDaemon(
       "session.listMessages",

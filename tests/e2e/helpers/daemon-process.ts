@@ -112,6 +112,7 @@ export interface SpawnDaemonOptions {
   token?: string;
   nodeArgs?: string[];
   entry?: "source" | "bundled";
+  env?: NodeJS.ProcessEnv;
 }
 
 function daemonCommand(options: SpawnDaemonOptions) {
@@ -139,6 +140,7 @@ export async function spawnDaemon(
     cwd: command.cwd,
     env: {
       ...process.env,
+      ...options.env,
       COCURDEX_USER_DATA_PATH: userDataPath,
       COCURDEX_DAEMON_TOKEN: token,
       COCURDEX_DAEMON_RUNTIME_FINGERPRINT: "e2e-runtime",

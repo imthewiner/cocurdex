@@ -26,6 +26,10 @@ import {
 } from "./host-access";
 import { parseDaemonRequest } from "./payloads";
 import type { CocurdexDaemonService } from "./service";
+import {
+  handleSkillRequest,
+  isSkillRequest,
+} from "./skills/handle-skill-request";
 
 function assertLocalPrincipal(context: DaemonRequestContext, method: string) {
   if (context.principal.kind !== "local") {
@@ -63,6 +67,9 @@ export async function handleDaemonRequest(
   await service.hostAccessReady;
   if (isHostRequest(request)) {
     return handleHostRequest(service.hostAccess, request, context);
+  }
+  if (isSkillRequest(request)) {
+    return handleSkillRequest(service, request, context);
   }
   await service.acpRegistry.ready;
   switch (request.method) {
@@ -338,12 +345,6 @@ export async function handleDaemonRequest(
     case "mcp.import.scan":
       assertLocalPrincipal(context, "mcp.import.scan");
       return service.mcp.scanImports(request.params.workspaceId);
-    case "skills.getStatus":
-      return service.skillsService.getStatus(request.params);
-    case "skills.install":
-      return service.skillsService.install(request.params);
-    case "skills.remove":
-      return service.skillsService.remove(request.params);
     case "pdf.loadAnnotations":
       return service.pdfAnnotationsService.loadAnnotations(
         request.params.filePath,

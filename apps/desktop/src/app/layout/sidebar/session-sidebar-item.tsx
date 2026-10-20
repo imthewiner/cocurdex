@@ -28,6 +28,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
   SidebarListRow,
+  SidebarListRowDisclosure,
 } from "@/components/ui";
 import { ExecutionTreeDialog } from "@/features/agent/execution-tree";
 import { permissionsBySessionAtom } from "@/features/agent/permission";
@@ -321,9 +322,7 @@ export function SessionSidebarItem({
               render={hasChildren ? undefined : <button type="button" />}
             >
               {hasChildren ? (
-                <button
-                  type="button"
-                  className="flex size-3.5 shrink-0 items-center justify-center text-sidebar-fg-muted hover:text-sidebar-fg"
+                <SidebarListRowDisclosure
                   aria-expanded={isExpanded}
                   aria-label={
                     isExpanded
@@ -340,7 +339,7 @@ export function SessionSidebarItem({
                   ) : (
                     <ChevronRight className="size-3.5 rtl:-scale-x-100" />
                   )}
-                </button>
+                </SidebarListRowDisclosure>
               ) : null}
               {hasChildren ? (
                 <button

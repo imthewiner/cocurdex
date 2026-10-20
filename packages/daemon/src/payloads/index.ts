@@ -8,6 +8,7 @@ import { notePayloadSchemas } from "./note-payloads";
 import type { PayloadSchemas } from "./primitives";
 import { providerPayloadSchemas } from "./provider-payloads";
 import { sessionPayloadSchemas } from "./session-payloads";
+import { skillPayloadSchemas } from "./skill-payloads";
 import { systemPayloadSchemas } from "./system-payloads";
 import { workspacePayloadSchemas } from "./workspace-payloads";
 
@@ -19,6 +20,7 @@ export const daemonPayloadSchemas: PayloadSchemas = {
   ...notePayloadSchemas,
   ...providerPayloadSchemas,
   ...sessionPayloadSchemas,
+  ...skillPayloadSchemas,
   ...systemPayloadSchemas,
   ...workspacePayloadSchemas,
 };

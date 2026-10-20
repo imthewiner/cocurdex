@@ -26,6 +26,7 @@ import {
   IconButton,
   SidebarListRow,
   SidebarListRowActions,
+  SidebarListRowDisclosure,
   SidebarListRowLabel,
 } from "@/components/ui";
 import { cn } from "@/lib";
@@ -128,9 +129,7 @@ export function NoteTreeItem({
           data-note-id={note.id}
         >
           {hasChildren ? (
-            <button
-              type="button"
-              className="flex size-3.5 shrink-0 items-center justify-center text-sidebar-fg-muted hover:text-sidebar-fg"
+            <SidebarListRowDisclosure
               aria-expanded={isExpanded}
               aria-label={
                 isExpanded ? t("sidebar.collapsePage") : t("sidebar.expandPage")
@@ -150,7 +149,7 @@ export function NoteTreeItem({
                   isExpanded && "rotate-90 rtl:rotate-90",
                 )}
               />
-            </button>
+            </SidebarListRowDisclosure>
           ) : (
             <Icon
               className="size-3.5 shrink-0 text-sidebar-fg-muted"

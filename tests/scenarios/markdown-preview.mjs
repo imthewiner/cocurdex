@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { openWorkspaceFile } from "./lib/file-tree.mjs";
-import { closeEditorPanel, showPanelView } from "./lib/navigate.mjs";
+import { closeEditorPanel, showPanelView, translate } from "./lib/navigate.mjs";
 
 const MARKDOWN_FIXTURE = fileURLToPath(
   new URL("./fixtures/readme-sample.md", import.meta.url),
@@ -13,13 +13,13 @@ const UI_TIMEOUT_MS = 30_000;
 const args = readScenarioArgs();
 
 async function restoreEditorPanel(session, fileName, panelWasOpen) {
-  await session.run(async (name) => {
-    const S = window.__scenario;
-    S.byLabel(
-      await S.t("editor:actions.closeFile", { fileName: name }),
-    )?.click();
+  const closeLabel = await translate(session, "editor:actions.closeFile", {
+    fileName,
+  });
+  await session.run((label) => {
+    window.__scenario.byLabel(label)?.click();
     return true;
-  }, fileName);
+  }, closeLabel);
   if (!panelWasOpen) await closeEditorPanel(session);
 }
 
@@ -66,13 +66,10 @@ runScenario("markdown-preview", {
       null,
       UI_TIMEOUT_MS,
     );
-    const labels = await session.run(async () => {
-      const S = window.__scenario;
-      return {
-        preview: await S.t("editor:actions.preview"),
-        source: await S.t("editor:actions.source"),
-      };
-    });
+    const labels = {
+      preview: await translate(session, "editor:actions.preview"),
+      source: await translate(session, "editor:actions.source"),
+    };
     return { labels, panelWasOpen };
   },
   steps: [

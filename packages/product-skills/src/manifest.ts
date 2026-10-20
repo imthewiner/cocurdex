@@ -10,6 +10,7 @@ export const PRODUCT_SKILL_NAMES = [
   "cocurdex-note",
   "cocurdex-script-run",
   "cocurdex-settings",
+  "cocurdex-skills",
   "cocurdex-team",
 ] as const;
 

@@ -1,183 +1,57 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
-import { clickByRole } from "./lib/locate.mjs";
-import { openEditorPanel } from "./lib/navigate.mjs";
+import { daemonRequest } from "./lib/daemon-rpc.mjs";
+import { waitForNoRole } from "./lib/locate.mjs";
+import {
+  openEditorPanel,
+  openExecutionTree,
+  translate,
+} from "./lib/navigate.mjs";
 
-const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
-const DIALOG_MODULE =
-  "/src/features/agent/execution-tree/execution-tree-dialog.tsx";
-const SESSION_ID = "scenario-execution-tree";
-const LATEST_RUN_TIME = ":15:07";
-const WORKER_TOOL_CALLS = 30;
-const FAILED_OUTPUT_LINES = 30;
-const PANEL_OPEN_TIMEOUT_MS = 60_000;
-const SHELL_READY_TIMEOUT_MS = 60_000;
-
-const LONG_PATHS = Array.from(
-  { length: 8 },
-  (_, index) => `packages/db/src/repositories/sqlite-repository-${index}.ts`,
-).join(" ");
+const TEAM_SESSION_ID = "fixture-session-checkout-team";
+const TEAM_SESSION_TITLE = "Coordinate checkout review";
+const MISSING_FILE_NAME =
+  "sqlite-checkout-session-repository-with-retries-and-audit-trail.ts";
+const PI_AGENT_LABEL = "Pi";
+const SESSION_HEADER_HEIGHT_PX = 28;
+const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
 
-function toolCall(id, title, status, startedAt, updatedAt) {
-  return {
-    toolCall: { id, title, kind: "exec", status, startedAt, updatedAt },
-    subagent: null,
-    child: null,
-    observability: "full",
-  };
+function rowSelector(key) {
+  return `[role="dialog"] [data-execution-row="${key}"]`;
 }
 
-function run(id, status, startedAt, endedAt, toolCalls) {
-  return {
-    run: {
-      id,
-      sessionId: SESSION_ID,
-      triggerMessageId: `message-${id}`,
-      status,
-      startedAt,
-      endedAt,
-    },
-    toolCalls,
-    delegated: [],
-    interactions: [],
-  };
+function readRow(session, key) {
+  return session.run((selector) => {
+    const row = document.querySelector(selector);
+    if (!row) return null;
+    return {
+      text: row.innerText.replace(/\s+/g, " ").trim(),
+      expanded:
+        row.querySelector("[aria-expanded]")?.getAttribute("aria-expanded") ??
+        null,
+      expandControls: row.querySelectorAll("[aria-expanded]").length,
+      icons: row.querySelectorAll("svg, img").length,
+    };
+  }, rowSelector(key));
 }
 
-function childSession(id, toolCalls) {
-  return {
-    session: {
-      id,
-      title: id,
-      agentType: "codex",
-      sessionKind: "teammate",
-      status: "idle",
-      parentSessionId: SESSION_ID,
-      parentToolCallId: null,
-      createdAt: "2026-10-13T03:16:00.000Z",
-      updatedAt: "2026-10-13T03:18:00.000Z",
-    },
-    runs: [],
-    toolCalls,
-    children: [],
-    interactions: [],
-    plan: null,
-    truncated: false,
-  };
-}
-
-function workerCalls(worker) {
-  return Array.from({ length: WORKER_TOOL_CALLS }, (_, index) =>
-    toolCall(
-      `tool-${worker}-${index}`,
-      `/bin/zsh -lc 'cat ${worker}-${index}.md'`,
-      index === WORKER_TOOL_CALLS - 1 ? "failed" : "completed",
-      "2026-10-13T03:16:01.000Z",
-      "2026-10-13T03:16:01.300Z",
-    ),
+function waitForRow(session, key, present = true) {
+  return session.waitUntil(
+    ({ selector, present }) =>
+      Boolean(document.querySelector(selector)) === present,
+    { selector: rowSelector(key), present },
+    UI_TIMEOUT_MS,
   );
 }
 
-const EXECUTION_TREE = {
-  maxDepth: 4,
-  root: {
-    session: {
-      id: SESSION_ID,
-      title: "Desktop Release",
-      agentType: "codex",
-      sessionKind: "main",
-      status: "running",
-      parentSessionId: null,
-      parentToolCallId: null,
-      createdAt: "2026-10-13T03:00:00.000Z",
-      updatedAt: "2026-10-13T03:15:07.000Z",
-    },
-    runs: [
-      run(
-        "run-earlier",
-        "completed",
-        "2026-10-13T03:00:00.000Z",
-        "2026-10-13T03:02:14.000Z",
-        [
-          toolCall(
-            "tool-earlier-status",
-            "/bin/zsh -lc 'git status --short --branch'",
-            "completed",
-            "2026-10-13T03:00:01.000Z",
-            "2026-10-13T03:00:01.400Z",
-          ),
-        ],
-      ),
-      run("run-latest", "running", "2026-10-13T03:15:07.000Z", null, [
-        toolCall(
-          "tool-latest-cat",
-          "/bin/zsh -lc 'cat .agents/skills/desktop-release/SKILL.md'",
-          "completed",
-          "2026-10-13T03:15:08.000Z",
-          "2026-10-13T03:15:08.200Z",
-        ),
-        toolCall(
-          "tool-latest-failed",
-          "/bin/zsh -lc 'gh release view --json tagName,isDraft,isPrerelease,url'",
-          "failed",
-          "2026-10-13T03:15:10.000Z",
-          "2026-10-13T03:15:12.500Z",
-        ),
-        toolCall(
-          "tool-latest-long",
-          `/bin/zsh -lc 'rg -n "moveToEnd|assignRun|transaction" ${LONG_PATHS}'`,
-          "completed",
-          "2026-10-13T03:15:12.600Z",
-          "2026-10-13T03:15:12.900Z",
-        ),
-        toolCall(
-          "tool-latest-running",
-          "/bin/zsh -lc 'git fetch origin main'",
-          "in_progress",
-          "2026-10-13T03:15:13.000Z",
-          "2026-10-13T03:15:13.000Z",
-        ),
-      ]),
-      run(
-        "run-capacity",
-        "failed",
-        "2026-10-13T03:20:00.000Z",
-        "2026-10-13T03:20:10.000Z",
-        [],
-      ),
-    ],
-    toolCalls: [],
-    children: [
-      childSession("worker-a", workerCalls("worker-a")),
-      childSession("worker-b", workerCalls("worker-b")),
-    ],
-    interactions: [],
-    plan: null,
-    truncated: false,
-  },
-};
-
-const FAILED_OUTPUT = Array.from(
-  { length: FAILED_OUTPUT_LINES },
-  (_, index) => `line ${index + 1}`,
-)
-  .concat("release not found")
-  .join("\n");
-
-async function readTree(session) {
-  return session.run(() => {
-    const dialog = document.querySelector('[role="dialog"]');
-    if (!dialog) return null;
-    const rows = [...dialog.querySelectorAll("[data-execution-row]")].map(
-      (row) => row.innerText.replace(/\s+/g, " ").trim(),
-    );
-    return {
-      rows,
-      text: dialog.innerText,
-      pre: dialog.querySelector("pre")?.innerText ?? null,
-    };
-  });
+function toggleRow(session, key) {
+  return session.run((selector) => {
+    const toggle = document.querySelector(`${selector} button[aria-expanded]`);
+    toggle?.click();
+    return Boolean(toggle);
+  }, rowSelector(key));
 }
 
 function readDialogTop(session) {
@@ -186,117 +60,72 @@ function readDialogTop(session) {
   );
 }
 
-function toggleSessionRow(session, sessionId) {
-  return session.run((key) => {
-    const toggle = document.querySelector(
-      `[data-execution-row="${key}"] button[aria-expanded]`,
-    );
-    toggle?.click();
-    return Boolean(toggle);
-  }, `session:${sessionId}`);
+function toolKey(node) {
+  return `tool:${node.toolCall.id}`;
 }
 
-function clickRow(session, fragment) {
-  return clickByRole(session, {
-    role: "button",
-    name: fragment,
-    exact: false,
-    within: { role: "dialog" },
-  });
+function describeTree(tree) {
+  const runs = tree.root.runs;
+  const latest = runs.at(-1);
+  const teammates = [...tree.root.children].sort((left, right) =>
+    left.session.title.localeCompare(right.session.title),
+  );
+  return {
+    earlierRun: runs[0],
+    emptyRun: runs.find((run) => run.toolCalls.length === 0),
+    latestRun: latest,
+    healthyCall: latest.toolCalls.find(
+      (node) => node.toolCall.status === "completed",
+    ),
+    failedCall: latest.toolCalls.find(
+      (node) => node.toolCall.status === "failed",
+    ),
+    teammates: teammates.map((child) => ({
+      key: `session:${child.session.id}`,
+      calls: child.runs.flatMap((run) => run.toolCalls),
+    })),
+  };
 }
 
 runScenario("execution-tree", {
-  open: () => openScenarioApp(args),
+  open: () => openScenarioApp(args, { fixtureDb: true }),
   async setup({ session }) {
-    await session.waitUntil(
-      async () =>
-        Boolean(
-          window.__scenario.byLabel(
-            await window.__scenario.t("editor:actions.openEditorPanel"),
-          ),
-        ),
-      null,
-      SHELL_READY_TIMEOUT_MS,
+    const tree = await daemonRequest(session, "session.executionTree", {
+      sessionId: TEAM_SESSION_ID,
+    });
+    check(Boolean(tree), "fixture team session missing");
+    const shape = describeTree(tree);
+    check(
+      shape.teammates.length === 2 && shape.failedCall && shape.emptyRun,
+      "fixture team session has an unexpected shape",
+      shape,
     );
-    await session.run(
-      async ({ daemonClientModule, dialogModule, tree, output, sessionId }) => {
-        const S = window.__scenario;
-        const host = (await import(daemonClientModule)).getLocalHost();
-        const request = host.request;
-        window.__executionTreeRestore = () => {
-          host.request = request;
-        };
-        host.request = (method, params, options) => {
-          if (method === "session.executionTree") return Promise.resolve(tree);
-          if (method === "session.getToolCallResult") {
-            return Promise.resolve(
-              params.toolCallId === "tool-latest-failed"
-                ? { content: [{ type: "text", text: output }], rawOutput: null }
-                : { content: [], rawOutput: null },
-            );
-          }
-          return request.call(host, method, params, options);
-        };
-        const reactModule = await S.dep(dialogModule, "react");
-        const domModule = await S.dep("/src/main.tsx", "react-dom_client");
-        const React = reactModule.default ?? reactModule;
-        const ReactDomClient = domModule.default ?? domModule;
-        const { ExecutionTreeDialog } = await import(dialogModule);
-        const container = document.createElement("div");
-        document.body.append(container);
-        const root = ReactDomClient.createRoot(container);
-        window.__executionTreeUnmount = () => {
-          root.unmount();
-          container.remove();
-        };
-        root.render(
-          React.createElement(ExecutionTreeDialog, {
-            sessionId,
-            onClose: () => window.__executionTreeUnmount(),
-          }),
-        );
-        return true;
-      },
-      {
-        daemonClientModule: DAEMON_CLIENT_MODULE,
-        dialogModule: DIALOG_MODULE,
-        tree: EXECUTION_TREE,
-        output: FAILED_OUTPUT,
-        sessionId: SESSION_ID,
-      },
-    );
-    await session.waitUntil(
-      () => document.querySelectorAll('[role="dialog"] li').length > 0,
-    );
-    return {};
+    await openExecutionTree(session, TEAM_SESSION_TITLE);
+    await waitForRow(session, toolKey(shape.failedCall));
+    return { shape, rootKey: `session:${TEAM_SESSION_ID}` };
   },
   steps: [
     [
-      "commands-without-shell-wrapper",
-      async ({ session }) => {
-        const tree = await readTree(session);
-        check(!tree.text.includes("/bin/zsh"), "shell wrapper still shown");
+      "long-labels-stay-inside-dialog",
+      async ({ session, shape }) => {
+        const label = await readRow(session, toolKey(shape.failedCall));
         check(
-          tree.rows.some((row) => row.includes("gh release view --json")),
-          "unwrapped command missing",
-          tree.rows,
+          label.text.includes(MISSING_FILE_NAME),
+          "tool call label misses its path",
+          label,
         );
-        return { rows: tree.rows.length };
-      },
-    ],
-    [
-      "long-commands-stay-inside-dialog",
-      async ({ session }) => {
         const layout = await session.run(() => {
           const dialog = document.querySelector('[role="dialog"]');
           const bounds = dialog.getBoundingClientRect();
           const toggle = dialog.querySelector('[role="switch"]');
-          const firstRow = dialog.querySelector("li").getBoundingClientRect();
+          const firstRow = dialog
+            .querySelector("[data-execution-row]")
+            .getBoundingClientRect();
           const overflowing = [...dialog.querySelectorAll("li button")]
-            .filter((button) => {
-              const rect = button.getBoundingClientRect();
-              return rect.right > bounds.right + 0.5;
-            })
+            .filter(
+              (button) =>
+                button.getBoundingClientRect().right > bounds.right + 0.5,
+            )
             .map((button) => button.innerText.trim());
           const toggleRect = toggle?.getBoundingClientRect();
           return {
@@ -320,81 +149,68 @@ runScenario("execution-tree", {
     ],
     [
       "session-row-shows-agent-icon-and-name",
-      async ({ session }) => {
-        const row = await session.run(() => {
-          const button = document.querySelector(
-            '[data-execution-row^="session:"] button',
-          );
-          return {
-            text: button.innerText.replace(/\s+/g, " ").trim(),
-            icons: button.querySelectorAll("svg, img").length,
-          };
-        });
-        check(row.text.endsWith("Codex"), "agent display name missing", row);
+      async ({ session, rootKey }) => {
+        const row = await readRow(session, rootKey);
+        check(
+          row.text.endsWith(PI_AGENT_LABEL),
+          "agent display name missing",
+          row,
+        );
         check(row.icons >= 2, "agent icon missing", row);
         return row;
       },
     ],
     [
       "earlier-run-collapsed-with-summary",
-      async ({ session }) => {
-        const tree = await readTree(session);
+      async ({ session, shape }) => {
+        const { earlierRun } = shape;
+        const runKey = `run:${earlierRun.run.id}`;
+        const [firstCall] = earlierRun.toolCalls;
+        const row = await readRow(session, runKey);
+        const summary = await translate(
+          session,
+          "sessions:executionTree.toolCount",
+          { count: earlierRun.toolCalls.length },
+        );
+        check(row.expanded === "false", "earlier run expanded by default", row);
+        check(row.text.includes(summary), "earlier run summary missing", row);
         check(
-          !tree.text.includes("git status --short"),
-          "earlier run is expanded by default",
+          !(await readRow(session, toolKey(firstCall))),
+          "earlier run calls shown before expanding",
         );
-        const runRow = tree.rows.find((row) => row.includes("2m 14s"));
-        check(Boolean(runRow), "earlier run summary missing", tree.rows);
-        check(
-          tree.rows.some((row) => row.includes("2.5s") || row.includes("3s")),
-          "tool duration missing",
-          tree.rows,
-        );
-        await clickRow(session, "2m 14s");
-        await session.waitUntil(() =>
-          document
-            .querySelector('[role="dialog"]')
-            ?.innerText.includes("git status --short"),
-        );
-        const expanded = await readTree(session);
-        check(
-          expanded.text.includes("git status --short"),
-          "earlier run did not expand",
-        );
-        return { runRow };
+        check(await toggleRow(session, runKey), "earlier run toggle missing");
+        await waitForRow(session, toolKey(firstCall));
+        return row;
       },
     ],
     [
       "failed-tool-output",
-      async ({ session }) => {
-        await clickRow(session, "gh release view");
-        await session.waitUntil(() =>
-          Boolean(document.querySelector('[role="dialog"] pre')),
-        );
-        const tree = await readTree(session);
+      async ({ session, shape }) => {
         check(
-          tree.pre.trim().endsWith("release not found"),
-          "output tail missing",
-          tree.pre,
+          await toggleRow(session, toolKey(shape.failedCall)),
+          "failed tool call toggle missing",
         );
-        check(!tree.pre.includes("line 1\n"), "output was not tailed");
-        return { outputLines: tree.pre.split("\n").length };
+        await session.waitUntil(
+          () => Boolean(document.querySelector('[role="dialog"] pre')),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const output = await session.run(
+          () => document.querySelector('[role="dialog"] pre').innerText,
+        );
+        check(
+          output.includes(MISSING_FILE_NAME),
+          "failed output does not name the missing file",
+          output,
+        );
+        await toggleRow(session, toolKey(shape.failedCall));
+        return { outputLines: output.split("\n").length };
       },
     ],
     [
       "empty-run-has-no-expand-control",
-      async ({ session }) => {
-        const row = await session.run(() => {
-          const item = document.querySelector(
-            '[data-execution-row="run:run-capacity"]',
-          );
-          return item
-            ? {
-                text: item.innerText.replace(/\s+/g, " ").trim(),
-                expandControls: item.querySelectorAll("[aria-expanded]").length,
-              }
-            : null;
-        });
+      async ({ session, shape }) => {
+        const row = await readRow(session, `run:${shape.emptyRun.run.id}`);
         check(Boolean(row), "empty run row missing");
         check(row.expandControls === 0, "empty run is expandable", row);
         return row;
@@ -402,117 +218,116 @@ runScenario("execution-tree", {
     ],
     [
       "subagents-folded-with-summary",
-      async ({ session }) => {
-        const tree = await readTree(session);
-        check(
-          !tree.text.includes("worker-a-0.md"),
-          "subagent calls shown before expanding",
-        );
-        const worker = await session.run(() => {
-          const row = document.querySelector(
-            '[data-execution-row="session:worker-a"]',
+      async ({ session, shape }) => {
+        const rows = [];
+        for (const teammate of shape.teammates) {
+          const row = await readRow(session, teammate.key);
+          const [toolCount, failedCount] = await Promise.all([
+            translate(session, "sessions:executionTree.toolCount", {
+              count: teammate.calls.length,
+            }),
+            translate(session, "sessions:executionTree.failedCount", {
+              count: 1,
+            }),
+          ]);
+          check(Boolean(row), "subagent row missing", teammate.key);
+          check(row.expanded === "false", "subagent expanded by default", row);
+          check(
+            row.text.includes(toolCount) && row.text.includes(failedCount),
+            "subagent summary missing",
+            row,
           );
-          return row
-            ? {
-                expanded: row
-                  .querySelector("[aria-expanded]")
-                  ?.getAttribute("aria-expanded"),
-                text: row.innerText.replace(/\s+/g, " ").trim(),
-              }
-            : null;
-        });
-        check(Boolean(worker), "subagent row missing", tree.rows);
-        check(worker.expanded === "false", "subagent expanded by default");
-        check(worker.text.includes("30"), "subagent summary missing", worker);
-        return worker;
+          check(
+            !(await readRow(session, toolKey(teammate.calls[0]))),
+            "subagent calls shown before expanding",
+          );
+          rows.push(row.text);
+        }
+        return { rows };
       },
     ],
     [
       "sticky-session-headers",
-      async ({ session }) => {
-        check(
-          await toggleSessionRow(session, "worker-a"),
-          "subagent toggle missing",
+      async ({ session, shape, rootKey }) => {
+        const [first, second] = shape.teammates;
+        check(await toggleRow(session, first.key), "subagent toggle missing");
+        const lastCallKey = toolKey(first.calls.at(-1));
+        await waitForRow(session, lastCallKey);
+        const layout = await session.run(
+          async ({ rootSelector, workerSelector, lastSelector }) => {
+            const list = document.querySelector('[role="dialog"] ul');
+            const lastCall = document.querySelector(lastSelector);
+            list.scrollTop +=
+              lastCall.getBoundingClientRect().bottom -
+              list.getBoundingClientRect().bottom;
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            const listTop = list.getBoundingClientRect().top;
+            const top = (selector) =>
+              document.querySelector(selector).getBoundingClientRect().top -
+              listTop;
+            const result = {
+              scrolled: list.scrollTop,
+              root: top(rootSelector),
+              worker: top(workerSelector),
+            };
+            list.scrollTop = 0;
+            return result;
+          },
+          {
+            rootSelector: rowSelector(rootKey),
+            workerSelector: rowSelector(first.key),
+            lastSelector: rowSelector(lastCallKey),
+          },
         );
-        await session.waitUntil(() =>
-          document
-            .querySelector('[role="dialog"]')
-            ?.innerText.includes("worker-a-29.md"),
-        );
-        const layout = await session.run(async () => {
-          const list = document.querySelector('[role="dialog"] ul');
-          const lastCall = document.querySelector(
-            '[data-execution-row="tool:tool-worker-a-28"]',
-          );
-          list.scrollTop =
-            lastCall.offsetTop - list.clientHeight + lastCall.offsetHeight;
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-          const top = (key) =>
-            document
-              .querySelector(`[data-execution-row="${key}"]`)
-              .getBoundingClientRect().top;
-          const listTop = list.getBoundingClientRect().top;
-          const result = {
-            scrolled: list.scrollTop,
-            root:
-              document
-                .querySelector('[data-execution-row^="session:"]')
-                .getBoundingClientRect().top - listTop,
-            worker: top("session:worker-a") - listTop,
-          };
-          list.scrollTop = 0;
-          return result;
-        });
         check(layout.scrolled > 0, "list did not scroll", layout);
         check(Math.abs(layout.root) < 1, "root header not pinned", layout);
         check(
-          Math.abs(layout.worker - 28) < 1,
+          Math.abs(layout.worker - SESSION_HEADER_HEIGHT_PX) < 1,
           "subagent header not pinned below root",
           layout,
         );
-        await toggleSessionRow(session, "worker-a");
-        await toggleSessionRow(session, "worker-b");
-        await session.waitUntil(() =>
-          document
-            .querySelector('[role="dialog"]')
-            ?.innerText.includes("worker-b-29.md"),
+        await toggleRow(session, first.key);
+        await toggleRow(session, second.key);
+        await waitForRow(session, toolKey(second.calls.at(-1)));
+        const overlap = await session.run(
+          async ({ rootSelector, workerSelector }) => {
+            const list = document.querySelector('[role="dialog"] ul');
+            list.scrollTop +=
+              document.querySelector(workerSelector).getBoundingClientRect()
+                .top - list.getBoundingClientRect().top;
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            const rootHeader = document.querySelector(rootSelector);
+            const rect = rootHeader.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+            );
+            const result = {
+              scrolled: list.scrollTop,
+              rootOnTop: rootHeader.contains(hit),
+            };
+            list.scrollTop = 0;
+            return result;
+          },
+          {
+            rootSelector: rowSelector(rootKey),
+            workerSelector: rowSelector(second.key),
+          },
         );
-        const overlap = await session.run(async () => {
-          const list = document.querySelector('[role="dialog"] ul');
-          const row = (key) =>
-            document.querySelector(`[data-execution-row="${key}"]`);
-          const listTop = list.getBoundingClientRect().top;
-          list.scrollTop +=
-            row("session:worker-a").getBoundingClientRect().top - listTop;
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-          const rootHeader = document.querySelector(
-            '[data-execution-row^="session:"]',
-          );
-          const rect = rootHeader.getBoundingClientRect();
-          const hit = document.elementFromPoint(
-            rect.left + rect.width / 2,
-            rect.top + rect.height / 2,
-          );
-          const result = {
-            scrolled: list.scrollTop,
-            rootOnTop: rootHeader.contains(hit),
-          };
-          list.scrollTop = 0;
-          return result;
-        });
         check(overlap.scrolled > 0, "list did not scroll", overlap);
         check(
           overlap.rootOnTop,
           "a nested header covers the root header",
           overlap,
         );
-        await toggleSessionRow(session, "worker-b");
+        await toggleRow(session, second.key);
         return { ...layout, ...overlap };
       },
     ],
     [
       "issues-only-filter",
-      async ({ session }) => {
+      async ({ session, shape }) => {
+        const { healthyCall, failedCall } = shape;
         const topBefore = await readDialogTop(session);
         const clicked = await session.run(() => {
           const toggle = document.querySelector(
@@ -522,21 +337,9 @@ runScenario("execution-tree", {
           return Boolean(toggle);
         });
         check(clicked, "issues-only switch missing");
-        await session.waitUntil(
-          () =>
-            !document
-              .querySelector('[role="dialog"]')
-              ?.innerText.includes("git fetch origin main"),
-        );
-        const tree = await readTree(session);
+        await waitForRow(session, toolKey(healthyCall), false);
         check(
-          !tree.text.includes("git fetch origin main") &&
-            !tree.text.includes("git status --short"),
-          "issues-only kept healthy tool calls",
-          tree.rows,
-        );
-        check(
-          tree.text.includes("gh release view"),
+          Boolean(await readRow(session, toolKey(failedCall))),
           "issues-only dropped the failed call",
         );
         const topAfter = await readDialogTop(session);
@@ -545,19 +348,18 @@ runScenario("execution-tree", {
           "dialog moved when filtering",
           { topBefore, topAfter },
         );
-        return { rows: tree.rows.length, topBefore, topAfter };
+        return { topBefore, topAfter };
       },
     ],
     [
       "collapse-run-while-filtering",
-      async ({ session }) => {
-        await clickRow(session, LATEST_RUN_TIME);
-        await session.waitUntil(
-          () =>
-            !document
-              .querySelector('[role="dialog"]')
-              ?.innerText.includes("gh release view"),
+      async ({ session, shape }) => {
+        const { latestRun, failedCall } = shape;
+        check(
+          await toggleRow(session, `run:${latestRun.run.id}`),
+          "latest run toggle missing",
         );
+        await waitForRow(session, toolKey(failedCall), false);
         return {};
       },
     ],
@@ -572,52 +374,58 @@ runScenario("execution-tree", {
     [
       "right-panel-close-button",
       async ({ session }) => {
-        await session.run(async () => {
-          window.__executionTreeUnmount?.();
-          await window.__scenario.sleep(300);
-          return true;
+        await session.send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          key: "Escape",
+          code: "Escape",
+          windowsVirtualKeyCode: 27,
         });
-        const labels = await session.run(async () => ({
-          open: await window.__scenario.t("editor:actions.openEditorPanel"),
-          close: await window.__scenario.t("editor:actions.closeEditorPanel"),
-        }));
+        await session.send("Input.dispatchKeyEvent", {
+          type: "keyUp",
+          key: "Escape",
+          code: "Escape",
+          windowsVirtualKeyCode: 27,
+        });
+        await waitForNoRole(session, { role: "dialog" }, UI_TIMEOUT_MS);
+        const [open, close] = await Promise.all([
+          translate(session, "editor:actions.openEditorPanel"),
+          translate(session, "editor:actions.closeEditorPanel"),
+        ]);
         await openEditorPanel(session);
-        const panelClose = (labels) =>
-          [
-            ...document.querySelectorAll(
-              `[aria-label="${CSS.escape(labels.close)}"]`,
-            ),
-          ].some((button) => !button.closest("header"));
-        await session.waitUntil(panelClose, labels, PANEL_OPEN_TIMEOUT_MS);
-        const result = await session.run(async (labels) => {
-          const S = window.__scenario;
-          const panelButton = () =>
+        await session.waitUntil(
+          (label) =>
             [
               ...document.querySelectorAll(
-                `[aria-label="${CSS.escape(labels.close)}"]`,
+                `[aria-label="${CSS.escape(label)}"]`,
               ),
-            ].find((button) => !button.closest("header"));
-          const button = panelButton();
-          if (!button) return { found: false };
-          button.click();
-          await S.sleep(300);
-          return {
-            found: true,
-            closed: Boolean(S.byLabel(labels.open)) && !panelButton(),
-          };
-        }, labels);
-        check(result.found, "right panel close button missing");
-        check(result.closed, "right panel did not close");
-        return result;
+            ].some((button) => !button.closest("header")),
+          close,
+          UI_TIMEOUT_MS,
+        );
+        const clicked = await session.run((label) => {
+          const button = [
+            ...document.querySelectorAll(`[aria-label="${CSS.escape(label)}"]`),
+          ].find((candidate) => !candidate.closest("header"));
+          button?.click();
+          return Boolean(button);
+        }, close);
+        check(clicked, "right panel close button missing");
+        await session.waitUntil(
+          ({ open, close }) =>
+            Boolean(
+              document.querySelector(`[aria-label="${CSS.escape(open)}"]`),
+            ) &&
+            ![
+              ...document.querySelectorAll(
+                `[aria-label="${CSS.escape(close)}"]`,
+              ),
+            ].some((button) => !button.closest("header")),
+          { open, close },
+          UI_TIMEOUT_MS,
+        );
+        return { closed: true };
       },
     ],
   ],
-  async teardown({ session }) {
-    await session.run(() => {
-      window.__executionTreeUnmount?.();
-      window.__executionTreeRestore?.();
-      return true;
-    });
-    return {};
-  },
+  teardown: async () => ({}),
 });

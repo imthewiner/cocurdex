@@ -256,6 +256,10 @@ export class DaemonState {
     applyStoredNetworkProxy(valueJson);
   }
 
+  get appSettings() {
+    return this.database.appSettings;
+  }
+
   get hostAccessStore() {
     return {
       repository: this.database.hostAccess,

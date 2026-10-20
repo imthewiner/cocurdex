@@ -1,6 +1,7 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole, waitForRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const SESSION_TITLE = "Draft release notes";
 const HEADING = "Acme Shop 0.4.0";
@@ -11,10 +12,6 @@ const SETTLE_FRAMES = 30;
 const SESSION_ROW = new RegExp(`^${SESSION_TITLE}\\s+(?![(（])`);
 
 const args = readScenarioArgs();
-
-async function translate(session, key) {
-  return session.run((text) => window.__scenario.t(text), key);
-}
 
 async function openSession(session) {
   await clickByRole(

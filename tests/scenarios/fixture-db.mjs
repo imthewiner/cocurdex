@@ -1,6 +1,8 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { daemonRequest } from "./lib/daemon-rpc.mjs";
 import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const ACTIVE_TITLES = [
   "Add percentage discount codes",
@@ -65,17 +67,14 @@ runScenario("fixture-db", {
       "syncs a session archived and restored by another client",
       async ({ session }) => {
         const title = ACTIVE_TITLES[2];
-        const sessionId = await session.run(
-          async ({ title, productApiModule }) => {
-            const { daemonProductApi } = await import(productApiModule);
-            const { sessions } = await daemonProductApi.bootstrapApp();
-            const target = sessions.find((entry) => entry.title === title);
-            if (!target) return null;
-            await daemonProductApi.archiveSessions({ sessionIds: [target.id] });
-            return target.id;
-          },
-          { title, productApiModule: "/src/lib/product-api.ts" },
-        );
+        const { sessions } = await daemonRequest(session, "app.bootstrap");
+        const sessionId =
+          sessions.find((entry) => entry.title === title)?.id ?? null;
+        if (sessionId) {
+          await daemonRequest(session, "session.archiveMany", {
+            sessionIds: [sessionId],
+          });
+        }
         check(sessionId, "session not found", title);
         await session.waitUntil(
           (title) => !document.body.innerText.includes(title),
@@ -84,13 +83,9 @@ runScenario("fixture-db", {
         );
         const text = await session.run(() => document.body.innerText);
         check(text.includes(ACTIVE_TITLES[0]), "other sessions disappeared");
-        await session.run(
-          async ({ sessionId, productApiModule }) => {
-            const { daemonProductApi } = await import(productApiModule);
-            await daemonProductApi.restoreSessions({ sessionIds: [sessionId] });
-          },
-          { sessionId, productApiModule: "/src/lib/product-api.ts" },
-        );
+        await daemonRequest(session, "session.restoreMany", {
+          sessionIds: [sessionId],
+        });
         await session.waitUntil(
           (title) => document.body.innerText.includes(title),
           title,
@@ -117,10 +112,7 @@ runScenario("fixture-db", {
           text.includes("Cocurdex restarted before this turn finished"),
           "restart notice missing",
         );
-        const resume = await session.run(
-          (key) => window.__scenario.t(key),
-          "agent:queue.resume",
-        );
+        const resume = await translate(session, "agent:queue.resume");
         await waitForRole(
           session,
           { role: "button", name: resume },
@@ -132,10 +124,7 @@ runScenario("fixture-db", {
     [
       "resumes the paused queue",
       async ({ session }) => {
-        const resume = await session.run(
-          (key) => window.__scenario.t(key),
-          "agent:queue.resume",
-        );
+        const resume = await translate(session, "agent:queue.resume");
         await clickByRole(session, { role: "button", name: resume });
         const deadline = Date.now() + UI_TIMEOUT_MS;
         while (

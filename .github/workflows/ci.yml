@@ -203,6 +203,7 @@ jobs:
         if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
         run: xvfb-run -a pnpm test:ui
         env:
+          COCURDEX_SCENARIO_RENDERER: built
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
       - name: Check startup bundle budget
         if: needs.changes.outputs.run_desktop == 'true'

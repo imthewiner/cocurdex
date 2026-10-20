@@ -1034,43 +1034,200 @@
   },
   "skills": {
     "actions": {
+      "cancel": "取消",
       "install": "安装",
-      "refresh": "刷新",
       "reinstall": "重新安装",
       "remove": "移除",
       "update": "更新"
     },
-    "cliHint": "命令行：cocurdex skills install --scope project|global  ·  cocurdex skills status --scope project|global",
+    "add": {
+      "builtin": "内置",
+      "chooseFolder": "选择文件夹",
+      "description": "从 GitHub 仓库（owner/repo 或链接）或本机文件夹读取 skills，再选择要安装的。",
+      "found_one": "找到 {{count}} 个 skill",
+      "found_other": "找到 {{count}} 个 skill",
+      "install_one": "安装 {{count}} 个",
+      "install_other": "安装 {{count}} 个",
+      "installed": "已安装",
+      "installedToast_one": "已安装 {{count}} 个 skill",
+      "installedToast_other": "已安装 {{count}} 个 skill",
+      "invalid": "SKILL.md 无效",
+      "none": "这个来源里没有找到 skill。",
+      "open": "从 GitHub 或文件夹添加",
+      "read": "读取",
+      "replaces": "将替换已安装的",
+      "skippedToast": "已跳过：{{names}}",
+      "sourceLabel": "Skill 来源",
+      "sourcePlaceholder": "owner/repo、GitHub 链接或文件夹路径",
+      "title": "添加 skills"
+    },
+    "agents": {
+      "access": {
+        "copy": "单独的副本 {{path}}",
+        "home": "安装在这个 agent 自己的文件夹 {{path}}",
+        "link": "已链接到共享文件夹 {{path}}",
+        "native": "读取共享文件夹 {{path}}",
+        "none": "这个 agent 不可用"
+      },
+      "share": "移到共享文件夹",
+      "sharedMissing": "只安装在 {{path}}。移到共享文件夹后，这些 agent 才能使用。",
+      "sharedNative": "从共享文件夹 {{path}} 读取",
+      "title": "可见的 agent"
+    },
+    "audit": {
+      "description": "skills.sh 为这个 skill 发布的安全审计。",
+      "none": "暂无审计结果。",
+      "risk": {
+        "critical": "严重风险",
+        "high": "高风险",
+        "low": "低风险",
+        "medium": "中风险",
+        "safe": "安全"
+      },
+      "title": "安全审计"
+    },
+    "description": "Skills 教 agent 完成专门的工作。安装一次，所有读取共享 skills 文件夹的 agent 都能使用。",
+    "detail": {
+      "label": "{{name}} 详情",
+      "removeDescription": "从这个范围内所有 agent 文件夹移除 {{name}} 及其链接，并保留文件夹备份。",
+      "removeTitle": "移除 {{name}}？",
+      "reviewUpdate": "查看更新",
+      "updateBadge": "有更新"
+    },
+    "discover": {
+      "chooseSkills": "选择要安装的 skills",
+      "install": "安装",
+      "installSkill": "安装 {{name}}",
+      "official": "官方来源",
+      "poweredBy": "搜索结果来自 skills.sh。",
+      "reading": "正在读取 {{source}}…",
+      "resultMeta_one": "{{source}} · {{count}} 次安装",
+      "resultMeta_other": "{{source}} · {{count}} 次安装",
+      "results_one": "{{count}} 个结果",
+      "results_other": "{{count}} 个结果",
+      "search": "搜索 skills.sh",
+      "sourceSkills_one": "{{count}} 个 skill",
+      "sourceSkills_other": "{{count}} 个 skill"
+    },
+    "document": {
+      "truncated": "预览已截断，打开文件查看全文。"
+    },
+    "files": {
+      "reveal": "在文件管理器中显示",
+      "scriptWarning_one": "包含 {{count}} 个脚本，agent 可能会运行它，使用前请检查。",
+      "scriptWarning_other": "包含 {{count}} 个脚本，agent 可能会运行它们，使用前请检查。",
+      "title_one": "文件（{{count}}）",
+      "title_other": "文件（{{count}}）"
+    },
     "groupTitle": "安装位置",
+    "info": {
+      "installed": "安装时间",
+      "latest": "最新提交",
+      "license": "许可",
+      "location": "位置",
+      "openSource": "打开来源",
+      "ref": "分支或标签",
+      "source": "来源"
+    },
+    "install": {
+      "agents": "Agent",
+      "global": "所有工作区",
+      "linkAgent": "同时链接给 {{agent}}",
+      "scope": "安装范围",
+      "sharedAgents": "{{agents}} 会自动读取共享文件夹。",
+      "workspace": "工作区 {{workspace}}"
+    },
     "intro": "安装 cocurdex 产品 Skills，让 Claude、OpenCode、Pi 等 agent 能跑 Notes / Issues 工作流。默认不会自动安装，需你主动安装。",
-    "loading": "正在检查 Skills 安装状态…",
+    "list": {
+      "builtin": "Cocurdex 内置",
+      "checkFailed": "无法检查 {{source}}：{{error}}",
+      "checkUpdates": "检查更新",
+      "empty": "还没有安装其他 skill。",
+      "filter": "筛选 skills",
+      "global": "全局",
+      "noMatches": "没有匹配的 skill",
+      "problems": "需要处理",
+      "workspace": "工作区 · {{workspace}}"
+    },
+    "pack": {
+      "included_one": "包含 {{count}} 个 skill",
+      "included_other": "包含 {{count}} 个 skill",
+      "subtitle_one": "{{count}} 个 skill · v{{version}}",
+      "subtitle_other": "{{count}} 个 skill · v{{version}}",
+      "title": "Cocurdex skills"
+    },
+    "problems": {
+      "brokenLinkDescription": "这个链接指向的文件夹已不存在。移除这个 skill 即可清理。",
+      "brokenLinkTitle": "链接失效",
+      "copyMeta_one": "{{count}} 个文件 · 修改于 {{modified}}",
+      "copyMeta_other": "{{count}} 个文件 · 修改于 {{modified}}",
+      "duplicateDescription": "不同 agent 看到的是这个 skill 的不同版本。保留一份，其他副本会变成指向它的链接并被备份。",
+      "duplicateTitle": "存在不同副本",
+      "invalidDescription": "修好 SKILL.md 之前，agent 可能会忽略这个 skill。",
+      "invalidTitle": "SKILL.md 需要修正",
+      "issue": {
+        "descriptionTooLong": "description 超过 1024 个字符。",
+        "invalidName": "name 只能包含小写字母、数字和连字符。",
+        "missingDescription": "frontmatter 缺少 description。",
+        "missingFrontmatter": "文件没有 YAML frontmatter。",
+        "missingName": "frontmatter 缺少 name。",
+        "nameMismatch": "name 与文件夹名不一致。",
+        "nameTooLong": "name 超过 64 个字符。"
+      },
+      "keepCopy": "保留这份"
+    },
     "scope": {
       "global": {
-        "description": "安装到本机 ~/.agents/skills 与 ~/.claude/skills，对所有工作区生效。",
         "title": "全局（所有工作区）"
       },
       "project": {
-        "description": "安装到当前工作区（.agents/skills 与 .claude/skills），适合提交到团队仓库。",
         "title": "当前工作区"
       }
+    },
+    "source": {
+      "unknown": "手动添加"
+    },
+    "state": {
+      "ok": "最新",
+      "problem": "需要处理",
+      "update": "有更新"
     },
     "status": {
       "conflict": "已存在非托管的 cocurdex skill 目录（{{skills}}）。请先删除或重命名 {{path}} 下的冲突项，再重新安装。",
       "installed": "已安装 v{{version}}，路径 {{path}}",
       "notInstalled": "未安装。将写入 {{path}}",
-      "noWorkspace": "请先选择一个工作区，再安装工作区级 Skills。",
       "updateAvailable": "已安装 v{{installed}}；可用 pack v{{latest}}，路径 {{path}}"
     },
+    "tabs": {
+      "discover": "发现",
+      "installed_one": "已安装（{{count}}）",
+      "installed_other": "已安装（{{count}}）"
+    },
     "toast": {
-      "alreadyInstalled": "Skills 已是最新",
       "conflict": "无法安装：与已有 Skills 冲突（{{skills}}）",
       "installed": "已安装 cocurdex Skills",
       "installFailed": "安装 Skills 失败",
       "removed": "已移除 cocurdex Skills",
       "removeFailed": "移除 Skills 失败",
+      "skipped": "Skills 已是最新",
       "updated": "已更新 cocurdex Skills"
     },
-    "workspaceLabel": "当前工作区：{{name}}"
+    "update": {
+      "changes": "变更的文件",
+      "confirm": "更新",
+      "description": "从 {{source}} 更新到 {{commit}}。应用前请检查变更。",
+      "localModified": "这个 skill 在本地被修改过。更新会覆盖这些修改，但会保留备份。",
+      "noChanges": "没有文件变更。",
+      "noPreview": "无预览",
+      "script": "脚本",
+      "skip": "跳过这个版本",
+      "status": {
+        "added": "新增",
+        "modified": "修改",
+        "removed": "删除"
+      },
+      "title": "更新 {{name}}"
+    }
   },
   "teams": {
     "addMember": "添加成员",

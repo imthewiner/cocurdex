@@ -1,3 +1,4 @@
+import { translateFor } from "./i18n.mjs";
 import {
   centerOf,
   clickByRole,
@@ -21,11 +22,9 @@ const PANEL_VIEW_KEYS = {
 
 export const BODY_EDITOR_IN_DIALOG = '[role="dialog"] .md-body-prose';
 
-export function translate(session, key, options) {
-  return session.run(({ key, options }) => window.__scenario.t(key, options), {
-    key,
-    options,
-  });
+export async function translate(session, key, options) {
+  const language = await session.run(() => document.documentElement.lang);
+  return translateFor(language, key, options);
 }
 
 export async function openEditorPanel(session) {
@@ -110,19 +109,52 @@ export async function openNewIssueDialog(session) {
 }
 
 export async function openSettingsSection(session, section) {
+  const sectionName = await translate(session, `settings:sections.${section}`);
+  const sectionButton = { role: "button", name: sectionName };
+  const [visible] = await queryAllByRole(session, sectionButton);
+  if (!visible) {
+    await clickByRole(
+      session,
+      {
+        role: "button",
+        name: await translate(session, "sessions:sidebar.settings"),
+      },
+      NAVIGATION_TIMEOUT_MS,
+    );
+  }
+  await clickByRole(session, sectionButton, NAVIGATION_TIMEOUT_MS);
   await waitForRole(
     session,
+    { role: "heading", name: sectionName },
+    NAVIGATION_TIMEOUT_MS,
+  );
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export async function openExecutionTree(session, sessionTitle) {
+  await clickByRole(
+    session,
+    { role: "button", name: new RegExp(`^${escapeRegExp(sessionTitle)}\\b`) },
+    NAVIGATION_TIMEOUT_MS,
+    "right",
+  );
+  await clickByRole(
+    session,
     {
-      role: "button",
-      name: await translate(session, "sessions:sidebar.settings"),
+      role: "menuitem",
+      name: await translate(session, "sessions:sidebar.executionTree"),
     },
     NAVIGATION_TIMEOUT_MS,
   );
-  await session.run(async (section) => {
-    const navigation = await import(
-      "/src/features/settings/settings-navigation.ts"
-    );
-    navigation.openSettings(section);
-    return true;
-  }, section);
+  await waitForRole(
+    session,
+    {
+      role: "dialog",
+      name: await translate(session, "sessions:executionTree.title"),
+    },
+    NAVIGATION_TIMEOUT_MS,
+  );
 }

@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clearColorScheme, emulateColorScheme } from "./lib/appearance.mjs";
 import {
   clickByRole,
   clickPoint,
@@ -112,12 +113,10 @@ async function hoverCell(session, row, column) {
   });
 }
 
-async function handleName(session, axis, index) {
-  return session.run(({ key, index }) => window.__scenario.t(key, { index }), {
-    key:
-      axis === "row" ? "notes:table.rowOptions" : "notes:table.columnOptions",
-    index: index + 1,
-  });
+function handleName(session, axis, index) {
+  const key =
+    axis === "row" ? "notes:table.rowOptions" : "notes:table.columnOptions";
+  return translate(session, key, { index: index + 1 });
 }
 
 async function openHandleMenu(session, axis, row, column) {
@@ -128,10 +127,7 @@ async function openHandleMenu(session, axis, row, column) {
 }
 
 async function chooseMenuItem(session, key, options) {
-  const name = await session.run(
-    ({ key, options }) => window.__scenario.t(key, options),
-    { key, options },
-  );
+  const name = await translate(session, key, options);
   await clickByRole(session, { role: "menuitem", name }, UI_TIMEOUT_MS);
 }
 
@@ -265,10 +261,7 @@ runScenario("note-table", {
         );
         const results = {};
         for (const theme of ["light", "dark"]) {
-          await session.run(
-            (value) => window.__cocurdexDebug.previewTheme(value),
-            theme,
-          );
+          await emulateColorScheme(session, theme);
           const layout = await session.run(readTableLayout);
           check(layout.headerAlign === "start", "header centered", layout);
           check(
@@ -287,7 +280,7 @@ runScenario("note-table", {
             screenshot: await captureTable(session, theme),
           };
         }
-        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clearColorScheme(session);
         return results;
       },
     ],
@@ -371,17 +364,14 @@ runScenario("note-table", {
         );
         const results = {};
         for (const theme of ["light", "dark"]) {
-          await session.run(
-            (value) => window.__cocurdexDebug.previewTheme(value),
-            theme,
-          );
+          await emulateColorScheme(session, theme);
           results[theme] = await captureElement(
             session,
             "[role=listbox]",
             `slash-menu-${theme}`,
           );
         }
-        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clearColorScheme(session);
         await clickByRole(session, {
           role: "option",
           name: new RegExp(tableLabel),
@@ -487,17 +477,14 @@ runScenario("note-table", {
         }
         const results = {};
         for (const theme of ["light", "dark"]) {
-          await session.run(
-            (value) => window.__cocurdexDebug.previewTheme(value),
-            theme,
-          );
+          await emulateColorScheme(session, theme);
           results[theme] = await captureElement(
             session,
             ".md-body-prose .tableWrapper",
             `note-table-handles-${theme}`,
           );
         }
-        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clearColorScheme(session);
         return { offsets, screenshots: results };
       },
     ],
@@ -545,9 +532,7 @@ runScenario("note-table", {
           );
         await openHandleMenu(session, "column", 1, 1);
         await openAlignSubmenu(session);
-        const center = await session.run(() =>
-          window.__scenario.t("notes:table.align.center"),
-        );
+        const center = await translate(session, "notes:table.align.center");
         await clickByRole(
           session,
           { role: "menuitemradio", name: center },
@@ -564,9 +549,7 @@ runScenario("note-table", {
         const aligned = await readAlign();
         await openHandleMenu(session, "column", 1, 1);
         await openAlignSubmenu(session);
-        const left = await session.run(() =>
-          window.__scenario.t("notes:table.align.left"),
-        );
+        const left = await translate(session, "notes:table.align.left");
         await clickByRole(
           session,
           { role: "menuitemradio", name: left },

@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { launchSharedScenarioInstance } from "./lib/app.mjs";
+import { processTreeMemory } from "./lib/instance.mjs";
 
 const SCENARIO_ENTRY = /^runScenario\(/m;
 const ALIVE_TIMEOUT_MS = 2_000;
@@ -82,6 +83,7 @@ try {
       scenario: path.basename(entryPath, ".mjs"),
       passed: code === 0,
       ms: Date.now() - startedAt,
+      memory: shared ? processTreeMemory(shared.pid) : null,
     });
   }
 } finally {

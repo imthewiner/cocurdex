@@ -23,12 +23,30 @@ function presenterDisplayId(event: IpcMainInvokeEvent): number {
   return display.id;
 }
 
+const usesSimpleFullScreen = process.platform === "darwin";
+
+function enterAudienceFullScreen(window: BrowserWindow) {
+  if (usesSimpleFullScreen) window.setSimpleFullScreen(true);
+  else window.setFullScreen(true);
+}
+
+function leaveSimpleFullScreen(window: BrowserWindow) {
+  if (usesSimpleFullScreen && window.isSimpleFullScreen())
+    window.setSimpleFullScreen(false);
+}
+
+function destroyAudienceWindow(window: BrowserWindow) {
+  if (window.isDestroyed()) return;
+  leaveSimpleFullScreen(window);
+  window.destroy();
+}
+
 async function openAudienceWindow(
   preloadPath: string,
   event: IpcMainInvokeEvent,
   channel: string,
 ) {
-  audienceWindow?.destroy();
+  if (audienceWindow) destroyAudienceWindow(audienceWindow);
   const placement = audienceWindowPlacement(
     screen.getAllDisplays(),
     presenterDisplayId(event),
@@ -47,6 +65,7 @@ async function openAudienceWindow(
   });
   audienceWindow = window;
   audienceChannel = channel;
+  window.on("close", () => leaveSimpleFullScreen(window));
   window.on("closed", () => {
     if (audienceWindow !== window) return;
     audienceWindow = null;
@@ -54,15 +73,16 @@ async function openAudienceWindow(
   });
   denyWindowNavigation(window.webContents);
   window.once("ready-to-show", () => {
-    if (placement.fullscreen) window.setFullScreen(true);
-    window.show();
+    window.showInactive();
+    if (placement.fullscreen) enterAudienceFullScreen(window);
   });
   await window.loadURL(rendererPageUrl({ window: "deck-audience", channel }));
   return { opened: true, externalDisplay: placement.fullscreen };
 }
 
 function closeAudienceWindow(channel: string) {
-  if (audienceChannel === channel) audienceWindow?.destroy();
+  if (audienceChannel === channel && audienceWindow)
+    destroyAudienceWindow(audienceWindow);
 }
 
 export function registerAudienceWindowHandlers(

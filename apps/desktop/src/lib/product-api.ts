@@ -5,17 +5,17 @@ export const daemonProductApi: ProductRequestApi = {
   bootstrapApp: () => rpc("app.bootstrap"),
   pullSync: (input) => rpc("sync.pull", input),
   getProductSkillsStatus: (scope, workspaceRootPath) =>
-    rpc("skills.getStatus", {
+    rpc("skills.pack.getStatus", {
       scope,
       workspaceRootPath: workspaceRootPath ?? null,
     }),
   installProductSkills: (scope, workspaceRootPath) =>
-    rpc("skills.install", {
+    rpc("skills.pack.install", {
       scope,
       workspaceRootPath: workspaceRootPath ?? null,
     }),
   removeProductSkills: (scope, workspaceRootPath) =>
-    rpc("skills.remove", {
+    rpc("skills.pack.remove", {
       scope,
       workspaceRootPath: workspaceRootPath ?? null,
     }),

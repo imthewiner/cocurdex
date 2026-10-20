@@ -152,6 +152,7 @@ import {
   type SessionTurnOutcome,
   selectArchivableRoots,
 } from "./session-control";
+import { DaemonSkillLibraryService } from "./skills";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
 import { pullSync } from "./sync/sync-pull";
@@ -256,6 +257,7 @@ export class CocurdexDaemonService {
   readonly searchService: DaemonSearchService;
   readonly terminals: TerminalService;
   readonly skillsService: DaemonSkillsService;
+  readonly skillLibrary: DaemonSkillLibraryService;
   readonly state: DaemonState;
   readonly hostAccess: HostAccessService;
   readonly hostAccessReady: Promise<void>;
@@ -339,6 +341,12 @@ export class CocurdexDaemonService {
     this.skillsService = new DaemonSkillsService(undefined, (rootPath) =>
       this.scanPolicy.canScan(rootPath),
     );
+    this.skillLibrary = new DaemonSkillLibraryService({
+      userDataPath: options.userDataPath,
+      home: homedir(),
+      settings: this.state.appSettings,
+      listWorkspaces: () => this.state.listWorkspaces(),
+    });
     this.pdfAnnotationsService = new DaemonPdfAnnotationsService(
       options.userDataPath,
       async () =>

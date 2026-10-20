@@ -264,12 +264,6 @@ export const workspacePayloadSchemas = {
   "search.cancel": exact<Payload<"search.cancel">>()(
     z.object({ searchId: idSchema }),
   ),
-  "skills.getStatus": exact<Payload<"skills.getStatus">>()(
-    z.object({
-      scope: z.enum(["project", "global"]),
-      workspaceRootPath: filesystemPathSchema.nullish(),
-    }),
-  ),
   "settings.pendingChanges.ack": exact<
     Payload<"settings.pendingChanges.ack">
   >()(z.object({ id: idSchema })),
