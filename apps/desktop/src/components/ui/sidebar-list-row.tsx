@@ -135,5 +135,26 @@ function SidebarListRowActions({
   );
 }
 
+function SidebarListRowDisclosure({
+  className,
+  ...props
+}: React.ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "-mx-0.75 flex size-5 shrink-0 items-center justify-center rounded-control text-sidebar-fg-muted outline-hidden hover:text-sidebar-fg focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 export type { SidebarListRowActionsProps, SidebarListRowOwnProps };
-export { SidebarListRow, SidebarListRowActions, SidebarListRowLabel };
+export {
+  SidebarListRow,
+  SidebarListRowActions,
+  SidebarListRowDisclosure,
+  SidebarListRowLabel,
+};

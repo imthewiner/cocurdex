@@ -1,6 +1,7 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const SESSION_ROW = /^Checkout flow diagrams\s+(?![(（])/;
 const TARGET_PROMPT = 4;
@@ -60,11 +61,10 @@ runScenario("chat-prompt-navigation", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
     const [expandLabel, promptLabel] = await Promise.all([
-      session.run((key) => window.__scenario.t(key), "agent:navigation.expand"),
-      session.run(
-        ([key, index]) => window.__scenario.t(key, { index }),
-        ["agent:navigation.jumpToPrompt", String(TARGET_PROMPT)],
-      ),
+      translate(session, "agent:navigation.expand"),
+      translate(session, "agent:navigation.jumpToPrompt", {
+        index: String(TARGET_PROMPT),
+      }),
     ]);
     await clickByRole(
       session,

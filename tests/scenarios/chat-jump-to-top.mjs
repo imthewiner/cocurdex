@@ -1,6 +1,7 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole, queryAllByRole, waitForRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const SESSION_ROW = /^Checkout audit log\s+(?![(（])/;
 const UI_TIMEOUT_MS = 30_000;
@@ -152,7 +153,7 @@ runScenario("chat-jump-to-top", {
     );
     const [jumpLabel, latestLabel] = await Promise.all(
       ["common:jumpToTop", "common:jumpToLatest"].map((key) =>
-        session.run((text) => window.__scenario.t(text), key),
+        translate(session, key),
       ),
     );
     return { jumpLabel, latestLabel };

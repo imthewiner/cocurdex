@@ -38,7 +38,7 @@ async function rightClick(session, point) {
   }
 }
 
-async function pressEscape(session) {
+async function closeMenus(session) {
   for (let count = 0; count < 3; count += 1) {
     for (const type of ["keyDown", "keyUp"]) {
       await session.send("Input.dispatchKeyEvent", {
@@ -49,6 +49,11 @@ async function pressEscape(session) {
       });
     }
   }
+  await session.waitUntil(
+    () => !document.querySelector('[role="menu"]'),
+    null,
+    UI_TIMEOUT_MS,
+  );
 }
 
 const SUBMENU_SLOTS = ["dropdown-menu-sub-content", "context-menu-sub-content"];
@@ -92,8 +97,21 @@ function measureOpenFlyout(subSlots) {
   };
 }
 
+function menuSurfacesSettled() {
+  const surfaces = document.querySelectorAll(
+    '[data-slot$="-content"][data-open]',
+  );
+  return (
+    surfaces.length > 0 &&
+    [...surfaces].every((surface) => surface.getAnimations().length === 0)
+  );
+}
+
 async function openSubmenu(session, name) {
-  await hover(session, await centerByRole(session, { role: "menuitem", name }));
+  await session.waitUntil(menuSurfacesSettled, null, UI_TIMEOUT_MS);
+  const center = await centerByRole(session, { role: "menuitem", name });
+  await hover(session, { x: center.x - 40, y: center.y });
+  await hover(session, center);
   await session.waitUntil(measureOpenFlyout, SUBMENU_SLOTS, UI_TIMEOUT_MS);
   return session.run(measureOpenFlyout, SUBMENU_SLOTS);
 }
@@ -147,7 +165,7 @@ runScenario("menu-flyouts", {
           "sessions:sidebar.view.statusFilter",
         );
         const measurement = await openSubmenu(session, name);
-        await pressEscape(session);
+        await closeMenus(session);
         return checkGap(measurement, "sidebar view menu");
       },
     ],
@@ -161,7 +179,7 @@ runScenario("menu-flyouts", {
           "sessions:composer.attachMenu.notes",
         );
         const measurement = await openSubmenu(session, name);
-        await pressEscape(session);
+        await closeMenus(session);
         return checkGap(measurement, "composer attach menu");
       },
     ],
@@ -180,7 +198,7 @@ runScenario("menu-flyouts", {
         await rightClick(session, row);
         const name = await translate(session, "notes:sidebar.moveTo");
         const measurement = await openSubmenu(session, name);
-        await pressEscape(session);
+        await closeMenus(session);
         await clickPoint(session, { x: 1, y: 1 });
         return checkGap(measurement, "note context menu");
       },

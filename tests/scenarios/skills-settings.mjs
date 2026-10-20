@@ -3,6 +3,8 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clearColorScheme, emulateColorScheme } from "./lib/appearance.mjs";
+import { daemonRequest } from "./lib/daemon-rpc.mjs";
 import {
   centerOf,
   clickByRole,
@@ -13,8 +15,6 @@ import {
 import { openSettingsSection, translate } from "./lib/navigate.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
-const PRODUCT_API_MODULE = "/src/lib/product-api.ts";
-const SKILLS_API_MODULE = "/src/features/settings/skills/skills-api.ts";
 const FIXTURE_SOURCE = path.dirname(
   path.dirname(
     createRequire(import.meta.url).resolve(
@@ -26,50 +26,30 @@ const FIXTURE_SKILLS = ["scenario-alpha", "scenario-beta"];
 
 const args = readScenarioArgs();
 
-function activeWorkspaceId(session) {
-  return session.run(async (productApiModule) => {
-    const { daemonProductApi } = await import(productApiModule);
-    const workspaces = await daemonProductApi.listWorkspaces();
-    const [latest] = [...workspaces].sort((left, right) =>
-      String(right.lastOpenedAt).localeCompare(String(left.lastOpenedAt)),
-    );
-    return latest?.id ?? null;
-  }, PRODUCT_API_MODULE);
+async function activeWorkspaceId(session) {
+  const workspaces = await daemonRequest(session, "workspace.list");
+  const [latest] = [...workspaces].sort((left, right) =>
+    String(right.lastOpenedAt).localeCompare(String(left.lastOpenedAt)),
+  );
+  return latest?.id ?? null;
 }
 
-function listWorkspaceSkills(session, workspaceId) {
-  return session.run(
-    async ({ skillsApiModule, workspaceId }) => {
-      const { skillsApi } = await import(skillsApiModule);
-      const library = await skillsApi.list(workspaceId);
-      return library.skills.filter((skill) => skill.scope === "workspace");
-    },
-    { skillsApiModule: SKILLS_API_MODULE, workspaceId },
-  );
+async function listWorkspaceSkills(session, workspaceId) {
+  const library = await daemonRequest(session, "skills.list", { workspaceId });
+  return library.skills.filter((skill) => skill.scope === "workspace");
 }
 
-function removeFixtureSkills(session, workspaceId) {
-  return session.run(
-    async ({ skillsApiModule, workspaceId, names }) => {
-      const { skillsApi } = await import(skillsApiModule);
-      const library = await skillsApi.list(workspaceId);
-      for (const skill of library.skills) {
-        if (skill.scope === "workspace" && names.includes(skill.name)) {
-          await skillsApi.remove({
-            name: skill.name,
-            scope: skill.scope,
-            workspaceId,
-          });
-        }
-      }
-      return true;
-    },
-    {
-      skillsApiModule: SKILLS_API_MODULE,
-      workspaceId,
-      names: FIXTURE_SKILLS,
-    },
-  );
+async function removeFixtureSkills(session, workspaceId) {
+  for (const skill of await listWorkspaceSkills(session, workspaceId)) {
+    if (FIXTURE_SKILLS.includes(skill.name)) {
+      await daemonRequest(session, "skills.remove", {
+        name: skill.name,
+        scope: skill.scope,
+        workspaceId,
+      });
+    }
+  }
+  return true;
 }
 
 async function pathKind(target) {
@@ -194,13 +174,10 @@ runScenario("skills-settings", {
           FIXTURE_SKILLS.length,
           UI_TIMEOUT_MS,
         );
-        const workspaceName = await session.run(
-          async ({ skillsApiModule, workspaceId }) => {
-            const { skillsApi } = await import(skillsApiModule);
-            return (await skillsApi.list(workspaceId)).workspace?.name ?? "";
-          },
-          { skillsApiModule: SKILLS_API_MODULE, workspaceId },
-        );
+        const library = await daemonRequest(session, "skills.list", {
+          workspaceId,
+        });
+        const workspaceName = library.workspace?.name ?? "";
         await clickByRole(session, {
           role: "button",
           name: await t("skills.install.workspace", {
@@ -341,10 +318,7 @@ runScenario("skills-settings", {
         const filterLabel = await t("skills.list.filter");
         const results = {};
         for (const theme of ["light", "dark"]) {
-          await session.run(
-            (value) => window.__cocurdexDebug.previewTheme(value),
-            theme,
-          );
+          await emulateColorScheme(session, theme);
           await session.waitUntil(
             () =>
               document
@@ -373,7 +347,7 @@ runScenario("skills-settings", {
           check(layout.pageOverflow === 0, "page overflows", layout);
           results[theme] = { ...layout, rows: layout.rows.length };
         }
-        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clearColorScheme(session);
         return results;
       },
     ],

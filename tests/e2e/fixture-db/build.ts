@@ -29,6 +29,8 @@ import {
   FIXTURE_WORKSPACES,
   type FixtureInterruptedTurn,
   type FixtureSession,
+  type FixtureTeammate,
+  type FixtureTurn,
   type FixtureWorkspace,
 } from "./recipe";
 import { materializeFixtureWorkspace } from "./workspace";
@@ -78,7 +80,7 @@ async function seedSession(
   stub: StubLlmServer,
   events: CocurdexDaemonEvent[],
   fixture: FixtureSession,
-) {
+): Promise<string[]> {
   const providerSnapshot = await saveStubProvider(daemon, stub);
   await requestDaemon(
     "session.configure",
@@ -96,21 +98,16 @@ async function seedSession(
     daemon.options,
   );
   for (const turn of fixture.turns) {
-    const before = finishedRuns(events, fixture.id);
-    stub.plan = { kind: "script", turns: structuredClone(turn.replies) };
-    await requestDaemon(
-      "session.send",
-      {
-        sessionId: fixture.id,
-        messageId: turn.messageId,
-        content: turn.prompt,
-      },
-      daemon.options,
+    await runTurn(daemon, stub, events, fixture.id, turn);
+  }
+  const teammateIds: string[] = [];
+  for (const teammate of fixture.teammates ?? []) {
+    teammateIds.push(
+      await spawnTeammate(daemon, stub, events, fixture.id, teammate),
     );
-    await waitFor(
-      () => finishedRuns(events, fixture.id) > before,
-      RUN_TIMEOUT_MS,
-    );
+  }
+  for (const turn of fixture.turnsAfterTeam ?? []) {
+    await runTurn(daemon, stub, events, fixture.id, turn);
   }
   if (fixture.interruptedTurn) {
     await leaveTurnRunning(
@@ -140,6 +137,50 @@ async function seedSession(
       daemon.options,
     );
   }
+  return teammateIds;
+}
+
+async function runTurn(
+  daemon: DaemonProcess,
+  stub: StubLlmServer,
+  events: CocurdexDaemonEvent[],
+  sessionId: string,
+  turn: FixtureTurn,
+) {
+  const before = finishedRuns(events, sessionId);
+  stub.plan = { kind: "script", turns: structuredClone(turn.replies) };
+  await requestDaemon(
+    "session.send",
+    { sessionId, messageId: turn.messageId, content: turn.prompt },
+    daemon.options,
+  );
+  await waitFor(() => finishedRuns(events, sessionId) > before, RUN_TIMEOUT_MS);
+}
+
+async function spawnTeammate(
+  daemon: DaemonProcess,
+  stub: StubLlmServer,
+  events: CocurdexDaemonEvent[],
+  leadSessionId: string,
+  teammate: FixtureTeammate,
+) {
+  const leadBefore = finishedRuns(events, leadSessionId);
+  stub.plan = {
+    kind: "script",
+    turns: structuredClone([...teammate.replies, ...teammate.leadReplies]),
+  };
+  const member = await requestDaemon(
+    "team.spawn",
+    { leadSessionId, name: teammate.name, prompt: teammate.prompt },
+    daemon.options,
+  );
+  await waitFor(
+    () =>
+      finishedRuns(events, member.sessionId) > 0 &&
+      finishedRuns(events, leadSessionId) > leadBefore,
+    RUN_TIMEOUT_MS,
+  );
+  return member.sessionId;
 }
 
 async function leaveTurnRunning(
@@ -356,8 +397,9 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
         daemon.options,
       );
     }
+    const teammateIds: string[] = [];
     for (const session of FIXTURE_SESSIONS) {
-      await seedSession(daemon, stub, events, session);
+      teammateIds.push(...(await seedSession(daemon, stub, events, session)));
     }
     await seedNotes(daemon);
     await seedDecks(daemon);
@@ -377,7 +419,10 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
       workspaceId: FIXTURE_WORKSPACE_ID,
       workspaceName: FIXTURE_WORKSPACE_NAME,
       workspaces: FIXTURE_WORKSPACES,
-      sessionIds: FIXTURE_SESSIONS.map((session) => session.id),
+      sessionIds: [
+        ...FIXTURE_SESSIONS.map((session) => session.id),
+        ...teammateIds,
+      ],
       noteCount: FIXTURE_NOTES.length,
       deckCount: FIXTURE_DECKS.length,
       issueCount: FIXTURE_ISSUES.length,

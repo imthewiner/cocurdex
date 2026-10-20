@@ -7,6 +7,7 @@ import {
   waitForNoRole,
   waitForRole,
 } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const DECK_TITLE = "Checkout review";
 const SLIDE_COUNT = 5;
@@ -78,13 +79,6 @@ async function waitForStageImage(session, naturalWidth) {
     UI_TIMEOUT_MS,
   );
   return session.run(readStageImage);
-}
-
-function translate(session, key, options) {
-  return session.run(({ key, options }) => window.__scenario.t(key, options), {
-    key,
-    options,
-  });
 }
 
 async function slideLabel(session, number) {
@@ -419,6 +413,10 @@ runScenario("decks", {
             url.includes("window=deck-audience"),
           );
           check(stillOpen, "audience window closed itself after opening");
+          check(
+            await session.run(() => document.hasFocus()),
+            "audience window took focus from the presenter",
+          );
 
           await pressKey(session, "ArrowRight");
           const second = await presenterSlide();
@@ -810,6 +808,10 @@ runScenario("decks", {
             ),
           null,
           UI_TIMEOUT_MS,
+        );
+        check(
+          await session.run(() => document.hasFocus()),
+          "closing the audience window left the presenter unfocused",
         );
         return { inserted, replaced };
       },

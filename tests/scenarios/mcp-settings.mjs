@@ -3,6 +3,8 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { clearColorScheme, emulateColorScheme } from "./lib/appearance.mjs";
+import { daemonRequest } from "./lib/daemon-rpc.mjs";
 import {
   centerOf,
   clickByRole,
@@ -14,7 +16,6 @@ import { openSettingsSection, translate } from "./lib/navigate.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
 const STATUS_TIMEOUT_MS = 60_000;
-const PRODUCT_API_MODULE = "/src/lib/product-api.ts";
 const EMPTY_CONFIG = '{\n  "mcpServers": {}\n}\n';
 const FIXTURE_SERVER = createRequire(import.meta.url).resolve(
   "../e2e/fixtures/mcp-stdio-server.mjs",
@@ -28,22 +29,13 @@ function quoteArg(value) {
     : value;
 }
 
-function resetMcpConfig(session) {
-  return session.run(
-    async ({ productApiModule, content }) => {
-      const { daemonProductApi } = await import(productApiModule);
-      await daemonProductApi.saveMcpConfig(content);
-      return true;
-    },
-    { productApiModule: PRODUCT_API_MODULE, content: EMPTY_CONFIG },
-  );
+async function resetMcpConfig(session) {
+  await daemonRequest(session, "mcp.saveConfig", { content: EMPTY_CONFIG });
+  return true;
 }
 
-function readMcpConfig(session) {
-  return session.run(async (productApiModule) => {
-    const { daemonProductApi } = await import(productApiModule);
-    return JSON.parse((await daemonProductApi.readMcpConfig()).content);
-  }, PRODUCT_API_MODULE);
+async function readMcpConfig(session) {
+  return JSON.parse((await daemonRequest(session, "mcp.readConfig")).content);
 }
 
 async function fillTextbox(session, name, value) {
@@ -301,10 +293,7 @@ runScenario("mcp-settings", {
         const searchLabel = await t("mcp.list.search");
         const results = {};
         for (const theme of ["light", "dark"]) {
-          await session.run(
-            (value) => window.__cocurdexDebug.previewTheme(value),
-            theme,
-          );
+          await emulateColorScheme(session, theme);
           await session.waitUntil(
             () =>
               document
@@ -337,7 +326,7 @@ runScenario("mcp-settings", {
             screenshot: await capture(session, theme),
           };
         }
-        await session.run(() => window.__cocurdexDebug.restoreTheme());
+        await clearColorScheme(session);
         return results;
       },
     ],

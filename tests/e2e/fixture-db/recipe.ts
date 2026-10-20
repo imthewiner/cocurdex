@@ -35,11 +35,20 @@ export interface FixtureInterruptedTurn {
   queued: { messageId: string; prompt: string };
 }
 
+export interface FixtureTeammate {
+  name: string;
+  prompt: string;
+  replies: StubTurn[];
+  leadReplies: StubTurn[];
+}
+
 export interface FixtureSession {
   id: string;
   title: string;
   kind: "main" | "chat";
   turns: FixtureTurn[];
+  teammates?: FixtureTeammate[];
+  turnsAfterTeam?: FixtureTurn[];
   pinned?: boolean;
   archived?: boolean;
   interruptedTurn?: FixtureInterruptedTurn;
@@ -196,7 +205,78 @@ const DIAGRAM_TURNS: FixtureTurn[] = [
   })),
 ];
 
+export const FIXTURE_TEAMMATE_TOOL_CALLS = 30;
+export const FIXTURE_MISSING_CHECKOUT_PATH =
+  "src/checkout/repositories/sqlite-checkout-session-repository-with-retries-and-audit-trail.ts";
+
+const REVIEW_FILES = ["src/cart.ts", "src/discount.ts", "README.md"];
+
+function teammateReview(name: string): FixtureTeammate {
+  const reads = Array.from(
+    { length: FIXTURE_TEAMMATE_TOOL_CALLS - 1 },
+    (_, index) => ({
+      name: "read",
+      arguments: { path: REVIEW_FILES[index % REVIEW_FILES.length] },
+    }),
+  );
+  return {
+    name,
+    prompt: `Review the cart modules and write findings to notes/${name}.md.`,
+    replies: [
+      {
+        toolCalls: [
+          ...reads,
+          { name: "read", arguments: { path: `notes/${name}.md` } },
+        ],
+      },
+      { text: [`${name} found no rounding issues in the cart.`] },
+    ],
+    leadReplies: [{ text: [`Noted the report from ${name}.`] }],
+  };
+}
+
+export const FIXTURE_TEAM_SESSION: FixtureSession = {
+  id: "fixture-session-checkout-team",
+  title: "Coordinate checkout review",
+  kind: "main",
+  turns: [
+    {
+      messageId: "fixture-message-team-1",
+      prompt: "Check the project layout.",
+      replies: [
+        { toolCalls: [{ name: "read", arguments: { path: "package.json" } }] },
+        { text: ["A TypeScript shop with cart and discount modules."] },
+      ],
+    },
+  ],
+  teammates: [teammateReview("cart-reviewer"), teammateReview("docs-reviewer")],
+  turnsAfterTeam: [
+    {
+      messageId: "fixture-message-team-2",
+      prompt: "Review the checkout code paths.",
+      replies: [
+        {
+          toolCalls: [
+            { name: "read", arguments: { path: "src/cart.ts" } },
+            {
+              name: "read",
+              arguments: { path: FIXTURE_MISSING_CHECKOUT_PATH },
+            },
+            { name: "read", arguments: { path: "src/discount.ts" } },
+          ],
+        },
+        {
+          text: [
+            "Checkout totals come from the cart; there is no checkout module.",
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 export const FIXTURE_SESSIONS: FixtureSession[] = [
+  FIXTURE_TEAM_SESSION,
   {
     id: "fixture-session-discounts",
     title: "Add percentage discount codes",

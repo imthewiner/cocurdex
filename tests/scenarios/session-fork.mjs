@@ -1,8 +1,9 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { daemonRequest } from "./lib/daemon-rpc.mjs";
 import { clickByRole, clickPoint, waitForRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
-const DAEMON_CLIENT_MODULE = "/src/lib/daemon-client.ts";
 const SOURCE_TITLE = "Add percentage discount codes";
 const FIRST_PROMPT = "Add support for percentage discount codes";
 const SECOND_PROMPT = "Does the README mention discounts?";
@@ -11,19 +12,8 @@ const UI_TIMEOUT_MS = 30_000;
 
 const args = readScenarioArgs();
 
-async function translate(session, key, options) {
-  return session.run(({ key, options }) => window.__scenario.t(key, options), {
-    key,
-    options,
-  });
-}
-
-async function daemon(session, method, params) {
-  return session.run(
-    async ({ modulePath, method, params }) =>
-      (await import(modulePath)).getLocalHost().request(method, params),
-    { modulePath: DAEMON_CLIENT_MODULE, method, params },
-  );
+function daemon(session, method, params) {
+  return daemonRequest(session, method, params);
 }
 
 async function centerInView(session, backendNodeId) {

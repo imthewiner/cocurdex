@@ -4,6 +4,7 @@ import {
   existsSync,
   openSync,
   readdirSync,
+  readFileSync,
   statSync,
 } from "node:fs";
 import { copyFile, cp, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
@@ -20,6 +21,17 @@ const DESKTOP_DIR = fileURLToPath(
 const REPO_DIR = fileURLToPath(new URL("../../../", import.meta.url));
 const BUNDLED_DAEMON = path.join(DESKTOP_DIR, "resources", "cli", "daemon.cjs");
 const DAEMON_SOURCE_ROOTS = ["packages", path.join("apps", "cli")];
+const APP_SOURCE_ROOTS = [
+  "packages",
+  path.join("apps", "desktop", "src"),
+  path.join("apps", "desktop", "electron"),
+];
+const BUILT_MAIN = path.join(DESKTOP_DIR, "out", "main", "main.js");
+const BUILT_RENDERER = path.join(DESKTOP_DIR, "out", "renderer", "index.html");
+const BUILT_RENDERER_URL = "app://renderer/index.html";
+const RENDERER_MODE_ENV = "COCURDEX_SCENARIO_RENDERER";
+const BUILD_HEAP_MB = 6144;
+const BUILD_OUTPUT_LIMIT = 64 * 1024 * 1024;
 const RENDERER_URL_PATTERN = /Local:\s+(http:\/\/localhost:\d+\/)/;
 const STARTUP_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 250;
@@ -36,14 +48,24 @@ function freePort() {
   });
 }
 
-function newestSourceMtime() {
+export function rendererMode() {
+  return process.env[RENDERER_MODE_ENV] === "built" ? "built" : "dev";
+}
+
+function sourceDirsOf(root) {
+  const rootDir = path.join(REPO_DIR, root);
+  if (root === "packages") {
+    return readdirSync(rootDir).map((name) => path.join(rootDir, name, "src"));
+  }
+  return root === path.join("apps", "cli")
+    ? [path.join(rootDir, "src")]
+    : [rootDir];
+}
+
+function newestSourceMtime(roots) {
   let newest = 0;
-  for (const root of DAEMON_SOURCE_ROOTS) {
-    const rootDir = path.join(REPO_DIR, root);
-    const sourceDirs =
-      root === "packages"
-        ? readdirSync(rootDir).map((name) => path.join(rootDir, name, "src"))
-        : [path.join(rootDir, "src")];
+  for (const root of roots) {
+    const sourceDirs = sourceDirsOf(root);
     for (const dir of sourceDirs.filter((candidate) => existsSync(candidate))) {
       for (const file of readdirSync(dir, { recursive: true })) {
         newest = Math.max(newest, statSync(path.join(dir, file)).mtimeMs);
@@ -60,7 +82,7 @@ function ensureBundledDaemon() {
     const builtAt = existsSync(BUNDLED_DAEMON)
       ? statSync(BUNDLED_DAEMON).mtimeMs
       : 0;
-    if (builtAt >= newestSourceMtime()) return;
+    if (builtAt >= newestSourceMtime(DAEMON_SOURCE_ROOTS)) return;
     const result = spawnSync(
       process.execPath,
       [path.join(DESKTOP_DIR, "scripts", "build-cli.mjs")],
@@ -71,6 +93,40 @@ function ensureBundledDaemon() {
     }
   });
   return bundledDaemonCheck;
+}
+
+let builtAppCheck = null;
+
+function ensureBuiltApp() {
+  builtAppCheck ??= Promise.resolve().then(() => {
+    const builtAt =
+      existsSync(BUILT_RENDERER) && existsSync(BUILT_MAIN)
+        ? statSync(BUILT_RENDERER).mtimeMs
+        : 0;
+    if (builtAt >= newestSourceMtime(APP_SOURCE_ROOTS)) return;
+    const result = spawnSync(process.execPath, [electronViteBin(), "build"], {
+      cwd: DESKTOP_DIR,
+      env: {
+        ...process.env,
+        NODE_OPTIONS: `--max-old-space-size=${BUILD_HEAP_MB}`,
+      },
+      encoding: "utf8",
+      maxBuffer: BUILD_OUTPUT_LIMIT,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    if (result.status !== 0) {
+      throw new Error(
+        `Desktop build failed (${result.status}): ${result.stderr || result.stdout}`,
+      );
+    }
+  });
+  return builtAppCheck;
+}
+
+function electronExecutable() {
+  const packageDir = path.join(DESKTOP_DIR, "node_modules", "electron");
+  const relative = readFileSync(path.join(packageDir, "path.txt"), "utf8");
+  return path.join(packageDir, "dist", relative.trim());
 }
 
 function electronViteBin() {
@@ -218,9 +274,27 @@ export async function stopIsolatedInstance(pid, userDataPath) {
   await rm(userDataPath, { recursive: true, force: true });
 }
 
+function spawnApp(mode, env, logFd) {
+  const stdio = ["ignore", logFd, logFd];
+  if (mode === "built") {
+    const { ELECTRON_RENDERER_URL: _devUrl, ...builtEnv } = env;
+    return spawn(electronExecutable(), [BUILT_MAIN], {
+      cwd: DESKTOP_DIR,
+      env: builtEnv,
+      stdio,
+    });
+  }
+  return spawn(process.execPath, [electronViteBin(), "dev"], {
+    cwd: DESKTOP_DIR,
+    env,
+    stdio,
+  });
+}
+
 export async function launchIsolatedInstance({ prepareUserData } = {}) {
+  const mode = rendererMode();
   await ensureBundledDaemon();
-  const viteBin = electronViteBin();
+  if (mode === "built") await ensureBuiltApp();
   const port = await freePort();
   const userDataPath = await mkdtemp(path.join(os.tmpdir(), "cocu-"));
   try {
@@ -231,15 +305,15 @@ export async function launchIsolatedInstance({ prepareUserData } = {}) {
   }
   const logPath = `${userDataPath}.log`;
   const logFd = openSync(logPath, "a");
-  const child = spawn(process.execPath, [viteBin, "dev"], {
-    cwd: DESKTOP_DIR,
-    env: {
+  const child = spawnApp(
+    mode,
+    {
       ...process.env,
       COCURDEX_USER_DATA_PATH: userDataPath,
       COCURDEX_REMOTE_DEBUGGING_PORT: String(port),
     },
-    stdio: ["ignore", logFd, logFd],
-  });
+    logFd,
+  );
   closeSync(logFd);
   const stop = async ({ keepLog = false } = {}) => {
     const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
@@ -262,7 +336,10 @@ export async function launchIsolatedInstance({ prepareUserData } = {}) {
     if (!keepLog) await rm(logPath, { force: true });
   };
   try {
-    const url = await waitForRendererUrl(child, logPath);
+    const url =
+      mode === "built"
+        ? BUILT_RENDERER_URL
+        : await waitForRendererUrl(child, logPath);
     await waitForTarget(port, url);
     return {
       pid: child.pid,

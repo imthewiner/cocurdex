@@ -25,29 +25,8 @@ const PAGE_HELPERS = `(() => {
   const errors = [];
   window.addEventListener("error", (event) => errors.push(String(event.message)));
   window.addEventListener("unhandledrejection", (event) => errors.push(String(event.reason)));
-  const depCache = new Map();
-  const dep = async (modulePath, name) => {
-    const key = modulePath + "|" + name;
-    if (!depCache.has(key)) {
-      const source = await (await fetch(modulePath)).text();
-      const pattern = new RegExp('from "(/node_modules/\\\\.vite/deps/' + name + '\\\\.js[^"]*)"');
-      const match = pattern.exec(source);
-      if (!match) throw new Error("Cannot find dependency " + name + " in " + modulePath);
-      depCache.set(key, await import(match[1]));
-    }
-    return depCache.get(key);
-  };
   window.__scenario = {
     errors,
-    dep,
-    async t(key, options) {
-      const i18next = await dep("/src/i18n/index.ts", "i18next");
-      return i18next.default.t(key, options);
-    },
-    async store(modulePath) {
-      const jotai = await dep(modulePath, "jotai");
-      return jotai.getDefaultStore();
-    },
     resetRequests() {
       performance.setResourceTimingBufferSize(20000);
       performance.clearResourceTimings();

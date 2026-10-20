@@ -1,6 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const UI_TIMEOUT_MS = 30_000;
 const TOOLTIP_DELAY_MS = 900;
@@ -9,15 +10,15 @@ const SAMPLE_MS = 400;
 const args = readScenarioArgs();
 
 async function menuTriggerCenter(session) {
-  return session.run(async () => {
-    const label = await window.__scenario.t("sessions:sidebar.view.menu");
+  const label = await translate(session, "sessions:sidebar.view.menu");
+  return session.run((label) => {
     const trigger = window.__scenario.byLabel(label);
     if (!trigger?.matches('[data-slot="tooltip-trigger"][aria-haspopup]')) {
       throw new Error(`No tooltip trigger with a popup labelled ${label}`);
     }
     const rect = trigger.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-  });
+  }, label);
 }
 
 function startTooltipSampling(session) {
@@ -77,9 +78,7 @@ async function pressEscape(session) {
 runScenario("tooltip-dismiss", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
-    const label = await session.run(() =>
-      window.__scenario.t("sessions:sidebar.view.menu"),
-    );
+    const label = await translate(session, "sessions:sidebar.view.menu");
     await session.waitUntil(
       (text) => Boolean(window.__scenario.byLabel(text)),
       label,

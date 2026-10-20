@@ -1,6 +1,7 @@
 import { openScenarioApp } from "./lib/app.mjs";
 import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickByRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const SESSION_ROW = /^Checkout audit log\s+(?![(（])/;
 const UI_TIMEOUT_MS = 30_000;
@@ -138,10 +139,7 @@ async function dragThumb(session, toY) {
 runScenario("chat-long-session-scroll", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
-    const latestLabel = await session.run(
-      (key) => window.__scenario.t(key),
-      "common:jumpToLatest",
-    );
+    const latestLabel = await translate(session, "common:jumpToLatest");
     await clickByRole(
       session,
       { role: "button", name: SESSION_ROW },
