@@ -76,6 +76,7 @@ describe("MCP RPC access", () => {
       "mcp.saveConfig",
       "mcp.server.save",
       "mcp.server.setEnabled",
+      "mcp.server.remove",
       "mcp.servers.merge",
     ]) {
       expect(
