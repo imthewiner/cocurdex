@@ -37,6 +37,7 @@
   /* Mid-severity accent between success and --destructive, for quota meters
    * approaching their limit. Same fixed-step scheme: 500 on light, 300 dark. */
   --status-warning: oklch(0.769 0.188 70.08); /* amber-500 */
+  --status-attention: oklch(0.623 0.214 259.815); /* blue-500 */
 
   /* Chat surfaces stay semantic because many states share the same preset
    * colors with different emphasis, opacity, or status meaning. */
@@ -416,6 +417,7 @@
   --brand-mark: oklch(0.72 0.11 183);
   --status-success: oklch(0.845 0.143 164.978); /* emerald-300 */
   --status-warning: oklch(0.879 0.169 91.605); /* amber-300 */
+  --status-attention: oklch(0.707 0.165 254.624); /* blue-400 */
   --editor-git-added: oklch(0.845 0.143 164.978); /* emerald-300 */
   --editor-git-deleted: oklch(0.81 0.117 11.638); /* rose-300 */
   --editor-git-modified: oklch(0.746 0.16 232.661); /* sky-400 */

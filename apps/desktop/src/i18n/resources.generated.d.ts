@@ -2193,6 +2193,13 @@ export default interface Resources {
       system: "System";
       workspace: "Workspace";
     };
+    jsonImport: {
+      cancel: "Cancel";
+      continue: "Continue";
+      pasteButton: "Paste JSON";
+      pasteLabel: "JSON text";
+      pastePlaceholder: '{\n  "mcpServers": { … }\n}';
+    };
     language: {
       description: "Choose the interface language used by product UI.";
       empty: "No languages found";
@@ -2225,40 +2232,154 @@ export default interface Resources {
       view: "View";
     };
     mcp: {
-      description: 'Configure the MCP servers available to the built-in Pi agent. Pi connects to them when a session starts. Server names may contain only letters, digits, "_", and "-".';
-      editorLabel: "MCP server configuration";
-      form: {
-        add: "Add server";
-        arguments: "Arguments";
-        argumentsDescription: "Enter one argument per line.";
-        argumentsPlaceholder: "-y\npackage-name";
+      actions: {
+        remove: "Remove";
+        save: "Save";
+        test: "Test connection";
+        testing: "Testing…";
+      };
+      advanced: {
+        callbackPort: "Callback port";
+        clientId: "OAuth client ID";
+        clientSecret: "OAuth client secret";
+        exposure: "Tool exposure";
+        exposureHint: {
+          codemode: "Pi calls the tools from generated code.";
+          deferred: "Tools load only when the agent searches for them.";
+          direct: "Every tool is added to the agent's tool list.";
+          hidden: "Tools are not offered to the agent.";
+        };
+        exposureOption: {
+          codemode: "Code mode";
+          deferred: "On demand";
+          direct: "Direct";
+          hidden: "Hidden";
+        };
+        oauthClientHint: "Only needed when the server does not support dynamic client registration.";
+        title: "Advanced";
+      };
+      auth: {
+        bearer: "Bearer token";
+        bearerHint: "Sent as the Authorization header. Use ${VAR} to read it from the environment.";
+        cancel: "Cancel";
+        failed: "Sign-in failed.";
+        needsSignIn: "This server requires sign-in.";
+        oauth: "OAuth";
+        oauthHint: "Sign in if the server asks for authorization.";
+        saveFirst: "Save the server before signing in.";
+        signIn: "Sign in";
+        signOut: "Sign out";
+        signedIn: "Signed in.";
+        title: "Authentication";
+        token: "Token";
+        waiting: "Waiting for authorization in the browser…";
+      };
+      description: "Configure the MCP servers available to the built-in Pi agent. The Enabled switch applies immediately; other changes are written when you save. New sessions pick them up.";
+      detail: {
+        enabled: "Enabled";
+        label: "MCP server";
+        newTitle: "New server";
+        projectReadOnly: "Defined in {{path}}. Project servers are read-only here; edit that file to change them.";
+      };
+      errors: {
+        callbackPortInvalid: "The callback port must be a number from 1 to 65535.";
+        commandRequired: "Enter a command.";
+        nameInvalid: 'Names may only contain letters, digits, "_", and "-".';
+        nameRequired: "Enter a server name.";
+        nameTaken: "A server with this name already exists.";
+        urlRequired: "Enter a URL.";
+      };
+      fields: {
+        addEnv: "Add variable";
+        addHeader: "Add header";
+        args: "Arguments";
         command: "Command";
-        commandPlaceholder: "npx";
-        emptyDescription: "Add a local command or remote endpoint to make its tools available to Pi.";
-        emptyTitle: "No MCP servers configured";
-        environment: "Environment variables";
-        environmentDescription: "Enter one KEY=value pair per line.";
-        environmentPlaceholder: "API_KEY=${API_KEY}";
+        env: "Environment variables";
+        headers: "Headers";
+        key: "Key";
         local: "Local";
-        name: "Server name";
-        namePlaceholder: "github";
+        name: "Name";
         remote: "Remote";
-        remove: "Remove server";
-        servers: "Servers";
+        removeRow: "Remove";
         transport: "Connection";
-        url: "Server URL";
-        urlPlaceholder: "https://example.com/mcp";
+        url: "URL";
+        value: "Value";
+      };
+      import: {
+        agentsDescription: "MCP servers found in Claude Code, Cursor, and Antigravity configurations on this computer.";
+        agentsTitle: "Import from other agents";
+        cancel: "Cancel";
+        confirm_one: "Import {{count}} server";
+        confirm_other: "Import {{count}} servers";
+        different: "Replaces existing";
+        empty: "No MCP servers found.";
+        importing: "Importing…";
+        jsonDescription: "Choose the servers to add to the Pi MCP configuration.";
+        jsonTitle: "Import JSON";
+        same: "Already added";
+        source: {
+          antigravity: "Antigravity";
+          claude: "Claude Code";
+          "claude-project": "Claude Code · project";
+          cursor: "Cursor";
+          json: "JSON";
+        };
+        unsupported: "Not supported";
+      };
+      json: {
+        hint: "Edits the whole mcp.json file. It is validated before saving.";
+        label: "MCP configuration JSON";
+      };
+      jsonImport: {
+        dropActive: "Drop to import";
+        dropHint: "Drop a JSON file here, or click to choose one.";
+        intro: "Add servers from an mcpServers snippet, such as one from a server's README.";
+        invalidFile: "Choose a JSON text file.";
+        label: "Import from JSON";
+        pasteDescription: 'Paste an mcpServers object, a map of servers, or a single "name": { … } entry.';
+        pasteTitle: "Paste MCP JSON";
+        title: "Import JSON";
+      };
+      list: {
+        add: "Add";
+        empty: "No MCP servers yet. Add one, or import from another agent.";
+        global: "Global · Pi";
+        importFromAgents: "Import from other agents";
+        noMatches: "No matching servers";
+        project: "Project · {{workspace}}";
+        readOnly: "Read-only";
+        search: "Search servers";
       };
       mode: {
         form: "Form";
         json: "JSON";
         label: "Configuration mode";
       };
-      restartHint: "Changes apply when a Pi session starts. Existing running sessions keep their current tools.";
-      save: "Save";
-      saved: "MCP configuration saved";
-      saving: "Saving";
+      removeConfirm: {
+        cancel: "Cancel";
+        confirm: "Remove";
+        description: '"{{name}}" will be removed from the Pi MCP configuration. Running sessions keep their current tools.';
+        title: "Remove MCP server?";
+      };
+      state: {
+        connected: "Connected";
+        disabled: "Disabled";
+        failed: "Connection failed";
+        "needs-auth": "Sign-in required";
+        unknown: "Not checked";
+      };
       title: "MCP";
+      tools: {
+        checkedAt: "Last checked {{time}}";
+        checking: "Checking…";
+        disabled: "The server is disabled.";
+        needsAuth: "Sign in to list the tools.";
+        none: "This server offers no tools.";
+        notChecked: "Not checked yet";
+        title: "Tools";
+        titleWithCount_one: "Tools · {{count}}";
+        titleWithCount_other: "Tools · {{count}}";
+      };
     };
     network: {
       proxy: {
@@ -2463,6 +2584,8 @@ export default interface Resources {
         intro: "Add or update providers and models from a pi-style models.json.";
         invalidFile: "Choose a JSON text file.";
         label: "Import providers from JSON";
+        pasteDescription: "Paste the contents of a pi-style models.json.";
+        pasteTitle: "Paste provider JSON";
         providerCount: "{{count}} providers";
         providerCount_one: "{{count}} provider";
         providerCount_other: "{{count}} providers";

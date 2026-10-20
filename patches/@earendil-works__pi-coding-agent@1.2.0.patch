@@ -1,0 +1,31 @@
+diff --git a/examples/extensions/custom-provider-anthropic/package-lock.json b/examples/extensions/custom-provider-anthropic/package-lock.json
+deleted file mode 100644
+index 4d599b0b34d9f706aebd94a0a9d7bcad8ed60be2..0000000000000000000000000000000000000000
+diff --git a/examples/extensions/gondolin/package-lock.json b/examples/extensions/gondolin/package-lock.json
+deleted file mode 100644
+index 2fdbfca18fa49f0f599caf61b73dadef35f684fc..0000000000000000000000000000000000000000
+diff --git a/examples/extensions/sandbox/package-lock.json b/examples/extensions/sandbox/package-lock.json
+deleted file mode 100644
+index fb9f6075b7c7a6da526c5f6f39e69827b309801f..0000000000000000000000000000000000000000
+diff --git a/examples/extensions/with-deps/package-lock.json b/examples/extensions/with-deps/package-lock.json
+deleted file mode 100644
+index 1b9841827675d19e296a67307e6aaedf93008bb7..0000000000000000000000000000000000000000
+diff --git a/package.json b/package.json
+index e6daaaeea17c25b443213b522bec619495c5563a..5c2f3699a8237ad1df044bbeafc4caef55bbe491 100644
+--- a/package.json
++++ b/package.json
+@@ -18,6 +18,14 @@
+ 		},
+ 		"./rpc-entry": {
+ 			"import": "./dist/bundle/rpc-entry.js"
++		},
++		"./mcp-config": {
++			"types": "./dist/extensions/mcp/config.d.ts",
++			"import": "./dist/extensions/mcp/config.js"
++		},
++		"./mcp-runtime": {
++			"types": "./dist/extensions/mcp/runtime.d.ts",
++			"import": "./dist/extensions/mcp/runtime.js"
+ 		}
+ 	},
+ 	"files": [

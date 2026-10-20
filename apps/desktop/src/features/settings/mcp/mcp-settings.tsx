@@ -1,270 +1,319 @@
-import { Braces, Check, Plus, Save, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import type {
+  McpConfigFile,
+  McpServerConfig,
+  McpServerStatus,
+} from "@cocurdex/shared";
+import { Braces, SlidersHorizontal } from "lucide-react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { Text, ToggleGroup, ToggleGroupItem } from "@/components/ui";
+import { desktopApi } from "@/lib";
+import { JsonImportDropzone } from "../json-import-dropzone";
+import { McpImportDialog } from "./mcp-import-dialog";
 import {
-  Button,
-  EmptyState,
-  Spinner,
-  Text,
-  Textarea,
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui";
-import { desktopApi, useMountEffect } from "@/lib";
-import {
-  configToServerForms,
-  createMcpServerName,
-  type McpConfig,
-  type McpServerForm,
-  parseMcpConfig,
-  serializeServerForms,
-} from "./mcp-config";
-import { McpServerEditor } from "./mcp-server-editor";
+  importItemsFromCandidates,
+  importItemsFromJson,
+  type McpImportItem,
+} from "./mcp-import-items";
+import { McpJsonEditor } from "./mcp-json-editor";
+import { type McpSelection, resolveSelection } from "./mcp-selection";
+import { McpServerDetail } from "./mcp-server-detail";
+import { nextServerName } from "./mcp-server-form";
+import { McpServerList } from "./mcp-server-list";
+import { McpToolsCard } from "./mcp-tools-card";
+import { mcpStatusKey, useMcpSettings } from "./use-mcp-settings";
 
 type EditorMode = "form" | "json";
 
+interface ImportState {
+  kind: "agents" | "json";
+  items: McpImportItem[] | null;
+  loadError: string;
+  open: boolean;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function McpSettingsPanel() {
   const { t } = useTranslation("settings");
+  const mcp = useMcpSettings();
   const [mode, setMode] = useState<EditorMode>("form");
-  const [config, setConfig] = useState("");
-  const [baseConfig, setBaseConfig] = useState<McpConfig | null>(null);
-  const [servers, setServers] = useState<McpServerForm[]>([]);
-  const [configPath, setConfigPath] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selection, setSelection] = useState<McpSelection | null>(null);
+  const [importState, setImportState] = useState<ImportState | null>(null);
+  const [importSession, setImportSession] = useState(0);
+  const importSessionRef = useRef(0);
+  const [newServerStatus, setNewServerStatus] =
+    useState<McpServerStatus | null>(null);
+  const globalNames = Object.keys(mcp.servers);
+  const projectServers = mcp.project?.servers ?? {};
+  const active = resolveSelection(
+    selection,
+    globalNames,
+    Object.keys(projectServers),
+  );
 
-  useMountEffect(() => {
-    void desktopApi
-      .readMcpConfig()
-      .then((result) => {
-        const parsed = parseMcpConfig(result.content);
-        setConfig(result.content);
-        setBaseConfig(parsed);
-        setServers(configToServerForms(parsed));
-        setConfigPath(result.path);
-      })
-      .catch((loadError) => {
-        setError(
-          loadError instanceof Error ? loadError.message : String(loadError),
-        );
-      })
-      .finally(() => setIsLoading(false));
-  });
-
-  const updateServers = (nextServers: McpServerForm[]) => {
-    setServers(nextServers);
-    setIsSaved(false);
-    if (!baseConfig) return;
-    try {
-      setConfig(serializeServerForms(baseConfig, nextServers));
-      setError("");
-    } catch (nextError) {
-      setError(
-        nextError instanceof Error ? nextError.message : String(nextError),
-      );
-    }
-  };
-
-  const changeMode = (nextMode: string) => {
-    if (nextMode !== "form" && nextMode !== "json") return;
-    if (nextMode === "form") {
-      try {
-        const parsed = parseMcpConfig(config);
-        setBaseConfig(parsed);
-        setServers(configToServerForms(parsed));
-        setError("");
-      } catch (parseError) {
-        setError(
-          parseError instanceof Error ? parseError.message : String(parseError),
-        );
-        return;
-      }
-    } else if (baseConfig) {
-      try {
-        setConfig(serializeServerForms(baseConfig, servers));
-        setError("");
-      } catch (serializeError) {
-        setError(
-          serializeError instanceof Error
-            ? serializeError.message
-            : String(serializeError),
-        );
-        return;
-      }
-    }
-    setMode(nextMode);
-  };
-
-  const addServer = () => {
-    const name = createMcpServerName(servers);
-    updateServers([
-      ...servers,
-      {
-        args: "-y\n",
-        env: "",
-        id: name,
-        name,
-        raw: { lifecycle: "lazy" },
-        target: "npx",
-        transport: "stdio",
-      },
-    ]);
-  };
-
-  const save = async () => {
-    if (error) return;
-    setIsSaving(true);
-    setIsSaved(false);
-    try {
-      const result = await desktopApi.saveMcpConfig(config);
-      const parsed = parseMcpConfig(result.content);
-      setConfig(result.content);
-      setBaseConfig(parsed);
-      setServers(configToServerForms(parsed));
-      setConfigPath(result.path);
-      setIsSaved(true);
-      toast.success(t("mcp.saved"));
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : String(saveError),
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading) {
-    return <div className="min-h-40" />;
+  if (!mcp.configFile) {
+    return mcp.loadError ? (
+      <Text role="alert" size="meta" tone="destructive">
+        {mcp.loadError}
+      </Text>
+    ) : (
+      <div className="min-h-40" />
+    );
   }
+  const configFile = mcp.configFile;
 
-  let saveIcon = <Save className="size-4" />;
-  if (isSaving) saveIcon = <Spinner size="sm" />;
-  else if (isSaved) saveIcon = <Check className="size-4" />;
+  const applySaved = (file: McpConfigFile) => {
+    mcp.applyConfigFile(file);
+  };
+
+  const openImport = (kind: ImportState["kind"], items: McpImportItem[]) => {
+    importSessionRef.current += 1;
+    setImportSession(importSessionRef.current);
+    setImportState({ kind, items, loadError: "", open: true });
+  };
+
+  const scanAgents = async () => {
+    importSessionRef.current += 1;
+    const session = importSessionRef.current;
+    setImportSession(session);
+    setImportState({ kind: "agents", items: null, loadError: "", open: true });
+    try {
+      const candidates = await desktopApi.scanMcpImports(mcp.workspaceId);
+      if (session !== importSessionRef.current) return;
+      setImportState((current) =>
+        current
+          ? {
+              ...current,
+              items: importItemsFromCandidates(candidates, (candidate) =>
+                t(`mcp.import.source.${candidate.source}`),
+              ),
+            }
+          : current,
+      );
+    } catch (error) {
+      if (session !== importSessionRef.current) return;
+      setImportState((current) =>
+        current
+          ? { ...current, items: [], loadError: errorMessage(error) }
+          : current,
+      );
+    }
+  };
+
+  const importJsonText = (text: string) => {
+    try {
+      openImport(
+        "json",
+        importItemsFromJson(text, mcp.servers, {
+          source: t("mcp.import.source.json"),
+          invalidName: t("mcp.errors.nameInvalid"),
+        }),
+      );
+      return null;
+    } catch (error) {
+      return errorMessage(error);
+    }
+  };
+
+  const mergeServers = async (servers: Record<string, McpServerConfig>) => {
+    applySaved(await desktopApi.mergeMcpServers(servers));
+    const [first] = Object.keys(servers);
+    if (first) setSelection({ scope: "global", name: first });
+    void mcp.refreshStatus();
+  };
+
+  const detail = (() => {
+    if (!active) return null;
+    if (active.scope === "new") {
+      return {
+        key: "new",
+        name: nextServerName(globalNames),
+        config: { command: "" } as McpServerConfig,
+        sourcePath: configFile.path,
+      };
+    }
+    const config =
+      active.scope === "global"
+        ? mcp.servers[active.name]
+        : projectServers[active.name];
+    if (!config) return null;
+    return {
+      key: `${active.scope}:${active.name}`,
+      name: active.name,
+      config,
+      sourcePath:
+        active.scope === "project"
+          ? (mcp.project?.path ?? "")
+          : configFile.path,
+    };
+  })();
+  const detailStatus = (() => {
+    if (!active) return undefined;
+    if (active.scope === "new") return newServerStatus ?? undefined;
+    return mcp.status.byKey[mcpStatusKey(active.scope, active.name)];
+  })();
 
   return (
-    <div className="settings-panel-enter flex flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <Text className="max-w-xl text-muted-foreground" size="body">
-          {t("mcp.description")}
-        </Text>
+    <div className="settings-panel-enter flex min-h-0 min-w-0 flex-1 flex-col gap-5">
+      <div className="flex shrink-0 items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Text className="max-w-2xl" size="body" tone="muted">
+            {t("mcp.description")}
+          </Text>
+          <Text
+            className="font-mono"
+            size="meta"
+            title={configFile.path}
+            tone="muted"
+            truncate
+          >
+            {configFile.path}
+          </Text>
+          {mcp.status.errors.map((error) => (
+            <Text key={error} role="alert" size="meta" tone="destructive">
+              {error}
+            </Text>
+          ))}
+        </div>
         <ToggleGroup
           aria-label={t("mcp.mode.label")}
-          className="w-fit shrink-0"
+          className="shrink-0"
           spacing={0.5}
           type="single"
           value={mode}
           variant="segmented"
-          onValueChange={changeMode}
+          onValueChange={(value) => {
+            if (value === "form" || value === "json") setMode(value);
+          }}
         >
-          <ToggleGroupItem aria-label={t("mcp.mode.form")} value="form">
+          <ToggleGroupItem value="form">
             <SlidersHorizontal className="size-3.5" />
             {t("mcp.mode.form")}
           </ToggleGroupItem>
-          <ToggleGroupItem aria-label={t("mcp.mode.json")} value="json">
+          <ToggleGroupItem value="json">
             <Braces className="size-3.5" />
             {t("mcp.mode.json")}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
-      <div className="flex flex-col">
-        {mode === "form" ? (
-          <div className="rounded-card border border-border/70 bg-settings-surface">
-            <div className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="text-body font-medium text-foreground">
-                {t("mcp.form.servers")}
-              </div>
-              <Button
-                size="sm"
-                type="button"
-                variant="ghost"
-                onClick={addServer}
-              >
-                <Plus className="size-4" />
-                {t("mcp.form.add")}
-              </Button>
-            </div>
-            <div className="flex flex-col divide-y divide-border/60 border-t border-border/60">
-              {servers.length ? (
-                servers.map((server, index) => (
-                  <McpServerEditor
-                    index={index}
-                    key={server.id}
-                    server={server}
-                    onChange={(nextServer) =>
-                      updateServers(
-                        servers.map((item, itemIndex) =>
-                          itemIndex === index ? nextServer : item,
-                        ),
-                      )
-                    }
-                    onRemove={() =>
-                      updateServers(
-                        servers.filter((_, itemIndex) => itemIndex !== index),
-                      )
-                    }
-                  />
-                ))
-              ) : (
-                <EmptyState
-                  description={t("mcp.form.emptyDescription")}
-                  title={t("mcp.form.emptyTitle")}
+      {mode === "json" ? (
+        <McpJsonEditor
+          file={configFile}
+          key={configFile.content}
+          onSaved={(file) => {
+            applySaved(file);
+            void mcp.refreshStatus();
+          }}
+        />
+      ) : (
+        <div className="flex min-h-0 min-w-0 flex-1 gap-6">
+          <McpServerList
+            project={mcp.project?.servers ?? null}
+            query={query}
+            selection={active}
+            servers={mcp.servers}
+            status={mcp.status}
+            workspaceName={mcp.workspaceName}
+            onAdd={() => {
+              setNewServerStatus(null);
+              setSelection({ scope: "new" });
+            }}
+            onImport={() => void scanAgents()}
+            onQueryChange={setQuery}
+            onSelect={setSelection}
+          />
+          <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+            <div className="flex min-w-0 flex-col gap-6 pe-1">
+              {detail && active ? (
+                <McpServerDetail
+                  config={detail.config}
+                  key={detail.key}
+                  name={detail.name}
+                  otherNames={globalNames.filter(
+                    (name) => active.scope === "new" || name !== detail.name,
+                  )}
+                  scope={active.scope}
+                  sourcePath={detail.sourcePath}
+                  status={detailStatus}
+                  workspaceId={mcp.workspaceId}
+                  onEnabledSaved={(file) => {
+                    applySaved(file);
+                    void mcp.refreshServerStatus(detail.name);
+                  }}
+                  onRemoved={(file) => {
+                    applySaved(file);
+                    mcp.forgetStatus(detail.name);
+                    setSelection(null);
+                  }}
+                  onSaved={(file, name) => {
+                    applySaved(file);
+                    if (name !== detail.name) mcp.forgetStatus(detail.name);
+                    setSelection({ scope: "global", name });
+                    void mcp.refreshServerStatus(name);
+                  }}
+                  onSignInChanged={(name) => void mcp.refreshServerStatus(name)}
+                  onTested={(result) => {
+                    if (active.scope === "new") setNewServerStatus(result);
+                    else mcp.applyStatus(result);
+                  }}
                 />
+              ) : (
+                <div className="flex min-h-40 items-center justify-center rounded-control border border-dashed border-border/60 px-6 text-center text-body text-muted-foreground">
+                  {t("mcp.list.empty")}
+                </div>
               )}
+              {detail ? (
+                <McpToolsCard
+                  isChecking={mcp.status.isChecking && !detailStatus}
+                  status={detailStatus}
+                />
+              ) : null}
+              <JsonImportDropzone
+                dropActiveHint={t("mcp.jsonImport.dropActive")}
+                dropHint={t("mcp.jsonImport.dropHint")}
+                intro={t("mcp.jsonImport.intro")}
+                invalidFileMessage={t("mcp.jsonImport.invalidFile")}
+                label={t("mcp.jsonImport.label")}
+                pasteDescription={t("mcp.jsonImport.pasteDescription")}
+                pasteTitle={t("mcp.jsonImport.pasteTitle")}
+                title={t("mcp.jsonImport.title")}
+                onText={importJsonText}
+              />
             </div>
           </div>
-        ) : (
-          <Textarea
-            aria-invalid={Boolean(error)}
-            aria-label={t("mcp.editorLabel")}
-            className="min-h-96 resize-y rounded-card border-border/70 bg-settings-surface font-mono text-body leading-6 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
-            spellCheck={false}
-            value={config}
-            onChange={(event) => {
-              setConfig(event.target.value);
-              setError("");
-              setIsSaved(false);
-            }}
-          />
-        )}
-      </div>
-
-      {error ? (
-        <Text className="text-destructive" role="alert" size="meta">
-          {error}
-        </Text>
-      ) : null}
-
-      <div className="flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          {configPath ? (
-            <Text
-              className="block truncate text-muted-foreground"
-              size="meta"
-              title={configPath}
-            >
-              {configPath}
-            </Text>
-          ) : null}
-          <Text className="mt-1 block text-muted-foreground" size="meta">
-            {t("mcp.restartHint")}
-          </Text>
         </div>
-        <Button
-          className="shrink-0"
-          disabled={isSaving || Boolean(error)}
-          size="sm"
-          type="button"
-          variant="secondary"
-          onClick={() => void save()}
-        >
-          {saveIcon}
-          {isSaving ? t("mcp.saving") : t("mcp.save")}
-        </Button>
-      </div>
+      )}
+
+      <McpImportDialog
+        description={
+          importState?.kind === "json"
+            ? t("mcp.import.jsonDescription")
+            : t("mcp.import.agentsDescription")
+        }
+        emptyText={t("mcp.import.empty")}
+        items={importState?.items ?? null}
+        key={importSession}
+        loadError={importState?.loadError ?? ""}
+        open={importState?.open === true}
+        title={
+          importState?.kind === "json"
+            ? t("mcp.import.jsonTitle")
+            : t("mcp.import.agentsTitle")
+        }
+        onImport={mergeServers}
+        onOpenChange={(open) => {
+          if (!open) {
+            setImportState((current) =>
+              current ? { ...current, open: false } : current,
+            );
+          }
+        }}
+      />
     </div>
   );
 }

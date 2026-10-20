@@ -108,3 +108,21 @@ export async function openNewIssueDialog(session) {
     NAVIGATION_TIMEOUT_MS,
   );
 }
+
+export async function openSettingsSection(session, section) {
+  await waitForRole(
+    session,
+    {
+      role: "button",
+      name: await translate(session, "sessions:sidebar.settings"),
+    },
+    NAVIGATION_TIMEOUT_MS,
+  );
+  await session.run(async (section) => {
+    const navigation = await import(
+      "/src/features/settings/settings-navigation.ts"
+    );
+    navigation.openSettings(section);
+    return true;
+  }, section);
+}

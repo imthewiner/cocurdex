@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isJsonImportFile } from "@/features/settings/providers/import-json-file";
+import { isJsonImportFile } from "@/features/settings/import-json-file";
 
 describe("isJsonImportFile", () => {
   it("accepts json and text files", () => {

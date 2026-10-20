@@ -461,6 +461,13 @@
     "system": "系统",
     "workspace": "工作区"
   },
+  "jsonImport": {
+    "cancel": "取消",
+    "continue": "继续",
+    "pasteButton": "粘贴 JSON",
+    "pasteLabel": "JSON 文本",
+    "pastePlaceholder": "{\n  \"mcpServers\": { … }\n}"
+  },
   "language": {
     "description": "选择产品界面使用的语言。",
     "empty": "未找到语言",
@@ -493,40 +500,152 @@
     "view": "查看"
   },
   "mcp": {
-    "description": "配置内置 Pi agent 可用的 MCP 服务器。Pi 会在会话启动时连接这些服务器。服务器名称只能包含字母、数字、“_”和“-”。",
-    "editorLabel": "MCP 服务器配置",
-    "form": {
-      "add": "添加服务器",
-      "arguments": "参数",
-      "argumentsDescription": "每行输入一个参数。",
-      "argumentsPlaceholder": "-y\npackage-name",
+    "actions": {
+      "remove": "移除",
+      "save": "保存",
+      "test": "测试连接",
+      "testing": "测试中…"
+    },
+    "advanced": {
+      "callbackPort": "回调端口",
+      "clientId": "OAuth 客户端 ID",
+      "clientSecret": "OAuth 客户端密钥",
+      "exposure": "工具暴露方式",
+      "exposureHint": {
+        "codemode": "Pi 通过生成的代码调用这些工具。",
+        "deferred": "Agent 搜索时才加载这些工具。",
+        "direct": "所有工具直接加入 Agent 的工具列表。",
+        "hidden": "不向 Agent 提供这些工具。"
+      },
+      "exposureOption": {
+        "codemode": "代码模式",
+        "deferred": "按需加载",
+        "direct": "直接暴露",
+        "hidden": "隐藏"
+      },
+      "oauthClientHint": "仅当服务器不支持动态客户端注册时需要填写。",
+      "title": "高级"
+    },
+    "auth": {
+      "bearer": "Bearer 令牌",
+      "bearerHint": "作为 Authorization 请求头发送。可用 ${VAR} 从环境变量读取。",
+      "cancel": "取消",
+      "failed": "登录失败。",
+      "needsSignIn": "此服务器需要登录。",
+      "oauth": "OAuth",
+      "oauthHint": "服务器要求授权时再登录。",
+      "saveFirst": "保存服务器后才能登录。",
+      "signedIn": "已登录。",
+      "signIn": "登录",
+      "signOut": "退出登录",
+      "title": "认证",
+      "token": "令牌",
+      "waiting": "正在等待浏览器中完成授权…"
+    },
+    "description": "配置内置 Pi agent 可用的 MCP 服务器。启用开关立即生效，其余修改点保存后写入；新会话开始使用。",
+    "detail": {
+      "enabled": "启用",
+      "label": "MCP 服务器",
+      "newTitle": "新服务器",
+      "projectReadOnly": "定义在 {{path}}。项目服务器在这里只读，请编辑该文件来修改。"
+    },
+    "errors": {
+      "callbackPortInvalid": "回调端口必须是 1 到 65535 之间的数字。",
+      "commandRequired": "请输入命令。",
+      "nameInvalid": "名称只能包含字母、数字、\"_\" 和 \"-\"。",
+      "nameRequired": "请输入服务器名称。",
+      "nameTaken": "已存在同名服务器。",
+      "urlRequired": "请输入 URL。"
+    },
+    "fields": {
+      "addEnv": "添加变量",
+      "addHeader": "添加请求头",
+      "args": "参数",
       "command": "命令",
-      "commandPlaceholder": "npx",
-      "emptyDescription": "添加本地命令或远程端点，让 Pi 可以使用其中的工具。",
-      "emptyTitle": "尚未配置 MCP 服务器",
-      "environment": "环境变量",
-      "environmentDescription": "每行输入一组 KEY=value。",
-      "environmentPlaceholder": "API_KEY=${API_KEY}",
+      "env": "环境变量",
+      "headers": "请求头",
+      "key": "键",
       "local": "本地",
-      "name": "服务器名称",
-      "namePlaceholder": "github",
+      "name": "名称",
       "remote": "远程",
-      "remove": "移除服务器",
-      "servers": "服务器",
+      "removeRow": "移除",
       "transport": "连接方式",
-      "url": "服务器 URL",
-      "urlPlaceholder": "https://example.com/mcp"
+      "url": "URL",
+      "value": "值"
+    },
+    "import": {
+      "agentsDescription": "在这台电脑上的 Claude Code、Cursor 和 Antigravity 配置中找到的 MCP 服务器。",
+      "agentsTitle": "从其他 Agent 导入",
+      "cancel": "取消",
+      "confirm_other": "导入 {{count}} 个服务器",
+      "different": "将覆盖现有配置",
+      "empty": "没有找到 MCP 服务器。",
+      "importing": "导入中…",
+      "jsonDescription": "选择要添加到 Pi MCP 配置的服务器。",
+      "jsonTitle": "导入 JSON",
+      "same": "已添加",
+      "source": {
+        "antigravity": "Antigravity",
+        "claude": "Claude Code",
+        "claude-project": "Claude Code · 项目",
+        "cursor": "Cursor",
+        "json": "JSON"
+      },
+      "unsupported": "不支持"
+    },
+    "json": {
+      "hint": "编辑完整的 mcp.json 文件，保存前会先校验。",
+      "label": "MCP 配置 JSON"
+    },
+    "jsonImport": {
+      "dropActive": "松开以导入",
+      "dropHint": "把 JSON 文件拖到这里，或点击选择文件。",
+      "intro": "从 mcpServers 片段添加服务器，例如服务器 README 中的配置。",
+      "invalidFile": "请选择 JSON 文本文件。",
+      "label": "从 JSON 导入",
+      "pasteDescription": "粘贴 mcpServers 对象、服务器映射，或单个 \"name\": { … } 条目。",
+      "pasteTitle": "粘贴 MCP JSON",
+      "title": "导入 JSON"
+    },
+    "list": {
+      "add": "添加",
+      "empty": "还没有 MCP 服务器。添加一个，或从其他 Agent 导入。",
+      "global": "全局 · Pi",
+      "importFromAgents": "从其他 Agent 导入",
+      "noMatches": "没有匹配的服务器",
+      "project": "项目 · {{workspace}}",
+      "readOnly": "只读",
+      "search": "搜索服务器"
     },
     "mode": {
       "form": "表单",
       "json": "JSON",
-      "label": "配置模式"
+      "label": "配置方式"
     },
-    "restartHint": "更改会在 Pi 会话启动时生效，已经运行的会话会继续使用当前工具。",
-    "save": "保存",
-    "saved": "MCP 配置已保存",
-    "saving": "正在保存",
-    "title": "MCP"
+    "removeConfirm": {
+      "cancel": "取消",
+      "confirm": "移除",
+      "description": "将从 Pi 的 MCP 配置中移除“{{name}}”。正在运行的会话保留当前工具。",
+      "title": "移除 MCP 服务器？"
+    },
+    "state": {
+      "connected": "已连接",
+      "disabled": "已停用",
+      "failed": "连接失败",
+      "needs-auth": "需要登录",
+      "unknown": "未检查"
+    },
+    "title": "MCP",
+    "tools": {
+      "checkedAt": "上次检查 {{time}}",
+      "checking": "检查中…",
+      "disabled": "服务器已停用。",
+      "needsAuth": "登录后才能列出工具。",
+      "none": "此服务器没有提供工具。",
+      "notChecked": "尚未检查",
+      "title": "工具",
+      "titleWithCount_other": "工具 · {{count}}"
+    }
   },
   "network": {
     "proxy": {
@@ -731,6 +850,8 @@
       "intro": "从 pi 风格的 models.json 添加或更新服务商及其模型。",
       "invalidFile": "请选择 JSON 文本文件。",
       "label": "从 JSON 导入服务商",
+      "pasteDescription": "粘贴 pi 风格 models.json 的内容。",
+      "pasteTitle": "粘贴服务商 JSON",
       "providerCount": "{{count}} 个服务商",
       "providerCount_other": "{{count}} 个服务商",
       "summary": "将写入 {{providers}}、{{models}}。",

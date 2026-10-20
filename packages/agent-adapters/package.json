@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./desktop-provider": "./src/desktop-provider.ts",
     "./provider-auth": "./src/provider-auth.ts",
+    "./pi-mcp": "./src/pi-mcp.ts",
     "./internal/*": "./src/*.ts"
   },
   "scripts": {
