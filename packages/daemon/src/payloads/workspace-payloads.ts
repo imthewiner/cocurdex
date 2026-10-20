@@ -264,9 +264,6 @@ export const workspacePayloadSchemas = {
   "search.cancel": exact<Payload<"search.cancel">>()(
     z.object({ searchId: idSchema }),
   ),
-  "mcp.saveConfig": exact<Payload<"mcp.saveConfig">>()(
-    z.object({ content: boundedTextSchema(1_000_000).min(1) }),
-  ),
   "settings.pendingChanges.ack": exact<
     Payload<"settings.pendingChanges.ack">
   >()(z.object({ id: idSchema })),

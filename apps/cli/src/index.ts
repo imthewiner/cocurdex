@@ -20,6 +20,7 @@ import { withDaemon } from "./daemon-command";
 import { handleDeckCommand } from "./deck-commands";
 import { handleHostCommand, hostUsageLines } from "./host-commands";
 import { handleIssueCommand } from "./issue-commands";
+import { handleMcpCommand, mcpUsageLines } from "./mcp-commands";
 import { handleNoteCommand } from "./note-commands";
 import {
   assertDirectory,
@@ -337,6 +338,15 @@ async function main(rawArgs: string[]) {
     return;
   }
 
+  if (resource === "mcp") {
+    const handled = await handleMcpCommand(
+      rawArgs.slice(rawArgs.indexOf("mcp") + 1),
+    );
+    if (handled) {
+      return;
+    }
+  }
+
   if (resource === "provider") {
     const handled = await handleProviderCommand(action, args, parsed);
     if (handled) {
@@ -530,6 +540,7 @@ function printUsage() {
       ...teamUsageLines(),
       ...scriptRunUsageLines(),
       ...providerUsageLines(),
+      ...mcpUsageLines(),
       "  cocurdex workflow list",
       "  cocurdex workflow definitions",
       "  cocurdex workflow tui [run-id]",

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { deckPayloadSchemas } from "./deck-payloads";
 import { hostPayloadSchemas } from "./host-payloads";
 import { issuePayloadSchemas } from "./issue-payloads";
+import { mcpPayloadSchemas } from "./mcp-payloads";
 import { notePayloadSchemas } from "./note-payloads";
 import type { PayloadSchemas } from "./primitives";
 import { providerPayloadSchemas } from "./provider-payloads";
@@ -15,6 +16,7 @@ export const daemonPayloadSchemas: PayloadSchemas = {
   ...deckPayloadSchemas,
   ...hostPayloadSchemas,
   ...issuePayloadSchemas,
+  ...mcpPayloadSchemas,
   ...notePayloadSchemas,
   ...providerPayloadSchemas,
   ...sessionPayloadSchemas,

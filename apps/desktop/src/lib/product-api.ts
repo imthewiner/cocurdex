@@ -171,6 +171,28 @@ export const daemonProductApi: ProductRequestApi = {
   listProviderTemplates: () => rpc("provider.listTemplates"),
   readMcpConfig: () => rpc("mcp.readConfig"),
   saveMcpConfig: (content) => rpc("mcp.saveConfig", { content }),
+  readMcpProjectConfig: (workspaceId) =>
+    rpc("mcp.readProjectConfig", { workspaceId }),
+  saveMcpServer: (name, config, previousName) =>
+    rpc("mcp.server.save", { name, config, previousName }),
+  removeMcpServer: (name) => rpc("mcp.server.remove", { name }),
+  setMcpServerEnabled: (name, enabled) =>
+    rpc("mcp.server.setEnabled", { name, enabled }),
+  mergeMcpServers: (servers) => rpc("mcp.servers.merge", { servers }),
+  getMcpStatus: (workspaceId, names) =>
+    rpc("mcp.status", { workspaceId, names }),
+  testMcpServer: (name, config, workspaceId) =>
+    rpc("mcp.server.test", { name, config, workspaceId }),
+  startMcpLogin: (name, workspaceId) =>
+    rpc("mcp.login.start", { name, workspaceId }),
+  waitMcpLogin: (loginId) => rpc("mcp.login.wait", { loginId }),
+  cancelMcpLogin: async (loginId) => {
+    await rpc("mcp.login.cancel", { loginId });
+  },
+  logoutMcpServer: async (name, workspaceId) => {
+    await rpc("mcp.logout", { name, workspaceId });
+  },
+  scanMcpImports: (workspaceId) => rpc("mcp.import.scan", { workspaceId }),
   saveProviderConfig: (config) => rpc("provider.config.save", { config }),
   deleteProviderConfig: async (providerId) => {
     await rpc("provider.config.delete", { providerId });

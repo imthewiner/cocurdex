@@ -167,7 +167,6 @@ runScenario("workspace-picker", {
           const item = items.find((element) =>
             element.innerText.includes(name),
           );
-          const other = items.find((element) => element !== item);
           const center = (element) => {
             const rect = element.getBoundingClientRect();
             return {
@@ -175,6 +174,13 @@ runScenario("workspace-picker", {
               y: rect.top + rect.height / 2,
             };
           };
+          const reachable = (element) => {
+            const { x, y } = center(element);
+            return element.contains(document.elementFromPoint(x, y));
+          };
+          const other = items.find(
+            (element) => element !== item && reachable(element),
+          );
           return {
             text: item.innerText.trim(),
             point: center(item),

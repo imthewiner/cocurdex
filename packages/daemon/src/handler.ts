@@ -31,6 +31,24 @@ import {
   isSkillRequest,
 } from "./skills/handle-skill-request";
 
+function assertLocalPrincipal(context: DaemonRequestContext, method: string) {
+  if (context.principal.kind !== "local") {
+    throw new Error(`${method} is only available on this computer`);
+  }
+}
+
+function assertWorkspaceForRemote(
+  context: DaemonRequestContext,
+  method: string,
+  workspaceId: string | undefined,
+) {
+  if (context.principal.kind !== "local" && !workspaceId) {
+    throw new Error(
+      `${method} from another device must run in a registered workspace`,
+    );
+  }
+}
+
 function isProviderAuthMethod(value: unknown): value is ProviderAuthMethod {
   return value === "oauth" || value === "api_key";
 }
@@ -263,9 +281,70 @@ export async function handleDaemonRequest(
       service.searchService.cancel(request.params.searchId);
       return null;
     case "mcp.readConfig":
-      return service.mcpConfigService.readConfig();
+      return service.mcp.config.readConfig();
     case "mcp.saveConfig":
-      return service.mcpConfigService.saveConfig(request.params.content);
+      return service.mcp.config.saveConfig(request.params.content);
+    case "mcp.readProjectConfig":
+      return service.mcp.readProjectConfig(request.params.workspaceId);
+    case "mcp.server.save":
+      return service.mcp.config.saveServer(
+        request.params.name,
+        request.params.config,
+        request.params.previousName,
+      );
+    case "mcp.server.remove":
+      return service.mcp.config.removeServer(request.params.name);
+    case "mcp.server.setEnabled":
+      return service.mcp.config.setServerEnabled(
+        request.params.name,
+        request.params.enabled,
+      );
+    case "mcp.servers.merge":
+      return service.mcp.config.mergeServers(request.params.servers);
+    case "mcp.status":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.status",
+        request.params.workspaceId,
+      );
+      return service.mcp.status(
+        request.params.workspaceId,
+        request.params.names,
+      );
+    case "mcp.server.test":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.server.test",
+        request.params.workspaceId,
+      );
+      return service.mcp.test(
+        request.params.name,
+        request.params.config,
+        request.params.workspaceId,
+      );
+    case "mcp.login.start":
+      assertWorkspaceForRemote(
+        context,
+        "mcp.login.start",
+        request.params.workspaceId,
+      );
+      return service.mcp.startLogin(
+        request.params.name,
+        request.params.workspaceId,
+      );
+    case "mcp.login.wait":
+      return service.mcp.logins.wait(request.params.loginId);
+    case "mcp.login.cancel":
+      service.mcp.logins.cancel(request.params.loginId);
+      return null;
+    case "mcp.logout":
+      return service.mcp.logout(
+        request.params.name,
+        request.params.workspaceId,
+      );
+    case "mcp.import.scan":
+      assertLocalPrincipal(context, "mcp.import.scan");
+      return service.mcp.scanImports(request.params.workspaceId);
     case "pdf.loadAnnotations":
       return service.pdfAnnotationsService.loadAnnotations(
         request.params.filePath,

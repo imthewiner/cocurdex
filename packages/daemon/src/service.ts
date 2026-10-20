@@ -113,7 +113,7 @@ import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
 import { commitGitChanges } from "./git";
 import { HostAccessService, listHostAddresses } from "./host-access";
-import { DaemonMcpConfigService } from "./mcp-config";
+import { DaemonMcpService } from "./mcp-service";
 import { probeNetworkProxy } from "./network-proxy-probe";
 import {
   assertTestableNetworkProxySettings,
@@ -248,7 +248,7 @@ export class CocurdexDaemonService {
   private startupRecovery: Promise<void> | null = null;
   private stopping = false;
   readonly commitMessageService: DaemonCommitMessageService;
-  readonly mcpConfigService: DaemonMcpConfigService;
+  readonly mcp: DaemonMcpService;
   readonly pdfAnnotationsService: DaemonPdfAnnotationsService;
   readonly attachments: DaemonAttachmentStore;
   readonly codexLogins = new CodexLoginSessions();
@@ -325,7 +325,15 @@ export class CocurdexDaemonService {
       emit: (event) => this.events.emit("terminal.event", event),
       listWorkspaceRootPaths: () => this.listWorkspaceRootPaths(),
     });
-    this.mcpConfigService = new DaemonMcpConfigService(options.userDataPath);
+    this.mcp = new DaemonMcpService(
+      options.userDataPath,
+      async (workspaceId) => {
+        const workspace = (await this.state.listWorkspaces()).find(
+          (candidate) => candidate.id === workspaceId,
+        );
+        return workspace?.rootPaths[0] ?? null;
+      },
+    );
     this.attachments = new DaemonAttachmentStore(options.userDataPath);
     this.workspaceWatch = new WorkspaceWatchService((event) =>
       this.events.emit("daemon.event", event),
@@ -2590,6 +2598,7 @@ export class CocurdexDaemonService {
         schedulerClose,
         this.acpRegistry.ready,
         Promise.resolve().then(() => this.searchService.dispose()),
+        Promise.resolve().then(() => this.mcp.dispose()),
         this.terminals.dispose(),
         Promise.resolve().then(() => this.workspaceWatch.close()),
       ]);

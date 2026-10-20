@@ -27,6 +27,7 @@ export * from "./git-worktree";
 export * from "./host-access";
 export * from "./issues";
 export * from "./logging";
+export * from "./mcp";
 export * from "./network-proxy";
 export * from "./network-proxy-runtime";
 export * from "./note-markdown";
