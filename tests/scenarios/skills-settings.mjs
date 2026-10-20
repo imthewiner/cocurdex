@@ -1,4 +1,4 @@
-import { lstat, mkdir, readlink, writeFile } from "node:fs/promises";
+import { lstat, readlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
@@ -135,18 +135,6 @@ function readLayout(filterLabel) {
       document.documentElement.scrollWidth -
       document.documentElement.clientWidth,
   };
-}
-
-async function capture(session, theme) {
-  const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
-  if (!artifacts) return null;
-  const { data } = await session.send("Page.captureScreenshot", {
-    format: "png",
-  });
-  await mkdir(artifacts, { recursive: true });
-  const file = path.join(artifacts, `skills-settings-${theme}.png`);
-  await writeFile(file, Buffer.from(data, "base64"));
-  return file;
 }
 
 runScenario("skills-settings", {
@@ -383,11 +371,7 @@ runScenario("skills-settings", {
             layout,
           );
           check(layout.pageOverflow === 0, "page overflows", layout);
-          results[theme] = {
-            ...layout,
-            rows: layout.rows.length,
-            screenshot: await capture(session, theme),
-          };
+          results[theme] = { ...layout, rows: layout.rows.length };
         }
         await session.run(() => window.__cocurdexDebug.restoreTheme());
         return results;
