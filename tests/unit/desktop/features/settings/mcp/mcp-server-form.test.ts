@@ -97,9 +97,17 @@ describe("MCP server form", () => {
     );
     expect(
       validateServerForm(
-        { ...form, transport: "http", url: "x", oauthCallbackPort: "70000" },
+        {
+          ...form,
+          transport: "http",
+          url: "https://mcp.example.invalid/mcp",
+          oauthCallbackPort: "70000",
+        },
         [],
       ),
     ).toBe("callbackPortInvalid");
+    expect(
+      validateServerForm({ ...form, transport: "http", url: "npx" }, []),
+    ).toBe("urlInvalid");
   });
 });

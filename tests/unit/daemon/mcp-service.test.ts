@@ -46,6 +46,34 @@ describe("DaemonMcpService", () => {
     ]);
   });
 
+  it("reports a hand-edited invalid server as failed with Pi's reason", async () => {
+    const service = await createService();
+    await mkdir(path.dirname(service.config.configPath), { recursive: true });
+    await writeFile(
+      service.config.configPath,
+      JSON.stringify({
+        mcpServers: { "server-1": { url: "npx" }, fixture: fixtureConfig },
+      }),
+    );
+
+    const report = await service.status();
+
+    expect(report.errors).toEqual([]);
+    expect(report.servers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "fixture", state: "connected" }),
+        expect.objectContaining({
+          name: "server-1",
+          scope: "global",
+          state: "failed",
+          error: 'server "server-1": url must be an http or https URL',
+        }),
+      ]),
+    );
+    const named = await service.status(undefined, ["fixture"]);
+    expect(named.servers.map((status) => status.name)).toEqual(["fixture"]);
+  });
+
   it("reports a server that fails to start without saving anything", async () => {
     const service = await createService();
     const status = await service.test("broken", {

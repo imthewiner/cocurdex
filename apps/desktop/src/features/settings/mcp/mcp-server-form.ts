@@ -41,6 +41,7 @@ export type McpFormError =
   | "nameTaken"
   | "commandRequired"
   | "urlRequired"
+  | "urlInvalid"
   | "callbackPortInvalid";
 
 let rowSequence = 0;
@@ -203,6 +204,10 @@ export function serverFormToConfig(
   return { ...config, ...rest };
 }
 
+function isHttpUrl(value: string) {
+  return URL.canParse(value) && /^https?:$/.test(new URL(value).protocol);
+}
+
 export function validateServerForm(
   form: McpServerForm,
   otherNames: string[],
@@ -215,6 +220,9 @@ export function validateServerForm(
     return "commandRequired";
   }
   if (form.transport === "http" && !form.url.trim()) return "urlRequired";
+  if (form.transport === "http" && !isHttpUrl(form.url.trim())) {
+    return "urlInvalid";
+  }
   const port = form.oauthCallbackPort.trim();
   if (
     form.transport === "http" &&

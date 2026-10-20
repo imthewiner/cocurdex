@@ -2287,6 +2287,7 @@ export default interface Resources {
         nameInvalid: 'Names may only contain letters, digits, "_", and "-".';
         nameRequired: "Enter a server name.";
         nameTaken: "A server with this name already exists.";
+        urlInvalid: "Enter an http:// or https:// URL.";
         urlRequired: "Enter a URL.";
       };
       fields: {

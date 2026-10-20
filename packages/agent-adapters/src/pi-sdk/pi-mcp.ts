@@ -159,7 +159,61 @@ export async function inspectPiMcpServers(
       probeServer(entry, location.cwd, agentDir, credentials),
     ),
   );
-  return { servers, errors: loaded.errors };
+  const configScopes: [string, McpServerScope][] = [
+    [path.join(agentDir, "mcp.json"), "global"],
+    [path.join(location.cwd, ".pi", "mcp.json"), "project"],
+  ];
+  const errors: string[] = [];
+  for (const error of loaded.errors) {
+    const invalid = parseServerConfigError(error, configScopes);
+    if (!invalid) {
+      errors.push(error);
+      continue;
+    }
+    const listed = servers.some(
+      (status) =>
+        status.name === invalid.name && status.scope === invalid.scope,
+    );
+    if (listed) {
+      errors.push(error);
+      continue;
+    }
+    if (location.names && !location.names.includes(invalid.name)) continue;
+    servers.push(invalidServerStatus(invalid));
+  }
+  return { servers, errors };
+}
+
+interface InvalidServerConfig {
+  name: string;
+  scope: McpServerScope;
+  message: string;
+}
+
+function parseServerConfigError(
+  error: string,
+  configScopes: [string, McpServerScope][],
+): InvalidServerConfig | null {
+  for (const [configPath, scope] of configScopes) {
+    const message = stripPathPrefix(error, configPath);
+    if (message === error) continue;
+    const match = /^server "([^"]+)"/.exec(message);
+    return match?.[1] ? { name: match[1], scope, message } : null;
+  }
+  return null;
+}
+
+function invalidServerStatus(invalid: InvalidServerConfig): McpServerStatus {
+  return {
+    name: invalid.name,
+    scope: invalid.scope,
+    state: "failed",
+    tools: [],
+    error: invalid.message,
+    oauth: false,
+    signedIn: false,
+    checkedAt: new Date().toISOString(),
+  };
 }
 
 export async function testPiMcpServer(
