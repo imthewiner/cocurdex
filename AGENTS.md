@@ -119,6 +119,17 @@ Prefer measuring over guessing. When a symptom involves rendering, layout, timin
 
 Final visual and UX acceptance stays with the user. After your end-to-end check, briefly state what changed and which screen to inspect. Diagnose runtime errors, console exceptions, and reproducible functional failures yourself through code, logs, and a CDP session.
 
+## Mobile visual language
+
+The mobile app has no code yet. These rules govern its mockups now and move into `apps/mobile/AGENTS.md` when the app is scaffolded, where spacing, color, and radius become theme tokens that components must use instead of raw values. The look is professional, calm, and immersive; it shares the desktop's neutral palette and semantic tokens and covers light and dark for every screen.
+
+- Content runs edge to edge. Group rows into full-bleed lists separated by hairline dividers inset to the text column; do not wrap lists, settings, or sections in bordered cards or panels. Keep a bordered surface only when the object itself is a card: a kanban card, a slide thumbnail, a text input.
+- The accent color is a small mark only: unread dots, selected checks, links, the running mark, done status. Primary buttons, switches, and the send button use the foreground color (dark on light, light on dark); destructive buttons use a muted background with destructive text. Never fill a large surface with the accent or a tinted status color.
+- Every transient overlay (pickers, action menus, session configuration, confirmations) is a sheet that rises from the bottom over a scrim. Do not use centered dialogs.
+- Session states that wait for the user (permission, question, plan approval, failed run) dock at the bottom, above or in place of the composer, without a scrim, so the transcript stays scrollable for context; this matches the desktop's docked cards. Once resolved, they remain in the transcript as history.
+- Spacing sits on a 4pt grid. One 16px side margin aligns text, rows, controls, and divider insets. List rows are at least 44px tall with 8px vertical padding; a section title sits 4px above its list; sections are 16px apart; a bottom action area has 12px above and 30px below, including the home indicator. Controls use an 8px radius and bottom sheets 16px.
+- In two-line rows, leading icons and trailing status align with the title line; only avatar-sized tiles (about 36px) center on the whole row. A list's trailing column holds the same kind of content in every row, for example time on the title line and one fixed status slot on the second line.
+
 ## Code structure and imports
 
 - Keep feature-specific components, hooks, utilities, types, and fixtures together. Move shared code outward only as its reuse scope grows; cross-app reuse belongs in `packages`, not imports between apps.
