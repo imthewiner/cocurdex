@@ -20,6 +20,7 @@ function LinkAgentRow({
 }) {
   const { t } = useTranslation("settings");
   const switchId = useId();
+  const descriptionId = useId();
   const name = SKILL_AGENT_NAMES[visibility.agent];
   const visible = visibility.access !== "none";
   return (
@@ -27,21 +28,20 @@ function LinkAgentRow({
       className="flex items-center justify-between gap-6 py-3"
       data-skill-agent={visibility.agent}
     >
-      <Label
-        className="min-w-0 flex-1 flex-col items-start gap-0.5"
-        htmlFor={switchId}
-      >
-        <Text size="body" weight="medium">
-          {name}
-        </Text>
-        <Text className="break-all" size="meta" tone="muted">
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <Label htmlFor={switchId}>
+          <Text size="body" weight="medium">
+            {name}
+          </Text>
+        </Label>
+        <Text className="break-all" id={descriptionId} size="meta" tone="muted">
           {t(`skills.agents.access.${visibility.access}`, {
             path: visibility.path ?? "",
           })}
         </Text>
-      </Label>
+      </div>
       <Switch
-        aria-label={name}
+        aria-describedby={descriptionId}
         checked={visible}
         disabled={disabled || !visibility.toggleable}
         id={switchId}
