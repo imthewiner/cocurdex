@@ -278,7 +278,8 @@ export function SettingsScreen({
     activeSection === "licenses" ||
     activeSection === "archived" ||
     activeSection === "workflows" ||
-    activeSection === "providers";
+    activeSection === "providers" ||
+    activeSection === "mcp";
   const [scrolledSection, setScrolledSection] =
     useState<SettingsSectionId | null>(null);
   const isContentScrolled = scrolledSection === activeSection;
@@ -353,6 +354,7 @@ export function SettingsScreen({
                 activeSection === "workflows" && "max-w-none gap-4",
                 activeSection === "licenses" && "max-w-5xl gap-6",
                 activeSection === "providers" && "max-w-6xl gap-6",
+                activeSection === "mcp" && "max-w-6xl gap-6",
                 activeSection === "archived" && "max-w-3xl gap-8",
               )}
             >

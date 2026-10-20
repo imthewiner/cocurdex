@@ -1,6 +1,6 @@
 ---
 name: cocurdex-settings
-description: Inspect and change Cocurdex application settings through the settings_* agent tools. Use when the user asks to view, adjust, or get recommendations for app or project settings — including worktree setup/cleanup scripts — from a chat session or the settings assistant dock.
+description: Inspect and change Cocurdex application settings through the settings_* agent tools. Use when the user asks to view, adjust, or get recommendations for app or project settings — including worktree setup/cleanup scripts, model providers, and the built-in Pi agent's MCP servers — from a chat session or the settings assistant dock.
 ---
 
 # /cocurdex-settings — Control Cocurdex settings
@@ -57,6 +57,16 @@ Model providers are configured through the `cocurdex provider` CLI (or Settings 
 - Configure: `cocurdex provider add <id> --template <template-id>` for a built-in provider, or `--name <name> --base-url <url>` for a custom endpoint. `cocurdex provider update <id>`, `cocurdex provider remove <id>`, `cocurdex provider model add|remove`, and `cocurdex provider default --agent <agent> --provider <id> --model <model-id>` change the rest.
 - Move configs in bulk with pi's `models.json` format: `cocurdex provider import <file|->` upserts providers and models, and `cocurdex provider export [--output <file>]` writes them out. Exports never include stored API keys or OAuth logins, but custom `headers` are exported as-is.
 - Credentials are the user's step. `cocurdex provider login <id>` runs OAuth or API-key login interactively, and `cocurdex provider key set <id>` reads a key from stdin. Suggest the command; never run them with a secret you were given. A built-in provider lists no models and is hidden from model pickers until it has a credential; `cocurdex provider status <id>` shows whether it does.
+
+## MCP servers
+
+The built-in Pi agent's MCP servers are configured through the `cocurdex mcp` CLI (or Settings → MCP). They live in Pi's `mcp.json` under the app's data folder; a workspace can add servers in `<workspace>/.pi/mcp.json`, which the CLI and settings page only read. Other agents (Claude Code, Codex, Cursor, …) keep their own MCP configs; do not edit those.
+
+- Inspect: `cocurdex mcp list [--workspace <id|path>] [--json]` connects to every server the way a Pi session does and reports its state (`connected`, `needs-auth`, `failed`, `disabled`), tools, and errors; it exits 1 when an enabled server is not connected. `cocurdex mcp test <name>` checks one server. `cocurdex mcp show [<name>]` prints the config with literal header, env, and OAuth secrets redacted.
+- Configure: `cocurdex mcp add <name> -- <command> [args...]` for a local server (`--env KEY=VALUE`, `--cwd`), or `cocurdex mcp add <name> --url <url>` for a remote one (`--header KEY=VALUE`, `--bearer-token-env-var NAME` writes `Authorization: Bearer ${NAME}`). Adding an existing name replaces it. `cocurdex mcp remove|enable|disable <name>` change the rest. Pi validates every write and rejects what it cannot run, such as legacy SSE servers.
+- Import: `cocurdex mcp import <file|->` reads `{"mcpServers": {...}}` JSON (or a bare `"name": {...}` fragment) and skips names that already exist unless `--overwrite`. `cocurdex mcp import --from claude|claude-project|cursor|antigravity [--name <name>]...` copies servers from another agent's config on this computer.
+- Credentials are the user's step. Prefer `${VAR}` references in headers and env over literal tokens. Remote servers without an `Authorization` header sign in with OAuth: suggest `cocurdex mcp login <name>`, which opens the browser for the user to approve; `cocurdex mcp logout <name>` removes the stored sign-in.
+- New and changed servers take effect in new Pi sessions; running sessions keep the servers they started with.
 
 ## Remote devices
 

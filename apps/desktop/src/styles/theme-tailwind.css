@@ -9,6 +9,7 @@
   --color-brand-mark: var(--brand-mark);
   --color-status-success: var(--status-success);
   --color-status-warning: var(--status-warning);
+  --color-status-attention: var(--status-attention);
   --color-chat-canvas: var(--chat-canvas);
   --color-chat-surface: var(--chat-surface);
   --color-chat-surface-raised: var(--chat-surface-raised);

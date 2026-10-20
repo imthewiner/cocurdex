@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { createTempDirs } from "@cocurdex/shared/testing";
@@ -11,6 +12,9 @@ import {
 } from "./helpers/daemon-process";
 
 const tempDirs = createTempDirs();
+const mcpFixtureServer = createRequire(import.meta.url).resolve(
+  "./fixtures/mcp-stdio-server.mjs",
+);
 let daemon: DaemonProcess;
 
 const MARKDOWN = [
@@ -58,5 +62,23 @@ describe("bundled daemon", () => {
       expect(result.sizeBytes).toBe(bytes.byteLength);
       expect(bytes.subarray(0, 4).toString("latin1")).toBe(signature);
     }
+  });
+
+  it("connects to an MCP server through the bundled Pi runtime", async () => {
+    await requestDaemon(
+      "mcp.server.save",
+      {
+        name: "fixture",
+        config: { command: process.execPath, args: [mcpFixtureServer] },
+      },
+      daemon.options,
+    );
+    const report = await requestDaemon("mcp.status", {}, daemon.options);
+    expect(report).toMatchObject({
+      errors: [],
+      servers: [
+        { name: "fixture", state: "connected", tools: [{ name: "echo" }] },
+      ],
+    });
   });
 });

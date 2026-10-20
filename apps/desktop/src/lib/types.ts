@@ -57,6 +57,14 @@ import type {
   IssueRelationPayload,
   LoadViewPayload,
   ManagedWorktree,
+  McpConfigFile,
+  McpImportCandidate,
+  McpLoginOutcome,
+  McpLoginStartResult,
+  McpProjectConfigFile,
+  McpServerConfig,
+  McpServerStatus,
+  McpStatusReport,
   MessageRecord,
   MoveColumnPayload,
   MoveIssuePayload,
@@ -499,6 +507,34 @@ export interface ProductApi {
   listProviderTemplates(): Promise<ProviderTemplateRecord[]>;
   readMcpConfig(): Promise<{ content: string; path: string }>;
   saveMcpConfig(content: string): Promise<{ content: string; path: string }>;
+  readMcpProjectConfig(workspaceId: string): Promise<McpProjectConfigFile>;
+  saveMcpServer(
+    name: string,
+    config: McpServerConfig,
+    previousName?: string,
+  ): Promise<McpConfigFile>;
+  removeMcpServer(name: string): Promise<McpConfigFile>;
+  setMcpServerEnabled(name: string, enabled: boolean): Promise<McpConfigFile>;
+  mergeMcpServers(
+    servers: Record<string, McpServerConfig>,
+  ): Promise<McpConfigFile>;
+  getMcpStatus(
+    workspaceId?: string,
+    names?: string[],
+  ): Promise<McpStatusReport>;
+  testMcpServer(
+    name: string,
+    config: McpServerConfig,
+    workspaceId?: string,
+  ): Promise<McpServerStatus>;
+  startMcpLogin(
+    name: string,
+    workspaceId?: string,
+  ): Promise<McpLoginStartResult>;
+  waitMcpLogin(loginId: string): Promise<McpLoginOutcome>;
+  cancelMcpLogin(loginId: string): Promise<void>;
+  logoutMcpServer(name: string, workspaceId?: string): Promise<void>;
+  scanMcpImports(workspaceId?: string): Promise<McpImportCandidate[]>;
   saveProviderConfig(
     config: ProviderConfigRecord,
   ): Promise<ProviderConfigRecord>;

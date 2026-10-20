@@ -88,6 +88,13 @@ import type {
   LoadViewPayload,
   ManagedWorktree,
   McpConfigFile,
+  McpImportCandidate,
+  McpLoginOutcome,
+  McpLoginStartResult,
+  McpProjectConfigFile,
+  McpServerConfig,
+  McpServerStatus,
+  McpStatusReport,
   MessageRecord,
   MoveColumnPayload,
   MoveIssuePayload,
@@ -199,7 +206,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 29;
+export const DAEMON_PROTOCOL_VERSION = 30;
 
 export interface DaemonMetadata {
   pid: number;
@@ -421,6 +428,26 @@ export type DaemonRequestPayloadByMethod = {
   "search.cancel": { searchId: string };
   "mcp.readConfig": undefined;
   "mcp.saveConfig": { content: string };
+  "mcp.readProjectConfig": { workspaceId: string };
+  "mcp.server.save": {
+    name: string;
+    config: McpServerConfig;
+    previousName?: string;
+  };
+  "mcp.server.remove": { name: string };
+  "mcp.server.setEnabled": { name: string; enabled: boolean };
+  "mcp.servers.merge": { servers: Record<string, McpServerConfig> };
+  "mcp.status": { workspaceId?: string; names?: string[] };
+  "mcp.server.test": {
+    name: string;
+    config: McpServerConfig;
+    workspaceId?: string;
+  };
+  "mcp.login.start": { name: string; workspaceId?: string };
+  "mcp.login.wait": { loginId: string };
+  "mcp.login.cancel": { loginId: string };
+  "mcp.logout": { name: string; workspaceId?: string };
+  "mcp.import.scan": { workspaceId?: string };
   "skills.getStatus": ProductSkillsRequestPayload;
   "skills.install": ProductSkillsRequestPayload;
   "skills.remove": ProductSkillsRequestPayload;
@@ -682,6 +709,18 @@ export type DaemonResultByMethod = {
   "search.cancel": null;
   "mcp.readConfig": McpConfigFile;
   "mcp.saveConfig": McpConfigFile;
+  "mcp.readProjectConfig": McpProjectConfigFile;
+  "mcp.server.save": McpConfigFile;
+  "mcp.server.remove": McpConfigFile;
+  "mcp.server.setEnabled": McpConfigFile;
+  "mcp.servers.merge": McpConfigFile;
+  "mcp.status": McpStatusReport;
+  "mcp.server.test": McpServerStatus;
+  "mcp.login.start": McpLoginStartResult;
+  "mcp.login.wait": McpLoginOutcome;
+  "mcp.login.cancel": null;
+  "mcp.logout": { removed: boolean };
+  "mcp.import.scan": McpImportCandidate[];
   "skills.getStatus": ProductSkillsStatusResult;
   "skills.install": ProductSkillsInstallResult;
   "skills.remove": ProductSkillsRemoveResult;

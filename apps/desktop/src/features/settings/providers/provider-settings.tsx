@@ -7,7 +7,7 @@ import type {
 } from "@cocurdex/shared";
 import { useSetAtom } from "jotai";
 import { Plus, Search } from "lucide-react";
-import { type ReactNode, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button, Input, Spinner } from "@/components/ui";
@@ -16,6 +16,7 @@ import {
   invalidateProviderModelCache,
 } from "@/features/sessions";
 import { cn, desktopApi, useMountEffect } from "@/lib";
+import { SettingsListItem } from "../settings-list-item";
 import { SettingsSearchableSelect } from "../settings-select";
 import { ImportProviderJsonDialog } from "./import-provider-json-dialog";
 import { providerImportWarningMessage } from "./import-warning-message";
@@ -24,45 +25,6 @@ import { resolveProviderSettingsSurface } from "./provider-settings-surface";
 import { applyProviderTemplate } from "./provider-templates";
 
 const NEW_PROVIDER_EDITOR_KEY = "__new__";
-
-function ProviderListItem({
-  isActive,
-  subtitle,
-  title,
-  trailing,
-  onClick,
-}: {
-  isActive: boolean;
-  subtitle: string;
-  title: string;
-  trailing?: ReactNode;
-  onClick(): void;
-}) {
-  return (
-    <button
-      aria-pressed={isActive}
-      className={cn(
-        "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors",
-        isActive &&
-          "border-primary/40 bg-primary/10 font-medium text-foreground dark:bg-primary/15",
-        !isActive &&
-          "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/45 hover:text-foreground dark:bg-white/[0.04]",
-      )}
-      type="button"
-      onClick={onClick}
-    >
-      <span className="flex w-full items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-body font-medium">
-          {title}
-        </span>
-        {trailing}
-      </span>
-      <span className="w-full truncate text-2xs text-muted-foreground/70">
-        {subtitle}
-      </span>
-    </button>
-  );
-}
 
 function createEmptyProvider(): ProviderConfigRecord {
   const now = new Date().toISOString();
@@ -671,7 +633,7 @@ export function ProviderSettingsPanel() {
                   ).length;
 
                   return (
-                    <ProviderListItem
+                    <SettingsListItem
                       isActive={isActive}
                       key={provider.id}
                       subtitle={t("providers.models.modelCount", {
@@ -697,7 +659,7 @@ export function ProviderSettingsPanel() {
                   const isActive =
                     isCreatingProvider && pendingTemplateId === template.id;
                   return (
-                    <ProviderListItem
+                    <SettingsListItem
                       isActive={isActive}
                       key={`template:${template.id}`}
                       subtitle={template.baseUrl}

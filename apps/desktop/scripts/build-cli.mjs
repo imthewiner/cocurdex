@@ -73,6 +73,10 @@ const alias = {
     repoRoot,
     "packages/agent-adapters/src/provider-auth.ts",
   ),
+  "@cocurdex/agent-adapters/pi-mcp": path.join(
+    repoRoot,
+    "packages/agent-adapters/src/pi-mcp.ts",
+  ),
   "@cocurdex/agent-adapters": path.join(
     repoRoot,
     "packages/agent-adapters/src/index.ts",

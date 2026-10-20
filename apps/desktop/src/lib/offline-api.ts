@@ -84,6 +84,11 @@ const fallbackAgents: AgentDescriptor[] = [
   },
 ];
 
+const EMPTY_MCP_CONFIG = {
+  content: '{\n  "mcpServers": {}\n}\n',
+  path: "",
+};
+
 export const offlineApi: DesktopApi = {
   chatWindow: chatWindowFallback,
   capabilities: {
@@ -404,11 +409,29 @@ export const offlineApi: DesktopApi = {
   refineSessionTitle: async () => null,
   listProviderConfigs: async () => [],
   listProviderTemplates: async () => [],
-  readMcpConfig: async () => ({
-    content: '{\n  "mcpServers": {}\n}\n',
-    path: "",
-  }),
+  readMcpConfig: async () => EMPTY_MCP_CONFIG,
   saveMcpConfig: async (content) => ({ content, path: "" }),
+  readMcpProjectConfig: async () => ({ path: "", content: null }),
+  saveMcpServer: async () => EMPTY_MCP_CONFIG,
+  removeMcpServer: async () => EMPTY_MCP_CONFIG,
+  setMcpServerEnabled: async () => EMPTY_MCP_CONFIG,
+  mergeMcpServers: async () => EMPTY_MCP_CONFIG,
+  getMcpStatus: async () => ({ servers: [], errors: [] }),
+  testMcpServer: async (name) => ({
+    name,
+    scope: "global",
+    state: "failed",
+    tools: [],
+    error: null,
+    oauth: false,
+    signedIn: false,
+    checkedAt: new Date().toISOString(),
+  }),
+  startMcpLogin: async () => ({ loginId: null, authUrl: null }),
+  waitMcpLogin: async () => ({ success: false, error: null }),
+  cancelMcpLogin: async () => {},
+  logoutMcpServer: async () => {},
+  scanMcpImports: async () => [],
   saveProviderConfig: async (config) => config,
   deleteProviderConfig: async () => {},
   setProviderApiKey: async () => {},
