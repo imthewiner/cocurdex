@@ -52,12 +52,12 @@ function parseGithubUrl(url: URL): SkillSourceInput {
   return { kind: "github", owner, repo, ref: null, subpath: null };
 }
 
-function expandHome(value: string, home: string) {
+function expandHome(value: string, home: string, pathApi: path.PlatformPath) {
   if (value === "~") {
     return home;
   }
   if (value.startsWith("~/") || value.startsWith("~\\")) {
-    return path.join(home, value.slice(2));
+    return pathApi.join(home, value.slice(2));
   }
   return value;
 }
@@ -87,7 +87,7 @@ export function parseSkillSourceInput(
   }
   if (looksLocal(value, platform)) {
     const pathApi = platform === "win32" ? path.win32 : path.posix;
-    const expanded = expandHome(value, options.home ?? os.homedir());
+    const expanded = expandHome(value, options.home ?? os.homedir(), pathApi);
     return {
       kind: "local",
       path: pathApi.resolve(options.cwd ?? process.cwd(), expanded),
