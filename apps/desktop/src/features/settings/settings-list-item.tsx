@@ -22,8 +22,7 @@ export function SettingsListItem({
       className={cn(
         "flex w-full flex-col items-start gap-0.5 rounded-control px-3 py-2 text-start transition-colors",
         isActive && "bg-muted font-medium text-foreground",
-        !isActive &&
-          "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        !isActive && "text-foreground hover:bg-muted/50",
       )}
       type="button"
       onClick={onClick}

@@ -166,7 +166,7 @@ export function WorktreeSettingsPanel() {
         >
           <div className="flex items-center gap-1.5">
             <Input
-              className="h-8 w-72 text-body"
+              className="h-7 w-72 text-body"
               placeholder={settings?.resolvedRootPath}
               title={rootDraft || settings?.resolvedRootPath}
               value={rootDraft}

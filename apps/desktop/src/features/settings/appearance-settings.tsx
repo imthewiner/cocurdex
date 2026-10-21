@@ -71,7 +71,7 @@ function Stepper({
   };
 
   return (
-    <div className="flex h-8 items-center overflow-hidden rounded-control border border-border bg-background/60 text-body text-foreground">
+    <div className="flex h-7 items-center overflow-hidden rounded-control border border-border bg-background/60 text-body text-foreground">
       <button
         aria-label={t("actions.decrease")}
         className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

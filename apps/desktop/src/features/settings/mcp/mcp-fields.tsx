@@ -12,7 +12,7 @@ export function McpInput({
   return (
     <Input
       className={cn(
-        "h-8 min-w-0 rounded-control border-border/70 bg-background/60 text-body shadow-none focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20",
+        "h-7 min-w-0 rounded-control border-border/70 bg-background/60 text-body shadow-none focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20",
         className,
       )}
       {...props}

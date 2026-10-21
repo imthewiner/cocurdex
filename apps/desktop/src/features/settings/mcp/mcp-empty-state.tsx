@@ -1,10 +1,11 @@
 import { Download, Server } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button, EmptyState } from "@/components/ui";
+import { JsonAddMenu } from "../json-add-menu";
+import { JsonDropArea } from "../json-drop-area";
 import type { JsonTextHandler } from "../json-file-import";
-import { McpAddMenu } from "./mcp-add-menu";
 import type { McpImportAgentSummary } from "./mcp-import-items";
-import { McpJsonDropArea } from "./mcp-json-drop-area";
+import { useMcpJsonMessages } from "./use-mcp-json-messages";
 
 export function McpEmptyState({
   summary,
@@ -18,15 +19,17 @@ export function McpEmptyState({
   onText: JsonTextHandler;
 }) {
   const { t, i18n } = useTranslation("settings");
+  const jsonMessages = useMcpJsonMessages();
   const canImportAgents = summary.count > 0;
   const agents = new Intl.ListFormat(i18n.language, {
     type: "conjunction",
   }).format(summary.agents.map((agent) => t(`mcp.import.source.${agent}`)));
 
   return (
-    <McpJsonDropArea
+    <JsonDropArea
       className="flex-col"
       label={t("mcp.empty.title")}
+      messages={jsonMessages}
       onText={onText}
     >
       <EmptyState
@@ -38,8 +41,9 @@ export function McpEmptyState({
                 {t("mcp.list.importFromAgents")}
               </Button>
             ) : null}
-            <McpAddMenu
+            <JsonAddMenu
               label={t("mcp.empty.add")}
+              messages={jsonMessages}
               variant={canImportAgents ? "outline" : "default"}
               onAddManually={onAddManually}
               onText={onText}
@@ -55,6 +59,6 @@ export function McpEmptyState({
         icon={<Server />}
         title={t("mcp.empty.title")}
       />
-    </McpJsonDropArea>
+    </JsonDropArea>
   );
 }

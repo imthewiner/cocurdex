@@ -1,28 +1,34 @@
 import { FileUp } from "lucide-react";
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { Text } from "@/components/ui";
 import { cn } from "@/lib";
 import {
   type JsonTextHandler,
   useFileDropTarget,
   useJsonFileImport,
-} from "../json-file-import";
+} from "./json-file-import";
 
-export function McpJsonDropArea({
+export interface JsonDropMessages {
+  invalidFile: string;
+  dropActive: string;
+  dropHint: string;
+}
+
+export function JsonDropArea({
   label,
   className,
+  messages,
   onText,
   children,
 }: {
   label?: string;
   className?: string;
+  messages: JsonDropMessages;
   onText: JsonTextHandler;
   children: ReactNode;
 }) {
-  const { t } = useTranslation("settings");
   const { importFiles } = useJsonFileImport({
-    invalidFileMessage: t("mcp.jsonImport.invalidFile"),
+    invalidFileMessage: messages.invalidFile,
     onText,
   });
   const { isDraggingFile, dropHandlers } = useFileDropTarget(importFiles);
@@ -49,10 +55,10 @@ export function McpJsonDropArea({
         >
           <FileUp className="mb-2 size-6 text-muted-foreground" />
           <Text size="sm" weight="medium">
-            {t("mcp.jsonImport.dropActive")}
+            {messages.dropActive}
           </Text>
           <Text size="xs" tone="muted">
-            {t("mcp.empty.dropHint")}
+            {messages.dropHint}
           </Text>
         </div>
       ) : null}

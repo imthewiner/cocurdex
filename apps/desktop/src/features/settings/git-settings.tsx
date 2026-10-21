@@ -265,7 +265,7 @@ export function GitSettingsPanel() {
             options={agentSelectOptions}
             showChevron={!isLoading}
             triggerAriaLabel={t("git.commitMessageModel.agentLabel")}
-            triggerClassName="h-8 w-auto max-w-56 gap-1 px-2 font-normal"
+            triggerClassName="h-7 w-auto max-w-56 gap-1 px-2 font-normal"
             triggerLabel={
               <>
                 <span className="min-w-0 truncate">
@@ -336,7 +336,7 @@ export function GitSettingsPanel() {
             ]}
             openCodeVariantValue={openCodeVariantValue}
             showProviderGroupLabels={shouldShowProviderGroupLabels(agentId)}
-            triggerClassName="h-8 w-auto max-w-56 gap-1 px-2 font-normal"
+            triggerClassName="h-7 w-auto max-w-56 gap-1 px-2 font-normal"
             triggerValues={triggerValues}
             value={modelValue}
             onChange={(next) => {

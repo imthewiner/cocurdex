@@ -325,7 +325,7 @@ export function ProviderAuthSection({
             ) : (
               <Input
                 autoFocus
-                className="h-8 flex-1"
+                className="h-7 flex-1"
                 placeholder={prompt.placeholder ?? undefined}
                 type={prompt.type === "secret" ? "password" : "text"}
                 value={promptValue}

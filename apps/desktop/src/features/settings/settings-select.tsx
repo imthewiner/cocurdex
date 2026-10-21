@@ -85,7 +85,7 @@ export function SettingsSelect({
       triggerAriaLabel={ariaLabel}
       triggerRadius="control"
       triggerClassName={cn(
-        "h-8 w-auto max-w-56 gap-1 px-2 font-normal",
+        "h-7 w-auto max-w-56 gap-1 px-2 font-normal",
         !selectedOption && "text-muted-foreground",
         className,
       )}
@@ -130,7 +130,7 @@ export function SettingsSearchableSelect({
       searchPlaceholder={searchPlaceholder}
       triggerAriaLabel={ariaLabel}
       triggerClassName={cn(
-        "h-8 w-auto max-w-56 gap-1 px-2 font-normal",
+        "h-7 w-auto max-w-56 gap-1 px-2 font-normal",
         className,
       )}
       triggerLabel={triggerLabel}

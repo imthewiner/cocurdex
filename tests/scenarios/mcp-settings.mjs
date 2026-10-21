@@ -146,7 +146,7 @@ runScenario("mcp-settings", {
         });
         await clickByRole(session, {
           role: "menuitem",
-          name: await t("mcp.empty.addManually"),
+          name: await t("jsonImport.addManually"),
         });
         await fillTextbox(session, await t("mcp.fields.name"), "fixture");
         await fillTextbox(
@@ -190,7 +190,7 @@ runScenario("mcp-settings", {
         await waitForRole(session, { role: "menuitem", name: importLabel });
         await waitForRole(session, {
           role: "menuitem",
-          name: await t("mcp.empty.chooseFile"),
+          name: await t("jsonImport.chooseFile"),
         });
         await session.send("Input.dispatchKeyEvent", {
           type: "keyDown",

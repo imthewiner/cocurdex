@@ -2194,7 +2194,9 @@ export default interface Resources {
       workspace: "Workspace";
     };
     jsonImport: {
+      addManually: "Fill in manually";
       cancel: "Cancel";
+      chooseFile: "Choose JSON file…";
       continue: "Continue";
       pasteButton: "Paste JSON";
       pasteLabel: "JSON text";
@@ -2285,8 +2287,6 @@ export default interface Resources {
       editJson: "Edit mcp.json";
       empty: {
         add: "Add server";
-        addManually: "Fill in manually";
-        chooseFile: "Choose JSON file…";
         description: "Add a local command or remote endpoint so Pi can use its tools.";
         discovered_one: "{{count}} server found in {{agents}}, ready to import.";
         discovered_other: "{{count}} servers found in {{agents}}, ready to import.";
@@ -2345,13 +2345,10 @@ export default interface Resources {
       jsonDescription: "Edit the config file directly. Pi's rules validate it on save.";
       jsonImport: {
         dropActive: "Drop to import";
-        dropHint: "Drop a JSON file here, or click to choose one.";
-        intro: "Add servers from an mcpServers snippet, such as one from a server's README.";
         invalidFile: "Choose a JSON text file.";
         label: "Import from JSON";
         pasteDescription: 'Paste an mcpServers object, a map of servers, or a single "name": { … } entry.';
         pasteTitle: "Paste MCP JSON";
-        title: "Import JSON";
       };
       list: {
         add: "Add";
@@ -2492,7 +2489,6 @@ export default interface Resources {
         add: "Add";
         clearKey: "Clear key";
         delete: "Delete";
-        importJson: "Import JSON";
         newProvider: "New";
         refresh: "Refresh";
         save: "Save";
@@ -2587,7 +2583,7 @@ export default interface Resources {
         confirm: "Import";
         description: "Import a pi-style models.json. Each provider is upserted with its models. Literal apiKey values are stored; $ENV and !command keys must be set manually.";
         dropActive: "Drop to import";
-        dropHint: "Drop a JSON file here, or click to choose one.";
+        dropAreaHint: "Imports providers from a pi-style models.json after you confirm.";
         importing: "Importing…";
         intro: "Add or update providers and models from a pi-style models.json.";
         invalidFile: "Choose a JSON text file.";

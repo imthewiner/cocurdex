@@ -3,7 +3,7 @@ import {
   type ProviderImportWarning,
   parseProviderJson,
 } from "@cocurdex/shared";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -15,11 +15,12 @@ import {
   DialogTitle,
   Text,
 } from "@/components/ui";
-import { JsonImportDropzone } from "../json-import-dropzone";
+import type { JsonTextHandler } from "../json-file-import";
 import { providerImportWarningMessage } from "./import-warning-message";
 
-interface ImportProviderJsonDialogProps {
+interface ProviderJsonImportProps {
   onImport(json: string): Promise<void>;
+  children(onText: JsonTextHandler): ReactNode;
 }
 
 interface ImportPreview {
@@ -28,9 +29,10 @@ interface ImportPreview {
   warnings: ProviderImportWarning[];
 }
 
-export function ImportProviderJsonDialog({
+export function ProviderJsonImport({
   onImport,
-}: ImportProviderJsonDialogProps) {
+  children,
+}: ProviderJsonImportProps) {
   const { t } = useTranslation("settings");
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [error, setError] = useState("");
@@ -82,17 +84,7 @@ export function ImportProviderJsonDialog({
 
   return (
     <>
-      <JsonImportDropzone
-        dropActiveHint={t("providers.importJson.dropActive")}
-        dropHint={t("providers.importJson.dropHint")}
-        intro={t("providers.importJson.intro")}
-        invalidFileMessage={t("providers.importJson.invalidFile")}
-        label={t("providers.importJson.label")}
-        pasteDescription={t("providers.importJson.pasteDescription")}
-        pasteTitle={t("providers.importJson.pasteTitle")}
-        title={t("providers.importJson.title")}
-        onText={handleText}
-      />
+      {children(handleText)}
       <Dialog
         open={preview !== null}
         onOpenChange={(open) => {

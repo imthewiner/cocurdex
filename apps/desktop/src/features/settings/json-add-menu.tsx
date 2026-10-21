@@ -1,12 +1,11 @@
 import {
   ChevronDown,
   ClipboardPaste,
-  Download,
   FileUp,
   PenLine,
   Plus,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -15,28 +14,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { type JsonTextHandler, useJsonFileImport } from "../json-file-import";
-import { JsonFileInput } from "../json-import-dropzone";
-import { JsonPasteDialog } from "../json-paste-dialog";
+import { type JsonTextHandler, useJsonFileImport } from "./json-file-import";
+import { JsonFileInput } from "./json-import-dropzone";
+import { JsonPasteDialog } from "./json-paste-dialog";
 
-export function McpAddMenu({
+export interface JsonImportMessages {
+  invalidFile: string;
+  pasteTitle: string;
+  pasteDescription: string;
+}
+
+export function JsonAddMenu({
   label,
   variant,
+  messages,
+  extraItems,
   onAddManually,
-  onImportAgents,
   onText,
 }: {
   label: string;
   variant: "default" | "outline" | "secondary";
+  messages: JsonImportMessages;
+  extraItems?: ReactNode;
   onAddManually(): void;
-  onImportAgents?: () => void;
   onText: JsonTextHandler;
 }) {
   const { t } = useTranslation("settings");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPasteOpen, setIsPasteOpen] = useState(false);
   const { importFile } = useJsonFileImport({
-    invalidFileMessage: t("mcp.jsonImport.invalidFile"),
+    invalidFileMessage: messages.invalidFile,
     onText,
   });
 
@@ -55,29 +62,24 @@ export function McpAddMenu({
         <DropdownMenuContent align="end" className="min-w-44">
           <DropdownMenuItem onClick={onAddManually}>
             <PenLine className="size-3.5" />
-            {t("mcp.empty.addManually")}
+            {t("jsonImport.addManually")}
           </DropdownMenuItem>
-          {onImportAgents ? (
-            <DropdownMenuItem onClick={onImportAgents}>
-              <Download className="size-3.5" />
-              {t("mcp.list.importFromAgents")}
-            </DropdownMenuItem>
-          ) : null}
+          {extraItems}
           <DropdownMenuItem onClick={() => setIsPasteOpen(true)}>
             <ClipboardPaste className="size-3.5" />
             {t("jsonImport.pasteButton")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
             <FileUp className="size-3.5" />
-            {t("mcp.empty.chooseFile")}
+            {t("jsonImport.chooseFile")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <JsonFileInput inputRef={fileInputRef} onFile={importFile} />
       <JsonPasteDialog
-        description={t("mcp.jsonImport.pasteDescription")}
+        description={messages.pasteDescription}
         open={isPasteOpen}
-        title={t("mcp.jsonImport.pasteTitle")}
+        title={messages.pasteTitle}
         onOpenChange={setIsPasteOpen}
         onText={onText}
       />

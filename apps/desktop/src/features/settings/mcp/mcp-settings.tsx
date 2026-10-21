@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
+import { JsonDropArea } from "../json-drop-area";
 import { McpEmptyState } from "./mcp-empty-state";
 import { McpImportDialog } from "./mcp-import-dialog";
 import {
@@ -15,7 +16,6 @@ import {
   importItemsFromJson,
   type McpImportItem,
 } from "./mcp-import-items";
-import { McpJsonDropArea } from "./mcp-json-drop-area";
 import { McpJsonEditor } from "./mcp-json-editor";
 import { type McpSelection, resolveSelection } from "./mcp-selection";
 import { McpServerDetail } from "./mcp-server-detail";
@@ -23,6 +23,7 @@ import { nextServerName } from "./mcp-server-form";
 import { McpServerList } from "./mcp-server-list";
 import { type McpEditorMode, McpSettingsHeader } from "./mcp-settings-header";
 import { McpToolsCard } from "./mcp-tools-card";
+import { useMcpJsonMessages } from "./use-mcp-json-messages";
 import { mcpStatusKey, useMcpSettings } from "./use-mcp-settings";
 
 interface ImportState {
@@ -55,6 +56,7 @@ function errorMessage(error: unknown) {
 export function McpSettingsPanel() {
   const { t } = useTranslation("settings");
   const mcp = useMcpSettings();
+  const jsonMessages = useMcpJsonMessages();
   const [mode, setMode] = useState<McpEditorMode>("form");
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState<McpSelection | null>(null);
@@ -214,7 +216,11 @@ export function McpSettingsPanel() {
         />
       ) : null}
       {view === "servers" ? (
-        <McpJsonDropArea className="gap-6" onText={importJsonText}>
+        <JsonDropArea
+          className="gap-6"
+          messages={jsonMessages}
+          onText={importJsonText}
+        >
           <McpServerList
             project={mcp.project?.servers ?? null}
             query={query}
@@ -272,7 +278,7 @@ export function McpSettingsPanel() {
               ) : null}
             </div>
           </div>
-        </McpJsonDropArea>
+        </JsonDropArea>
       ) : null}
 
       <McpImportDialog
