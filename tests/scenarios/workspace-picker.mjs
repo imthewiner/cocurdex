@@ -67,6 +67,15 @@ async function glidePointer(session, from, to) {
   }
 }
 
+function popupSettled() {
+  const popup = document.querySelector('[data-slot="combobox-content"]');
+  return (
+    Boolean(popup) &&
+    !popup.hasAttribute("data-starting-style") &&
+    popup.getAnimations({ subtree: true }).length === 0
+  );
+}
+
 function isHighlighted(text) {
   return (
     document
@@ -162,6 +171,7 @@ runScenario("workspace-picker", {
           workspaceName,
           UI_TIMEOUT_MS,
         );
+        await session.waitUntil(popupSettled, null, UI_TIMEOUT_MS);
         const option = await session.run((name) => {
           const items = [
             ...document.querySelectorAll('[data-slot="combobox-item"]'),
@@ -355,14 +365,7 @@ runScenario("workspace-picker", {
           workspaceName,
           UI_TIMEOUT_MS,
         );
-        await session.waitUntil(
-          () =>
-            document
-              .querySelector('[data-slot="combobox-content"]')
-              ?.getAnimations().length === 0,
-          null,
-          UI_TIMEOUT_MS,
-        );
+        await session.waitUntil(popupSettled, null, UI_TIMEOUT_MS);
         const option = await session.run((name) => {
           const item = [
             ...document.querySelectorAll('[data-slot="combobox-item"]'),
