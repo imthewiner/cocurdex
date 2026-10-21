@@ -4,9 +4,10 @@ import {
   PI_MCP_AGENT_ID,
 } from "@cocurdex/shared";
 
+export type McpAgentAccessMode = "native" | "injected";
+
 export type McpAgentAccess =
-  | { kind: "native" }
-  | { kind: "injected" }
+  | { kind: McpAgentAccessMode }
   | { kind: "serverUnsupported"; reason: AgentMcpUnsupportedReason };
 
 export interface McpAgentRow {

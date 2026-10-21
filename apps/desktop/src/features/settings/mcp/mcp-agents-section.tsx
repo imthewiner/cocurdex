@@ -4,6 +4,7 @@ import {
   type McpServerConfig,
   mcpServerAgents,
 } from "@cocurdex/shared";
+import type { TFunction } from "i18next";
 import { useAtomValue } from "jotai";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,8 @@ import {
 } from "@/features/sessions";
 import { desktopApi } from "@/lib";
 import {
+  type McpAgentAccess,
+  type McpAgentAccessMode,
   type McpAgentRow,
   mcpAgentRows,
   toggleMcpAgent,
@@ -25,6 +28,20 @@ import { useMcpInjectionQuery } from "./mcp-queries";
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function accessModeDescription(
+  t: TFunction<"settings">,
+  mode: McpAgentAccessMode,
+) {
+  return t(`mcp.agents.access.${mode}`);
+}
+
+function accessDescription(t: TFunction<"settings">, access: McpAgentAccess) {
+  if (access.kind === "serverUnsupported") {
+    return t(`mcp.agents.serverUnsupported.${access.reason}`);
+  }
+  return accessModeDescription(t, access.kind);
 }
 
 function McpAgentRowItem({
@@ -37,10 +54,7 @@ function McpAgentRowItem({
   const { t } = useTranslation("settings");
   const switchId = useId();
   const descriptionId = useId();
-  const description =
-    row.access.kind === "serverUnsupported"
-      ? t(`mcp.agents.serverUnsupported.${row.access.reason}`)
-      : t(`mcp.agents.access.${row.access.kind}`);
+  const description = accessDescription(t, row.access);
   return (
     <div
       className="flex items-center justify-between gap-6 py-3"
