@@ -6,11 +6,10 @@ import type {
   TitleModelSelection,
 } from "@cocurdex/shared";
 import { useSetAtom } from "jotai";
-import { Search } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Button, Input, Spinner } from "@/components/ui";
+import { Button, Spinner } from "@/components/ui";
 import {
   bootstrapProviderModelsAtom,
   invalidateProviderModelCache,
@@ -19,6 +18,7 @@ import { cn, desktopApi, useMountEffect } from "@/lib";
 import { JsonAddMenu } from "../json-add-menu";
 import { JsonDropArea } from "../json-drop-area";
 import { SettingsListItem } from "../settings-list-item";
+import { SettingsSearchInput } from "../settings-search-input";
 import { SettingsSearchableSelect } from "../settings-select";
 import { providerImportWarningMessage } from "./import-warning-message";
 import { ProviderEditor } from "./provider-editor";
@@ -601,10 +601,8 @@ export function ProviderSettingsPanel() {
         <JsonDropArea className="gap-6" messages={jsonMessages} onText={onText}>
           <div className="flex min-h-0 w-72 shrink-0 flex-col gap-3">
             <div className="flex shrink-0 items-center gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/65" />
-                <Input
-                  className="h-7 rounded-control border-border/70 bg-background/60 ps-9 pe-3 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
+              <div className="min-w-0 flex-1">
+                <SettingsSearchInput
                   placeholder={t("providers.searchPlaceholder")}
                   value={providerQuery}
                   onChange={(event) => setProviderQuery(event.target.value)}
@@ -702,7 +700,7 @@ export function ProviderSettingsPanel() {
                   onUpdateProviderEnabled={updateProviderEnabled}
                 />
               ) : (
-                <div className="flex min-h-[160px] items-center justify-center rounded-control border border-dashed border-border/60 px-6 text-center text-body text-muted-foreground">
+                <div className="flex min-h-[160px] items-center justify-center rounded-card bg-settings-surface px-6 text-center text-body text-muted-foreground">
                   {t("providers.templates.description")}
                 </div>
               )}

@@ -4,11 +4,11 @@ import type {
   SkillCatalogSearchResult,
   SkillCatalogSource,
 } from "@cocurdex/shared";
-import { Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input, Spinner, Text } from "@/components/ui";
+import { Spinner, Text } from "@/components/ui";
 import { SettingsListItem } from "../settings-list-item";
+import { SettingsSearchInput } from "../settings-search-input";
 import { SkillCatalogDetail } from "./skill-catalog-detail";
 import { SkillSourceDetail } from "./skill-source-detail";
 import { skillsApi } from "./skills-api";
@@ -65,15 +65,10 @@ export function SkillDiscoverView({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 gap-6">
       <div className="flex min-h-0 w-72 shrink-0 flex-col gap-3">
-        <form
-          className="relative shrink-0"
-          onSubmit={(event) => void submit(event)}
-        >
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/65" />
-          <Input
+        <form className="shrink-0" onSubmit={(event) => void submit(event)}>
+          <SettingsSearchInput
             aria-busy={isSearching}
             aria-label={t("skills.discover.search")}
-            className="h-7 rounded-control border-border/70 bg-background/60 ps-9 pe-9 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
             placeholder={t("skills.discover.search")}
             type="search"
             value={query}
@@ -81,13 +76,8 @@ export function SkillDiscoverView({
               setQuery(event.target.value);
               if (!event.target.value.trim()) setSearch(null);
             }}
+            trailing={isSearching ? <Spinner size="sm" /> : null}
           />
-          {isSearching ? (
-            <Spinner
-              className="absolute end-3 top-1/2 -translate-y-1/2"
-              size="sm"
-            />
-          ) : null}
         </form>
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="flex flex-col gap-2 pe-1">

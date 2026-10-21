@@ -186,7 +186,7 @@ export function ProviderModelsSection({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-control border border-border/40 bg-muted">
+      <div className="overflow-hidden rounded-control bg-muted">
         {visibleModels.length === 0 ? (
           <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
             {readOnly
