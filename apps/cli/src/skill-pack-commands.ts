@@ -1,19 +1,15 @@
-import {
-  getProductSkillsPackVersion,
-  getProductSkillsStatus,
-  installProductSkills,
-  PRODUCT_SKILL_NAMES,
-  removeProductSkills,
-  type SkillScope,
-} from "@cocurdex/product-skills";
+import path from "node:path";
+import { requestDaemon } from "@cocurdex/daemon/client";
+import type {
+  ProductSkillScope,
+  ProductSkillsRequestPayload,
+} from "@cocurdex/shared";
+import { withDaemon } from "./daemon-command";
 import type { ParsedArgs } from "./parse-args";
 import { printResult, stringFlag } from "./parse-args";
+import { findWorkspaceRootPath } from "./workspace-root";
 
-function resolveRoot(parsed: ParsedArgs): string {
-  return stringFlag(parsed, "root") ?? process.cwd();
-}
-
-function parseScope(parsed: ParsedArgs): SkillScope {
+function parseScope(parsed: ParsedArgs): ProductSkillScope {
   const value = stringFlag(parsed, "scope");
   if (value === "project" || value === "global") {
     return value;
@@ -21,71 +17,93 @@ function parseScope(parsed: ParsedArgs): SkillScope {
   throw new Error("Missing or invalid --scope (project|global)");
 }
 
+async function resolvePayload(
+  parsed: ParsedArgs,
+): Promise<ProductSkillsRequestPayload> {
+  const scope = parseScope(parsed);
+  if (scope === "global") {
+    return { scope, workspaceRootPath: null };
+  }
+  const target = path.resolve(stringFlag(parsed, "root") ?? process.cwd());
+  return { scope, workspaceRootPath: await findWorkspaceRootPath(target) };
+}
+
+async function listPack(parsed: ParsedArgs) {
+  const status = await withDaemon(() =>
+    requestDaemon("skills.pack.getStatus", {
+      scope: "global",
+      workspaceRootPath: null,
+    }),
+  );
+  const payload = {
+    packVersion: status.packVersion,
+    sourceAvailable: status.sourceAvailable,
+    skills: status.packSkills.map((skill) => skill.name),
+    packSkills: status.packSkills,
+  };
+  if (parsed.flags.has("json")) {
+    printResult(payload, parsed);
+    return;
+  }
+  for (const skill of status.packSkills) {
+    console.log(`${skill.name}\t${skill.description ?? ""}`);
+  }
+}
+
+async function installPack(parsed: ParsedArgs) {
+  const payload = await resolvePayload(parsed);
+  const result = await withDaemon(() =>
+    requestDaemon("skills.pack.install", payload),
+  );
+  if (result.action !== "conflict") {
+    printResult(result, parsed);
+    return;
+  }
+  const message = [
+    "Conflict: product skills already exist without a Cocurdex managed marker.",
+    `Paths: ${result.agentsSkillsDir}`,
+    `Skills: ${result.conflictSkills.join(", ")}`,
+    "Remove or rename them, then retry.",
+  ].join("\n");
+  if (parsed.flags.has("json")) {
+    printResult({ ...result, error: message }, parsed);
+  } else {
+    console.error(message);
+  }
+  process.exitCode = 1;
+}
+
+const PACK_ACTIONS: Record<string, (parsed: ParsedArgs) => Promise<void>> = {
+  list: listPack,
+  status: async (parsed) => {
+    const payload = await resolvePayload(parsed);
+    printResult(
+      await withDaemon(() => requestDaemon("skills.pack.getStatus", payload)),
+      parsed,
+    );
+  },
+  install: installPack,
+  remove: async (parsed) => {
+    const payload = await resolvePayload(parsed);
+    printResult(
+      await withDaemon(() => requestDaemon("skills.pack.remove", payload)),
+      parsed,
+    );
+  },
+};
+
 export async function handleSkillPackCommand(
   action: string | undefined,
   _args: string[],
   parsed: ParsedArgs,
 ): Promise<boolean> {
-  if (!action) {
+  const handler =
+    action === "uninstall" ? PACK_ACTIONS.remove : PACK_ACTIONS[action ?? ""];
+  if (!handler) {
     return false;
   }
-
-  if (action === "list") {
-    const payload = {
-      packVersion: await getProductSkillsPackVersion(),
-      skills: [...PRODUCT_SKILL_NAMES],
-    };
-    if (parsed.flags.has("json")) {
-      printResult(payload, parsed);
-    } else {
-      console.log(`packVersion: ${payload.packVersion}`);
-      for (const name of payload.skills) {
-        console.log(name);
-      }
-    }
-    return true;
-  }
-
-  if (action === "status") {
-    const scope = parseScope(parsed);
-    const root = scope === "project" ? resolveRoot(parsed) : undefined;
-    const status = await getProductSkillsStatus(scope, root);
-    printResult(status, parsed);
-    return true;
-  }
-
-  if (action === "install") {
-    const scope = parseScope(parsed);
-    const root = scope === "project" ? resolveRoot(parsed) : undefined;
-    const result = await installProductSkills(scope, root);
-    if (result.action === "conflict") {
-      const message = [
-        "Conflict: product skills already exist without a Cocurdex managed marker.",
-        `Paths: ${result.agentsSkillsDir}`,
-        `Skills: ${result.conflictSkills.join(", ")}`,
-        "Remove or rename them, then retry.",
-      ].join("\n");
-      if (parsed.flags.has("json")) {
-        printResult({ ...result, error: message }, parsed);
-      } else {
-        console.error(message);
-      }
-      process.exitCode = 1;
-      return true;
-    }
-    printResult(result, parsed);
-    return true;
-  }
-
-  if (action === "remove" || action === "uninstall") {
-    const scope = parseScope(parsed);
-    const root = scope === "project" ? resolveRoot(parsed) : undefined;
-    const result = await removeProductSkills(scope, root);
-    printResult(result, parsed);
-    return true;
-  }
-
-  return false;
+  await handler(parsed);
+  return true;
 }
 
 export function skillPackUsageLines(): string[] {

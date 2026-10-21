@@ -71,6 +71,65 @@ describe("cocurdex skills against a running daemon", () => {
       env: isolatedHome(home),
     });
 
+  it("manages the cocurdex pack through the daemon", async () => {
+    const listed = await cli(["skills", "pack", "list", "--json"]);
+    expect(listed.code).toBe(0);
+    const pack = JSON.parse(listed.stdout);
+    expect(pack.sourceAvailable).toBe(true);
+    expect(pack.skills).toContain("cocurdex-skills");
+    expect(
+      pack.packSkills.every(
+        (skill: { description: string | null }) => skill.description,
+      ),
+    ).toBe(true);
+
+    const nested = path.join(workspace, "src", "app");
+    mkdirSync(nested, { recursive: true });
+    const project = ["--scope", "project", "--root", nested, "--json"];
+    const installed = await cli(["skills", "pack", "install", ...project]);
+    expect(installed.code).toBe(0);
+    expect(JSON.parse(installed.stdout)).toMatchObject({
+      action: "installed",
+      workspaceRoot: workspace,
+    });
+    const skillFile = path.join(
+      workspace,
+      ".agents",
+      "skills",
+      "cocurdex-skills",
+      "SKILL.md",
+    );
+    writeFileSync(skillFile, "edited\n");
+    const status = await cli(["skills", "pack", "status", ...project]);
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      installed: true,
+      modified: true,
+    });
+    const restored = await cli(["skills", "pack", "install", ...project]);
+    expect(JSON.parse(restored.stdout)).toMatchObject({
+      action: "restored",
+      modified: false,
+    });
+
+    const removed = await cli(["skills", "pack", "remove", ...project]);
+    expect(JSON.parse(removed.stdout)).toMatchObject({ removed: true });
+    expect(existsSync(skillFile)).toBe(false);
+
+    const outside = tempDirs.createSync("cocu-skill-outside-");
+    const refused = await cli([
+      "skills",
+      "pack",
+      "install",
+      "--scope",
+      "project",
+      "--root",
+      outside,
+    ]);
+    expect(refused.code).not.toBe(0);
+    expect(refused.stderr).toContain("No registered workspace contains");
+    expect(existsSync(path.join(outside, ".agents"))).toBe(false);
+  });
+
   it("inspects a folder, installs into a workspace, links, lists, and removes", async () => {
     const inspected = await cli(["skills", "inspect", source, "--json"]);
     expect(inspected.code).toBe(0);

@@ -15,6 +15,7 @@ import {
   handleSkillPackCommand,
   skillPackUsageLines,
 } from "./skill-pack-commands";
+import { isInside } from "./workspace-root";
 
 type SkillAction = (args: string[], parsed: ParsedArgs) => Promise<void>;
 
@@ -31,14 +32,6 @@ function requireName(args: string[], usage: string) {
     throw new Error(`Usage: cocurdex skills ${usage}`);
   }
   return name;
-}
-
-function isInside(parent: string, child: string) {
-  const relative = path.relative(path.resolve(parent), path.resolve(child));
-  return (
-    relative === "" ||
-    (!relative.startsWith("..") && !path.isAbsolute(relative))
-  );
 }
 
 async function resolveWorkspaceId(parsed: ParsedArgs) {

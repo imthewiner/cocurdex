@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@cocurdex/daemon": "workspace:*",
-    "@cocurdex/product-skills": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*",
     "@earendil-works/pi-coding-agent": "1.2.0",
