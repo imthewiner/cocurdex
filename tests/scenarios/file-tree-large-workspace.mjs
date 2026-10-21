@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
-import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickPoint } from "./lib/locate.mjs";
 import { closeEditorPanel, showPanelView } from "./lib/navigate.mjs";
 
@@ -97,8 +97,7 @@ runScenario("file-tree-large-workspace", {
           "zzz/auth/token.ts",
           UI_TIMEOUT_MS,
         );
-        const shown = await session.run(findTreeRow, "zzz/README.md");
-        check(Boolean(shown), "sibling files of the folder are listed too");
+        await session.waitUntil(findTreeRow, "zzz/README.md", UI_TIMEOUT_MS);
         return {};
       },
     ],

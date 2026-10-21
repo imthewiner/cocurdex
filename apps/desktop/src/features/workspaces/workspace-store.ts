@@ -126,10 +126,6 @@ export const bootstrapWorkspacesAtom = atom(
     set(activeWorkspaceIdAtom, active?.id ?? null);
     set(lastSelectedWorkspaceIdAtom, active?.id ?? null);
     dropOpenPdfsOutsideWorkspaces(get, set);
-
-    if (active) {
-      markWorkspaceOpened(get, set, active.id);
-    }
   },
 );
 

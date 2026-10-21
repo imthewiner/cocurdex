@@ -197,6 +197,11 @@ runScenario("workspace-picker", {
         );
         await session.send("Input.dispatchMouseEvent", {
           type: "mouseMoved",
+          ...option.otherPoint,
+        });
+        await session.waitUntil(isHighlighted, option.otherText, UI_TIMEOUT_MS);
+        await session.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
           ...option.point,
         });
         await delay(PREVIEW_EARLY_MS);
