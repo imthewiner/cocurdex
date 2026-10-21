@@ -57,7 +57,7 @@
    * instead of haze — the opposite of the full-width composer plane. */
   --chat-surface-bubble: color-mix(
     in srgb,
-    var(--foreground) 3.5%,
+    var(--foreground) 5%,
     var(--chat-canvas)
   );
   --chat-surface-subtle: color-mix(in srgb, var(--muted) 72%, transparent);
@@ -94,8 +94,12 @@
   --chat-jump-hover: var(--accent);
   --chat-code-inline: var(--muted);
   --chat-code-inline-user: color-mix(in srgb, var(--primary) 10%, var(--muted));
-  --chat-code-block: color-mix(in srgb, var(--muted) 80%, var(--background));
-  --chat-code-panel: var(--background);
+  --chat-code-block: color-mix(
+    in srgb,
+    var(--foreground) 4%,
+    var(--background)
+  );
+  --chat-code-panel: var(--chat-code-block);
   --chat-border-soft: color-mix(in srgb, var(--border) 70%, transparent);
   --chat-border: var(--border);
   --chat-border-strong: color-mix(
@@ -170,8 +174,6 @@
     color-mix(in srgb, var(--foreground) 14%, transparent);
   --chat-shadow-floating: 0 12px 32px
     color-mix(in srgb, var(--foreground) 14%, transparent);
-  --chat-shadow-inline-inset: inset 0 1px 0
-    color-mix(in srgb, var(--background) 72%, transparent);
   --chat-shadow-code-inset: inset 0 1px 0
     color-mix(in srgb, var(--background) 64%, transparent);
 
@@ -439,6 +441,7 @@
    * --border (white at 10%) so chat bubbles and tables keep a subtle but
    * visible outline without looking heavy. */
   --chat-border-soft: var(--border);
+  --chat-code-block: color-mix(in srgb, var(--muted) 80%, var(--background));
   /* Lift code panels above the card-level canvas (muted is brighter than card). */
   --chat-code-panel: color-mix(in srgb, var(--muted) 40%, var(--card));
   /* Lighter status/git accent steps for dark surfaces (see :root above). */

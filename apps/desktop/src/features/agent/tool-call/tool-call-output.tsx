@@ -97,7 +97,7 @@ export function ToolCallOutputContent({
 }) {
   if (renderMarkdown) {
     return (
-      <div className="max-h-[40vh] overflow-auto rounded-control border border-chat-border-soft bg-chat-code-panel p-3">
+      <div className="max-h-[40vh] overflow-auto rounded-control bg-chat-code-panel p-3">
         <MarkdownRenderer
           className="text-body text-chat-fg-secondary"
           content={output}
@@ -106,7 +106,7 @@ export function ToolCallOutputContent({
     );
   }
   return (
-    <pre className="max-h-[40vh] overflow-auto rounded-control border border-chat-border-soft bg-chat-code-panel p-3 font-mono text-body leading-5 whitespace-pre-wrap break-words text-chat-fg-secondary [font-variant-ligatures:none]">
+    <pre className="max-h-[40vh] overflow-auto rounded-control bg-chat-code-panel p-3 font-mono text-body leading-5 whitespace-pre-wrap break-words text-chat-fg-secondary [font-variant-ligatures:none]">
       {output}
     </pre>
   );

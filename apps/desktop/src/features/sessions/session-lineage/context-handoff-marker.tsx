@@ -90,7 +90,7 @@ export function ContextHandoffMarker({
         </MarkerRule>
       </button>
       {expanded ? (
-        <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-card border border-chat-border-soft bg-chat-surface-subtle px-4 py-3 text-meta text-chat-fg-secondary">
+        <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-card bg-chat-code-block px-4 py-3 text-meta text-chat-fg-secondary">
           {transfer.handoffText}
         </pre>
       ) : null}

@@ -216,7 +216,7 @@ export function ToolCallDetailBody({
           </div>
           {/* Each code panel owns its bounded scroll region, with default scroll
               chaining so the surrounding chat keeps scrolling at panel edges. */}
-          <dl className="flex max-h-[40vh] flex-col gap-1.5 overflow-auto rounded-control border border-chat-border-soft bg-chat-code-panel p-3 text-body leading-5">
+          <dl className="flex max-h-[40vh] flex-col gap-1.5 overflow-auto rounded-control bg-chat-code-panel p-3 text-body leading-5">
             {inputEntries.map((entry) => {
               const multiline = isMultilineInputField(entry);
               return (
@@ -255,7 +255,7 @@ export function ToolCallDetailBody({
             <Terminal className="size-3" />
             {detailLabel}
           </div>
-          <pre className="overflow-x-auto whitespace-pre rounded-control border border-chat-border-soft bg-chat-code-panel p-3 font-mono text-body leading-5 text-chat-fg-secondary [font-variant-ligatures:none]">
+          <pre className="overflow-x-auto whitespace-pre rounded-control bg-chat-code-panel p-3 font-mono text-body leading-5 text-chat-fg-secondary [font-variant-ligatures:none]">
             {inputFallback}
           </pre>
         </div>
@@ -278,12 +278,12 @@ export function ToolCallDetailBody({
             />
           ) : null}
           {outputLoadStatus === "loading" ? (
-            <div className="flex items-center gap-2 rounded-control border border-chat-border-soft bg-chat-code-panel p-3 text-body text-chat-fg-muted">
+            <div className="flex items-center gap-2 rounded-control bg-chat-code-panel p-3 text-body text-chat-fg-muted">
               <Spinner size="xs" />
               <span>{t("toolCalls.outputLoading")}</span>
             </div>
           ) : outputLoadStatus === "error" ? (
-            <div className="rounded-control border border-chat-border-soft bg-chat-code-panel p-3 text-body text-chat-fg-muted">
+            <div className="rounded-control bg-chat-code-panel p-3 text-body text-chat-fg-muted">
               {t("toolCalls.outputLoadError", { message: outputErrorMessage })}
             </div>
           ) : output ? (

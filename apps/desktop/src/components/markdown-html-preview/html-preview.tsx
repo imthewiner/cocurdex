@@ -52,7 +52,7 @@ export function HtmlPreview(props: CustomRendererProps) {
 
   return (
     <Tabs
-      className="my-4 gap-0 overflow-hidden rounded-card border border-chat-border-soft bg-chat-code-block"
+      className="my-4 gap-0 overflow-hidden rounded-card bg-chat-code-block"
       defaultValue={location === "browser" ? "code" : "preview"}
     >
       <div className="flex min-h-9 items-center justify-between gap-2 border-b border-chat-border-soft px-2">

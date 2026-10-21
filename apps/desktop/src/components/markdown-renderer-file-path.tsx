@@ -94,7 +94,7 @@ export function MarkdownFilePathCode({
     return (
       <code
         className={cn(
-          "break-words rounded-control border px-1.5 py-0.5 font-normal text-[0.92em]",
+          "break-words rounded-control px-1.5 py-0.5 font-normal text-[0.92em]",
           getInlineCodeToneClass(tone),
           className,
         )}
@@ -128,7 +128,7 @@ export function MarkdownFilePathCode({
     <Tag
       className={cn(
         !isProse &&
-          "break-words rounded-control border px-1.5 py-0.5 font-normal text-[0.92em]",
+          "break-words rounded-control px-1.5 py-0.5 font-normal text-[0.92em]",
         !isProse && getInlineCodeToneClass(tone),
         className,
         exists && [
