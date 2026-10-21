@@ -296,8 +296,8 @@ runScenario("mcp-settings", {
         const opencode = await agentSwitch("opencode");
         check(pi?.checked === true, "Pi receives servers by default", pi);
         check(
-          opencode?.disabled === true,
-          "OpenCode cannot receive servers",
+          opencode?.disabled === false,
+          "OpenCode can receive servers",
           opencode,
         );
         const codex = await agentSwitch("codex");

@@ -22,7 +22,7 @@ describe("mcpAgentRows", () => {
       ["pi", true, "native", true],
       ["claude-agent", false, "injected", true],
       ["codex", true, "injected", true],
-      ["opencode", false, "agentUnsupported", false],
+      ["opencode", false, "injected", true],
     ]);
   });
 

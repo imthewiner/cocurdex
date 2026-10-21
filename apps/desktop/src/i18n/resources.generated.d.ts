@@ -2262,7 +2262,6 @@ export default interface Resources {
       };
       agents: {
         access: {
-          agentUnsupported: "Cannot receive Cocurdex MCP servers yet.";
           injected: "Added to new sessions. OAuth servers need a sign-in in that agent too.";
           native: "Connects through Cocurdex, including sign-in and project servers.";
         };

@@ -1,5 +1,4 @@
 import type { AgentId } from "./contracts";
-import { isAcpRegistryAgentId } from "./contracts";
 import type { McpServerConfig } from "./mcp";
 
 export const PI_MCP_AGENT_ID: AgentId = "pi";
@@ -60,14 +59,6 @@ export function mcpServerTargetsAgent(
   agentId: AgentId,
 ) {
   return config.enabled !== false && mcpServerAgents(config).includes(agentId);
-}
-
-export function supportsInjectedMcpServers(agentId: AgentId) {
-  return (
-    agentId === "claude-agent" ||
-    agentId === "codex" ||
-    isAcpRegistryAgentId(agentId)
-  );
 }
 
 const ENV_REFERENCE =

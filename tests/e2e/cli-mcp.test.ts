@@ -144,7 +144,6 @@ describe("cocurdex mcp CLI", () => {
       name: "fixture",
       agents: ["pi", "codex", "opencode"],
       unsupported: null,
-      ignored: ["opencode"],
     });
     const shown = JSON.parse((await cli(["mcp", "show", "fixture"])).stdout);
     expect(shown.cocurdex).toEqual({ agents: ["pi", "codex", "opencode"] });

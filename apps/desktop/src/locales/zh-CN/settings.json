@@ -530,7 +530,6 @@
     },
     "agents": {
       "access": {
-        "agentUnsupported": "暂不支持接收 Cocurdex 的 MCP 服务器。",
         "injected": "新会话启动时添加。OAuth 服务器还需要在该 agent 中登录。",
         "native": "通过 Cocurdex 直接连接，支持登录和项目级服务器。"
       },

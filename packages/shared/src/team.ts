@@ -117,12 +117,6 @@ export const TEAM_MAX_MEMBERS = 8;
 export const TEAM_MIN_MEMBERS = 2;
 export const TEAM_TEMPLATE_DESCRIPTION_MAX_LENGTH = 500;
 
-const TEAM_UNSUPPORTED_AGENTS: ReadonlySet<AgentId> = new Set(["opencode"]);
-
-export function supportsAgentTeam(agentId: AgentId) {
-  return !TEAM_UNSUPPORTED_AGENTS.has(agentId);
-}
-
 export function normalizeTeamTemplateMembers(
   value: unknown,
 ): TeamTemplateMember[] {

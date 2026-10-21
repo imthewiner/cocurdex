@@ -1,7 +1,6 @@
 import {
   type AgentRoleAvatar as AgentRoleAvatarValue,
   type AgentRoleRecord,
-  supportsAgentTeam,
   TEAM_MAX_MEMBERS,
   TEAM_MIN_MEMBERS,
   TEAM_TEMPLATE_DESCRIPTION_MAX_LENGTH,
@@ -71,10 +70,7 @@ function nextFreeRoleId(
   members: readonly MemberDraft[],
 ) {
   const taken = new Set(members.map((member) => member.agentRoleId));
-  return (
-    roles.find((role) => supportsAgentTeam(role.agentId) && !taken.has(role.id))
-      ?.id ?? ""
-  );
+  return roles.find((role) => !taken.has(role.id))?.id ?? "";
 }
 
 export function TeamTemplateEditDialog({

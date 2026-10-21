@@ -23,7 +23,6 @@ import {
   type SpawnTeammatePayload,
   type SpawnTeammateRejection,
   type SpawnTeamTemplatePayload,
-  supportsAgentTeam,
   TEAM_MAX_MEMBERS,
   TEAM_MIN_MEMBERS,
   TEAM_NAME_PATTERN,
@@ -53,7 +52,6 @@ export type TeamErrorCode =
   | SpawnTeammateRejection
   | TeamTaskRejection
   | "team_not_found"
-  | "unsupported_agent"
   | "member_not_found"
   | "lead_not_found"
   | "lead_not_main"
@@ -285,9 +283,6 @@ export class TeamModule {
     const prompt = rosterMember
       ? joinPrompts(rosterMember.prompt, payload.prompt)
       : payload.prompt;
-    if (!supportsAgentTeam(agentType)) {
-      throw new TeamError("unsupported_agent");
-    }
     const worktreePath =
       payload.isolateWorktree && this.deps.createWorktree
         ? (
@@ -568,9 +563,7 @@ export class TeamModule {
   }
 
   async listRoles() {
-    return (await this.deps.listAgentRoles())
-      .filter((role) => supportsAgentTeam(role.agentId))
-      .map(summarizeRole);
+    return (await this.deps.listAgentRoles()).map(summarizeRole);
   }
 
   async listTemplates() {
@@ -647,9 +640,6 @@ export class TeamModule {
     if ((lead.sessionKind ?? "main") !== "main") {
       throw new TeamError("lead_not_main");
     }
-    if (!supportsAgentTeam(lead.agentType)) {
-      throw new TeamError("unsupported_agent");
-    }
     return lead;
   }
 
@@ -666,9 +656,6 @@ export class TeamModule {
     for (const member of members) {
       const role = await this.deps.getAgentRole(member.agentRoleId);
       if (!role) throw new TeamError("invalid_template");
-      if (!supportsAgentTeam(role.agentId)) {
-        throw new TeamError("unsupported_agent");
-      }
       roles.set(role.id, role);
     }
     const rosterMembers = buildTeamRosterMembers(members, roles);
