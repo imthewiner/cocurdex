@@ -1113,7 +1113,11 @@
       "sourceSkills_other": "{{count}} 个 skill"
     },
     "document": {
-      "truncated": "预览已截断，打开文件查看全文。"
+      "preview": "预览",
+      "source": "源码",
+      "title": "说明",
+      "truncated": "预览已截断，打开文件查看全文。",
+      "view": "文档视图"
     },
     "files": {
       "reveal": "在文件管理器中显示",

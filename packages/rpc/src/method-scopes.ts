@@ -42,6 +42,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "agent.runLimits.get": "read",
   "attention.list": "read",
   "skills.pack.getStatus": "read",
+  "skills.pack.show": "read",
   "skills.list": "read",
   "skills.show": "read",
   "skills.catalog.search": "read",

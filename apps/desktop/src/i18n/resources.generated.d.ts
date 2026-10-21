@@ -2851,7 +2851,11 @@ export default interface Resources {
         sourceSkills_other: "{{count}} skills";
       };
       document: {
+        preview: "Preview";
+        source: "Source";
+        title: "Instructions";
         truncated: "Preview shortened. Open the file to read all of it.";
+        view: "Document view";
       };
       files: {
         reveal: "Show in file manager";

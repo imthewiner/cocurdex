@@ -7,7 +7,10 @@ import {
   skillLinkAgentsForScope,
 } from "@cocurdex/shared";
 
-export type SkillSelection = { kind: "pack" } | { kind: "skill"; key: string };
+export type SkillSelection =
+  | { kind: "pack" }
+  | { kind: "packSkill"; name: string }
+  | { kind: "skill"; key: string };
 
 export type SkillDotState = "ok" | "update" | "problem";
 
@@ -122,4 +125,14 @@ export function defaultInstallChoice(): SkillInstallChoice {
 export function installAgents(choice: SkillInstallChoice) {
   const allowed = skillLinkAgentsForScope(choice.scope);
   return choice.agents.filter((agent) => allowed.includes(agent));
+}
+
+const FRONTMATTER_PATTERN = /^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
+
+export function skillDocumentBody(content: string) {
+  const match = FRONTMATTER_PATTERN.exec(content);
+  if (!match) {
+    return content;
+  }
+  return content.slice(match[0].length).replace(/^(?:[ \t]*\r?\n)+/, "");
 }

@@ -73,8 +73,26 @@ async function installPack(parsed: ParsedArgs) {
   process.exitCode = 1;
 }
 
-const PACK_ACTIONS: Record<string, (parsed: ParsedArgs) => Promise<void>> = {
+async function showPackSkill(args: string[], parsed: ParsedArgs) {
+  const name = args[0];
+  if (!name) {
+    throw new Error("Usage: cocurdex skills pack show <name>");
+  }
+  const detail = await withDaemon(() =>
+    requestDaemon("skills.pack.show", { name }),
+  );
+  if (parsed.flags.has("json")) {
+    printResult(detail, parsed);
+    return;
+  }
+  console.log(detail.document?.content ?? "");
+}
+
+type PackAction = (parsed: ParsedArgs, args: string[]) => Promise<void>;
+
+const PACK_ACTIONS: Record<string, PackAction> = {
   list: listPack,
+  show: (parsed, args) => showPackSkill(args, parsed),
   status: async (parsed) => {
     const payload = await resolvePayload(parsed);
     printResult(
@@ -94,7 +112,7 @@ const PACK_ACTIONS: Record<string, (parsed: ParsedArgs) => Promise<void>> = {
 
 export async function handleSkillPackCommand(
   action: string | undefined,
-  _args: string[],
+  args: string[],
   parsed: ParsedArgs,
 ): Promise<boolean> {
   const handler =
@@ -102,13 +120,14 @@ export async function handleSkillPackCommand(
   if (!handler) {
     return false;
   }
-  await handler(parsed);
+  await handler(parsed, args);
   return true;
 }
 
 export function skillPackUsageLines(): string[] {
   return [
     "  cocurdex skills pack list [--json]",
+    "  cocurdex skills pack show <name> [--json]",
     "  cocurdex skills pack status --scope project|global [--root <path>] [--json]",
     "  cocurdex skills pack install --scope project|global [--root <path>] [--json]",
     "  cocurdex skills pack remove --scope project|global [--root <path>] [--json]",

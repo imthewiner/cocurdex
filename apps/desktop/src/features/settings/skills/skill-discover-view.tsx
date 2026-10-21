@@ -1,7 +1,6 @@
 import type {
   InstalledSkill,
   SkillCatalogResult,
-  SkillCatalogSearchResult,
   SkillCatalogSource,
 } from "@cocurdex/shared";
 import { type FormEvent, useState } from "react";
@@ -10,9 +9,12 @@ import { Spinner, Text } from "@/components/ui";
 import { SettingsListItem } from "../settings-list-item";
 import { SettingsSearchInput } from "../settings-search-input";
 import { SkillCatalogDetail } from "./skill-catalog-detail";
+import {
+  queryErrorMessage,
+  useCatalogSearchQuery,
+  useCatalogSourcesQuery,
+} from "./skill-queries";
 import { SkillSourceDetail } from "./skill-source-detail";
-import { skillsApi } from "./skills-api";
-import { useMountRequest } from "./use-mount-request";
 
 type DiscoverSelection =
   | { kind: "source"; source: SkillCatalogSource }
@@ -32,11 +34,14 @@ export function SkillDiscoverView({
   onInstall(source: string, skillPaths?: string[]): void;
 }) {
   const { t } = useTranslation("settings");
-  const sources = useMountRequest(() => skillsApi.catalogSources());
+  const sources = useCatalogSourcesQuery();
+  const sourcesError = queryErrorMessage(sources.error);
   const [query, setQuery] = useState("");
-  const [search, setSearch] = useState<SkillCatalogSearchResult | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const searchQuery = useCatalogSearchQuery(submittedQuery);
+  const search = submittedQuery ? (searchQuery.data ?? null) : null;
+  const isSearching = searchQuery.isLoading;
+  const searchError = queryErrorMessage(searchQuery.error);
   const [selection, setSelection] = useState<DiscoverSelection | null>(null);
   const installedNames = new Set(installed.map((skill) => skill.name));
   const sourceList = sources.data?.sources ?? [];
@@ -44,28 +49,15 @@ export function SkillDiscoverView({
     selection ??
     (sourceList[0] ? { kind: "source" as const, source: sourceList[0] } : null);
 
-  const submit = async (event: FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
-    const value = query.trim();
-    if (!value) {
-      setSearch(null);
-      return;
-    }
-    setIsSearching(true);
-    setSearchError("");
-    try {
-      setSearch(await skillsApi.search(value));
-    } catch (error) {
-      setSearchError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsSearching(false);
-    }
+    setSubmittedQuery(query.trim());
   };
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 gap-6">
       <div className="flex min-h-0 w-72 shrink-0 flex-col gap-3">
-        <form className="shrink-0" onSubmit={(event) => void submit(event)}>
+        <form className="shrink-0" onSubmit={submit}>
           <SettingsSearchInput
             aria-busy={isSearching}
             aria-label={t("skills.discover.search")}
@@ -74,21 +66,21 @@ export function SkillDiscoverView({
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
-              if (!event.target.value.trim()) setSearch(null);
+              if (!event.target.value.trim()) setSubmittedQuery("");
             }}
             trailing={isSearching ? <Spinner size="sm" /> : null}
           />
         </form>
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="flex flex-col gap-2 pe-1">
-            {searchError || sources.error ? (
+            {searchError || sourcesError ? (
               <Text
                 className="px-1"
                 role="alert"
                 size="meta"
                 tone="destructive"
               >
-                {searchError || sources.error}
+                {searchError || sourcesError}
               </Text>
             ) : null}
             <div className="flex h-5 items-center px-1">

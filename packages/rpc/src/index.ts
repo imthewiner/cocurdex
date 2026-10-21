@@ -116,6 +116,8 @@ import type {
   PendingSettingsChangeRecord,
   PiModelsJson,
   PptxOutline,
+  ProductSkillDetail,
+  ProductSkillShowPayload,
   ProductSkillsInstallResult,
   ProductSkillsRemoveResult,
   ProductSkillsRequestPayload,
@@ -476,6 +478,7 @@ export type DaemonRequestPayloadByMethod = {
   "skills.pack.getStatus": ProductSkillsRequestPayload;
   "skills.pack.install": ProductSkillsRequestPayload;
   "skills.pack.remove": ProductSkillsRequestPayload;
+  "skills.pack.show": ProductSkillShowPayload;
   "skills.list": SkillListPayload;
   "skills.show": SkillRef;
   "skills.remove": SkillRef;
@@ -766,6 +769,7 @@ export type DaemonResultByMethod = {
   "skills.pack.getStatus": ProductSkillsStatusResult;
   "skills.pack.install": ProductSkillsInstallResult;
   "skills.pack.remove": ProductSkillsRemoveResult;
+  "skills.pack.show": ProductSkillDetail;
   "skills.list": SkillLibraryList;
   "skills.show": InstalledSkillDetail;
   "skills.remove": SkillRemoveResult;

@@ -1,3 +1,5 @@
+import type { SkillDocument, SkillFileEntry } from "./skill-library";
+
 export type ProductSkillScope = "project" | "global";
 
 export interface ProductSkillsRequestPayload {
@@ -8,6 +10,16 @@ export interface ProductSkillsRequestPayload {
 export interface ProductSkillInfo {
   name: string;
   description: string | null;
+}
+
+export interface ProductSkillShowPayload {
+  name: string;
+}
+
+export interface ProductSkillDetail {
+  skill: ProductSkillInfo;
+  files: SkillFileEntry[];
+  document: SkillDocument | null;
 }
 
 /** Install status for the bundled cocurdex-* agent skill pack. */

@@ -61,3 +61,25 @@ describe("DaemonSkillsService pack contents", () => {
     expect(status.packSkills).toEqual([]);
   });
 });
+
+describe("DaemonSkillsService pack skill detail", () => {
+  it("returns the document and files of a bundled skill", async () => {
+    const service = new DaemonSkillsService(getDefaultSkillsSourceRoot());
+    const [name] = PRODUCT_SKILL_NAMES;
+    const detail = await service.show({ name });
+    expect(detail.skill.name).toBe(name);
+    expect(detail.skill.description).toBeTruthy();
+    expect(detail.document?.content).toContain(`name: ${name}`);
+    expect(detail.files.map((file) => file.path)).toContain("SKILL.md");
+  });
+
+  it("refuses names outside the pack", async () => {
+    const service = new DaemonSkillsService(getDefaultSkillsSourceRoot());
+    await expect(service.show({ name: "../product-skills" })).rejects.toThrow(
+      "not a Cocurdex pack skill",
+    );
+    await expect(service.show({ name: "web-perf" })).rejects.toThrow(
+      "not a Cocurdex pack skill",
+    );
+  });
+});

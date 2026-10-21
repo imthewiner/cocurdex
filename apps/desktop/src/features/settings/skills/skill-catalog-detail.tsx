@@ -1,15 +1,10 @@
-import type {
-  SkillAuditFinding,
-  SkillCatalogResult,
-  SkillSourceSkillDetail,
-} from "@cocurdex/shared";
+import type { SkillAuditFinding, SkillCatalogResult } from "@cocurdex/shared";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "@/components";
 import { Badge, Button, Text } from "@/components/ui";
 import { SkillDocumentSection, SkillFilesSection } from "./skill-files-section";
+import { queryErrorMessage, useCatalogSkillQuery } from "./skill-queries";
 import { SkillSourceReading } from "./skill-source-detail";
-import { skillsApi } from "./skills-api";
-import { useMountRequest } from "./use-mount-request";
 
 const AUDIT_PROVIDER_NAMES: Record<SkillAuditFinding["provider"], string> = {
   ath: "Gen Agent Trust Hub",
@@ -24,33 +19,6 @@ const RISK_BADGE_VARIANTS = {
   high: "destructive",
   critical: "destructive",
 } as const;
-
-interface CatalogSkillData {
-  detail: SkillSourceSkillDetail;
-  findings: SkillAuditFinding[];
-}
-
-async function loadCatalogSkill(
-  result: SkillCatalogResult,
-): Promise<CatalogSkillData> {
-  const snapshot = await skillsApi.inspectSource({ source: result.source });
-  const skill =
-    snapshot.skills.find((entry) => entry.name === result.skillId) ??
-    snapshot.skills.find((entry) => entry.name === result.name);
-  if (!skill) {
-    throw new Error(`${result.name} is no longer in ${result.source}`);
-  }
-  const [detail, audit] = await Promise.all([
-    skillsApi.showSourceSkill({
-      source: result.source,
-      skillPath: skill.skillPath,
-    }),
-    skillsApi
-      .audit({ source: result.source, skillIds: [result.skillId] })
-      .catch(() => null),
-  ]);
-  return { detail, findings: audit?.audits[0]?.findings ?? [] };
-}
 
 function AuditRow({ finding }: { finding: SkillAuditFinding }) {
   const { t } = useTranslation("settings");
@@ -77,7 +45,9 @@ export function SkillCatalogDetail({
   onInstall(source: string, skillPaths: string[]): void;
 }) {
   const { t } = useTranslation("settings");
-  const { data, error } = useMountRequest(() => loadCatalogSkill(result));
+  const query = useCatalogSkillQuery(result);
+  const data = query.data;
+  const error = queryErrorMessage(query.error);
   const skill = data?.detail.skill;
 
   return (

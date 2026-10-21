@@ -133,7 +133,9 @@ export function SkillList({
             <SkillGroup label={t("skills.list.builtin")}>
               <SettingsListItem
                 dataAttributes={{ "data-skill-pack": "cocurdex" }}
-                isActive={selection?.kind === "pack"}
+                isActive={
+                  selection?.kind === "pack" || selection?.kind === "packSkill"
+                }
                 subtitle={packSubtitle}
                 title={t("skills.pack.title")}
                 trailing={packDot ? <SkillStatusDot state={packDot} /> : null}
