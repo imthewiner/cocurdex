@@ -229,7 +229,7 @@ export function McpSettingsPanel() {
             onText={importJsonText}
           />
           <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-            <div className="flex min-w-0 flex-col gap-6 pe-3">
+            <div className="flex min-w-0 flex-col gap-6 pe-1">
               {detail && active ? (
                 <McpServerDetail
                   config={detail.config}

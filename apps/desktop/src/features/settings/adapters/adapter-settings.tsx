@@ -17,6 +17,7 @@ import {
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { SettingsGroup } from "@/components/app";
 import { Badge, Button, Spinner, Text } from "@/components/ui";
 import {
   type AdapterStatus,
@@ -434,7 +435,7 @@ export function AdapterSettingsPanel() {
           </Button>
         </div>
       </div>
-      <div className="flex flex-col divide-y divide-border/60">
+      <SettingsGroup>
         {sortedAgents.map((agent) => (
           <AdapterRow
             agent={agent}
@@ -444,7 +445,7 @@ export function AdapterSettingsPanel() {
             rateLimitsResult={rateLimitsByAgent[agent.id]}
           />
         ))}
-      </div>
+      </SettingsGroup>
       <AgentRunLimitsGroup />
     </div>
   );
