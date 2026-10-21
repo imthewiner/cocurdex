@@ -23,6 +23,11 @@
       "saved": "已保存",
       "saving": "保存中…"
     },
+    "timestamps": {
+      "createdAt": "创建于 {{time}}",
+      "edited": "{{time}}编辑",
+      "editedAt": "编辑于 {{time}}"
+    },
     "titleLabel": "笔记标题",
     "untitledPlaceholder": "无标题"
   },

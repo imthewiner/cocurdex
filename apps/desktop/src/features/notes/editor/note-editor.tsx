@@ -40,6 +40,7 @@ import {
   useCommitFolderRename,
   useDebouncedNoteRename,
 } from "./note-editor-sync";
+import { NoteTimestamps } from "./note-timestamps";
 import { useHideDragHandleOnLayoutShift } from "./use-hide-drag-handle-on-layout-shift";
 
 const NOTE_LINK_PREFIX = "note://";
@@ -214,14 +215,20 @@ function NoteEditorBody({
       className="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-10 pt-4 pb-8">
-        <div className="mb-4 flex items-center gap-3">
-          <NoteTitleInput
-            key={titleEpoch}
-            noteId={note.id}
-            initialTitle={note.title}
-            editor={editor}
+        <div className="mb-4 flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <NoteTitleInput
+              key={titleEpoch}
+              noteId={note.id}
+              initialTitle={note.title}
+              editor={editor}
+            />
+            <SaveIndicator status={saveStatus} />
+          </div>
+          <NoteTimestamps
+            createdAt={note.createdAt}
+            updatedAt={note.updatedAt}
           />
-          <SaveIndicator status={saveStatus} />
         </div>
         {editor ? (
           <DragHandle

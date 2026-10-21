@@ -1093,6 +1093,11 @@ export default interface Resources {
         saved: "Saved";
         saving: "Saving…";
       };
+      timestamps: {
+        createdAt: "Created {{time}}";
+        edited: "Edited {{time}}";
+        editedAt: "Edited {{time}}";
+      };
       titleLabel: "Note title";
       untitledPlaceholder: "Untitled";
     };

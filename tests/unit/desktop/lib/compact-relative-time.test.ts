@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCompactRelativeTime } from "@/app/layout/sidebar/compact-relative-time";
+import { getCompactRelativeTime } from "@/lib/relative-time";
 
 const NOW = Date.parse("2026-08-19T12:00:00.000Z");
 

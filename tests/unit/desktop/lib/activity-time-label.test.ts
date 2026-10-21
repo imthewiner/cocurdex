@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatActivityTime } from "@/app/layout/sidebar/activity-time-label";
+import { formatActivityTime } from "@/lib/relative-time";
 
 const NOW = new Date(2026, 9, 14, 17, 30).getTime();
 

@@ -167,6 +167,7 @@ export function NoteTreeItem({
           ) : (
             <AppSidebarRowTitle
               title={note.title || t("sidebar.untitled")}
+              timestamp={note.kind === "folder" ? undefined : note.updatedAt}
               onOpen={() => onOpen(note.id)}
               onStartRename={() => onStartRename(note.id)}
             />
