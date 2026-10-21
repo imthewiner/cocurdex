@@ -99,9 +99,9 @@ function OssLicensesBrowser({
     );
   } else if (payload) {
     body = (
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)] overflow-hidden rounded-card border border-border/70">
-        <div className="flex min-h-0 flex-col border-border/40 border-e">
-          <div className="shrink-0 border-border/40 border-b p-2">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)] gap-6">
+        <div className="flex min-h-0 flex-col gap-2">
+          <div className="shrink-0">
             <Input
               aria-label={t("licenses.searchPlaceholder")}
               autoComplete="off"
@@ -259,7 +259,7 @@ function OssLicensesDetail({
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="border-border/40 border-b px-3 py-2">
+      <div className="pb-2">
         <Text className="block" size="body" truncate weight="medium">
           {title}
         </Text>
@@ -268,7 +268,7 @@ function OssLicensesDetail({
         </Text>
       </div>
       {row.kind === "chromium" ? (
-        <div className="flex min-h-0 flex-1 flex-col items-start gap-3 overflow-auto p-3">
+        <div className="flex min-h-0 flex-1 flex-col items-start gap-3 overflow-auto py-3">
           <Text size="body" tone="muted">
             {t("licenses.chromiumDescription")}
           </Text>
@@ -283,7 +283,7 @@ function OssLicensesDetail({
           </Button>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto p-3">
+        <div className="min-h-0 flex-1 overflow-auto py-3">
           {text ? (
             <pre className="whitespace-pre-wrap break-words font-mono text-meta text-muted-foreground">
               {text}
