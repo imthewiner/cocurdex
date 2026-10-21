@@ -104,19 +104,37 @@ runScenario("mcp-settings", {
   },
   steps: [
     [
-      "the page opens with an empty server list",
+      "the page opens with one empty state instead of the empty columns",
       async ({ session, t }) => {
-        const empty = await t("mcp.list.empty");
-        await session.waitUntil(
-          (text) => document.body.innerText.includes(text),
-          empty,
+        await waitForRole(
+          session,
+          { role: "region", name: await t("mcp.empty.title") },
           UI_TIMEOUT_MS,
         );
         await waitForRole(session, {
           role: "button",
-          name: await t("mcp.list.importFromAgents"),
+          name: await t("mcp.empty.add"),
         });
-        return {};
+        await waitForRole(session, {
+          role: "button",
+          name: await t("mcp.editJson"),
+        });
+        const leftovers = await session.run(
+          ({ search, dropzone }) => ({
+            search: Boolean(window.__scenario.byLabel(search)),
+            dropzone: document.body.innerText.includes(dropzone),
+          }),
+          {
+            search: await t("mcp.list.search"),
+            dropzone: await t("mcp.jsonImport.label"),
+          },
+        );
+        check(
+          !leftovers.search && !leftovers.dropzone,
+          "empty state hides the list and the JSON dropzone",
+          leftovers,
+        );
+        return leftovers;
       },
     ],
     [
@@ -124,7 +142,11 @@ runScenario("mcp-settings", {
       async ({ session, t }) => {
         await clickByRole(session, {
           role: "button",
-          name: await t("mcp.list.add"),
+          name: await t("mcp.empty.add"),
+        });
+        await clickByRole(session, {
+          role: "menuitem",
+          name: await t("mcp.empty.addManually"),
         });
         await fillTextbox(session, await t("mcp.fields.name"), "fixture");
         await fillTextbox(
@@ -255,7 +277,7 @@ runScenario("mcp-settings", {
       async ({ session, t }) => {
         await clickByRole(session, {
           role: "button",
-          name: await t("mcp.mode.json"),
+          name: await t("mcp.editJson"),
         });
         const [editor] = await waitForRole(session, {
           role: "textbox",
@@ -277,7 +299,7 @@ runScenario("mcp-settings", {
         check(save === true, "save stays disabled", save);
         await clickByRole(session, {
           role: "button",
-          name: await t("mcp.mode.form"),
+          name: await t("mcp.backToForm"),
         });
         await session.waitUntil(
           () => Boolean(document.querySelector("[data-mcp-detail]")),

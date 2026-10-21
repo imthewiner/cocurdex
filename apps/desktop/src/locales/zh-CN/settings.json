@@ -542,12 +542,23 @@
       "token": "令牌",
       "waiting": "正在等待浏览器中完成授权…"
     },
-    "description": "配置内置 Pi agent 可用的 MCP 服务器。启用开关立即生效，其余修改点保存后写入；新会话开始使用。",
+    "backToForm": "返回表单",
+    "description": "内置 Pi agent 可用的工具服务器，新会话开始使用",
     "detail": {
       "enabled": "启用",
       "label": "MCP 服务器",
       "newTitle": "新服务器",
       "projectReadOnly": "定义在 {{path}}。项目服务器在这里只读，请编辑该文件来修改。"
+    },
+    "editJson": "编辑 mcp.json",
+    "empty": {
+      "add": "添加服务器",
+      "addManually": "手动填写",
+      "chooseFile": "选择 JSON 文件…",
+      "description": "添加本地命令或远程端点，让 Pi 使用其中的工具。",
+      "discovered_other": "{{agents}} 里已有 {{count}} 个，可以直接导入。",
+      "dropHint": "识别其中的 mcpServers，导入前逐项确认。",
+      "title": "还没有 MCP 服务器"
     },
     "errors": {
       "callbackPortInvalid": "回调端口必须是 1 到 65535 之间的数字。",
@@ -595,9 +606,9 @@
       "unsupported": "不支持"
     },
     "json": {
-      "hint": "编辑完整的 mcp.json 文件，保存前会先校验。",
       "label": "MCP 配置 JSON"
     },
+    "jsonDescription": "直接编辑配置文件，保存时按 Pi 的规则校验",
     "jsonImport": {
       "dropActive": "松开以导入",
       "dropHint": "把 JSON 文件拖到这里，或点击选择文件。",
@@ -610,7 +621,6 @@
     },
     "list": {
       "add": "添加",
-      "empty": "还没有 MCP 服务器。添加一个，或从其他 Agent 导入。",
       "global": "全局 · Pi",
       "importFromAgents": "从其他 Agent 导入",
       "noMatches": "没有匹配的服务器",
@@ -618,17 +628,13 @@
       "readOnly": "只读",
       "search": "搜索服务器"
     },
-    "mode": {
-      "form": "表单",
-      "json": "JSON",
-      "label": "配置方式"
-    },
     "removeConfirm": {
       "cancel": "取消",
       "confirm": "移除",
       "description": "将从 Pi 的 MCP 配置中移除“{{name}}”。正在运行的会话保留当前工具。",
       "title": "移除 MCP 服务器？"
     },
+    "revealConfig": "在文件管理器中显示",
     "state": {
       "connected": "已连接",
       "disabled": "已停用",

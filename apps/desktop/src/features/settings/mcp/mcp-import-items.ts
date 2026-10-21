@@ -2,6 +2,7 @@ import {
   isValidMcpServerName,
   type McpImportCandidate,
   type McpImportMatch,
+  type McpImportSource,
   type McpServerConfig,
   parseMcpServersJson,
   sameMcpServerConfig,
@@ -27,6 +28,31 @@ export function defaultImportSelection(items: McpImportItem[]) {
     names.add(item.name);
   }
   return picked;
+}
+
+export type McpImportAgent = Exclude<McpImportSource, "claude-project">;
+
+export interface McpImportAgentSummary {
+  count: number;
+  agents: McpImportAgent[];
+}
+
+function importAgent(source: McpImportSource): McpImportAgent {
+  return source === "claude-project" ? "claude" : source;
+}
+
+export function importableAgentSummary(
+  candidates: McpImportCandidate[],
+): McpImportAgentSummary {
+  const names = new Set<string>();
+  const agents: McpImportAgent[] = [];
+  for (const candidate of candidates) {
+    if (candidate.match !== "new" || candidate.unsupported) continue;
+    names.add(candidate.name);
+    const agent = importAgent(candidate.source);
+    if (!agents.includes(agent)) agents.push(agent);
+  }
+  return { count: names.size, agents };
 }
 
 export function importItemsFromCandidates(

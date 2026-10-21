@@ -1,5 +1,6 @@
 import type {
   McpConfigFile,
+  McpImportCandidate,
   McpServerConfig,
   McpServerScope,
   McpServerStatus,
@@ -56,6 +57,9 @@ export function useMcpSettings() {
     errors: [],
     isChecking: false,
   });
+  const [importCandidates, setImportCandidates] = useState<
+    McpImportCandidate[] | null
+  >(null);
   const statusRequestRef = useRef(0);
 
   const servers = configFile ? safeParseServers(configFile.content) : {};
@@ -126,12 +130,33 @@ export function useMcpSettings() {
     }
   }
 
+  function applyConfigFile(file: McpConfigFile) {
+    setConfigFile(file);
+    if (
+      importCandidates === null &&
+      Object.keys(safeParseServers(file.content)).length === 0
+    ) {
+      void scanImportCandidates();
+    }
+  }
+
+  async function scanImportCandidates() {
+    try {
+      setImportCandidates(await desktopApi.scanMcpImports(workspaceId));
+    } catch {
+      setImportCandidates([]);
+    }
+  }
+
   useMountEffect(() => {
     void desktopApi
       .readMcpConfig()
       .then((file) => {
         setConfigFile(file);
         void refreshStatus();
+        if (Object.keys(safeParseServers(file.content)).length === 0) {
+          void scanImportCandidates();
+        }
       })
       .catch((error: unknown) => setLoadError(errorMessage(error)));
     void loadProject();
@@ -142,13 +167,14 @@ export function useMcpSettings() {
 
   return {
     configFile,
+    importCandidates,
     loadError,
     project,
     servers,
     status,
     workspaceId,
     workspaceName: workspace?.name ?? null,
-    applyConfigFile: setConfigFile,
+    applyConfigFile,
     applyStatus,
     forgetStatus,
     refreshServerStatus,

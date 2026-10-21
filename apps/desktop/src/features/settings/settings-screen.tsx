@@ -1,5 +1,5 @@
 import { useSetAtom } from "jotai";
-import { type MouseEvent, useState } from "react";
+import { type MouseEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   TITLEBAR_HEIGHT,
@@ -284,12 +284,18 @@ export function SettingsScreen({
   const [scrolledSection, setScrolledSection] =
     useState<SettingsSectionId | null>(null);
   const isContentScrolled = scrolledSection === activeSection;
+  const headingRef = useRef<HTMLDivElement>(null);
+  const headingBottom = () => {
+    const heading = headingRef.current;
+    return heading ? heading.offsetTop + heading.offsetHeight : 0;
+  };
+  const sectionLabel = t(`settings:sections.${activeSectionMeta.labelKey}`);
   const settingsHeading =
     activeSection === "workspaces" ? (
       <WorkspaceSettingsHeading />
     ) : (
-      <h1 className="truncate text-body font-semibold text-foreground">
-        {t(`settings:sections.${activeSectionMeta.labelKey}`)}
+      <h1 className="truncate text-title font-semibold text-foreground">
+        {sectionLabel}
       </h1>
     );
   const handleSectionChange = (sectionId: SettingsSectionId) => {
@@ -345,7 +351,16 @@ export function SettingsScreen({
               : TITLEBAR_TOOLBAR_MIN_WIDTH + SETTINGS_HEADING_GAP,
           }}
         >
-          {settingsHeading}
+          <p
+            aria-hidden
+            data-testid="settings-compact-title"
+            className={cn(
+              "truncate text-body font-semibold text-foreground opacity-0 transition-opacity",
+              isContentScrolled && "opacity-100",
+            )}
+          >
+            {sectionLabel}
+          </p>
         </header>
         {isFillLayout ? (
           <div className="flex h-[calc(100vh-2rem)] min-h-0 flex-col pb-8">
@@ -360,6 +375,7 @@ export function SettingsScreen({
                 activeSection === "archived" && "max-w-3xl gap-8",
               )}
             >
+              {settingsHeading}
               {settingsPanel}
             </div>
           </div>
@@ -370,11 +386,16 @@ export function SettingsScreen({
               viewportProps={{
                 onScroll: (event) =>
                   setScrolledSection(
-                    event.currentTarget.scrollTop > 0 ? activeSection : null,
+                    event.currentTarget.scrollTop > headingBottom()
+                      ? activeSection
+                      : null,
                   ),
               }}
             >
               <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 pt-6 pb-10 sm:px-6 lg:px-8">
+                <div className="mb-3" ref={headingRef}>
+                  {settingsHeading}
+                </div>
                 {settingsPanel}
               </div>
             </ScrollArea>

@@ -543,12 +543,24 @@
       "token": "Token",
       "waiting": "Waiting for authorization in the browser…"
     },
-    "description": "Configure the MCP servers available to the built-in Pi agent. The Enabled switch applies immediately; other changes are written when you save. New sessions pick them up.",
+    "backToForm": "Back to form",
+    "description": "Tool servers available to the built-in Pi agent. New sessions pick up changes.",
     "detail": {
       "enabled": "Enabled",
       "label": "MCP server",
       "newTitle": "New server",
       "projectReadOnly": "Defined in {{path}}. Project servers are read-only here; edit that file to change them."
+    },
+    "editJson": "Edit mcp.json",
+    "empty": {
+      "add": "Add server",
+      "addManually": "Fill in manually",
+      "chooseFile": "Choose JSON file…",
+      "description": "Add a local command or remote endpoint so Pi can use its tools.",
+      "discovered_one": "{{count}} server found in {{agents}}, ready to import.",
+      "discovered_other": "{{count}} servers found in {{agents}}, ready to import.",
+      "dropHint": "Finds the mcpServers in it; you confirm each one before import.",
+      "title": "No MCP servers yet"
     },
     "errors": {
       "callbackPortInvalid": "The callback port must be a number from 1 to 65535.",
@@ -597,9 +609,9 @@
       "unsupported": "Not supported"
     },
     "json": {
-      "hint": "Edits the whole mcp.json file. It is validated before saving.",
       "label": "MCP configuration JSON"
     },
+    "jsonDescription": "Edit the config file directly. Pi's rules validate it on save.",
     "jsonImport": {
       "dropActive": "Drop to import",
       "dropHint": "Drop a JSON file here, or click to choose one.",
@@ -612,7 +624,6 @@
     },
     "list": {
       "add": "Add",
-      "empty": "No MCP servers yet. Add one, or import from another agent.",
       "global": "Global · Pi",
       "importFromAgents": "Import from other agents",
       "noMatches": "No matching servers",
@@ -620,17 +631,13 @@
       "readOnly": "Read-only",
       "search": "Search servers"
     },
-    "mode": {
-      "form": "Form",
-      "json": "JSON",
-      "label": "Configuration mode"
-    },
     "removeConfirm": {
       "cancel": "Cancel",
       "confirm": "Remove",
       "description": "\"{{name}}\" will be removed from the Pi MCP configuration. Running sessions keep their current tools.",
       "title": "Remove MCP server?"
     },
+    "revealConfig": "Reveal in file manager",
     "state": {
       "connected": "Connected",
       "disabled": "Disabled",
