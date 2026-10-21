@@ -137,6 +137,39 @@
   margin: 0.8em 0;
 }
 
+.md-body-prose .md-code-block {
+  background: var(--muted);
+  border-radius: var(--radius-card);
+  margin: 0.8em 0;
+  overflow: hidden;
+}
+
+.md-body-prose .md-code-block pre {
+  background: transparent;
+  border-radius: 0;
+  margin: 0;
+  overflow-x: auto;
+  overflow-wrap: normal;
+  padding: 0.25rem 1rem 0.75rem;
+  white-space: pre;
+}
+
+.md-body-prose .md-code-block pre > code {
+  white-space: pre !important;
+}
+
+.md-body-prose .md-code-block pre code span[style] {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+}
+
+[data-theme="dark"] .md-body-prose .md-code-block pre code span[style] {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+}
+
 /* Inline code */
 .md-body-prose code {
   font-family: var(--font-mono);

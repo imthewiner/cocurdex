@@ -475,6 +475,20 @@ export const FIXTURE_NOTES: FixtureNote[] = [
 `,
   },
   {
+    key: "discount-math",
+    title: "Discount math",
+    inWorkspace: true,
+    bodyMarkdown: `Percentage codes round down to whole cents.
+
+\`\`\`ts
+export function applyDiscount(totalCents: number, percent: number) {
+  const off = Math.floor((totalCents * percent) / 100);
+  return Math.max(0, totalCents - off);
+}
+\`\`\`
+`,
+  },
+  {
     key: "scratch",
     title: "Scratchpad",
     bodyMarkdown: "Ideas that are not tied to a workspace.\n",

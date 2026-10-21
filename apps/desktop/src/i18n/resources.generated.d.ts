@@ -1069,6 +1069,14 @@ export default interface Resources {
     };
   };
   notes: {
+    codeBlock: {
+      copied: "Copied";
+      copy: "Copy code";
+      language: "Code language";
+      noLanguage: "No matching language";
+      plainText: "Plain text";
+      searchLanguage: "Search languages…";
+    };
     editor: {
       empty: {
         description: "Select a note from the sidebar or create a new one.";

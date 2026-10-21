@@ -1,4 +1,9 @@
-import { type Extensions, getSchema } from "@tiptap/core";
+import {
+  type Extensions,
+  getSchema,
+  type NodeViewRenderer,
+} from "@tiptap/core";
+import CodeBlock from "@tiptap/extension-code-block";
 import Image from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
@@ -12,20 +17,34 @@ export const NOTE_LINK_PROTOCOLS = ["cocurdex-pdf", "note"];
 
 export interface NoteDocExtensionOptions {
   collaborative?: boolean;
+  codeBlockView?: NodeViewRenderer;
+}
+
+const CODE_BLOCK_TAB_SIZE = 2;
+
+function buildCodeBlock(view: NodeViewRenderer | undefined) {
+  const configured = CodeBlock.configure({
+    enableTabIndentation: true,
+    tabSize: CODE_BLOCK_TAB_SIZE,
+  });
+  return view ? configured.extend({ addNodeView: () => view }) : configured;
 }
 
 export function buildNoteDocExtensions({
   collaborative = false,
+  codeBlockView,
 }: NoteDocExtensionOptions = {}): Extensions {
   return [
     StarterKit.configure({
       ...(collaborative ? { undoRedo: false, trailingNode: false } : {}),
+      codeBlock: false,
       link: {
         openOnClick: false,
         protocols: NOTE_LINK_PROTOCOLS,
         HTMLAttributes: { target: null, rel: null },
       },
     }),
+    buildCodeBlock(codeBlockView),
     TaskList,
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: false }),
