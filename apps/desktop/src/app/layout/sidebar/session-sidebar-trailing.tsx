@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { CocurdexMark } from "@/components/cocurdex-mark";
 import { Text } from "@/components/ui";
-import { useCompactAgeLabel } from "./use-compact-age-label";
+import { useCompactAgeLabel } from "@/lib/relative-time";
 
 function SessionStatusIndicator({
   needsAttention,

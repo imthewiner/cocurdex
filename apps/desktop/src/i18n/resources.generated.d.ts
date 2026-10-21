@@ -437,6 +437,35 @@ export default interface Resources {
     };
     jumpToLatest: "Jump to latest";
     jumpToTop: "Jump to top";
+    links: {
+      add: "Link an item";
+      copied: "Link copied";
+      copy: "Copy link";
+      empty: "Nothing to link";
+      kind: {
+        deck: "Decks";
+        issue: "Issues";
+        note: "Notes";
+        session: "Sessions";
+      };
+      relation: {
+        "blocked-by": "Blocked by";
+        blocks: "Blocks";
+        child: "Sub-issue";
+        "duplicate-of": "Duplicate of";
+        "duplicated-by": "Duplicated by";
+        "mentioned-by": "Mentioned by";
+        mentions: "Mentions";
+        parent: "Parent";
+        related: "Related";
+        "worked-on-by": "Session";
+        "works-on": "Works on";
+      };
+      remove: "Remove link to {{title}}";
+      search: "Search sessions, notes, issues, decks…";
+      title: "Linked";
+      untitled: "Untitled";
+    };
     mermaid: {
       download: "Download SVG";
       openPreview: "Open preview";
@@ -1069,6 +1098,14 @@ export default interface Resources {
     };
   };
   notes: {
+    codeBlock: {
+      copied: "Copied";
+      copy: "Copy code";
+      language: "Code language";
+      noLanguage: "No matching language";
+      plainText: "Plain text";
+      searchLanguage: "Search languages…";
+    };
     editor: {
       empty: {
         description: "Select a note from the sidebar or create a new one.";
@@ -1084,6 +1121,11 @@ export default interface Resources {
         error: "Save failed";
         saved: "Saved";
         saving: "Saving…";
+      };
+      timestamps: {
+        createdAt: "Created {{time}}";
+        edited: "Edited {{time}}";
+        editedAt: "Edited {{time}}";
       };
       titleLabel: "Note title";
       untitledPlaceholder: "Untitled";
@@ -2334,7 +2376,7 @@ export default interface Resources {
         value: "Value";
       };
       import: {
-        agentsDescription: "MCP servers found in Claude Code, Cursor, and Antigravity configurations on this computer.";
+        agentsDescription: "MCP servers found in {{agents}} configurations on this computer.";
         agentsTitle: "Import from other agents";
         cancel: "Cancel";
         confirm_one: "Import {{count}} server";
@@ -2349,8 +2391,12 @@ export default interface Resources {
           antigravity: "Antigravity";
           claude: "Claude Code";
           "claude-project": "Claude Code · project";
+          codex: "Codex";
+          "codex-project": "Codex · project";
           cursor: "Cursor";
           json: "JSON";
+          opencode: "OpenCode";
+          "opencode-project": "OpenCode · project";
         };
         unsupported: "Not supported";
       };

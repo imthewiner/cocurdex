@@ -1,4 +1,12 @@
 {
+  "codeBlock": {
+    "copied": "Copied",
+    "copy": "Copy code",
+    "language": "Code language",
+    "noLanguage": "No matching language",
+    "plainText": "Plain text",
+    "searchLanguage": "Search languages…"
+  },
   "editor": {
     "empty": {
       "description": "Select a note from the sidebar or create a new one.",
@@ -14,6 +22,11 @@
       "error": "Save failed",
       "saved": "Saved",
       "saving": "Saving…"
+    },
+    "timestamps": {
+      "createdAt": "Created {{time}}",
+      "edited": "Edited {{time}}",
+      "editedAt": "Edited {{time}}"
     },
     "titleLabel": "Note title",
     "untitledPlaceholder": "Untitled"

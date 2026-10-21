@@ -3,6 +3,8 @@
  * these APIs; do not hand-assemble Select/Combobox/Dropdown primitives for
  * value-select UIs. Keep domain composites (chat, markdown, …) outside this folder.
  */
+
+export { AppActivityTime } from "./activity-time";
 export { AppConfirmDialog } from "./confirm-dialog";
 export {
   AppDropdownContent,

@@ -3,8 +3,11 @@ import {
   type NoteDocExtensionOptions,
 } from "@cocurdex/note-doc";
 import { Placeholder } from "@tiptap/extensions";
-import type { Extensions } from "@tiptap/react";
+import { type Extensions, ReactNodeViewRenderer } from "@tiptap/react";
 import { BoundaryParagraph } from "./boundary-paragraph";
+import { CodeBlockView } from "./code-block/code-block-view";
+import { CodeHighlight } from "./code-block/code-highlight";
+import { EntityLinkClick } from "./entity-link-click";
 import { MarkdownPaste } from "./markdown-paste";
 import { createSlashCommand } from "./slash-command";
 import { TableEditing } from "./table/table-extension";
@@ -14,7 +17,12 @@ export function buildMarkdownBodyExtensions(
   options: NoteDocExtensionOptions = {},
 ): Extensions {
   return [
-    ...buildNoteDocExtensions(options),
+    ...buildNoteDocExtensions({
+      ...options,
+      codeBlockView: ReactNodeViewRenderer(CodeBlockView),
+    }),
+    CodeHighlight,
+    EntityLinkClick,
     Placeholder.configure({
       placeholder: ({ node }) =>
         node.type.name === "paragraph" ? placeholder : "",

@@ -1,4 +1,5 @@
 import type {
+  EntityLink,
   IssueDetail,
   IssueRecord,
   IssueRelation,
@@ -10,7 +11,8 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AppSearchableSelect } from "@/components/app";
 import { Button, Text } from "@/components/ui";
-import { openSessionById } from "@/lib";
+import { RelatedEntities } from "@/features/entity-links";
+import { openEntity } from "@/lib";
 import type { IssueRelationChange } from "../issue-detail-store";
 import {
   ADDABLE_RELATION_CHOICES,
@@ -104,7 +106,9 @@ export function IssueDetailSections({
             <button
               key={session.sessionId}
               type="button"
-              onClick={() => openSessionById(session.sessionId)}
+              onClick={() =>
+                openEntity({ kind: "session", id: session.sessionId })
+              }
               className="flex h-7 w-full min-w-0 items-center gap-2 rounded-control px-1.5 text-start hover:bg-editor-tab-hover-bg"
             >
               <Bot className="size-3.5 shrink-0 text-editor-fg-subtle" />
@@ -120,8 +124,19 @@ export function IssueDetailSections({
           ))}
         </DetailSection>
       ) : null}
+      <div className="px-5">
+        <RelatedEntities
+          entity={{ kind: "issue", id: detail.issue.id }}
+          hideLink={isShownAsIssueStructure}
+        />
+      </div>
     </>
   );
+}
+
+function isShownAsIssueStructure(link: EntityLink) {
+  if (link.removable) return false;
+  return link.target.kind === "issue" || link.relation === "worked-on-by";
 }
 
 function DetailSection({

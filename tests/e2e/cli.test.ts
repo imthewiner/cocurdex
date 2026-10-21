@@ -142,6 +142,66 @@ describe("cocurdex CLI against a running daemon", () => {
     ).toContain(issue.id);
   });
 
+  it("links a note and an issue through CLI commands", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const note = JSON.parse(
+      (
+        await runCli(
+          ["note", "create", "--title", "Linked note", "--json"],
+          options,
+        )
+      ).stdout,
+    ) as NoteJson;
+    const issue = JSON.parse(
+      (
+        await runCli(
+          ["issue", "create", "--title", "Linked issue", "--json"],
+          options,
+        )
+      ).stdout,
+    ) as { id: string; identifier: string };
+
+    const added = await runCli(
+      ["link", "add", `note:${note.id}`, `issue:${issue.identifier}`, "--json"],
+      options,
+    );
+    expect(added.code).toBe(0);
+    expect(JSON.parse(added.stdout)).toEqual({ changed: true });
+
+    const listed = await runCli(
+      ["link", "list", `cocurdex://issue/${issue.id}`, "--json"],
+      options,
+    );
+    expect(JSON.parse(listed.stdout)).toEqual([
+      expect.objectContaining({
+        relation: "related",
+        kind: "note",
+        id: note.id,
+        title: "Linked note",
+        uri: `cocurdex://note/${note.id}`,
+        removable: true,
+      }),
+    ]);
+
+    const selfLink = await runCli(
+      ["link", "add", `note:${note.id}`, `note:${note.id}`],
+      options,
+    );
+    expect(selfLink.code).toBe(1);
+
+    const removed = await runCli(
+      ["link", "remove", `issue:${issue.id}`, `note:${note.id}`, "--json"],
+      options,
+    );
+    expect(JSON.parse(removed.stdout)).toEqual({ changed: true });
+    const empty = await requestDaemon(
+      "link.list",
+      { ref: { kind: "note", id: note.id } },
+      daemon.options,
+    );
+    expect(empty).toEqual([]);
+  });
+
   it("exits non-zero for an incomplete command", async () => {
     const result = await runCli(["note"], {
       userDataPath: daemon.userDataPath,

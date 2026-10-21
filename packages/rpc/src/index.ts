@@ -55,6 +55,9 @@ import type {
   DocumentAttachment,
   EditDeckPayload,
   EditorViewRecord,
+  EntityLink,
+  EntityLinkCandidate,
+  EntityLinkPayload,
   ExportDeckFilePayload,
   ExportDeckFileResult,
   ForkSessionPayload,
@@ -87,6 +90,7 @@ import type {
   IssueRecord,
   IssueRelationPayload,
   LinkIssueSessionPayload,
+  ListEntityLinksPayload,
   LoadViewPayload,
   ManagedWorktree,
   McpConfigFile,
@@ -513,6 +517,10 @@ export type DaemonRequestPayloadByMethod = {
   "note.delete": DeleteNotePayload;
   "note.listTags": { noteId?: string };
   "note.backlinks": NoteBacklinksPayload;
+  "link.list": ListEntityLinksPayload;
+  "link.candidates": undefined;
+  "link.add": EntityLinkPayload;
+  "link.remove": EntityLinkPayload;
   "deck.list": undefined;
   "deck.get": GetDeckPayload;
   "deck.create": CreateDeckPayload;
@@ -803,6 +811,10 @@ export type DaemonResultByMethod = {
   "note.delete": null;
   "note.listTags": NoteTag[];
   "note.backlinks": NoteLink[];
+  "link.list": EntityLink[];
+  "link.candidates": EntityLinkCandidate[];
+  "link.add": boolean;
+  "link.remove": boolean;
   "deck.list": DeckSummary[];
   "deck.get": DeckRecord | null;
   "deck.create": DeckWriteResult;
@@ -926,6 +938,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "mcp.injection.check": true,
   "skills.catalog.sources": true,
   "deck.list": true,
+  "link.candidates": true,
   "note.list": true,
   "provider.listConfigs": true,
   "provider.listTemplates": true,

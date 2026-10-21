@@ -50,5 +50,23 @@ reapply your change to the new body, and retry.
 Link notes with Markdown links that use stable note ids, then verify the
 reverse direction with `note backlinks <target-id>`.
 
+Every session, note, issue, and deck has a link URI, `cocurdex://<kind>/<id>`
+(kind `session`, `note`, `issue`, or `deck`). A Markdown link to that URI in a
+note body, such as `[COC-12](cocurdex://issue/<issue-id>)`, opens the item in
+the app and shows the note as "mentioned by" on the item. To relate two items
+without writing the link into a body, use the link commands; refs are
+`<kind>:<id>` or the URI, and issues also accept their identifier:
+
+```bash
+cocurdex link add note:<note-id> issue:COC-12 --json
+cocurdex link list note:<note-id> --json
+cocurdex link remove note:<note-id> deck:<deck-id> --json
+```
+
+`link list` returns every connection of the item with its `relation`
+(`related`, `mentions`, `mentioned-by`, issue relations, `parent`, `child`,
+`worked-on-by`, `works-on`); only `related` links are `removable` with
+`link remove`.
+
 Markdown is the note body format at the API boundary, not an on-disk source of
 truth. Publishing a note to a repository requires an explicit export flow.

@@ -1,4 +1,12 @@
 {
+  "codeBlock": {
+    "copied": "已复制",
+    "copy": "复制代码",
+    "language": "代码语言",
+    "noLanguage": "没有匹配的语言",
+    "plainText": "纯文本",
+    "searchLanguage": "搜索语言…"
+  },
   "editor": {
     "empty": {
       "description": "从侧栏选择一篇笔记，或新建一篇。",
@@ -14,6 +22,11 @@
       "error": "保存失败",
       "saved": "已保存",
       "saving": "保存中…"
+    },
+    "timestamps": {
+      "createdAt": "创建于 {{time}}",
+      "edited": "{{time}}编辑",
+      "editedAt": "编辑于 {{time}}"
     },
     "titleLabel": "笔记标题",
     "untitledPlaceholder": "无标题"

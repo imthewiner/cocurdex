@@ -1,31 +1,61 @@
 import { useRef, useState } from "react";
 import {
   SidebarListRowLabel,
+  Text,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui";
+import { AppActivityTime } from "./activity-time";
+import { AppPreviewCardTooltipContent } from "./preview-card-tooltip";
+
+function RowTitleTooltipContent({
+  title,
+  timestamp,
+}: {
+  title: string;
+  timestamp?: string;
+}) {
+  if (!timestamp) {
+    return (
+      <TooltipContent side="right" sideOffset={8}>
+        {title}
+      </TooltipContent>
+    );
+  }
+  return (
+    <AppPreviewCardTooltipContent>
+      <Text size="body" weight="medium" className="min-w-0 whitespace-normal">
+        {title}
+      </Text>
+      <AppActivityTime timestamp={timestamp} />
+    </AppPreviewCardTooltipContent>
+  );
+}
 
 export function AppSidebarRowTitle({
   title,
+  timestamp,
   onOpen,
   onStartRename,
 }: {
   title: string;
+  timestamp?: string;
   onOpen: () => void;
   onStartRename: () => void;
 }) {
   const labelRef = useRef<HTMLSpanElement | null>(null);
   const [tooltipOpen, setTooltipOpen] = useState(false);
+  const isTruncated = () => {
+    const label = labelRef.current;
+    return label !== null && label.scrollWidth > label.clientWidth;
+  };
 
   return (
     <Tooltip
       open={tooltipOpen}
       onOpenChange={(open) => {
-        const label = labelRef.current;
-        setTooltipOpen(
-          open && label !== null && label.scrollWidth > label.clientWidth,
-        );
+        setTooltipOpen(open && (Boolean(timestamp) || isTruncated()));
       }}
       disableHoverablePopup
     >
@@ -43,9 +73,7 @@ export function AppSidebarRowTitle({
           <SidebarListRowLabel ref={labelRef}>{title}</SidebarListRowLabel>
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>
-        {title}
-      </TooltipContent>
+      <RowTitleTooltipContent timestamp={timestamp} title={title} />
     </Tooltip>
   );
 }

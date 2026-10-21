@@ -1,7 +1,7 @@
 import type { AgentId, WorkspaceRecord } from "@cocurdex/shared";
 import { Folder } from "lucide-react";
 import type { ReactElement } from "react";
-import { AppPreviewCardTooltipContent } from "@/components";
+import { AppActivityTime, AppPreviewCardTooltipContent } from "@/components";
 import { Text, Tooltip, TooltipTrigger } from "@/components/ui";
 import {
   AgentIcon,
@@ -10,7 +10,6 @@ import {
 } from "@/features/sessions";
 import { WorkspaceRootsPreview } from "@/features/workspaces";
 import { useSidebarScrolling } from "./sidebar-scrolling";
-import { useActivityTimeLabel } from "./use-compact-age-label";
 
 interface SidebarItemPreviewProps {
   agentId?: AgentId;
@@ -31,7 +30,6 @@ export function SidebarItemPreview({
   title,
   workspaceName,
 }: SidebarItemPreviewProps) {
-  const activityTime = useActivityTimeLabel(timestamp);
   const identityLabel = [role?.name, agentLabel].filter(Boolean).join(" · ");
 
   return (
@@ -63,11 +61,7 @@ export function SidebarItemPreview({
           </Text>
         </div>
       ) : null}
-      {activityTime ? (
-        <Text size="meta" tone="muted" className="min-w-0 tabular-nums">
-          {activityTime.relative} · {activityTime.absolute}
-        </Text>
-      ) : null}
+      <AppActivityTime timestamp={timestamp} />
     </div>
   );
 }

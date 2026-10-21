@@ -62,6 +62,7 @@ export function DeckRow({
           ) : (
             <AppSidebarRowTitle
               title={title}
+              timestamp={deck.updatedAt}
               onOpen={onOpen}
               onStartRename={onStartRename}
             />

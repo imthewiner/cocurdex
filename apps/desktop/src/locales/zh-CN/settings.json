@@ -601,7 +601,7 @@
       "value": "值"
     },
     "import": {
-      "agentsDescription": "在这台电脑上的 Claude Code、Cursor 和 Antigravity 配置中找到的 MCP 服务器。",
+      "agentsDescription": "在这台电脑上的 {{agents}} 配置中找到的 MCP 服务器。",
       "agentsTitle": "从其他 Agent 导入",
       "cancel": "取消",
       "confirm_other": "导入 {{count}} 个服务器",
@@ -615,8 +615,12 @@
         "antigravity": "Antigravity",
         "claude": "Claude Code",
         "claude-project": "Claude Code · 项目",
+        "codex": "Codex",
+        "codex-project": "Codex · 项目",
         "cursor": "Cursor",
-        "json": "JSON"
+        "json": "JSON",
+        "opencode": "OpenCode",
+        "opencode-project": "OpenCode · 项目"
       },
       "unsupported": "不支持"
     },

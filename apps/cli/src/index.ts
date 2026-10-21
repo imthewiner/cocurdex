@@ -20,6 +20,7 @@ import { withDaemon } from "./daemon-command";
 import { handleDeckCommand } from "./deck-commands";
 import { handleHostCommand, hostUsageLines } from "./host-commands";
 import { handleIssueCommand } from "./issue-commands";
+import { handleLinkCommand } from "./link-commands";
 import { handleMcpCommand, mcpUsageLines } from "./mcp-commands";
 import { handleNoteCommand } from "./note-commands";
 import {
@@ -104,6 +105,13 @@ async function main(rawArgs: string[]) {
 
   if (resource === "note") {
     const handled = await handleNoteCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
+  }
+
+  if (resource === "link") {
+    const handled = await handleLinkCommand(action, args, parsed);
     if (handled) {
       return;
     }
@@ -508,6 +516,8 @@ function printUsage() {
       "  cocurdex note list|show|create|update|move|delete|backlinks|tags [--json]",
       "  cocurdex note create|update ... [--body <markdown> | --body - | --body-file <path>]",
       "  cocurdex note update <id> ... [--expected-revision <n>]",
+      "  cocurdex link list <ref> [--json]",
+      "  cocurdex link add|remove <ref> <ref>   (ref: <kind>:<id> or cocurdex://<kind>/<id>; kind session|note|issue|deck)",
       "  cocurdex deck list|show|create|update|delete|check [--json]",
       "  cocurdex deck create|update ... [--title <t>] [--markdown-file <path|-> | --content-file <path|->]",
       "  cocurdex deck update <id> ... [--expected-revision <n>]",

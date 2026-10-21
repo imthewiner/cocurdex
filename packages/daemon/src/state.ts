@@ -270,6 +270,7 @@ export class DaemonState {
   get data() {
     return {
       decks: this.database.decks,
+      entityLinks: this.database.entityLinks,
       issues: this.database.issues,
       notes: this.database.notes,
       search: this.database.search,

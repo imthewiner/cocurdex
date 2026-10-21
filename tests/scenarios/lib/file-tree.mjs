@@ -1,4 +1,5 @@
 import { clickPoint } from "./locate.mjs";
+import { showPanelView } from "./navigate.mjs";
 
 export async function openWorkspaceFile(session, relativePath) {
   const findRowCenter = (itemPath) => {
@@ -23,6 +24,7 @@ export async function openWorkspaceFile(session, relativePath) {
     }
     return false;
   };
+  await showPanelView(session, "files");
   await session.waitUntil(findRowCenter, relativePath, 30_000);
   const rowCenter = await session.run(findRowCenter, relativePath);
   await clickPoint(session, rowCenter);

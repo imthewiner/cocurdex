@@ -6,6 +6,10 @@ import {
 } from "./agents";
 import { createSqliteDecksRepository, type DecksRepository } from "./decks";
 import {
+  createSqliteEntityLinksRepository,
+  type EntityLinksRepository,
+} from "./entity-links";
+import {
   createSqliteHostAccessRepository,
   type HostAccessRepository,
 } from "./host-access";
@@ -80,6 +84,7 @@ import {
 export interface CocurdexDatabase {
   notes: NotesRepository;
   decks: DecksRepository;
+  entityLinks: EntityLinksRepository;
   issues: IssueTrackerRepository;
   search: SearchRepository;
   workspaces: WorkspaceRepository;
@@ -193,6 +198,7 @@ export function createCocurdexDatabase(databasePath: string): CocurdexDatabase {
   return {
     notes: createSqliteNotesRepository(database),
     decks: createSqliteDecksRepository(database),
+    entityLinks: createSqliteEntityLinksRepository(database),
     issues: createSqliteIssueTrackerRepository(database),
     search: createSqliteSearchRepository(database),
     workspaces: createSqliteWorkspaceRepository(database),
