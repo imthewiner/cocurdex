@@ -36,7 +36,8 @@ export function SkillDetail({
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const current = detail?.skill ?? skill;
-  const removeDescription = isBrokenLinkOnly(current)
+  const brokenLinkOnly = isBrokenLinkOnly(current);
+  const removeDescription = brokenLinkOnly
     ? t("skills.detail.removeBrokenDescription", { name: current.name })
     : t("skills.detail.removeDescription", { name: current.name });
 
@@ -127,6 +128,7 @@ export function SkillDetail({
       />
 
       <SkillProblemsSection
+        brokenLinkOnly={brokenLinkOnly}
         disabled={isBusy}
         problems={current.problems}
         onKeepCopy={(keepPath) =>
@@ -143,7 +145,7 @@ export function SkillDetail({
         />
       ) : null}
 
-      {detail ? (
+      {detail && !brokenLinkOnly ? (
         <>
           <SkillFilesSection
             files={detail.files}

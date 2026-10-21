@@ -2773,8 +2773,8 @@ export default interface Resources {
       actions: {
         cancel: "Cancel";
         install: "Install";
-        reinstall: "Reinstall";
         remove: "Remove";
+        restore: "Restore";
         update: "Update";
       };
       add: {
@@ -2895,8 +2895,10 @@ export default interface Resources {
         title: "Cocurdex skills";
       };
       problems: {
-        brokenLinkDescription: "This link points to a folder that no longer exists. Remove the skill to clean it up.";
-        brokenLinkTitle: "Broken link";
+        brokenLinkDescription: "These links point to folders that no longer exist, so those agents cannot read this skill.";
+        brokenLinkRemovableDescription: "These links point to folders that no longer exist, and no files of this skill remain. Remove it to clean up the links.";
+        brokenLinkTitle_one: "Broken link";
+        brokenLinkTitle_other: "{{count}} broken links";
         copyMeta_one: "{{count}} file · modified {{modified}}";
         copyMeta_other: "{{count}} files · modified {{modified}}";
         duplicateDescription: "Agents see different versions of this skill. Keep one copy; the others become links to it and are backed up.";
@@ -2932,9 +2934,10 @@ export default interface Resources {
       };
       status: {
         conflict: "Unmanaged cocurdex skill folders already exist ({{skills}}). Remove or rename them under {{path}}, then install again.";
-        installed: "Installed v{{version}} at {{path}}";
+        installed: "Up to date at {{path}}";
+        modified: "Files were edited locally. Restore puts back the built-in version at {{path}}";
         notInstalled: "Not installed. Would write to {{path}}";
-        updateAvailable: "Installed v{{installed}}; pack v{{latest}} is available at {{path}}";
+        updateAvailable: "A newer version is available for {{path}}";
       };
       tabs: {
         discover: "Discover";
@@ -2947,6 +2950,7 @@ export default interface Resources {
         installed: "cocurdex skills installed";
         removeFailed: "Could not remove skills";
         removed: "cocurdex skills removed";
+        restored: "Restored cocurdex Skills";
         skipped: "Skills are already up to date";
         updated: "cocurdex skills updated";
       };

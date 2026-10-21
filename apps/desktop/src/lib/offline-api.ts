@@ -182,6 +182,7 @@ export const offlineApi: DesktopApi = {
     managed: false,
     installedVersion: null,
     updateAvailable: false,
+    modified: false,
     conflict: false,
     conflictSkills: [],
     skills: [],

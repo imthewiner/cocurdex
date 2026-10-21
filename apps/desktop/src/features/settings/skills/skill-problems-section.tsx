@@ -87,27 +87,54 @@ function ProblemGroup({
       </SettingsGroup>
     );
   }
+  return null;
+}
+
+function BrokenLinksGroup({
+  paths,
+  removable,
+}: {
+  paths: string[];
+  removable: boolean;
+}) {
+  const { t } = useTranslation("settings");
+  const description = removable
+    ? t("skills.problems.brokenLinkRemovableDescription")
+    : t("skills.problems.brokenLinkDescription");
   return (
     <SettingsGroup
-      description={t("skills.problems.brokenLinkDescription")}
-      title={t("skills.problems.brokenLinkTitle")}
+      description={description}
+      title={t("skills.problems.brokenLinkTitle", { count: paths.length })}
     >
-      <Text as="div" className="break-all py-3 font-mono" size="meta">
-        {problem.path}
-      </Text>
+      {paths.map((path) => (
+        <Text
+          as="div"
+          className="break-all py-3 font-mono"
+          data-item-path={path}
+          key={path}
+          size="meta"
+        >
+          {path}
+        </Text>
+      ))}
     </SettingsGroup>
   );
 }
 
 export function SkillProblemsSection({
+  brokenLinkOnly,
   disabled,
   problems,
   onKeepCopy,
 }: {
+  brokenLinkOnly: boolean;
   disabled: boolean;
   problems: SkillProblem[];
   onKeepCopy(path: string): void;
 }) {
+  const brokenPaths = problems.flatMap((problem) =>
+    problem.kind === "brokenLink" ? [problem.path] : [],
+  );
   return (
     <>
       {problems.map((problem) => (
@@ -118,6 +145,9 @@ export function SkillProblemsSection({
           onKeepCopy={onKeepCopy}
         />
       ))}
+      {brokenPaths.length > 0 ? (
+        <BrokenLinksGroup paths={brokenPaths} removable={brokenLinkOnly} />
+      ) : null}
     </>
   );
 }

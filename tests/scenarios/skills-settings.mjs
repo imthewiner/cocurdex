@@ -1,4 +1,4 @@
-import { lstat, readlink } from "node:fs/promises";
+import { lstat, mkdir, readlink, symlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
@@ -23,6 +23,7 @@ const FIXTURE_SOURCE = path.dirname(
   ),
 );
 const FIXTURE_SKILLS = ["scenario-alpha", "scenario-beta"];
+const BROKEN_SKILL = "scenario-broken";
 
 const args = readScenarioArgs();
 
@@ -41,7 +42,7 @@ async function listWorkspaceSkills(session, workspaceId) {
 
 async function removeFixtureSkills(session, workspaceId) {
   for (const skill of await listWorkspaceSkills(session, workspaceId)) {
-    if (FIXTURE_SKILLS.includes(skill.name)) {
+    if ([...FIXTURE_SKILLS, BROKEN_SKILL].includes(skill.name)) {
       await daemonRequest(session, "skills.remove", {
         name: skill.name,
         scope: skill.scope,
@@ -63,6 +64,33 @@ async function pathKind(target) {
 
 function claudeLinkPath(workspaceRoot, name) {
   return path.join(workspaceRoot, ".claude", "skills", name);
+}
+
+async function createBrokenLinks(workspaceRoot, name) {
+  const missing = path.join(workspaceRoot, ".missing-skill-target", name);
+  const links = [
+    path.join(workspaceRoot, ".agents", "skills", name),
+    claudeLinkPath(workspaceRoot, name),
+  ];
+  for (const link of links) {
+    await mkdir(path.dirname(link), { recursive: true });
+    await symlink(
+      missing,
+      link,
+      process.platform === "win32" ? "junction" : "dir",
+    );
+  }
+  return links;
+}
+
+function readBrokenDetail(name) {
+  const detail = document.querySelector(`[data-skill-detail="${name}"]`);
+  return {
+    linkRows: [...(detail?.querySelectorAll("[data-item-path]") ?? [])].map(
+      (row) => row.dataset.itemPath,
+    ),
+    text: detail?.textContent ?? "",
+  };
 }
 
 async function clickDataRow(session, selector) {
@@ -386,6 +414,80 @@ runScenario("skills-settings", {
           remaining.map((skill) => skill.name),
         );
         return {};
+      },
+    ],
+    [
+      "a skill left with only broken links explains and cleans them up",
+      async ({ session, t, workspaceId }) => {
+        const [beta] = (await listWorkspaceSkills(session, workspaceId)).filter(
+          (skill) => skill.name === "scenario-beta",
+        );
+        const workspaceRoot = path.dirname(
+          path.dirname(path.dirname(beta.path)),
+        );
+        const links = await createBrokenLinks(workspaceRoot, BROKEN_SKILL);
+        await openSettingsSection(session, "general");
+        await openSettingsSection(session, "skills");
+        await clickDataRow(
+          session,
+          `[data-skill="${BROKEN_SKILL}"][data-skill-scope="workspace"]`,
+        );
+        await waitForDetail(session, BROKEN_SKILL);
+        const detail = await session.run(readBrokenDetail, BROKEN_SKILL);
+        check(
+          links.every((link) => detail.linkRows.includes(link)),
+          "every broken link listed once",
+          detail.linkRows,
+        );
+        check(
+          detail.text.includes(
+            await t("skills.problems.brokenLinkTitle", { count: 2 }),
+          ) &&
+            detail.text.includes(
+              await t("skills.problems.brokenLinkRemovableDescription"),
+            ),
+          "one merged broken link group",
+          detail.text,
+        );
+        check(
+          !detail.text.includes(await t("skills.files.title", { count: 0 })),
+          "no empty files section",
+          detail.text,
+        );
+        await clickByRole(session, {
+          role: "button",
+          name: await t("skills.actions.remove"),
+        });
+        await waitForRole(session, { role: "dialog" }, UI_TIMEOUT_MS);
+        const dialogText = await session.run(
+          () => document.querySelector('[role="dialog"]')?.textContent ?? "",
+        );
+        check(
+          dialogText.includes(
+            await t("skills.detail.removeBrokenDescription", {
+              name: BROKEN_SKILL,
+            }),
+          ),
+          "broken link removal copy",
+          dialogText,
+        );
+        await clickByRole(session, {
+          role: "button",
+          name: await t("skills.actions.remove"),
+          within: { role: "dialog" },
+        });
+        await session.waitUntil(
+          (name) =>
+            !document.querySelector(
+              `[data-skill="${name}"][data-skill-scope="workspace"]`,
+            ),
+          BROKEN_SKILL,
+          UI_TIMEOUT_MS,
+        );
+        for (const link of links) {
+          check((await pathKind(link)) === null, "broken link removed", link);
+        }
+        return { links: links.length };
       },
     ],
     [

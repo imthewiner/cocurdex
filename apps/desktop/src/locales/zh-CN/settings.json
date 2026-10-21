@@ -1036,8 +1036,8 @@
     "actions": {
       "cancel": "取消",
       "install": "安装",
-      "reinstall": "重新安装",
       "remove": "移除",
+      "restore": "恢复",
       "update": "更新"
     },
     "add": {
@@ -1158,8 +1158,10 @@
       "title": "Cocurdex skills"
     },
     "problems": {
-      "brokenLinkDescription": "这个链接指向的文件夹已不存在。移除这个 skill 即可清理。",
-      "brokenLinkTitle": "链接失效",
+      "brokenLinkDescription": "这些链接指向的文件夹已不存在，对应的 agent 读不到这个 skill。",
+      "brokenLinkRemovableDescription": "这些链接指向的文件夹已不存在，这个 skill 已没有可用文件。移除即可清理这些链接。",
+      "brokenLinkTitle_one": "链接失效",
+      "brokenLinkTitle_other": "{{count}} 个链接失效",
       "copyMeta_one": "{{count}} 个文件 · 修改于 {{modified}}",
       "copyMeta_other": "{{count}} 个文件 · 修改于 {{modified}}",
       "duplicateDescription": "不同 agent 看到的是这个 skill 的不同版本。保留一份，其他副本会变成指向它的链接并被备份。",
@@ -1195,9 +1197,10 @@
     },
     "status": {
       "conflict": "已存在非托管的 cocurdex skill 目录（{{skills}}）。请先删除或重命名 {{path}} 下的冲突项，再重新安装。",
-      "installed": "已安装 v{{version}}，路径 {{path}}",
+      "installed": "已安装最新版本，路径 {{path}}",
+      "modified": "本地文件已被修改。恢复会改回内置版本，路径 {{path}}",
       "notInstalled": "未安装。将写入 {{path}}",
-      "updateAvailable": "已安装 v{{installed}}；可用 pack v{{latest}}，路径 {{path}}"
+      "updateAvailable": "有新版本可更新，路径 {{path}}"
     },
     "tabs": {
       "discover": "发现",
@@ -1210,6 +1213,7 @@
       "installFailed": "安装 Skills 失败",
       "removed": "已移除 cocurdex Skills",
       "removeFailed": "移除 Skills 失败",
+      "restored": "已恢复 cocurdex Skills",
       "skipped": "Skills 已是最新",
       "updated": "已更新 cocurdex Skills"
     },
