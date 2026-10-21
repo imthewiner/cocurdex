@@ -122,6 +122,8 @@
   --color-editor-monaco-indent-active: var(--editor-monaco-indent-active);
   --color-welcome-surface: var(--welcome-surface);
   --color-settings-surface: var(--settings-surface);
+  --color-settings-surface-hover: var(--settings-surface-hover);
+  --color-settings-surface-active: var(--settings-surface-active);
   --color-welcome-surface-hover: var(--welcome-surface-hover);
   --color-welcome-surface-strong: var(--welcome-surface-strong);
   --color-welcome-surface-strong-hover: var(--welcome-surface-strong-hover);
