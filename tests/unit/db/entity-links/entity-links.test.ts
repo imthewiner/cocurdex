@@ -82,6 +82,69 @@ describe("CocurdexDatabase.entityLinks", () => {
     expect(await database.entityLinks.list(deckRef)).toEqual([]);
   });
 
+  it("resolves issue identifier mentions in both directions", async () => {
+    const { database, issue } = await seed();
+    const note = await database.notes.create({
+      title: "Gift card follow-up",
+      bodyMarkdown: `Blocked on [${issue.identifier}](${entityUri({ kind: "issue", id: issue.identifier })}).`,
+    });
+
+    const fromNote = await database.entityLinks.list({
+      kind: "note",
+      id: note.id,
+    });
+    expect(fromNote.map((link) => [link.relation, link.target])).toEqual([
+      ["mentions", { kind: "issue", id: issue.id }],
+    ]);
+    const fromIssue = await database.entityLinks.list({
+      kind: "issue",
+      id: issue.id,
+    });
+    expect(
+      fromIssue
+        .filter((link) => link.target.id === note.id)
+        .map((link) => link.relation),
+    ).toEqual(["mentioned-by"]);
+  });
+
+  it("omits archived sessions, which cannot be opened", async () => {
+    const { database, note } = await seed();
+    const timestamp = "2026-10-01T00:00:00.000Z";
+    await database.workspaces.upsert({
+      id: "workspace",
+      name: "Gift cards",
+      rootPaths: [path.join(tempDirs.createSync("cocurdex-links-ws-"), "shop")],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      lastOpenedAt: timestamp,
+      sortOrder: 1,
+    });
+    await database.sessions.upsert({
+      id: "session",
+      workspaceId: "workspace",
+      title: "Build gift cards",
+      agentType: "acp:grok-build",
+      status: "idle",
+      writeMode: "native-write",
+      sessionModeId: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      lastMessageAt: timestamp,
+      archivedAt: null,
+    });
+    const noteRef = { kind: "note", id: note.id } as const;
+    await database.entityLinks.add(noteRef, { kind: "session", id: "session" });
+    const sessionLinks = async () =>
+      (await database.entityLinks.list(noteRef)).filter(
+        (link) => link.target.kind === "session",
+      );
+    expect(await sessionLinks()).toHaveLength(1);
+
+    await database.sessions.archive("session", timestamp);
+
+    expect(await sessionLinks()).toEqual([]);
+  });
+
   it("drops manual links when either entity is deleted", async () => {
     const { database, deck, note } = await seed();
     const noteRef = { kind: "note", id: note.id } as const;

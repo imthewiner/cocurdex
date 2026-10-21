@@ -36,10 +36,16 @@ function orderedPair(a: EntityRef, b: EntityRef): [EntityRef, EntityRef] {
   return aKey <= bKey ? [a, b] : [b, a];
 }
 
-function readTitle(database: DatabaseSync, ref: EntityRef) {
+const OPENABLE_FILTERS: Partial<Record<LinkableEntityKind, string>> = {
+  session: "AND archived_at IS NULL",
+};
+
+function readTitle(database: DatabaseSync, ref: EntityRef, filter = "") {
   const columns = ref.kind === "issue" ? "title, number" : "title";
   return database
-    .prepare(`SELECT ${columns} FROM ${ENTITY_TABLES[ref.kind]} WHERE id = ?`)
+    .prepare(
+      `SELECT ${columns} FROM ${ENTITY_TABLES[ref.kind]} WHERE id = ? ${filter}`,
+    )
     .get(ref.id) as TitleRow | undefined;
 }
 
@@ -85,9 +91,10 @@ function noteMentions(database: DatabaseSync, ref: EntityRef): LinkedRef[] {
     target_ref: string;
   }>;
   return rows.flatMap((row): LinkedRef[] => {
+    const parsed = parseEntityRef(row.target_ref);
     const target = row.target_note_id
       ? ({ kind: "note", id: row.target_note_id } as const)
-      : parseEntityRef(row.target_ref);
+      : parsed && resolveRef(database, parsed);
     return target
       ? [{ ref: target, relation: "mentions", removable: false }]
       : [];
@@ -104,11 +111,39 @@ function mentionedBy(database: DatabaseSync, ref: EntityRef): LinkedRef[] {
     .all(entityUri(ref), ref.kind, ref.id) as Array<{
     source_note_id: string;
   }>;
-  return rows.map((row) => ({
-    ref: { kind: "note", id: row.source_note_id },
+  const sources = [
+    ...rows.map((row) => row.source_note_id),
+    ...issueIdentifierMentionSources(database, ref),
+  ];
+  return [...new Set(sources)].map((id) => ({
+    ref: { kind: "note", id },
     relation: "mentioned-by",
     removable: false,
   }));
+}
+
+function issueIdentifierMentionSources(
+  database: DatabaseSync,
+  ref: EntityRef,
+): string[] {
+  if (ref.kind !== "issue") return [];
+  const issue = readTitle(database, ref);
+  if (typeof issue?.number !== "number") return [];
+  const rows = database
+    .prepare(
+      `SELECT source_note_id, target_ref FROM note_links
+       WHERE target_ref LIKE ? ORDER BY source_note_id`,
+    )
+    .all(`${entityUri({ kind: "issue", id: "" })}%`) as Array<{
+    source_note_id: string;
+    target_ref: string;
+  }>;
+  return rows
+    .filter((row) => {
+      const target = parseEntityRef(row.target_ref);
+      return target !== null && parseIssueNumber(target.id) === issue.number;
+    })
+    .map((row) => row.source_note_id);
 }
 
 const ISSUE_RELATIONS: Record<
@@ -207,7 +242,11 @@ function toEntityLink(
   database: DatabaseSync,
   linked: LinkedRef,
 ): EntityLink | null {
-  const row = readTitle(database, linked.ref);
+  const row = readTitle(
+    database,
+    linked.ref,
+    OPENABLE_FILTERS[linked.ref.kind],
+  );
   if (!row) return null;
   return {
     target: linked.ref,
