@@ -101,7 +101,7 @@ function ToggleGroup({
       onValueChange={handleChange}
       style={{ "--gap": spacing } as React.CSSProperties}
       className={cn(
-        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch data-[variant=segmented]:bg-muted data-[variant=segmented]:p-0.5",
+        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch data-[variant=segmented]:bg-foreground/6 data-[variant=segmented]:p-0.5",
         className,
       )}
       {...props}

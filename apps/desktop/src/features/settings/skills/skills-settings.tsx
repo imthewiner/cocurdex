@@ -39,6 +39,11 @@ function SkillsSettings({
   const skills = library.library?.skills ?? [];
   const workspaceName = library.library?.workspace?.name ?? null;
   const installedCount = skills.filter((skill) => !skill.builtin).length;
+  const isLibraryLoaded = library.library !== null || library.loadError !== "";
+
+  if (!(isLibraryLoaded && pack.isLoaded)) {
+    return <div className="min-h-0 flex-1" />;
+  }
 
   return (
     <div className="settings-panel-enter flex min-h-0 min-w-0 flex-1 flex-col gap-5">
