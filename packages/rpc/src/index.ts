@@ -295,6 +295,7 @@ export type DaemonRequestPayloadByMethod = {
   "workspace.list": undefined;
   "workspace.listEntries": { rootPath: string };
   "workspace.listFiles": { rootPath: string };
+  "workspace.listDirectory": { rootPath: string; relativePath: string };
   "workspace.save": { workspace: WorkspaceRecord };
   "workspace.delete": { workspaceId: string };
   "workspace.resolveOpenPath": { path: string; allowFile: boolean };
@@ -628,6 +629,7 @@ export type DaemonResultByMethod = {
   "workspace.list": WorkspaceRecord[];
   "workspace.listEntries": WorkspaceEntry[];
   "workspace.listFiles": WorkspaceFileRecord[];
+  "workspace.listDirectory": WorkspaceFileRecord[];
   "workspace.save": WorkspaceRecord;
   "workspace.delete": null;
   "workspace.resolveOpenPath": string | null;

@@ -178,6 +178,7 @@ import {
 import { resolveWorkspaceOpenPath } from "./workspace-open-path";
 import {
   fileExists,
+  listWorkspaceDirectory as listWorkspaceDirectoryOnDisk,
   listWorkspaceEntries as listWorkspaceEntriesOnDisk,
   listWorkspaceFiles as listWorkspaceFilesOnDisk,
   readTextFile,
@@ -798,6 +799,13 @@ export class CocurdexDaemonService {
     }
     await this.workspaceWatch.ensure(rootPath);
     return listWorkspaceFilesOnDisk(rootPath);
+  }
+
+  async listWorkspaceDirectory(rootPath: string, relativePath: string) {
+    if (!(await this.scanPolicy.canScan(rootPath))) {
+      return [];
+    }
+    return listWorkspaceDirectoryOnDisk(rootPath, relativePath);
   }
 
   async watchWorkspace(rootPath: string) {

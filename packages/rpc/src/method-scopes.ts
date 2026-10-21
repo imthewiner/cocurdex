@@ -85,6 +85,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "system.fontFamilies": "read",
   "workspace.listEntries": "files.read",
   "workspace.listFiles": "files.read",
+  "workspace.listDirectory": "files.read",
   "workspace.resolveOpenPath": "files.read",
   "session.getTurnChangeFile": "files.read",
   "session.getTurnChangeDiff": "files.read",

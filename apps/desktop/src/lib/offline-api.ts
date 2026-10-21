@@ -269,6 +269,7 @@ export const offlineApi: DesktopApi = {
   }),
   listWorkspaceEntries: async () => [],
   listWorkspaceFiles: async () => [],
+  listWorkspaceDirectory: async () => [],
   onWorkspaceFilesChanged: () => () => {},
   onWorkspaceGitStateChanged: () => () => {},
   listGitBranches: async () => [],
