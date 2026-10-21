@@ -146,7 +146,6 @@
   --shadow-chat-panel: var(--chat-shadow-panel);
   --shadow-chat-shell: var(--chat-shadow-shell);
   --shadow-chat-floating: var(--chat-shadow-floating);
-  --shadow-chat-inline-inset: var(--chat-shadow-inline-inset);
   --shadow-chat-code-inset: var(--chat-shadow-code-inset);
 
   /*

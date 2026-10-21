@@ -30,7 +30,7 @@ export function MermaidDiagram({ code, isIncomplete }: CustomRendererProps) {
 
   if (error) {
     return (
-      <div className="my-4 space-y-2 rounded-card border border-chat-border-soft p-4">
+      <div className="my-4 space-y-2 rounded-card bg-chat-code-block p-4">
         <Text as="p" className="font-mono text-destructive" size="meta">
           {error}
         </Text>

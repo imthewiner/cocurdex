@@ -416,7 +416,7 @@ export function createMarkdownComponents(
       return (
         <code
           className={cn(
-            "break-words rounded-control border px-1.5 py-0.5 font-normal text-[0.92em]",
+            "break-words rounded-control px-1.5 py-0.5 font-normal text-[0.92em]",
             getInlineCodeToneClass(tone),
             codeClassName,
           )}

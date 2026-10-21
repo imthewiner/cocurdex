@@ -85,13 +85,13 @@ function getMessageArticleClassName(message: MessageRecord) {
 
   if (message.role === "system") {
     return cn(
-      "w-full min-w-0 max-w-3xl rounded-panel border border-chat-system-border bg-chat-system-bg px-3.5 py-2.5 text-chat-system-fg",
+      "w-full min-w-0 max-w-3xl rounded-panel bg-chat-system-bg px-3.5 py-2.5 text-chat-system-fg",
     );
   }
 
   if (message.role === "user") {
     return cn(
-      "min-w-0 max-w-3xl rounded-panel rounded-tr-md border border-chat-border-soft bg-chat-surface-bubble px-3.5 py-2.5 text-chat-fg",
+      "min-w-0 max-w-3xl rounded-panel rounded-tr-md bg-chat-surface-bubble px-3.5 py-2.5 text-chat-fg",
     );
   }
 
