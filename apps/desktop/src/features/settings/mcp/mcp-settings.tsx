@@ -7,7 +7,6 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
-import { JsonImportDropzone } from "../json-import-dropzone";
 import { McpEmptyState } from "./mcp-empty-state";
 import { McpImportDialog } from "./mcp-import-dialog";
 import {
@@ -16,6 +15,7 @@ import {
   importItemsFromJson,
   type McpImportItem,
 } from "./mcp-import-items";
+import { McpJsonDropArea } from "./mcp-json-drop-area";
 import { McpJsonEditor } from "./mcp-json-editor";
 import { type McpSelection, resolveSelection } from "./mcp-selection";
 import { McpServerDetail } from "./mcp-server-detail";
@@ -214,7 +214,7 @@ export function McpSettingsPanel() {
         />
       ) : null}
       {view === "servers" ? (
-        <div className="flex min-h-0 min-w-0 flex-1 gap-6">
+        <McpJsonDropArea className="gap-6" onText={importJsonText}>
           <McpServerList
             project={mcp.project?.servers ?? null}
             query={query}
@@ -229,7 +229,7 @@ export function McpSettingsPanel() {
             onText={importJsonText}
           />
           <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-            <div className="flex min-w-0 flex-col gap-6 pe-1">
+            <div className="flex min-w-0 flex-col gap-6 pe-3">
               {detail && active ? (
                 <McpServerDetail
                   config={detail.config}
@@ -270,20 +270,9 @@ export function McpSettingsPanel() {
                   status={detailStatus}
                 />
               ) : null}
-              <JsonImportDropzone
-                dropActiveHint={t("mcp.jsonImport.dropActive")}
-                dropHint={t("mcp.jsonImport.dropHint")}
-                intro={t("mcp.jsonImport.intro")}
-                invalidFileMessage={t("mcp.jsonImport.invalidFile")}
-                label={t("mcp.jsonImport.label")}
-                pasteDescription={t("mcp.jsonImport.pasteDescription")}
-                pasteTitle={t("mcp.jsonImport.pasteTitle")}
-                title={t("mcp.jsonImport.title")}
-                onText={importJsonText}
-              />
             </div>
           </div>
-        </div>
+        </McpJsonDropArea>
       ) : null}
 
       <McpImportDialog

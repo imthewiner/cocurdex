@@ -210,8 +210,13 @@ runScenario("mcp-settings", {
             ),
           importLabel,
         );
+        const dropzone = await session.run(
+          (label) => document.body.innerText.includes(label),
+          await t("mcp.jsonImport.label"),
+        );
         check(!standalone, "no standalone import button", { standalone });
-        return { standalone };
+        check(!dropzone, "no inline JSON import section", { dropzone });
+        return { standalone, dropzone };
       },
     ],
     [
@@ -256,6 +261,10 @@ runScenario("mcp-settings", {
       async ({ session, t }) => {
         await clickByRole(session, {
           role: "button",
+          name: await t("mcp.list.add"),
+        });
+        await clickByRole(session, {
+          role: "menuitem",
           name: await translate(session, "settings:jsonImport.pasteButton"),
         });
         const [field] = await waitForRole(session, {
