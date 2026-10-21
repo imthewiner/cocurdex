@@ -92,7 +92,7 @@ describe("workspace activation persistence", () => {
     expect(saveWorkspace.mock.calls[0][0].id).toBe("a");
   });
 
-  it("persists the first workspace that bootstrap activates", () => {
+  it("activates the most recently opened workspace without writing it back", () => {
     const store = createStore();
 
     store.set(bootstrapWorkspacesAtom, [
@@ -114,8 +114,8 @@ describe("workspace activation persistence", () => {
       "b",
       "a",
     ]);
-    expect(saveWorkspace).toHaveBeenCalledTimes(1);
-    expect(saveWorkspace.mock.calls[0][0].id).toBe("b");
+    expect(store.get(activeWorkspaceIdAtom)).toBe("b");
+    expect(saveWorkspace).not.toHaveBeenCalled();
   });
 
   it("does not persist when bootstrapping an empty list", () => {

@@ -16,6 +16,7 @@ supportedArchitectures:
 overrides:
   '@babel/core': ^7.29.1
   '@hono/node-server': ^1.19.15
+  '@modelcontextprotocol/sdk': ^1.32.1
   # Keep a single @types/node copy per program; mixed copies break
   # EventEmitter member resolution (ChildProcess.on/once). Pin the range
   # so transitive deps cannot pull a second major version.

@@ -888,15 +888,14 @@ describe("TeamModule", () => {
     expect(stopped).toEqual([member.sessionId]);
   });
 
-  it("keeps OpenCode out of agent teams", async () => {
+  it("lets OpenCode lead a team and join one", async () => {
     const { module, sessions } = harness();
     sessions.set("oc-lead", session({ id: "oc-lead", agentType: "opencode" }));
     await expect(
       module.spawn("oc-lead", { name: "a", prompt: "go" }),
-    ).rejects.toMatchObject({ code: "unsupported_agent" });
+    ).resolves.toMatchObject({ name: "a", status: "spawning" });
     await expect(
-      module.spawn("lead", { name: "a", prompt: "go", agentType: "opencode" }),
-    ).rejects.toMatchObject({ code: "unsupported_agent" });
-    expect(await module.taskList("lead")).toEqual([]);
+      module.spawn("lead", { name: "b", prompt: "go", agentType: "opencode" }),
+    ).resolves.toMatchObject({ name: "b", status: "spawning" });
   });
 });

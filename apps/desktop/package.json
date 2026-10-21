@@ -1,7 +1,7 @@
 {
   "name": "@cocurdex/desktop",
   "productName": "Cocurdex",
-  "version": "0.1.87",
+  "version": "0.1.88",
   "description": "Cocurdex desktop app",
   "author": "softmeta LLC",
   "homepage": "https://cocurdex.com",
@@ -116,7 +116,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "culori": "^4.0.2",
-    "electron": "^44.5.1",
+    "electron": "^44.9.0",
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "github-slugger": "^2.0.0",

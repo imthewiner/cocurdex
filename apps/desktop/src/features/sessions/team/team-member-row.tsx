@@ -1,8 +1,4 @@
-import {
-  type AgentRoleRecord,
-  supportsAgentTeam,
-  type TeamTemplateMember,
-} from "@cocurdex/shared";
+import type { AgentRoleRecord, TeamTemplateMember } from "@cocurdex/shared";
 import { Crown, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AppDropdownTriggerLabel, AppSelect } from "@/components";
@@ -39,9 +35,7 @@ export function TeamMemberRow({
   const role = roles.find((item) => item.id === member.agentRoleId) ?? null;
   const roleOptions = roles
     .filter(
-      (item) =>
-        supportsAgentTeam(item.agentId) &&
-        (item.id === member.agentRoleId || !takenRoleIds.has(item.id)),
+      (item) => item.id === member.agentRoleId || !takenRoleIds.has(item.id),
     )
     .map((item) => ({
       icon: <AgentRoleAvatar role={item} />,

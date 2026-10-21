@@ -2,13 +2,11 @@ import {
   type AgentId,
   type AgentMcpUnsupportedReason,
   PI_MCP_AGENT_ID,
-  supportsInjectedMcpServers,
 } from "@cocurdex/shared";
 
 export type McpAgentAccess =
   | { kind: "native" }
   | { kind: "injected" }
-  | { kind: "agentUnsupported" }
   | { kind: "serverUnsupported"; reason: AgentMcpUnsupportedReason };
 
 export interface McpAgentRow {
@@ -23,7 +21,6 @@ function agentAccess(
   unsupported: AgentMcpUnsupportedReason | null,
 ): McpAgentAccess {
   if (agentId === PI_MCP_AGENT_ID) return { kind: "native" };
-  if (!supportsInjectedMcpServers(agentId)) return { kind: "agentUnsupported" };
   if (unsupported) return { kind: "serverUnsupported", reason: unsupported };
   return { kind: "injected" };
 }
