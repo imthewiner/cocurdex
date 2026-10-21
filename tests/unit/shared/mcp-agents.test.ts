@@ -1,6 +1,5 @@
 import {
   mcpServerAgents,
-  supportsInjectedMcpServers,
   toAgentMcpServer,
   withMcpServerAgents,
 } from "@cocurdex/shared";
@@ -30,15 +29,6 @@ describe("mcpServerAgents", () => {
     expect(mcpServerAgents({ cocurdex: { agents: ["codex", 3] } })).toEqual([
       "codex",
     ]);
-  });
-});
-
-describe("supportsInjectedMcpServers", () => {
-  it("covers native adapters and ACP agents but not OpenCode", () => {
-    expect(supportsInjectedMcpServers("claude-agent")).toBe(true);
-    expect(supportsInjectedMcpServers("codex")).toBe(true);
-    expect(supportsInjectedMcpServers("acp:grok-build")).toBe(true);
-    expect(supportsInjectedMcpServers("opencode")).toBe(false);
   });
 });
 

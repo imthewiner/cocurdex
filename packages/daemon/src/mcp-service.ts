@@ -12,7 +12,7 @@ import {
   type AgentMcpUnsupportedReason,
   type McpServerConfig,
   mcpServerTargetsAgent,
-  supportsInjectedMcpServers,
+  PI_MCP_AGENT_ID,
   toAgentMcpServer,
 } from "@cocurdex/shared";
 import { DaemonMcpConfigService } from "./mcp-config";
@@ -96,7 +96,7 @@ export class DaemonMcpService {
   }
 
   async serversForAgent(agentId: AgentId): Promise<AgentMcpServer[]> {
-    if (!supportsInjectedMcpServers(agentId)) {
+    if (agentId === PI_MCP_AGENT_ID) {
       return [];
     }
     const servers = await this.config.readServers();

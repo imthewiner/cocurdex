@@ -8,8 +8,8 @@ import {
   type McpServerStatus,
   type McpStatusReport,
   mcpServerAgents,
+  PI_MCP_AGENT_ID,
   parseMcpServersJson,
-  supportsInjectedMcpServers,
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
 import {
@@ -142,14 +142,9 @@ async function serverAgents(args: McpArgs) {
   }
   const support = await withDaemon(() => requestDaemon("mcp.injection.check"));
   const unsupported = support[name] ?? null;
-  const injected = agents.filter(
-    (agent) => agent !== "pi" && supportsInjectedMcpServers(agent),
-  );
-  const ignored = agents.filter(
-    (agent) => agent !== "pi" && !supportsInjectedMcpServers(agent),
-  );
+  const injected = agents.filter((agent) => agent !== PI_MCP_AGENT_ID);
   if (args.values.has("json")) {
-    printJson({ name, agents, unsupported, ignored });
+    printJson({ name, agents, unsupported });
     return;
   }
   console.log(
@@ -158,11 +153,6 @@ async function serverAgents(args: McpArgs) {
   if (unsupported && injected.length > 0) {
     console.log(
       `  only Pi can use it: ${UNSUPPORTED_REASONS[unsupported]}; ${injected.join(", ")} will not receive it`,
-    );
-  }
-  if (ignored.length > 0) {
-    console.log(
-      `  ${ignored.join(", ")} cannot receive Cocurdex MCP servers yet`,
     );
   }
 }

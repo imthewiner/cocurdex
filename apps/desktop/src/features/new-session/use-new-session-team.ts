@@ -1,8 +1,7 @@
-import {
-  type AgentId,
-  type AgentRoleRecord,
-  supportsAgentTeam,
-  type TeamTemplateRecord,
+import type {
+  AgentId,
+  AgentRoleRecord,
+  TeamTemplateRecord,
 } from "@cocurdex/shared";
 import { useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
@@ -67,10 +66,7 @@ export function useNewSessionTeam({
             lead: lead.name,
           })
         : t("team.leadMissing"),
-      selectable:
-        agentId !== undefined &&
-        supportsAgentTeam(agentId) &&
-        agentOption?.selectable !== false,
+      selectable: agentId !== undefined && agentOption?.selectable !== false,
       statusKind: agentOption?.statusKind,
     };
   });

@@ -4,6 +4,7 @@ import {
 } from "@cocurdex/agent-adapters/internal/opencode/opencode-adapter";
 import type {
   AgentEvent,
+  AgentMcpServer,
   AgentPermissionRequestPayload,
   AgentPermissionResolution,
   AgentProviderSessionRecord,
@@ -119,8 +120,20 @@ function createClient(
   const createIds = [...(options.createIds ?? ["ses_new"])];
   const deliver = (sessionID: string, inboxID: string) =>
     hub.emit(event("session.inbox.delivered", { sessionID, inboxID }));
+  const mcpServers = new Map<string, unknown>();
   const client = {
     event: { subscribe: vi.fn(hub.subscribe) },
+    mcp: {
+      list: vi.fn(async () => ({
+        data: [...mcpServers.keys()].map((name) => ({ name })),
+      })),
+      add: vi.fn(async (input: { server: string; config: unknown }) => {
+        mcpServers.set(input.server, input.config);
+      }),
+      remove: vi.fn(async (input: { server: string }) => {
+        mcpServers.delete(input.server);
+      }),
+    },
     model: {
       list: vi.fn(async () => ({
         data: options.models ?? [
@@ -167,9 +180,10 @@ function createClient(
       remove: vi.fn(async () => undefined),
       switchAgent: vi.fn(async () => undefined),
       switchModel: vi.fn(async () => undefined),
+      update: vi.fn(async () => undefined),
     },
   };
-  return { client, deliver, hub };
+  return { client, deliver, hub, mcpServers };
 }
 
 type FakeClient = ReturnType<typeof createClient>["client"];
@@ -252,6 +266,8 @@ function startAdapter(options: {
   requestQuestion?: (
     request: AgentQuestionRequestPayload,
   ) => Promise<string | null>;
+  agentTools?: { url: string; token: string };
+  mcpServers?: AgentMcpServer[];
 }) {
   runtimeMocks.connect.mockResolvedValue(options.client);
   const session = createSession(options.sessionId, options.session);
@@ -260,6 +276,10 @@ function startAdapter(options: {
       session,
       workspaceRootPath: "/workspace",
       providerSession: options.providerSession,
+      agentTools: options.agentTools,
+      resolveMcpServers: options.mcpServers
+        ? async () => options.mcpServers ?? []
+        : undefined,
       onProviderSessionUpdate(update) {
         if (update) options.updates?.push(update);
       },
@@ -314,6 +334,9 @@ describe("createOpencodeAdapter", () => {
 
     expect(client.session.create).toHaveBeenCalledWith({
       location: { directory: "/workspace" },
+      permissions: [
+        { action: "cocurdex-session-*", resource: "*", effect: "deny" },
+      ],
       agent: "build",
       model: NATIVE_MODEL,
     });
@@ -327,6 +350,120 @@ describe("createOpencodeAdapter", () => {
     expect(updates.map((update) => update.providerSessionId)).toEqual([
       "ses_new",
     ]);
+  });
+
+  it("gives a session its own tool server and the assigned MCP servers", async () => {
+    const { client, mcpServers } = createClient();
+    mcpServers.set("cocurdex-mcp-retired", { type: "local", command: ["x"] });
+    const session = startAdapter({
+      client,
+      sessionId: "app-tools",
+      agentTools: { url: "http://127.0.0.1:4000/mcp", token: "tok" },
+      mcpServers: [
+        {
+          transport: "stdio",
+          name: "fs",
+          command: "npx",
+          args: ["-y", "fs-server"],
+          env: { ROOT: "/srv" },
+        },
+      ],
+    });
+
+    await session.sendMessage({ content: "Hello", history: [] });
+
+    const names = [...mcpServers.keys()];
+    const own = names.find((name) => name.startsWith("cocurdex-session-"));
+    expect(own).toMatch(/^cocurdex-session-app-tools-[0-9a-f]{8}$/);
+    expect(names.sort()).toEqual(["cocurdex-mcp-fs", own].sort());
+    expect(mcpServers.get("cocurdex-mcp-fs")).toEqual({
+      type: "local",
+      command: ["npx", "-y", "fs-server"],
+      environment: { ROOT: "/srv" },
+    });
+    expect(mcpServers.get(own ?? "")).toEqual({
+      type: "remote",
+      url: "http://127.0.0.1:4000/mcp",
+      headers: { Authorization: "Bearer tok" },
+      oauth: false,
+    });
+    expect(client.session.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: [
+          { action: "cocurdex-session-*", resource: "*", effect: "deny" },
+          { action: `${own}_*`, resource: "*", effect: "allow" },
+        ],
+      }),
+    );
+
+    await session.sendMessage({ content: "Again", history: [] });
+    expect(client.mcp.add).toHaveBeenCalledTimes(2);
+
+    session.dispose();
+    await vi.waitFor(() => expect(mcpServers.has(own ?? "")).toBe(false));
+    expect(mcpServers.has("cocurdex-mcp-fs")).toBe(true);
+  });
+
+  it("re-adds servers the OpenCode service lost", async () => {
+    const { client, mcpServers } = createClient();
+    const session = startAdapter({
+      client,
+      sessionId: "app-restart",
+      mcpServers: [
+        {
+          transport: "http",
+          name: "docs",
+          url: "https://docs.example.invalid/mcp",
+          headers: {},
+        },
+      ],
+    });
+    await session.sendMessage({ content: "Hello", history: [] });
+    mcpServers.clear();
+    await session.sendMessage({ content: "Again", history: [] });
+    expect(mcpServers.get("cocurdex-mcp-docs")).toEqual({
+      type: "remote",
+      url: "https://docs.example.invalid/mcp",
+    });
+  });
+
+  it("scopes tool rules on a resumed session without dropping its own rules", async () => {
+    const { client } = createClient({
+      getSession: async (id) => ({
+        id,
+        agent: "build",
+        model: NATIVE_MODEL,
+        permissions: [
+          { action: "bash", resource: "*", effect: "ask" },
+          { action: "cocurdex-session-*", resource: "*", effect: "deny" },
+        ],
+      }),
+    });
+    const session = startAdapter({
+      client,
+      sessionId: "app-resumed",
+      agentTools: { url: "http://127.0.0.1:4000/mcp", token: "tok" },
+      providerSession: providerSession("app-resumed", "ses_saved"),
+    });
+
+    await session.sendMessage({ content: "Hello", history: [] });
+    await session.sendMessage({ content: "Again", history: [] });
+
+    expect(client.session.update).toHaveBeenCalledOnce();
+    expect(client.session.update).toHaveBeenCalledWith({
+      sessionID: "ses_saved",
+      permissions: [
+        { action: "bash", resource: "*", effect: "ask" },
+        { action: "cocurdex-session-*", resource: "*", effect: "deny" },
+        {
+          action: expect.stringMatching(
+            /^cocurdex-session-app-resumed-[0-9a-f]{8}_\*$/,
+          ),
+          resource: "*",
+          effect: "allow",
+        },
+      ],
+    });
   });
 
   it("uses the prompt id as the turn boundary for native diffs", async () => {
