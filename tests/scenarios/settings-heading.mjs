@@ -8,7 +8,7 @@ const SHORT_VIEWPORT = { width: 1200, height: 480 };
 
 const args = readScenarioArgs();
 
-function readHeading() {
+function readHeading(groupName) {
   const headings = document.querySelectorAll("main h1");
   const heading = headings[0];
   const content =
@@ -16,8 +16,17 @@ function readHeading() {
   const compact = document.querySelector(
     '[data-testid="settings-compact-title"]',
   );
+  const groupLabel = [
+    ...document.querySelectorAll("button[aria-expanded]"),
+  ].find((button) => button.textContent.trim() === groupName);
+  const center = (element) => {
+    const rect = element?.getBoundingClientRect();
+    return rect && (rect.top + rect.bottom) / 2;
+  };
   return {
     headingCount: headings.length,
+    headingCenter: center(heading),
+    groupLabelCenter: center(groupLabel),
     headingLeft: heading?.getBoundingClientRect().left,
     contentLeft: content?.getBoundingClientRect().left,
     compactOpacity: compact ? Number(getComputedStyle(compact).opacity) : null,
@@ -43,11 +52,17 @@ async function expectHeading(session, section) {
   const name = await translate(session, `settings:sections.${section}`);
   await openSettingsSection(session, section);
   await waitForRole(session, { role: "heading", name }, UI_TIMEOUT_MS);
-  const layout = await session.run(readHeading);
+  const groupName = await translate(session, "settings:groups.interface");
+  const layout = await session.run(readHeading, groupName);
   check(layout.headingCount === 1, "one page heading", layout);
   check(
     Math.abs(layout.headingLeft - layout.contentLeft) < 0.5,
     "heading aligns with the content column",
+    layout,
+  );
+  check(
+    Math.abs(layout.headingCenter - layout.groupLabelCenter) < 0.5,
+    "heading centers on the first sidebar group label",
     layout,
   );
   check(layout.compactOpacity === 0, "compact title hidden at rest", layout);

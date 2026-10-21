@@ -366,7 +366,7 @@ export function SettingsScreen({
           <div className="flex h-[calc(100vh-2rem)] min-h-0 flex-col pb-8">
             <div
               className={cn(
-                "mx-auto flex min-h-0 w-full flex-1 flex-col px-4 pt-6 sm:px-6 lg:px-8",
+                "mx-auto flex min-h-0 w-full flex-1 flex-col px-4 pt-1 sm:px-6 lg:px-8",
                 activeSection === "workflows" && "max-w-none gap-4",
                 activeSection === "licenses" && "max-w-5xl gap-6",
                 activeSection === "providers" && "max-w-6xl gap-6",
@@ -375,7 +375,9 @@ export function SettingsScreen({
                 activeSection === "archived" && "max-w-3xl gap-8",
               )}
             >
-              {settingsHeading}
+              <div className="flex h-7 shrink-0 items-center">
+                {settingsHeading}
+              </div>
               {settingsPanel}
             </div>
           </div>
@@ -392,8 +394,8 @@ export function SettingsScreen({
                   ),
               }}
             >
-              <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 pt-6 pb-10 sm:px-6 lg:px-8">
-                <div className="mb-3" ref={headingRef}>
+              <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-3 px-4 pt-1 pb-10 sm:px-6 lg:px-8">
+                <div className="mb-3 flex h-7 items-center" ref={headingRef}>
                   {settingsHeading}
                 </div>
                 {settingsPanel}
