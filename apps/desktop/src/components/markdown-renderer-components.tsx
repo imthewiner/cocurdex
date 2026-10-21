@@ -246,7 +246,7 @@ export function createMarkdownComponents(
               ? "border-editor-border text-editor-fg-muted"
               : tone === "system"
                 ? "border-chat-system-border text-chat-system-fg"
-                : "border-foreground/12 text-chat-fg-muted",
+                : "border-foreground/8 text-chat-fg-muted dark:border-foreground/12",
           )}
         >
           {children}
@@ -258,7 +258,7 @@ export function createMarkdownComponents(
     },
     tr({ children }: { children?: ReactNode }) {
       return (
-        <tr className="border-b border-foreground/12 last:border-b-0">
+        <tr className="border-b border-foreground/8 last:border-b-0 dark:border-foreground/12">
           {children}
         </tr>
       );
