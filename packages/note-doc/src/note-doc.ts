@@ -1,6 +1,6 @@
 import {
   updateYFragment,
-  yXmlFragmentToProseMirrorRootNode,
+  yXmlFragmentToProseMirrorFragment,
 } from "@tiptap/y-tiptap";
 import * as Y from "yjs";
 import { serializeNoteMarkdown } from "./markdown";
@@ -30,9 +30,13 @@ function writeMarkdown(doc: Y.Doc, markdown: string): void {
 }
 
 function readMarkdown(doc: Y.Doc): string {
-  const root = yXmlFragmentToProseMirrorRootNode(
-    doc.getXmlFragment(NOTE_DOC_FIELD),
-    getNoteDocSchema(),
+  const schema = getNoteDocSchema();
+  const root = schema.topNodeType.create(
+    null,
+    yXmlFragmentToProseMirrorFragment(
+      doc.getXmlFragment(NOTE_DOC_FIELD),
+      schema,
+    ),
   );
   return serializeNoteMarkdown(root.toJSON());
 }
