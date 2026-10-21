@@ -613,11 +613,7 @@ export function ProviderSettingsPanel() {
           <div className="flex flex-col gap-2 pe-1">
             {filteredProviders.length === 0 &&
             filteredTemplates.length === 0 ? (
-              <div
-                className={cn(
-                  "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors cursor-default border-transparent bg-transparent",
-                )}
-              >
+              <div className="flex w-full cursor-default flex-col items-start gap-0.5 px-3 py-2 text-start">
                 <span className="text-body font-medium text-muted-foreground">
                   {t("providers.empty.noMatches")}
                 </span>

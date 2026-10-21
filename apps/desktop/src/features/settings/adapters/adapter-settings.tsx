@@ -434,18 +434,16 @@ export function AdapterSettingsPanel() {
           </Button>
         </div>
       </div>
-      <div className="rounded-card border border-border/70 bg-settings-surface px-4">
-        <div className="flex flex-col divide-y divide-border/60">
-          {sortedAgents.map((agent) => (
-            <AdapterRow
-              agent={agent}
-              key={agent.id}
-              onChanged={() => refresh(true)}
-              rateLimitsLoading={loadingAgentIds.includes(agent.id)}
-              rateLimitsResult={rateLimitsByAgent[agent.id]}
-            />
-          ))}
-        </div>
+      <div className="flex flex-col divide-y divide-border/60">
+        {sortedAgents.map((agent) => (
+          <AdapterRow
+            agent={agent}
+            key={agent.id}
+            onChanged={() => refresh(true)}
+            rateLimitsLoading={loadingAgentIds.includes(agent.id)}
+            rateLimitsResult={rateLimitsByAgent[agent.id]}
+          />
+        ))}
       </div>
       <AgentRunLimitsGroup />
     </div>

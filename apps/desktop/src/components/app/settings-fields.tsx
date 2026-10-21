@@ -15,7 +15,7 @@ export function SettingsGroup({
   return (
     <div className="flex flex-col">
       {hasHeader ? (
-        <div className="mb-2 flex items-end justify-between gap-4 px-1">
+        <div className="mb-1 flex items-end justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-0.5">
             {title ? (
               <div className="text-meta font-medium text-muted-foreground/60">
@@ -31,11 +31,7 @@ export function SettingsGroup({
           {action ? <div className="shrink-0">{action}</div> : null}
         </div>
       ) : null}
-      <div className="rounded-card border border-border/70 bg-settings-surface px-4">
-        <div className="flex flex-col divide-y divide-border/60">
-          {children}
-        </div>
-      </div>
+      <div className="flex flex-col divide-y divide-border/60">{children}</div>
     </div>
   );
 }

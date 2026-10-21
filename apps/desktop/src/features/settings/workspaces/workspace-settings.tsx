@@ -72,7 +72,7 @@ function WorkspaceSettingsList({
               title={t("workspaces.noResults")}
             />
           ) : (
-            <ul className="overflow-hidden rounded-card border border-border/70 bg-settings-surface">
+            <ul>
               {visible.map((workspace) => {
                 const isCurrent = workspace.id === activeWorkspaceId;
                 return (
@@ -82,7 +82,7 @@ function WorkspaceSettingsList({
                   >
                     <button
                       aria-current={isCurrent ? "true" : undefined}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-start transition-colors hover:bg-muted/50"
+                      className="-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-control px-2 py-2 text-start transition-colors hover:bg-muted/50"
                       type="button"
                       onClick={() => onSelect(workspace.id)}
                     >

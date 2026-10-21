@@ -1,6 +1,7 @@
 import { Minus, Monitor, Moon, Plus, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup } from "@/components/app";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui";
 import { useResolvedTheme } from "@/lib";
 import {
@@ -35,29 +36,6 @@ interface SettingRowProps {
   children?: ReactNode;
   description?: string;
   title: string;
-}
-
-function SettingsGroup({
-  children,
-  title,
-}: {
-  children: ReactNode;
-  title?: string;
-}) {
-  return (
-    <div className="flex flex-col">
-      {title ? (
-        <div className="mb-2 px-1 text-meta font-medium text-muted-foreground/60">
-          {title}
-        </div>
-      ) : null}
-      <div className="rounded-card border border-border/70 bg-settings-surface px-4">
-        <div className="flex flex-col divide-y divide-border/60">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function SettingRow({ children, description, title }: SettingRowProps) {
