@@ -1153,8 +1153,8 @@
     "pack": {
       "included_one": "包含 {{count}} 个 skill",
       "included_other": "包含 {{count}} 个 skill",
-      "subtitle_one": "{{count}} 个 skill · v{{version}}",
-      "subtitle_other": "{{count}} 个 skill · v{{version}}",
+      "subtitle_one": "{{count}} 个 skill",
+      "subtitle_other": "{{count}} 个 skill",
       "title": "Cocurdex skills"
     },
     "problems": {
@@ -1200,6 +1200,7 @@
       "installed": "已安装最新版本，路径 {{path}}",
       "modified": "本地文件已被修改。恢复会改回内置版本，路径 {{path}}",
       "notInstalled": "未安装。将写入 {{path}}",
+      "sourceMissing": "这个版本缺少内置 skill 文件（{{path}}），暂时无法安装。请重新安装或更新 Cocurdex。",
       "updateAvailable": "有新版本可更新，路径 {{path}}"
     },
     "tabs": {

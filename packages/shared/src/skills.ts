@@ -5,6 +5,11 @@ export interface ProductSkillsRequestPayload {
   workspaceRootPath?: string | null;
 }
 
+export interface ProductSkillInfo {
+  name: string;
+  description: string | null;
+}
+
 /** Install status for the bundled cocurdex-* agent skill pack. */
 export interface ProductSkillsStatusResult {
   scope: ProductSkillScope;
@@ -23,6 +28,7 @@ export interface ProductSkillsStatusResult {
   workspaceRoot: string | null;
   sourceAvailable: boolean;
   sourceRoot: string;
+  packSkills: ProductSkillInfo[];
 }
 
 export interface ProductSkillsInstallResult extends ProductSkillsStatusResult {

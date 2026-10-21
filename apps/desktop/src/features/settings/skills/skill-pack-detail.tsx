@@ -17,6 +17,9 @@ function usePackStatusText(status: ProductSkillsStatus | undefined) {
   if (!status) {
     return "";
   }
+  if (!status.sourceAvailable) {
+    return t("skills.status.sourceMissing", { path: status.sourceRoot });
+  }
   if (status.conflict) {
     return t("skills.status.conflict", {
       skills: status.conflictSkills.join(", "),
@@ -150,11 +153,9 @@ export function SkillPackDetail({
   onChanged(): void;
 }) {
   const { t } = useTranslation("settings");
-  const names =
-    pack.statuses.global?.skills ?? builtin.map((skill) => skill.name);
-  const descriptions = new Map(
-    builtin.map((skill) => [skill.name, skill.description]),
-  );
+  const packSkills =
+    pack.statuses.global?.packSkills ??
+    builtin.map(({ name, description }) => ({ name, description }));
   const scopes: ProductSkillScope[] = pack.workspaceRootPath
     ? ["global", "project"]
     : ["global"];
@@ -183,20 +184,24 @@ export function SkillPackDetail({
           />
         ))}
       </SettingsGroup>
-      <SettingsGroup title={t("skills.pack.included", { count: names.length })}>
-        {names.map((name) => (
-          <div className="py-3" key={name}>
-            <Text as="div" className="font-mono" size="body" weight="medium">
-              {name}
-            </Text>
-            {descriptions.get(name) ? (
-              <Text as="div" className="mt-0.5" size="meta" tone="muted">
-                {descriptions.get(name)}
+      {packSkills.length > 0 ? (
+        <SettingsGroup
+          title={t("skills.pack.included", { count: packSkills.length })}
+        >
+          {packSkills.map((skill) => (
+            <div className="py-3" data-item-path={skill.name} key={skill.name}>
+              <Text as="div" className="font-mono" size="body" weight="medium">
+                {skill.name}
               </Text>
-            ) : null}
-          </div>
-        ))}
-      </SettingsGroup>
+              {skill.description ? (
+                <Text as="div" className="mt-0.5" size="meta" tone="muted">
+                  {skill.description}
+                </Text>
+              ) : null}
+            </div>
+          ))}
+        </SettingsGroup>
+      ) : null}
     </section>
   );
 }

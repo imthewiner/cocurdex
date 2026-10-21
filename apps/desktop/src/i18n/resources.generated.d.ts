@@ -2890,8 +2890,8 @@ export default interface Resources {
       pack: {
         included_one: "Includes {{count}} skill";
         included_other: "Includes {{count}} skills";
-        subtitle_one: "{{count}} skill · v{{version}}";
-        subtitle_other: "{{count}} skills · v{{version}}";
+        subtitle_one: "{{count}} skill";
+        subtitle_other: "{{count}} skills";
         title: "Cocurdex skills";
       };
       problems: {
@@ -2937,6 +2937,7 @@ export default interface Resources {
         installed: "Up to date at {{path}}";
         modified: "Files were edited locally. Restore puts back the built-in version at {{path}}";
         notInstalled: "Not installed. Would write to {{path}}";
+        sourceMissing: "This build is missing the bundled skill files ({{path}}), so they cannot be installed. Reinstall or update Cocurdex.";
         updateAvailable: "A newer version is available for {{path}}";
       };
       tabs: {

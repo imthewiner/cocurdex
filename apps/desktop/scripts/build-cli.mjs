@@ -6,6 +6,7 @@
 import {
   chmod,
   copyFile,
+  cp,
   mkdir,
   readdir,
   readFile,
@@ -20,6 +21,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(desktopRoot, "../..");
 const outDir = path.join(desktopRoot, "resources", "cli");
+const productSkillsSource = path.join(
+  repoRoot,
+  "packages/product-skills/skills",
+);
+const productSkillsOut = path.join(desktopRoot, "resources", "skills");
 const entry = path.join(repoRoot, "apps/cli/src/index.ts");
 const daemonEntry = path.join(repoRoot, "packages/daemon/src/bin.ts");
 const piPackagePath = await realpath(
@@ -141,6 +147,8 @@ await build({
   },
 });
 await copyFile(photonWasmPath, path.join(outDir, "photon_rs_bg.wasm"));
+await rm(productSkillsOut, { force: true, recursive: true });
+await cp(productSkillsSource, productSkillsOut, { recursive: true });
 const piThemeSource = path.join(piPackagePath, "dist/modes/interactive/theme");
 const piThemeTarget = path.join(
   outDir,
