@@ -180,6 +180,9 @@ export const daemonProductApi: ProductRequestApi = {
   removeMcpServer: (name) => rpc("mcp.server.remove", { name }),
   setMcpServerEnabled: (name, enabled) =>
     rpc("mcp.server.setEnabled", { name, enabled }),
+  setMcpServerAgents: (name, agents) =>
+    rpc("mcp.server.setAgents", { name, agents }),
+  checkMcpInjection: () => rpc("mcp.injection.check"),
   mergeMcpServers: (servers) => rpc("mcp.servers.merge", { servers }),
   getMcpStatus: (workspaceId, names) =>
     rpc("mcp.status", { workspaceId, names }),

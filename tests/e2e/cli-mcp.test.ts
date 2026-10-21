@@ -124,4 +124,41 @@ describe("cocurdex mcp CLI", () => {
       ),
     ).toEqual(["fixture", "remote", "piped"]);
   });
+
+  it("assigns a server to agents and explains what cannot be injected", async () => {
+    expect((await cli(["mcp", "agents", "fixture"])).stdout).toContain(
+      'MCP server "fixture" agents: pi',
+    );
+
+    const assigned = await cli([
+      "mcp",
+      "agents",
+      "fixture",
+      "pi",
+      "codex",
+      "opencode",
+      "--json",
+    ]);
+    expect(assigned.code).toBe(0);
+    expect(JSON.parse(assigned.stdout)).toEqual({
+      name: "fixture",
+      agents: ["pi", "codex", "opencode"],
+      unsupported: null,
+      ignored: ["opencode"],
+    });
+    const shown = JSON.parse((await cli(["mcp", "show", "fixture"])).stdout);
+    expect(shown.cocurdex).toEqual({ agents: ["pi", "codex", "opencode"] });
+
+    expect((await cli(["mcp", "agents", "fixture", "--none"])).code).toBe(0);
+    const listed = await cli(["mcp", "list", "--json"]);
+    expect(
+      JSON.parse(listed.stdout).servers.find(
+        (server: { name: string }) => server.name === "fixture",
+      ).agents,
+    ).toEqual([]);
+
+    const unknown = await cli(["mcp", "agents", "fixture", "gpt"]);
+    expect(unknown.code).toBe(1);
+    expect(unknown.stderr).toContain('Unknown agent "gpt"');
+  });
 });

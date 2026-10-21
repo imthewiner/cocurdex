@@ -37,11 +37,13 @@ import {
   createMcpExtension,
   createToolSearchExtension,
   DefaultResourceLoader,
+  getAgentDir,
   type InlineExtension,
   ModelRuntime,
   type PromptOptions,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
+import { loadMcpConfig } from "@earendil-works/pi-coding-agent/mcp-config";
 import { logAdapterDiagnostic } from "../diagnostics";
 import {
   assertNoDocumentAttachments,
@@ -63,6 +65,7 @@ import {
 import { createPiAgentToolDefinitions } from "./pi-agent-tools";
 import { createPiChatResourceLoaderOptions } from "./pi-chat-session";
 import { handlePiCompactionEvent } from "./pi-compaction";
+import { onlyPiMcpServers } from "./pi-mcp-agents";
 import {
   buildModelCost,
   buildModelInput,
@@ -90,7 +93,20 @@ function createPiBuiltinExtensions(): InlineExtension[] {
       factory: createToolSearchExtension(),
       builtin: true,
     },
-    { name: "mcp", factory: createMcpExtension(), builtin: true },
+    {
+      name: "mcp",
+      factory: createMcpExtension({
+        loadConfig: (ctx) =>
+          onlyPiMcpServers(
+            loadMcpConfig({
+              agentDir: getAgentDir(),
+              cwd: ctx.cwd,
+              projectTrusted: ctx.isProjectTrusted(),
+            }),
+          ),
+      }),
+      builtin: true,
+    },
   ];
 }
 

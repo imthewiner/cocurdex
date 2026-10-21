@@ -39,6 +39,10 @@ import {
   serializeProviderSessionState,
 } from "../shared";
 import { claudeAgentToolsMcpServers } from "../shared/agent-tools-mcp";
+import {
+  claudeInjectedMcpServers,
+  loadInjectedMcpServers,
+} from "../shared/injected-mcp";
 import { createNativeSessionTitleTracker } from "../shared/native-session-title";
 import {
   createNativeSessionRecoveryError,
@@ -785,6 +789,9 @@ export function createClaudeCliAdapter(
           persistProviderCursor();
         }
 
+        const injectedMcpServers = await loadInjectedMcpServers(
+          payload.resolveMcpServers,
+        );
         const queryOptions: ClaudeQueryOptions = {
           additionalDirectories: [
             ...new Set([
@@ -803,7 +810,10 @@ export function createClaudeCliAdapter(
           ...(effort ? { effort } : {}),
           ...(modelId ? { model: modelId } : {}),
           ...(fastMode !== null ? { fastMode } : {}),
-          mcpServers: claudeAgentToolsMcpServers(payload.agentTools),
+          mcpServers: {
+            ...claudeInjectedMcpServers(injectedMcpServers),
+            ...claudeAgentToolsMcpServers(payload.agentTools),
+          },
           onUserDialog: createClaudeOnUserDialog(payload),
           pathToClaudeCodeExecutable: binaryPath,
           permissionMode,

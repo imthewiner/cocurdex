@@ -38,6 +38,19 @@ async function readMcpConfig(session) {
   return JSON.parse((await daemonRequest(session, "mcp.readConfig")).content);
 }
 
+async function waitForServerAgents(session, name, agents) {
+  const expected = JSON.stringify(agents);
+  const deadline = Date.now() + UI_TIMEOUT_MS;
+  for (;;) {
+    const server = (await readMcpConfig(session)).mcpServers[name];
+    if (JSON.stringify(server?.cocurdex?.agents) === expected) return server;
+    if (Date.now() > deadline) {
+      throw new Error(`${name} agents: ${JSON.stringify(server)}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
 async function fillTextbox(session, name, value) {
   const [field] = await waitForRole(
     session,
@@ -254,6 +267,71 @@ runScenario("mcp-settings", {
           STATUS_TIMEOUT_MS,
         );
         return {};
+      },
+    ],
+    [
+      "agent switches assign the server to agents and write the config",
+      async ({ session }) => {
+        const agentSwitch = (agent) =>
+          session.run((id) => {
+            const control = document.querySelector(
+              `[data-mcp-agent="${id}"] [role="switch"]`,
+            );
+            if (!control) return null;
+            control.scrollIntoView({ block: "center" });
+            const rect = control.getBoundingClientRect();
+            return {
+              checked: control.getAttribute("aria-checked") === "true",
+              disabled: control.getAttribute("aria-disabled") === "true",
+              x: rect.x + rect.width / 2,
+              y: rect.y + rect.height / 2,
+            };
+          }, agent);
+        await session.waitUntil(
+          () => Boolean(document.querySelector('[data-mcp-agent="codex"]')),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const pi = await agentSwitch("pi");
+        const opencode = await agentSwitch("opencode");
+        check(pi?.checked === true, "Pi receives servers by default", pi);
+        check(
+          opencode?.disabled === true,
+          "OpenCode cannot receive servers",
+          opencode,
+        );
+        const codex = await agentSwitch("codex");
+        check(codex?.checked === false, "Codex starts unassigned", codex);
+        await clickPoint(session, { x: codex.x, y: codex.y });
+        await session.waitUntil(
+          () =>
+            document
+              .querySelector('[data-mcp-agent="codex"] [role="switch"]')
+              ?.getAttribute("aria-checked") === "true",
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const assigned = await waitForServerAgents(session, "fixture", [
+          "pi",
+          "codex",
+        ]);
+        const assignedCodex = await agentSwitch("codex");
+        check(
+          assignedCodex.checked,
+          "the switch stays on once saved",
+          assignedCodex,
+        );
+        await clickPoint(session, { x: assignedCodex.x, y: assignedCodex.y });
+        await session.waitUntil(
+          () =>
+            document
+              .querySelector('[data-mcp-agent="codex"] [role="switch"]')
+              ?.getAttribute("aria-checked") === "false",
+          null,
+          UI_TIMEOUT_MS,
+        );
+        await waitForServerAgents(session, "fixture", ["pi"]);
+        return { pi, opencode, assigned: assigned.cocurdex };
       },
     ],
     [

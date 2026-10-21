@@ -8,6 +8,7 @@ import type {
 import {
   type AgentEvent,
   type AgentId,
+  type AgentMcpServer,
   type AgentPermissionRequestPayload,
   type AgentPermissionRequestRecord,
   type AgentPermissionResolution,
@@ -96,6 +97,7 @@ interface AgentRuntimeManagerOptions {
   createAdapter?: (agentType: AgentId) => AgentAdapter;
   userDataPath?: string;
   agentTools?: AgentToolsProvider;
+  resolveMcpServers?(agentId: AgentId): Promise<AgentMcpServer[]>;
 }
 
 type TurnTracker = {
@@ -146,6 +148,9 @@ export class AgentRuntimeManager {
 
   private readonly userDataPath?: string;
   private readonly agentTools: AgentToolsProvider | null;
+  private readonly resolveMcpServers:
+    | ((agentId: AgentId) => Promise<AgentMcpServer[]>)
+    | null;
 
   constructor(options: AgentRuntimeManagerOptions) {
     this.broadcastCoalescer = createEventBroadcastCoalescer(
@@ -154,8 +159,14 @@ export class AgentRuntimeManager {
     this.createAdapter = options.createAdapter ?? createAgentAdapter;
     this.userDataPath = options.userDataPath;
     this.agentTools = options.agentTools ?? null;
+    this.resolveMcpServers = options.resolveMcpServers ?? null;
     this.activeRunId = options.activeRunId ?? (() => null);
     this.onProviderEvent = options.onProviderEvent ?? (() => undefined);
+  }
+
+  private mcpServersFor(agentId: AgentId) {
+    const resolve = this.resolveMcpServers;
+    return resolve ? () => resolve(agentId) : undefined;
   }
 
   configureAgentEventPersistence(handler: AgentEventPersistenceHandler) {
@@ -517,6 +528,7 @@ export class AgentRuntimeManager {
         providerConfig: persistence.providerConfig,
         agentTools: agentToolSession?.binding ?? null,
         agentToolInvoker: agentToolSession?.invoker ?? null,
+        resolveMcpServers: this.mcpServersFor(sessionCopy.agentType),
         onProviderSessionUpdate: (providerSession) => {
           const activeRuntime = this.sessionRuntimes.get(payload.session.id);
           if (!runtime || activeRuntime?.runtime !== runtime) {

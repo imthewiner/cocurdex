@@ -231,6 +231,8 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "mcp.server.save": "execute",
   "mcp.server.remove": "execute",
   "mcp.server.setEnabled": "execute",
+  "mcp.server.setAgents": "execute",
+  "mcp.injection.check": "credentials",
   "mcp.servers.merge": "execute",
   "mcp.status": "execute",
   "mcp.server.test": "execute",

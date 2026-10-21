@@ -1,4 +1,9 @@
-import type { McpServerConfig } from "@cocurdex/shared";
+import {
+  type AgentId,
+  isAgentId,
+  type McpServerConfig,
+  withMcpServerAgents,
+} from "@cocurdex/shared";
 
 type OptionKind = "flag" | "value" | "list";
 
@@ -66,8 +71,20 @@ export const MCP_ADD_OPTIONS: Record<string, OptionKind> = {
   "bearer-token-env-var": "value",
   description: "value",
   disabled: "flag",
+  agent: "list",
   json: "flag",
 };
+
+export function parseAgentIds(values: readonly string[]): AgentId[] {
+  return values.map((value) => {
+    if (!isAgentId(value)) {
+      throw new Error(
+        `Unknown agent "${value}"; use pi, claude-agent, codex, opencode, or acp:<id>`,
+      );
+    }
+    return value;
+  });
+}
 
 export function buildMcpServerConfig(args: McpArgs): {
   name: string;
@@ -110,7 +127,13 @@ export function buildMcpServerConfig(args: McpArgs): {
   const description = stringValue(args, "description");
   if (description !== undefined) config.description = description;
   if (args.values.has("disabled")) config.enabled = false;
-  return { name, config };
+  const agents = args.lists.get("agent");
+  return {
+    name,
+    config: agents
+      ? withMcpServerAgents(config, parseAgentIds(agents))
+      : config,
+  };
 }
 
 const SECRET_REFERENCE =

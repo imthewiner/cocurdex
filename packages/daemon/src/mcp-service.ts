@@ -6,7 +6,15 @@ import {
   testPiMcpServer,
   validatePiMcpServerConfig,
 } from "@cocurdex/agent-adapters/pi-mcp";
-import type { McpServerConfig } from "@cocurdex/shared";
+import {
+  type AgentId,
+  type AgentMcpServer,
+  type AgentMcpUnsupportedReason,
+  type McpServerConfig,
+  mcpServerTargetsAgent,
+  supportsInjectedMcpServers,
+  toAgentMcpServer,
+} from "@cocurdex/shared";
 import { DaemonMcpConfigService } from "./mcp-config";
 import { listMcpImportFiles, scanMcpImports } from "./mcp-imports";
 import { McpLoginSessions } from "./mcp-logins";
@@ -22,6 +30,7 @@ export class DaemonMcpService {
   constructor(
     private readonly userDataPath: string,
     private readonly resolveWorkspaceRoot: WorkspaceRootResolver,
+    private readonly env: Record<string, string | undefined> = process.env,
   ) {
     this.config = new DaemonMcpConfigService(userDataPath);
   }
@@ -84,6 +93,35 @@ export class DaemonMcpService {
       current: await this.config.readServers(),
       validate: validatePiMcpServerConfig,
     });
+  }
+
+  async serversForAgent(agentId: AgentId): Promise<AgentMcpServer[]> {
+    if (!supportsInjectedMcpServers(agentId)) {
+      return [];
+    }
+    const servers = await this.config.readServers();
+    return Object.entries(servers).flatMap(([name, config]) => {
+      if (!mcpServerTargetsAgent(config, agentId)) {
+        return [];
+      }
+      const converted = toAgentMcpServer(name, config, this.env);
+      return "server" in converted ? [converted.server] : [];
+    });
+  }
+
+  async injectionSupport(): Promise<
+    Record<string, AgentMcpUnsupportedReason | null>
+  > {
+    const servers = await this.config.readServers();
+    return Object.fromEntries(
+      Object.entries(servers).map(([name, config]) => {
+        const converted = toAgentMcpServer(name, config, this.env);
+        return [
+          name,
+          "unsupported" in converted ? converted.unsupported : null,
+        ];
+      }),
+    );
   }
 
   dispose() {

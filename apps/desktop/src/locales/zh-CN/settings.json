@@ -528,6 +528,22 @@
       "oauthClientHint": "仅当服务器不支持动态客户端注册时需要填写。",
       "title": "高级"
     },
+    "agents": {
+      "access": {
+        "agentUnsupported": "暂不支持接收 Cocurdex 的 MCP 服务器。",
+        "injected": "新会话启动时添加。OAuth 服务器还需要在该 agent 中登录。",
+        "native": "通过 Cocurdex 直接连接，支持登录和项目级服务器。"
+      },
+      "description": "会话启动时，Cocurdex 会把此服务器提供给选中的 agent，不会修改它们自己的 MCP 配置。",
+      "serverUnsupported": {
+        "command-value": "仅 Pi 可用：有值通过命令（!cmd）生成。",
+        "cwd": "仅 Pi 可用：它设置了工作目录。",
+        "invalid": "仅 Pi 可用：该服务器没有命令或 URL。",
+        "missing-env": "仅 Pi 可用：它引用了未设置的环境变量。",
+        "provider-auth": "仅 Pi 可用：它通过 Pi 的提供商登录。"
+      },
+      "title": "Agent"
+    },
     "auth": {
       "bearer": "Bearer 令牌",
       "bearerHint": "作为 Authorization 请求头发送。可用 ${VAR} 从环境变量读取。",
@@ -545,7 +561,7 @@
       "waiting": "正在等待浏览器中完成授权…"
     },
     "backToForm": "返回表单",
-    "description": "内置 Pi agent 可用的工具服务器，新会话开始使用",
+    "description": "Cocurdex 提供给各 agent 的工具服务器，新会话开始使用",
     "detail": {
       "enabled": "启用",
       "label": "MCP 服务器",
@@ -555,7 +571,7 @@
     "editJson": "编辑 mcp.json",
     "empty": {
       "add": "添加服务器",
-      "description": "添加本地命令或远程端点，让 Pi 使用其中的工具。",
+      "description": "添加本地命令或远程端点，让 agent 使用其中的工具。",
       "discovered_other": "{{agents}} 里已有 {{count}} 个，可以直接导入。",
       "dropHint": "识别其中的 mcpServers，导入前逐项确认。",
       "title": "还没有 MCP 服务器"
@@ -593,7 +609,7 @@
       "different": "将覆盖现有配置",
       "empty": "没有找到 MCP 服务器。",
       "importing": "导入中…",
-      "jsonDescription": "选择要添加到 Pi MCP 配置的服务器。",
+      "jsonDescription": "选择要添加到 Cocurdex MCP 配置的服务器。",
       "jsonTitle": "导入 JSON",
       "same": "已添加",
       "source": {
@@ -618,7 +634,7 @@
     },
     "list": {
       "add": "添加",
-      "global": "全局 · Pi",
+      "global": "全局",
       "importFromAgents": "从其他 Agent 导入",
       "noMatches": "没有匹配的服务器",
       "project": "项目 · {{workspace}}",
@@ -628,7 +644,7 @@
     "removeConfirm": {
       "cancel": "取消",
       "confirm": "移除",
-      "description": "将从 Pi 的 MCP 配置中移除“{{name}}”。正在运行的会话保留当前工具。",
+      "description": "将从 Cocurdex 的 MCP 配置中移除“{{name}}”。正在运行的会话保留当前工具。",
       "title": "移除 MCP 服务器？"
     },
     "revealConfig": "在文件管理器中显示",

@@ -1,6 +1,7 @@
 import { isValidMcpServerName } from "@cocurdex/shared";
 import { z } from "zod";
 import {
+  agentIdSchema,
   boundedTextSchema,
   exact,
   idSchema,
@@ -47,6 +48,13 @@ export const mcpPayloadSchemas = {
   "mcp.server.setEnabled": exact<Payload<"mcp.server.setEnabled">>()(
     z.object({ name: serverNameSchema, enabled: z.boolean() }),
   ),
+  "mcp.server.setAgents": exact<Payload<"mcp.server.setAgents">>()(
+    z.object({
+      name: serverNameSchema,
+      agents: z.array(agentIdSchema).max(64),
+    }),
+  ),
+  "mcp.injection.check": exact<Payload<"mcp.injection.check">>()(z.undefined()),
   "mcp.servers.merge": exact<Payload<"mcp.servers.merge">>()(
     z.object({
       servers: z

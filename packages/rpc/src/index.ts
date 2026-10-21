@@ -4,6 +4,7 @@ import type {
   AcpRegistryInstalledAgent,
   AgentDescriptor,
   AgentId,
+  AgentMcpUnsupportedReason,
   AgentPlanApprovalDecision,
   AgentProviderModelAxes,
   AgentProviderSelection,
@@ -463,6 +464,8 @@ export type DaemonRequestPayloadByMethod = {
   };
   "mcp.server.remove": { name: string };
   "mcp.server.setEnabled": { name: string; enabled: boolean };
+  "mcp.server.setAgents": { name: string; agents: AgentId[] };
+  "mcp.injection.check": undefined;
   "mcp.servers.merge": { servers: Record<string, McpServerConfig> };
   "mcp.status": { workspaceId?: string; names?: string[] };
   "mcp.server.test": {
@@ -758,6 +761,8 @@ export type DaemonResultByMethod = {
   "mcp.server.save": McpConfigFile;
   "mcp.server.remove": McpConfigFile;
   "mcp.server.setEnabled": McpConfigFile;
+  "mcp.server.setAgents": McpConfigFile;
+  "mcp.injection.check": Record<string, AgentMcpUnsupportedReason | null>;
   "mcp.servers.merge": McpConfigFile;
   "mcp.status": McpStatusReport;
   "mcp.server.test": McpServerStatus;
@@ -918,6 +923,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "teamTemplate.list": true,
   "scriptRun.settings.get": true,
   "mcp.readConfig": true,
+  "mcp.injection.check": true,
   "skills.catalog.sources": true,
   "deck.list": true,
   "note.list": true,

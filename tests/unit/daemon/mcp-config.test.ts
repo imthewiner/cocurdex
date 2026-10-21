@@ -53,3 +53,17 @@ describe("MCP configuration", () => {
     expect(await service.readConfig()).toEqual(second);
   });
 });
+
+describe("MCP server agent targets", () => {
+  it("keeps a server's agents when an edit does not mention them", async () => {
+    const userDataPath = await tempDirs.create("cocurdex-mcp-");
+    const service = new DaemonMcpConfigService(userDataPath);
+    await service.saveServer("local", { command: "a" });
+    await service.setServerAgents("local", ["pi", "codex"]);
+    await service.saveServer("renamed", { command: "b" }, "local");
+    expect((await service.readServers()).renamed).toEqual({
+      command: "b",
+      cocurdex: { agents: ["pi", "codex"] },
+    });
+  });
+});

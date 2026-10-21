@@ -33,9 +33,9 @@ import {
   serializeProviderSessionState,
 } from "../shared";
 import {
-  type AcpHttpMcpServer,
-  acpAgentToolsMcpServers,
-} from "../shared/agent-tools-mcp";
+  type AcpInjectedMcpServer,
+  acpSessionMcpServers,
+} from "../shared/injected-mcp";
 import {
   createNativeSessionRecoveryError,
   requiresNativeSessionRecovery,
@@ -527,8 +527,8 @@ export class AcpAgentAdapter implements AgentAdapter {
             await connection.loadSession({
               sessionId: providerSessionId,
               cwd: payload.workspaceRootPath,
-              mcpServers: acpAgentToolsMcpServers(
-                payload.agentTools,
+              mcpServers: await acpSessionMcpServers(
+                payload,
                 response.agentCapabilities?.mcpCapabilities,
               ),
             });
@@ -771,8 +771,8 @@ export class AcpAgentAdapter implements AgentAdapter {
           connection,
           providerSessionId:
             activeProviderSessionId ?? readResumableProviderSessionId(payload),
-          mcpServers: acpAgentToolsMcpServers(
-            payload.agentTools,
+          mcpServers: await acpSessionMcpServers(
+            payload,
             response.agentCapabilities?.mcpCapabilities,
           ),
           history,
@@ -1205,7 +1205,7 @@ export class AcpAgentAdapter implements AgentAdapter {
     capabilities: AgentNegotiatedCapabilities;
     connection: AcpConnection;
     providerSessionId: string | null | undefined;
-    mcpServers: AcpHttpMcpServer[];
+    mcpServers: AcpInjectedMcpServer[];
     history: SendAgentMessagePayload["history"];
     payload: CreateAgentSessionPayload;
     suppressUpdates(value: boolean): void;

@@ -24,7 +24,10 @@ import {
   logOutgoingPromptForDiagnostics,
   serializeProviderSessionState,
 } from "../shared";
-import { codexAgentToolsThreadConfig } from "../shared/agent-tools-mcp";
+import {
+  codexThreadMcpConfig,
+  loadInjectedMcpServers,
+} from "../shared/injected-mcp";
 import {
   createNativeSessionRecoveryError,
   requiresNativeSessionRecovery,
@@ -677,7 +680,10 @@ export function createCodexAdapter(
           sandbox: createCodexSandboxMode(payload, activePermissionMode),
           experimentalRawEvents: false,
           ...(serviceTier ? { serviceTier } : {}),
-          ...codexAgentToolsThreadConfig(payload.agentTools),
+          ...codexThreadMcpConfig(
+            payload.agentTools,
+            await loadInjectedMcpServers(payload.resolveMcpServers),
+          ),
         });
         threadId = result.thread.id;
         subscribeThread(threadId);
@@ -713,7 +719,10 @@ export function createCodexAdapter(
           sandbox: createCodexSandboxMode(payload, activePermissionMode),
           excludeTurns: true,
           ...(serviceTier ? { serviceTier } : {}),
-          ...codexAgentToolsThreadConfig(payload.agentTools),
+          ...codexThreadMcpConfig(
+            payload.agentTools,
+            await loadInjectedMcpServers(payload.resolveMcpServers),
+          ),
         });
         threadReady = true;
         await syncThreadTitle(appServerLease, result.thread.name);

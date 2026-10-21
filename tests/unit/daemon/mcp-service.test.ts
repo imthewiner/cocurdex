@@ -171,3 +171,71 @@ describe("DaemonMcpService", () => {
     expect(await readFile(saved.path, "utf8")).toBe(saved.content);
   });
 });
+
+describe("DaemonMcpService agent targets", () => {
+  async function createTargetService() {
+    const userDataPath = await tempDirs.create("cocurdex-mcp-");
+    return new DaemonMcpService(userDataPath, async () => null, {
+      DOCS_TOKEN: "secret",
+    });
+  }
+
+  it("injects only enabled servers that target the agent", async () => {
+    const service = await createTargetService();
+    await service.config.saveServer("pi-only", { command: "a" });
+    await service.config.saveServer("docs", {
+      url: "https://docs.example.invalid/mcp",
+      headers: { Authorization: "Bearer ${DOCS_TOKEN}" },
+    });
+    await service.config.setServerAgents("docs", ["pi", "claude-agent"]);
+    await service.config.saveServer("off", {
+      command: "b",
+      enabled: false,
+      cocurdex: { agents: ["claude-agent"] },
+    });
+
+    expect(await service.serversForAgent("claude-agent")).toEqual([
+      {
+        transport: "http",
+        name: "docs",
+        url: "https://docs.example.invalid/mcp",
+        headers: { Authorization: "Bearer secret" },
+      },
+    ]);
+    expect(await service.serversForAgent("codex")).toEqual([]);
+    expect(await service.serversForAgent("opencode")).toEqual([]);
+    expect(await service.serversForAgent("pi")).toEqual([]);
+  });
+
+  it("keeps the rest of the server when its agents change", async () => {
+    const service = await createTargetService();
+    await service.config.saveServer("local", { command: "a", args: ["x"] });
+    await service.config.setServerAgents("local", ["codex"]);
+    expect((await service.config.readServers()).local).toEqual({
+      command: "a",
+      args: ["x"],
+      cocurdex: { agents: ["codex"] },
+    });
+    await expect(
+      service.config.setServerAgents("missing", ["codex"]),
+    ).rejects.toThrow('No MCP server named "missing"');
+  });
+
+  it("explains which servers other agents cannot receive", async () => {
+    const service = await createTargetService();
+    await service.config.saveServer("ok", { command: "a" });
+    await service.config.saveServer("secret", {
+      command: "a",
+      env: { KEY: "!op read item" },
+    });
+    await service.config.saveServer("missing", {
+      url: "https://m.example.invalid/mcp",
+      headers: { X: "${NOT_SET}" },
+    });
+    expect(await service.injectionSupport()).toEqual({
+      ok: null,
+      secret: "command-value",
+      missing: "missing-env",
+    });
+  });
+});

@@ -481,6 +481,7 @@ export class CocurdexDaemonService {
       onProviderEvent: (event) => this.runs.noteProviderEvent(event),
       userDataPath: options.userDataPath,
       agentTools: this.agentTools,
+      resolveMcpServers: (agentId) => this.mcp.serversForAgent(agentId),
     });
     this.workspaceChanges = createWorkspaceChangeCoordinator({
       userDataPath: options.userDataPath,

@@ -79,7 +79,11 @@ export function sameMcpServerConfig(
   left: McpServerConfig,
   right: McpServerConfig,
 ) {
-  const strip = ({ enabled: _enabled, ...rest }: McpServerConfig) => rest;
+  const strip = ({
+    enabled: _enabled,
+    cocurdex: _cocurdex,
+    ...rest
+  }: McpServerConfig) => rest;
   return (
     JSON.stringify(sortedJson(strip(left))) ===
     JSON.stringify(sortedJson(strip(right)))
