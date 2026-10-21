@@ -1,8 +1,10 @@
 import type { McpServerConfig, McpServerScope } from "@cocurdex/shared";
-import { Download, Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Badge, Button, Input, Text } from "@/components/ui";
+import { Badge, Input, Text } from "@/components/ui";
+import type { JsonTextHandler } from "../json-file-import";
 import { SettingsListItem } from "../settings-list-item";
+import { McpAddMenu } from "./mcp-add-menu";
 import {
   type McpSelection,
   matchesServerQuery,
@@ -75,6 +77,7 @@ export function McpServerList({
   onImport,
   onQueryChange,
   onSelect,
+  onText,
 }: {
   project: Record<string, McpServerConfig> | null;
   query: string;
@@ -86,6 +89,7 @@ export function McpServerList({
   onImport(): void;
   onQueryChange(query: string): void;
   onSelect(selection: McpSelection): void;
+  onText: JsonTextHandler;
 }) {
   const { t } = useTranslation("settings");
   const globalEntries = Object.entries(servers).filter(([name, config]) =>
@@ -109,15 +113,12 @@ export function McpServerList({
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </div>
-        <Button
-          className="shrink-0"
-          type="button"
+        <McpAddMenu
           variant="secondary"
-          onClick={onAdd}
-        >
-          <Plus className="size-4" />
-          {t("mcp.list.add")}
-        </Button>
+          onAddManually={onAdd}
+          onImportAgents={onImport}
+          onText={onText}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
@@ -150,16 +151,6 @@ export function McpServerList({
           ) : null}
         </div>
       </div>
-
-      <Button
-        className="shrink-0 justify-start"
-        type="button"
-        variant="ghost"
-        onClick={onImport}
-      >
-        <Download className="size-4" />
-        {t("mcp.list.importFromAgents")}
-      </Button>
     </div>
   );
 }

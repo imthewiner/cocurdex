@@ -180,6 +180,41 @@ runScenario("mcp-settings", {
       },
     ],
     [
+      "the list offers every way to add a server from one menu",
+      async ({ session, t }) => {
+        const importLabel = await t("mcp.list.importFromAgents");
+        await clickByRole(session, {
+          role: "button",
+          name: await t("mcp.empty.add"),
+        });
+        await waitForRole(session, { role: "menuitem", name: importLabel });
+        await waitForRole(session, {
+          role: "menuitem",
+          name: await t("mcp.empty.chooseFile"),
+        });
+        await session.send("Input.dispatchKeyEvent", {
+          type: "keyDown",
+          key: "Escape",
+          code: "Escape",
+          windowsVirtualKeyCode: 27,
+        });
+        await session.waitUntil(
+          () => !document.querySelector('[role="menu"]'),
+          null,
+          UI_TIMEOUT_MS,
+        );
+        const standalone = await session.run(
+          (label) =>
+            [...document.querySelectorAll("button")].some(
+              (button) => button.textContent?.trim() === label,
+            ),
+          importLabel,
+        );
+        check(!standalone, "no standalone import button", { standalone });
+        return { standalone };
+      },
+    ],
+    [
       "the Enabled switch writes the config immediately",
       async ({ session, t }) => {
         await clickByRole(session, {

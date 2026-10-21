@@ -1,31 +1,13 @@
-import {
-  ChevronDown,
-  ClipboardPaste,
-  Download,
-  FileUp,
-  PenLine,
-  Plus,
-  Server,
-} from "lucide-react";
-import { useRef, useState } from "react";
+import { Download, FileUp, Server } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  EmptyState,
-  Text,
-} from "@/components/ui";
+import { Button, EmptyState, Text } from "@/components/ui";
 import { cn } from "@/lib";
 import {
   type JsonTextHandler,
   useFileDropTarget,
   useJsonFileImport,
 } from "../json-file-import";
-import { JsonFileInput } from "../json-import-dropzone";
-import { JsonPasteDialog } from "../json-paste-dialog";
+import { McpAddMenu } from "./mcp-add-menu";
 import type { McpImportAgentSummary } from "./mcp-import-items";
 
 export function McpEmptyState({
@@ -40,9 +22,7 @@ export function McpEmptyState({
   onText: JsonTextHandler;
 }) {
   const { t, i18n } = useTranslation("settings");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isPasteOpen, setIsPasteOpen] = useState(false);
-  const { importFile, importFiles } = useJsonFileImport({
+  const { importFiles } = useJsonFileImport({
     invalidFileMessage: t("mcp.jsonImport.invalidFile"),
     onText,
   });
@@ -68,34 +48,11 @@ export function McpEmptyState({
                 {t("mcp.list.importFromAgents")}
               </Button>
             ) : null}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant={canImportAgents ? "outline" : "default"}
-                  >
-                    <Plus className="size-4" />
-                    {t("mcp.empty.add")}
-                    <ChevronDown className="size-3.5" />
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="start" className="min-w-44">
-                <DropdownMenuItem onClick={onAddManually}>
-                  <PenLine className="size-3.5" />
-                  {t("mcp.empty.addManually")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPasteOpen(true)}>
-                  <ClipboardPaste className="size-3.5" />
-                  {t("jsonImport.pasteButton")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                  <FileUp className="size-3.5" />
-                  {t("mcp.empty.chooseFile")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <McpAddMenu
+              variant={canImportAgents ? "outline" : "default"}
+              onAddManually={onAddManually}
+              onText={onText}
+            />
           </div>
         }
         className={cn("flex-1 pb-24", isDraggingFile && "opacity-30")}
@@ -121,14 +78,6 @@ export function McpEmptyState({
           </Text>
         </div>
       ) : null}
-      <JsonFileInput inputRef={fileInputRef} onFile={importFile} />
-      <JsonPasteDialog
-        description={t("mcp.jsonImport.pasteDescription")}
-        open={isPasteOpen}
-        title={t("mcp.jsonImport.pasteTitle")}
-        onOpenChange={setIsPasteOpen}
-        onText={onText}
-      />
     </section>
   );
 }
