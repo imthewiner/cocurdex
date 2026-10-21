@@ -185,7 +185,7 @@ runScenario("mcp-settings", {
         const importLabel = await t("mcp.list.importFromAgents");
         await clickByRole(session, {
           role: "button",
-          name: await t("mcp.empty.add"),
+          name: await t("mcp.list.add"),
         });
         await waitForRole(session, { role: "menuitem", name: importLabel });
         await waitForRole(session, {

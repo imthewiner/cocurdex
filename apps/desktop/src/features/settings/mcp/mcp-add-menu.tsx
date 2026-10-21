@@ -20,11 +20,13 @@ import { JsonFileInput } from "../json-import-dropzone";
 import { JsonPasteDialog } from "../json-paste-dialog";
 
 export function McpAddMenu({
+  label,
   variant,
   onAddManually,
   onImportAgents,
   onText,
 }: {
+  label: string;
   variant: "default" | "outline" | "secondary";
   onAddManually(): void;
   onImportAgents?: () => void;
@@ -45,7 +47,7 @@ export function McpAddMenu({
           render={
             <Button className="shrink-0" type="button" variant={variant}>
               <Plus className="size-4" />
-              {t("mcp.empty.add")}
+              {label}
               <ChevronDown className="size-3.5" />
             </Button>
           }

@@ -49,6 +49,7 @@ export function McpEmptyState({
               </Button>
             ) : null}
             <McpAddMenu
+              label={t("mcp.empty.add")}
               variant={canImportAgents ? "outline" : "default"}
               onAddManually={onAddManually}
               onText={onText}

@@ -114,6 +114,7 @@ export function McpServerList({
           />
         </div>
         <McpAddMenu
+          label={t("mcp.list.add")}
           variant="secondary"
           onAddManually={onAdd}
           onImportAgents={onImport}
