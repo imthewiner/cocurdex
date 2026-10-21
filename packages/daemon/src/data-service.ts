@@ -13,13 +13,17 @@ import {
   type DeleteIssuePayload,
   type DeleteNotePayload,
   type DeleteViewPayload,
+  type EntityLinkPayload,
+  type EntityRef,
   type GetIssueDetailPayload,
   type GetIssuePayload,
   type GetNoteDocPayload,
   type GetNotePayload,
   type IssueRelationPayload,
   isContextItemAttachment,
+  isLinkableEntityKind,
   type LinkIssueSessionPayload,
+  type ListEntityLinksPayload,
   type LoadViewPayload,
   type MessageAttachment,
   type MoveColumnPayload,
@@ -28,6 +32,7 @@ import {
   type NoteBacklinksPayload,
   type NoteDocSnapshot,
   type SearchDocumentsPayload,
+  sameEntity,
   type UpdateColumnPayload,
   type UpdateIssueLabelPayload,
   type UpdateIssuePayload,
@@ -266,11 +271,52 @@ export class DaemonDataService {
     }
   }
 
+  async listEntityLinks(payload: ListEntityLinksPayload) {
+    const ref = await this.requireEntity(payload.ref);
+    return this.state.data.entityLinks.list(ref);
+  }
+
+  async addEntityLink(payload: EntityLinkPayload) {
+    const [source, target] = await this.requireLinkPair(payload);
+    const added = await this.state.data.entityLinks.add(source, target);
+    if (added) this.emitChanged("links");
+    return added;
+  }
+
+  async removeEntityLink(payload: EntityLinkPayload) {
+    const [source, target] = await this.requireLinkPair(payload);
+    const removed = await this.state.data.entityLinks.remove(source, target);
+    if (removed) this.emitChanged("links");
+    return removed;
+  }
+
+  private async requireEntity(ref: EntityRef): Promise<EntityRef> {
+    if (!isLinkableEntityKind(ref?.kind) || typeof ref.id !== "string") {
+      throw new Error("Invalid entity reference");
+    }
+    const resolved = await this.state.data.entityLinks.resolve(ref);
+    if (!resolved) {
+      throw new Error(`${ref.kind} not found: ${ref.id}`);
+    }
+    return resolved;
+  }
+
+  private async requireLinkPair(
+    payload: EntityLinkPayload,
+  ): Promise<[EntityRef, EntityRef]> {
+    const source = await this.requireEntity(payload.source);
+    const target = await this.requireEntity(payload.target);
+    if (sameEntity(source, target)) {
+      throw new Error("An entity cannot link to itself");
+    }
+    return [source, target];
+  }
+
   searchDocuments(payload: SearchDocumentsPayload) {
     return this.state.data.search.search(payload);
   }
 
-  private emitChanged(area: "issues" | "notes"): void {
+  private emitChanged(area: "issues" | "links" | "notes"): void {
     this.events.emit("daemon.event", {
       type: "data.changed",
       areas: [area],

@@ -1290,6 +1290,35 @@ describe("initializeDatabase", () => {
     ]);
   });
 
+  it("adds entity links from version 32 and cleans them up on delete", () => {
+    const database = new DatabaseSync(":memory:");
+    initializeDatabase(database);
+    database.exec("DROP TABLE entity_links");
+    const now = "2026-10-21T00:00:00.000Z";
+    database.exec(`
+      INSERT INTO notes (id, kind, title, body_markdown, created_at, updated_at)
+      VALUES ('n1', 'note', 'Spec', 'body', '${now}', '${now}');
+      INSERT INTO issues (id, title, created_at, updated_at)
+      VALUES ('i1', 'Links', '${now}', '${now}');
+      PRAGMA user_version = 32;
+    `);
+
+    initializeDatabase(database);
+
+    database.exec(`
+      INSERT INTO entity_links (source_kind, source_id, target_kind, target_id, created_at)
+      VALUES ('issue', 'i1', 'note', 'n1', '${now}');
+    `);
+    expect(database.prepare("SELECT title FROM notes").all()).toEqual([
+      { title: "Spec" },
+    ]);
+    database.exec("DELETE FROM notes WHERE id = 'n1'");
+    expect(database.prepare("SELECT * FROM entity_links").all()).toEqual([]);
+    expect(database.prepare("SELECT title FROM issues").all()).toEqual([
+      { title: "Links" },
+    ]);
+  });
+
   it("keeps an up-to-date database that carries a stale version marker", () => {
     const database = new DatabaseSync(":memory:");
     initializeDatabase(database);

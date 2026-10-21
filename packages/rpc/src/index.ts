@@ -55,6 +55,8 @@ import type {
   DocumentAttachment,
   EditDeckPayload,
   EditorViewRecord,
+  EntityLink,
+  EntityLinkPayload,
   ExportDeckFilePayload,
   ExportDeckFileResult,
   ForkSessionPayload,
@@ -87,6 +89,7 @@ import type {
   IssueRecord,
   IssueRelationPayload,
   LinkIssueSessionPayload,
+  ListEntityLinksPayload,
   LoadViewPayload,
   ManagedWorktree,
   McpConfigFile,
@@ -513,6 +516,9 @@ export type DaemonRequestPayloadByMethod = {
   "note.delete": DeleteNotePayload;
   "note.listTags": { noteId?: string };
   "note.backlinks": NoteBacklinksPayload;
+  "link.list": ListEntityLinksPayload;
+  "link.add": EntityLinkPayload;
+  "link.remove": EntityLinkPayload;
   "deck.list": undefined;
   "deck.get": GetDeckPayload;
   "deck.create": CreateDeckPayload;
@@ -803,6 +809,9 @@ export type DaemonResultByMethod = {
   "note.delete": null;
   "note.listTags": NoteTag[];
   "note.backlinks": NoteLink[];
+  "link.list": EntityLink[];
+  "link.add": boolean;
+  "link.remove": boolean;
   "deck.list": DeckSummary[];
   "deck.get": DeckRecord | null;
   "deck.create": DeckWriteResult;

@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { createDecksSchemaSql } from "./decks/deck-schema";
+import { createEntityLinksSchemaSql } from "./entity-links/entity-link-schema";
 import { createHostAccessSchemaSql } from "./host-access/schema";
 import {
   ensureIssueIndexes,
@@ -15,7 +16,7 @@ import { ensureTimelineSequence } from "./timeline-sequence";
 /** ASCII "COCU" marks databases owned by the current Cocurdex baseline. */
 export const COCURDEX_APPLICATION_ID = 0x434f4355;
 export const FIRST_MIGRATABLE_SCHEMA_VERSION = 5;
-export const CURRENT_SCHEMA_VERSION = 32;
+export const CURRENT_SCHEMA_VERSION = 33;
 
 interface PragmaNumberRow {
   application_id?: number;
@@ -430,6 +431,10 @@ function createDecksTable(database: DatabaseSync): void {
   database.exec(createDecksSchemaSql());
 }
 
+function createEntityLinksTable(database: DatabaseSync): void {
+  database.exec(createEntityLinksSchemaSql());
+}
+
 function createHostAccessTables(database: DatabaseSync): void {
   database.exec(createHostAccessSchemaSql());
 }
@@ -536,6 +541,7 @@ const MIGRATION_STEPS = new Map<number, MigrationStep>([
   [29, createCommandReceipts],
   [30, ensureSyncTracking],
   [31, createDecksTable],
+  [32, createEntityLinksTable],
 ]);
 
 function runMigrationStep(database: DatabaseSync, step: MigrationStep): void {
@@ -651,6 +657,7 @@ export function initializeDatabase(database: DatabaseSync): void {
   runMigrationStep(database, ensureTimelineSequence);
   runMigrationStep(database, ensureSyncTracking);
   ensureIssueIndexes(database);
+  database.exec(createEntityLinksSchemaSql());
 
   database.exec(`PRAGMA application_id = ${COCURDEX_APPLICATION_ID}`);
   database.exec(`PRAGMA user_version = ${CURRENT_SCHEMA_VERSION}`);

@@ -1,0 +1,108 @@
+import path from "node:path";
+import { createCocurdexDatabase } from "@cocurdex/db/internal/sqlite";
+import { DEFAULT_VIEW_ID, entityUri } from "@cocurdex/shared";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, describe, expect, it } from "vitest";
+
+const tempDirs = createTempDirs();
+
+afterAll(() => tempDirs.cleanup());
+
+async function seed() {
+  const database = createCocurdexDatabase(
+    path.join(tempDirs.createSync("cocurdex-links-"), "cocurdex.sqlite"),
+  );
+  const issue = await database.issues.createIssue({
+    viewId: DEFAULT_VIEW_ID,
+    columnId: "backlog",
+    title: "Support gift cards",
+    description: "",
+  });
+  const deck = await database.decks.create({
+    title: "Gift card pitch",
+    workspaceId: null,
+    content: {
+      version: 1,
+      size: { width: 1280, height: 720 },
+      theme: "default",
+      slides: [],
+    },
+  });
+  const target = await database.notes.create({ title: "Gift card math" });
+  const note = await database.notes.create({
+    title: "Gift card plan",
+    bodyMarkdown: [
+      `Track [the issue](${entityUri({ kind: "issue", id: issue.id })}).`,
+      `See [math](${entityUri({ kind: "note", id: target.id })}).`,
+    ].join("\n"),
+  });
+  return { database, issue, deck, note, target };
+}
+
+describe("CocurdexDatabase.entityLinks", () => {
+  it("lists manual links from both ends and body mentions with titles", async () => {
+    const { database, issue, deck, note, target } = await seed();
+    const noteRef = { kind: "note", id: note.id } as const;
+    const deckRef = { kind: "deck", id: deck.id } as const;
+
+    expect(await database.entityLinks.add(deckRef, noteRef)).toBe(true);
+    expect(await database.entityLinks.add(noteRef, deckRef)).toBe(false);
+
+    const fromNote = await database.entityLinks.list(noteRef);
+    expect(
+      fromNote.map((link) => [link.relation, link.target.kind, link.title]),
+    ).toEqual([
+      ["related", "deck", "Gift card pitch"],
+      ["mentions", "issue", "Support gift cards"],
+      ["mentions", "note", "Gift card math"],
+    ]);
+    expect(fromNote[0]?.removable).toBe(true);
+    expect(fromNote[1]?.detail).toBe(issue.identifier);
+
+    const fromDeck = await database.entityLinks.list(deckRef);
+    expect(fromDeck.map((link) => [link.relation, link.target.id])).toEqual([
+      ["related", note.id],
+    ]);
+    const fromIssue = await database.entityLinks.list({
+      kind: "issue",
+      id: issue.id,
+    });
+    expect(fromIssue.map((link) => [link.relation, link.target.id])).toEqual([
+      ["mentioned-by", note.id],
+    ]);
+    const fromTarget = await database.entityLinks.list({
+      kind: "note",
+      id: target.id,
+    });
+    expect(fromTarget.map((link) => [link.relation, link.target.id])).toEqual([
+      ["mentioned-by", note.id],
+    ]);
+
+    expect(await database.entityLinks.remove(noteRef, deckRef)).toBe(true);
+    expect(await database.entityLinks.list(deckRef)).toEqual([]);
+  });
+
+  it("drops manual links when either entity is deleted", async () => {
+    const { database, deck, note } = await seed();
+    const noteRef = { kind: "note", id: note.id } as const;
+    await database.entityLinks.add(noteRef, { kind: "deck", id: deck.id });
+
+    await database.decks.delete({ id: deck.id });
+
+    const related = await database.entityLinks.list(noteRef);
+    expect(related.some((link) => link.target.kind === "deck")).toBe(false);
+  });
+
+  it("resolves issues by identifier and rejects unknown entities", async () => {
+    const { database, issue } = await seed();
+    expect(
+      await database.entityLinks.resolve({
+        kind: "issue",
+        id: issue.identifier,
+      }),
+    ).toEqual({ kind: "issue", id: issue.id });
+    expect(
+      await database.entityLinks.resolve({ kind: "deck", id: "missing" }),
+    ).toBeNull();
+  });
+});

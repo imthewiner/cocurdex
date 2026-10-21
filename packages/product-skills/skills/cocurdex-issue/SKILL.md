@@ -30,7 +30,10 @@ Every `<id>` accepts the issue's stable id or its short identifier such as
 create a missing label first. `--parent none` detaches a sub-issue.
 Issue records include `sessionIds`, the agent sessions linked to the issue.
 `show --detail` adds the parent, sub-issues, relations, linked sessions, and
-the activity log.
+the activity log. Relate an issue to a note, deck, or session with
+`cocurdex link add issue:COC-12 note:<note-id>`, and list everything connected
+to it, including notes that mention it, with `cocurdex link list issue:COC-12`
+(see `/cocurdex-note` for link URIs).
 
 If the prompt already contains an attached `<issue … complete="true">` block,
 treat it as the full issue and do not run `cocurdex issue show` for it. Use the

@@ -13,6 +13,7 @@ export const cocurdexDataAreas = [
   "notes",
   "decks",
   "issues",
+  "links",
   "agent",
   "workspace",
   "settings",
