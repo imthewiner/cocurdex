@@ -280,9 +280,10 @@ export async function listWorkspaceFiles(rootPath: string) {
 }
 
 function normalizeWorkspaceRelativeDirectory(relativePath: string) {
-  const normalized = path.posix.normalize(
-    relativePath.replace(/\\/g, "/").replace(/\/+$/, ""),
-  );
+  const collapsed = path.posix.normalize(relativePath.replaceAll("\\", "/"));
+  const normalized = collapsed.endsWith("/")
+    ? collapsed.slice(0, -1)
+    : collapsed;
   if (normalized === "." || normalized === "") {
     return "";
   }

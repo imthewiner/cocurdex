@@ -166,6 +166,22 @@ describe("listWorkspaceDirectory", () => {
     expect(await listWorkspaceDirectory(root, parent)).toEqual([]);
   });
 
+  it("accepts redundant separators and stays fast on long slash runs", async () => {
+    const root = await tempDirs.create("workspace-slashes-");
+    await mkdir(join(root, "src"));
+    await writeFile(join(root, "src", "index.ts"), "x");
+
+    expect(
+      (await listWorkspaceDirectory(root, "src//")).map(
+        (entry) => entry.relativePath,
+      ),
+    ).toEqual(["src/index.ts"]);
+
+    const startedAt = performance.now();
+    await listWorkspaceDirectory(root, `${"/".repeat(100_000)}x`);
+    expect(performance.now() - startedAt).toBeLessThan(1000);
+  });
+
   it("returns nothing for a missing directory", async () => {
     const root = await tempDirs.create("workspace-missing-");
     expect(await listWorkspaceDirectory(root, "gone")).toEqual([]);
