@@ -108,7 +108,7 @@ const RELEASE_NOTES = `## Acme Shop 0.4.0
 | Area | Change | Risk |
 | --- | --- | --- |
 | Cart | Rounding | Low |
-| Checkout | Discounts | Medium |
+| Checkout | \`applyDiscount\` percent codes | Medium |
 
 \`\`\`ts
 applyDiscount(100, { code: "SPRING10", percentOff: 10 }); // 90

@@ -109,6 +109,12 @@ export const workspacePayloadSchemas = {
     exact<Payload<"workspace.listEntries">>()(rootPathPayload),
   "workspace.listFiles":
     exact<Payload<"workspace.listFiles">>()(rootPathPayload),
+  "workspace.listDirectory": exact<Payload<"workspace.listDirectory">>()(
+    z.object({
+      rootPath: filesystemPathSchema,
+      relativePath: gitRelativePathSchema,
+    }),
+  ),
   "workspace.save": loose<Payload<"workspace.save">>()(
     z.object({
       workspace: z.looseObject({

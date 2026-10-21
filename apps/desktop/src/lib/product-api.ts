@@ -72,6 +72,8 @@ export const daemonProductApi: ProductRequestApi = {
   listWorkspaceEntries: (rootPath) =>
     rpc("workspace.listEntries", { rootPath }),
   listWorkspaceFiles: (rootPath) => rpc("workspace.listFiles", { rootPath }),
+  listWorkspaceDirectory: (rootPath, relativePath) =>
+    rpc("workspace.listDirectory", { rootPath, relativePath }),
   listGitBranches: (rootPath) => rpc("git.listBranches", { rootPath }),
   checkoutGitBranch: async (rootPath, branch) => {
     await rpc("git.checkoutBranch", { rootPath, branch });

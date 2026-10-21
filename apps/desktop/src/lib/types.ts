@@ -384,6 +384,10 @@ export interface ProductApi {
   onPtyActivity(listener: (event: PtyActivityEvent) => void): () => void;
   listWorkspaceEntries(rootPath: string): Promise<WorkspaceEntry[]>;
   listWorkspaceFiles(rootPath: string): Promise<WorkspaceFileEntry[]>;
+  listWorkspaceDirectory(
+    rootPath: string,
+    relativePath: string,
+  ): Promise<WorkspaceFileEntry[]>;
   listGitBranches(rootPath: string): Promise<GitBranchInfo[]>;
   checkoutGitBranch(rootPath: string, branch: string): Promise<void>;
   listGitWorktrees(rootPath: string): Promise<GitWorktreeInfo[]>;

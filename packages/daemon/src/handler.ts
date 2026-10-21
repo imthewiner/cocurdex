@@ -245,6 +245,11 @@ export async function handleDaemonRequest(
       return service.listWorkspaceEntries(request.params.rootPath);
     case "workspace.listFiles":
       return service.listWorkspaceFiles(request.params.rootPath);
+    case "workspace.listDirectory":
+      return service.listWorkspaceDirectory(
+        request.params.rootPath,
+        request.params.relativePath,
+      );
     case "file.readText":
       return service.readWorkspaceTextFile(request.params.filePath);
     case "file.exists":

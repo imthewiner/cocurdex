@@ -3,8 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   fileExists,
+  listWorkspaceDirectory,
   listWorkspaceFiles,
 } from "@cocurdex/daemon/internal/workspace-service";
+import { createTempDirs } from "@cocurdex/shared/testing";
 import {
   afterAll,
   afterEach,
@@ -114,5 +116,74 @@ describe("listWorkspaceFiles", () => {
     expect(relativePaths.some((path) => path.startsWith(".pnpm-store"))).toBe(
       false,
     );
+  });
+});
+
+describe("listWorkspaceDirectory", () => {
+  const tempDirs = createTempDirs();
+
+  afterAll(async () => {
+    await tempDirs.cleanup();
+  });
+
+  it("lists a directory the capped workspace listing left out", async () => {
+    const root = await tempDirs.create("workspace-dir-");
+    const huge = join(root, "aaa-huge");
+    await mkdir(huge);
+    await Promise.all(
+      Array.from({ length: FILE_RESULT_LIMIT }, (_, index) =>
+        writeFile(join(huge, `f${index}.txt`), "x"),
+      ),
+    );
+    await mkdir(join(root, "zzz", "auth", "nested"), { recursive: true });
+    await writeFile(join(root, "zzz", "auth", "token.ts"), "x");
+    await writeFile(join(root, "zzz", "auth", "nested", "deep.ts"), "x");
+    await mkdir(join(root, "zzz", "auth", "node_modules"));
+
+    const capped = (await listWorkspaceFiles(root)).map(
+      (entry) => entry.relativePath,
+    );
+    expect(capped).not.toContain("zzz/auth/token.ts");
+
+    const children = await listWorkspaceDirectory(root, "zzz/auth");
+    expect(
+      children.map(({ kind, relativePath }) => ({ kind, relativePath })),
+    ).toEqual([
+      { kind: "directory", relativePath: "zzz/auth/nested" },
+      { kind: "file", relativePath: "zzz/auth/token.ts" },
+    ]);
+    expect(children[1]?.path).toBe(join(root, "zzz", "auth", "token.ts"));
+  });
+
+  it("refuses paths that leave the workspace root", async () => {
+    const parent = await tempDirs.create("workspace-escape-");
+    const root = join(parent, "root");
+    await mkdir(root);
+    await writeFile(join(parent, "secret.txt"), "x");
+
+    expect(await listWorkspaceDirectory(root, "..")).toEqual([]);
+    expect(await listWorkspaceDirectory(root, "a/../..")).toEqual([]);
+    expect(await listWorkspaceDirectory(root, parent)).toEqual([]);
+  });
+
+  it("accepts redundant separators and stays fast on long slash runs", async () => {
+    const root = await tempDirs.create("workspace-slashes-");
+    await mkdir(join(root, "src"));
+    await writeFile(join(root, "src", "index.ts"), "x");
+
+    expect(
+      (await listWorkspaceDirectory(root, "src//")).map(
+        (entry) => entry.relativePath,
+      ),
+    ).toEqual(["src/index.ts"]);
+
+    const startedAt = performance.now();
+    await listWorkspaceDirectory(root, `${"/".repeat(100_000)}x`);
+    expect(performance.now() - startedAt).toBeLessThan(1000);
+  });
+
+  it("returns nothing for a missing directory", async () => {
+    const root = await tempDirs.create("workspace-missing-");
+    expect(await listWorkspaceDirectory(root, "gone")).toEqual([]);
   });
 });

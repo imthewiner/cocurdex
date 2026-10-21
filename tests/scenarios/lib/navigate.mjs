@@ -54,8 +54,15 @@ export async function closeEditorPanel(session) {
       (key) => translate(session, key),
     ),
   );
-  if ((await queryAllByRole(session, { role: "button", name: close })).length) {
-    await clickByRole(session, { role: "button", name: close });
+  const [closeButton] = await queryAllByRole(session, {
+    role: "button",
+    name: close,
+  });
+  if (closeButton) {
+    await clickPoint(
+      session,
+      await centerOf(session, closeButton.backendNodeId),
+    );
   }
   await waitForRole(
     session,
