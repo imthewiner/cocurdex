@@ -221,7 +221,16 @@ export function createMarkdownComponents(
     },
     table({ children }: { children?: ReactNode }) {
       return (
-        <div className="my-1.5 min-w-0 max-w-full overflow-x-auto rounded-control [&_code]:rounded-control [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.9em]">
+        <div
+          className={cn(
+            "my-1.5 min-w-0 max-w-full overflow-x-auto rounded-card [&_code]:rounded-control [&_code]:bg-foreground/8 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.9em]",
+            tone === "editor"
+              ? "bg-editor-chrome"
+              : tone === "system"
+                ? "bg-chat-system-bg"
+                : "bg-chat-code-block",
+          )}
+        >
           <table className="w-full border-collapse text-left text-sm in-data-streaming:table-fixed">
             {children}
           </table>
@@ -234,10 +243,10 @@ export function createMarkdownComponents(
           className={cn(
             "border-b text-xs uppercase tracking-[0.12em]",
             tone === "editor"
-              ? "border-editor-border bg-editor-chrome text-editor-fg-muted"
+              ? "border-editor-border text-editor-fg-muted"
               : tone === "system"
-                ? "border-chat-system-border bg-chat-system-bg text-chat-system-fg"
-                : "border-chat-border-soft bg-chat-code-block text-chat-fg-muted",
+                ? "border-chat-system-border text-chat-system-fg"
+                : "border-chat-border-soft text-chat-fg-muted",
           )}
         >
           {children}
@@ -249,7 +258,9 @@ export function createMarkdownComponents(
     },
     tr({ children }: { children?: ReactNode }) {
       return (
-        <tr className="border-b border-chat-border-soft/70">{children}</tr>
+        <tr className="border-b border-chat-border-soft/70 last:border-b-0">
+          {children}
+        </tr>
       );
     },
     th({ children }: { children?: ReactNode }) {
