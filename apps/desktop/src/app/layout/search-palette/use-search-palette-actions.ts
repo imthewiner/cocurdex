@@ -1,6 +1,7 @@
 import type { SessionRecord } from "@cocurdex/shared";
 import { isChatSession } from "@cocurdex/shared";
 import { useSetAtom } from "jotai";
+import { openDeckAtom } from "@/features/decks";
 import { editorPanelOpenAtom } from "@/features/editor";
 import { openIssueDetailAtom } from "@/features/issues";
 import { openNoteAtom } from "@/features/notes";
@@ -17,6 +18,7 @@ export function useSearchPaletteActions(onClose: () => void) {
   const setRightPanelOpen = useSetAtom(editorPanelOpenAtom);
   const openNote = useSetAtom(openNoteAtom);
   const openIssueDetail = useSetAtom(openIssueDetailAtom);
+  const openDeck = useSetAtom(openDeckAtom);
 
   return {
     openSession(session: SessionRecord) {
@@ -40,6 +42,12 @@ export function useSearchPaletteActions(onClose: () => void) {
       setRightPanelView("issues");
       setRightPanelOpen(true);
       void openIssueDetail(issueId);
+    },
+    openDeck(deckId: string) {
+      onClose();
+      setRightPanelView("decks");
+      setRightPanelOpen(true);
+      void openDeck(deckId);
     },
   };
 }

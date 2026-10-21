@@ -142,6 +142,8 @@ export async function handleDaemonRequest(
       return service.dataService.listNoteBacklinks(request.params);
     case "link.list":
       return service.dataService.listEntityLinks(request.params);
+    case "link.candidates":
+      return service.dataService.listEntityLinkCandidates();
     case "link.add":
       return service.dataService.addEntityLink(request.params);
     case "link.remove":

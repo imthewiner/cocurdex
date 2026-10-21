@@ -13,7 +13,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { NoteTable } from "./table";
 
 export const NOTE_DOC_FIELD = "default";
-export const NOTE_LINK_PROTOCOLS = ["cocurdex-pdf", "note"];
+export const NOTE_LINK_PROTOCOLS = ["cocurdex", "cocurdex-pdf", "note"];
 
 export interface NoteDocExtensionOptions {
   collaborative?: boolean;

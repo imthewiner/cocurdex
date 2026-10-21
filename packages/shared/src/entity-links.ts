@@ -35,6 +35,12 @@ export interface EntityLink {
   removable: boolean;
 }
 
+export interface EntityLinkCandidate {
+  target: EntityRef;
+  title: string;
+  detail: string | null;
+}
+
 export interface ListEntityLinksPayload {
   ref: EntityRef;
 }

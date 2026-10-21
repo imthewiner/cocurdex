@@ -15,6 +15,7 @@ import {
 } from "@/components/markdown-body-editor";
 import "@/components/markdown-body-editor/markdown-body-editor.css";
 import { EmptyState, Text } from "@/components/ui";
+import { RelatedEntities } from "@/features/entity-links";
 import { parsePdfNoteCitationHref } from "@/features/pdf-reader/pdf-note-citation";
 import { openPdfAtPageAtom } from "@/features/pdf-reader/pdf-reader-store";
 import { cn, useMountEffect } from "@/lib";
@@ -253,6 +254,7 @@ function NoteEditorBody({
           <EditorContent editor={editor} className="relative flex-1" />
           {editor ? <TableControls editor={editor} /> : null}
         </div>
+        <RelatedEntities entity={{ kind: "note", id: note.id }} />
       </div>
     </div>
   );

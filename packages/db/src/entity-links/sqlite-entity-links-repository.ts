@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import {
   type EntityLink,
+  type EntityLinkCandidate,
   type EntityLinkRelation,
   type EntityRef,
   entityUri,
@@ -218,6 +219,38 @@ function toEntityLink(
   };
 }
 
+const SESSION_CANDIDATE_LIMIT = 200;
+
+const CANDIDATE_QUERIES: Record<LinkableEntityKind, string> = {
+  session: `SELECT id, title, NULL AS number FROM sessions
+    WHERE archived_at IS NULL AND parent_session_id IS NULL
+    ORDER BY updated_at DESC LIMIT ${SESSION_CANDIDATE_LIMIT}`,
+  note: `SELECT id, title, NULL AS number FROM notes
+    WHERE kind = 'note' ORDER BY updated_at DESC`,
+  issue: "SELECT id, title, number FROM issues ORDER BY updated_at DESC",
+  deck: "SELECT id, title, NULL AS number FROM decks ORDER BY updated_at DESC",
+};
+
+function listCandidates(database: DatabaseSync): EntityLinkCandidate[] {
+  return (Object.keys(CANDIDATE_QUERIES) as LinkableEntityKind[]).flatMap(
+    (kind) => {
+      const rows = database.prepare(CANDIDATE_QUERIES[kind]).all() as Array<{
+        id: string;
+        title: string;
+        number: number | null;
+      }>;
+      return rows.map((row) => ({
+        target: { kind, id: row.id },
+        title: row.title,
+        detail:
+          typeof row.number === "number"
+            ? formatIssueIdentifier(row.number)
+            : null,
+      }));
+    },
+  );
+}
+
 export function createSqliteEntityLinksRepository(
   database: DatabaseSync,
 ): EntityLinksRepository {
@@ -242,6 +275,9 @@ export function createSqliteEntityLinksRepository(
         const link = toEntityLink(database, item);
         return link ? [link] : [];
       });
+    },
+    async candidates() {
+      return listCandidates(database);
     },
     async add(source, target) {
       const [first, second] = orderedPair(source, target);

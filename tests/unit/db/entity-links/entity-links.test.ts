@@ -93,6 +93,32 @@ describe("CocurdexDatabase.entityLinks", () => {
     expect(related.some((link) => link.target.kind === "deck")).toBe(false);
   });
 
+  it("offers notes, issues, and decks as link candidates", async () => {
+    const { database, issue, deck, note } = await seed();
+    await database.notes.create({ kind: "folder", title: "Archive" });
+    const candidates = await database.entityLinks.candidates();
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        {
+          target: { kind: "note", id: note.id },
+          title: note.title,
+          detail: null,
+        },
+        {
+          target: { kind: "issue", id: issue.id },
+          title: issue.title,
+          detail: issue.identifier,
+        },
+        {
+          target: { kind: "deck", id: deck.id },
+          title: deck.title,
+          detail: null,
+        },
+      ]),
+    );
+    expect(candidates.some((item) => item.title === "Archive")).toBe(false);
+  });
+
   it("resolves issues by identifier and rejects unknown entities", async () => {
     const { database, issue } = await seed();
     expect(

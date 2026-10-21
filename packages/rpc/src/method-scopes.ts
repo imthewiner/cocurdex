@@ -62,6 +62,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "note.listTags": "read",
   "note.backlinks": "read",
   "link.list": "read",
+  "link.candidates": "read",
   "issue.listViews": "read",
   "issue.loadView": "read",
   "issue.get": "read",

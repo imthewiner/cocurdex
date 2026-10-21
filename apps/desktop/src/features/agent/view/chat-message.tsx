@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui";
-import { cn, openContextItem } from "@/lib";
+import { cn, openEntity } from "@/lib";
 import {
   type MentionContentSegment,
   splitContentByMentions,
@@ -80,7 +80,9 @@ function renderAttachmentChip(attachment: ContextAttachment) {
       <button
         className="mention-pill inline-flex min-h-[1lh] max-w-full cursor-pointer items-center gap-1 text-chat-link hover:text-chat-link-hover hover:underline"
         key={key}
-        onClick={() => openContextItem(attachment)}
+        onClick={() =>
+          openEntity({ kind: attachment.itemKind, id: attachment.id })
+        }
         type="button"
       >
         <ContextAttachmentChipContent attachment={attachment} />

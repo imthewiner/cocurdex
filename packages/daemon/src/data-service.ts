@@ -276,6 +276,10 @@ export class DaemonDataService {
     return this.state.data.entityLinks.list(ref);
   }
 
+  listEntityLinkCandidates() {
+    return this.state.data.entityLinks.candidates();
+  }
+
   async addEntityLink(payload: EntityLinkPayload) {
     const [source, target] = await this.requireLinkPair(payload);
     const added = await this.state.data.entityLinks.add(source, target);

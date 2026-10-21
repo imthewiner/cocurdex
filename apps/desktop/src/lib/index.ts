@@ -3,16 +3,10 @@ export {
   onOpenHtmlPreview,
   openHtmlPreviewInBrowser,
 } from "./browser-preview-events";
-export {
-  type ContextItemTarget,
-  onOpenContextItem,
-  onOpenSession,
-  openContextItem,
-  openSessionById,
-} from "./context-item-events";
 export { readCssVarPx } from "./css-length";
 export { requestDaemon, resolveLocalDaemonConnection } from "./daemon-client";
 export { logRendererDiagnostic } from "./diagnostics";
+export { onOpenEntity, openEntity } from "./entity-events";
 export { toAbsolutePath } from "./file-path";
 export { htmlPreviewLocationAtom } from "./html-preview-preference";
 export { desktopApi } from "./ipc";

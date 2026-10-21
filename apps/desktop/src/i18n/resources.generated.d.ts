@@ -437,6 +437,35 @@ export default interface Resources {
     };
     jumpToLatest: "Jump to latest";
     jumpToTop: "Jump to top";
+    links: {
+      add: "Link an item";
+      copied: "Link copied";
+      copy: "Copy link";
+      empty: "Nothing to link";
+      kind: {
+        deck: "Decks";
+        issue: "Issues";
+        note: "Notes";
+        session: "Sessions";
+      };
+      relation: {
+        "blocked-by": "Blocked by";
+        blocks: "Blocks";
+        child: "Sub-issue";
+        "duplicate-of": "Duplicate of";
+        "duplicated-by": "Duplicated by";
+        "mentioned-by": "Mentioned by";
+        mentions: "Mentions";
+        parent: "Parent";
+        related: "Related";
+        "worked-on-by": "Session";
+        "works-on": "Works on";
+      };
+      remove: "Remove link to {{title}}";
+      search: "Search sessions, notes, issues, decks…";
+      title: "Linked";
+      untitled: "Untitled";
+    };
     mermaid: {
       download: "Download SVG";
       openPreview: "Open preview";

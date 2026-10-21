@@ -39,6 +39,35 @@
   },
   "jumpToLatest": "跳到最新消息",
   "jumpToTop": "跳到顶部",
+  "links": {
+    "add": "关联条目",
+    "copied": "链接已复制",
+    "copy": "复制链接",
+    "empty": "没有可关联的条目",
+    "kind": {
+      "deck": "演示文稿",
+      "issue": "Issue",
+      "note": "笔记",
+      "session": "会话"
+    },
+    "relation": {
+      "blocked-by": "被阻塞",
+      "blocks": "阻塞",
+      "child": "子 Issue",
+      "duplicate-of": "重复于",
+      "duplicated-by": "被重复",
+      "mentioned-by": "被提及",
+      "mentions": "提及",
+      "parent": "父 Issue",
+      "related": "相关",
+      "worked-on-by": "会话",
+      "works-on": "处理中"
+    },
+    "remove": "移除与 {{title}} 的关联",
+    "search": "搜索会话、笔记、Issue、演示文稿…",
+    "title": "关联",
+    "untitled": "未命名"
+  },
   "mermaid": {
     "download": "下载 SVG",
     "openPreview": "打开预览",
