@@ -24,19 +24,26 @@ function usePackStatusText(status: ProductSkillsStatus | undefined) {
     });
   }
   if (status.installed && status.updateAvailable) {
-    return t("skills.status.updateAvailable", {
-      installed: status.installedVersion ?? status.packVersion,
-      latest: status.packVersion,
-      path: status.agentsSkillsDir,
-    });
+    return t("skills.status.updateAvailable", { path: status.agentsSkillsDir });
+  }
+  if (status.installed && status.modified) {
+    return t("skills.status.modified", { path: status.agentsSkillsDir });
   }
   if (status.installed) {
-    return t("skills.status.installed", {
-      version: status.installedVersion ?? status.packVersion,
-      path: status.agentsSkillsDir,
-    });
+    return t("skills.status.installed", { path: status.agentsSkillsDir });
   }
   return t("skills.status.notInstalled", { path: status.agentsSkillsDir });
+}
+
+function useInstallLabel(status: ProductSkillsStatus | undefined) {
+  const { t } = useTranslation("settings");
+  if (!status?.installed) {
+    return t("skills.actions.install");
+  }
+  if (status.updateAvailable) {
+    return t("skills.actions.update");
+  }
+  return status.modified ? t("skills.actions.restore") : null;
 }
 
 function PackScopeRow({
@@ -90,12 +97,7 @@ function PackScopeRow({
     }
   };
 
-  let installLabel: string = t("skills.actions.install");
-  if (status?.installed && status.updateAvailable) {
-    installLabel = t("skills.actions.update");
-  } else if (status?.installed) {
-    installLabel = t("skills.actions.reinstall");
-  }
+  const installLabel = useInstallLabel(status);
   const canInstall =
     Boolean(status?.sourceAvailable) && !status?.conflict && !busy;
   const canRemove = Boolean(status?.installed || status?.managed) && !busy;
@@ -115,14 +117,16 @@ function PackScopeRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {busy ? <Spinner size="sm" /> : null}
-        <Button
-          disabled={!canInstall}
-          size="sm"
-          variant="outline"
-          onClick={() => void install()}
-        >
-          {installLabel}
-        </Button>
+        {installLabel ? (
+          <Button
+            disabled={!canInstall}
+            size="sm"
+            variant="outline"
+            onClick={() => void install()}
+          >
+            {installLabel}
+          </Button>
+        ) : null}
         <Button
           disabled={!canRemove}
           size="sm"

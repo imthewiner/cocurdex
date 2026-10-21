@@ -34,6 +34,13 @@ export function hasPendingUpdate(skill: InstalledSkill) {
   return Boolean(skill.update && !skill.update.skipped);
 }
 
+export function isBrokenLinkOnly(skill: InstalledSkill) {
+  return (
+    skill.agents.length === 0 &&
+    skill.problems.some((problem) => problem.kind === "brokenLink")
+  );
+}
+
 export function skillDotState(skill: InstalledSkill): SkillDotState {
   if (skill.problems.length > 0) {
     return "problem";

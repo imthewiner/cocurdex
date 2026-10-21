@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -92,6 +92,50 @@ describe("product skills install", () => {
     await installProductSkills("project", workspace, opts);
     const second = await installProductSkills("project", workspace, opts);
     expect(second.action).toBe("skipped");
+  });
+
+  it("detects locally edited skills and restores them on install", async () => {
+    const home = await makeTempRoot();
+    const workspace = await makeTempRoot();
+    const opts = {
+      home,
+      sourceRoot,
+      packVersion: "0.1.0",
+      preferClaudeCopy: true as const,
+    };
+    await installProductSkills("project", workspace, opts);
+    const skillFile = path.join(
+      workspace,
+      ".agents",
+      "skills",
+      PRODUCT_SKILL_NAMES[0],
+      "SKILL.md",
+    );
+    const original = await readFile(skillFile, "utf8");
+    await writeFile(skillFile, "edited\n", "utf8");
+
+    const edited = await getProductSkillsStatus("project", workspace, opts);
+    expect(edited.modified).toBe(true);
+    expect(edited.updateAvailable).toBe(false);
+
+    const restored = await installProductSkills("project", workspace, opts);
+    expect(restored.action).toBe("restored");
+    expect(restored.modified).toBe(false);
+    expect(await readFile(skillFile, "utf8")).toBe(original);
+  });
+
+  it("reports an untouched install as unmodified", async () => {
+    const home = await makeTempRoot();
+    const workspace = await makeTempRoot();
+    const opts = {
+      home,
+      sourceRoot,
+      packVersion: "0.1.0",
+      preferClaudeCopy: true as const,
+    };
+    await installProductSkills("project", workspace, opts);
+    const status = await getProductSkillsStatus("project", workspace, opts);
+    expect(status.modified).toBe(false);
   });
 
   it("updates when pack version changes", async () => {

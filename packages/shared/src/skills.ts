@@ -13,6 +13,7 @@ export interface ProductSkillsStatusResult {
   managed: boolean;
   installedVersion: string | null;
   updateAvailable: boolean;
+  modified: boolean;
   conflict: boolean;
   conflictSkills: string[];
   skills: string[];
@@ -25,7 +26,7 @@ export interface ProductSkillsStatusResult {
 }
 
 export interface ProductSkillsInstallResult extends ProductSkillsStatusResult {
-  action: "installed" | "updated" | "skipped" | "conflict";
+  action: "installed" | "updated" | "restored" | "skipped" | "conflict";
 }
 
 export interface ProductSkillsRemoveResult {

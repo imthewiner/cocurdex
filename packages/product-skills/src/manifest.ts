@@ -23,6 +23,7 @@ export type SkillScope = "project" | "global";
 export type ManagedSkillsMarker = {
   managedBy: "cocurdex";
   packVersion: string;
+  contentHash?: string;
   skills: string[];
   scope: SkillScope;
   installedAt: string;
