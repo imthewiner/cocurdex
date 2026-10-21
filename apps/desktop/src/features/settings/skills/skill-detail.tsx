@@ -11,7 +11,11 @@ import { Badge, Button, Text } from "@/components/ui";
 import { SkillAgentsSection } from "./skill-agents-section";
 import { SkillDocumentSection, SkillFilesSection } from "./skill-files-section";
 import { SkillInfoList } from "./skill-info-list";
-import { hasPendingUpdate, skillRef } from "./skill-library-model";
+import {
+  hasPendingUpdate,
+  isBrokenLinkOnly,
+  skillRef,
+} from "./skill-library-model";
 import { SkillProblemsSection } from "./skill-problems-section";
 import { SkillUpdateDialog } from "./skill-update-dialog";
 import { skillsApi } from "./skills-api";
@@ -32,6 +36,9 @@ export function SkillDetail({
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const current = detail?.skill ?? skill;
+  const removeDescription = isBrokenLinkOnly(current)
+    ? t("skills.detail.removeBrokenDescription", { name: current.name })
+    : t("skills.detail.removeDescription", { name: current.name });
 
   const mutate = async (action: () => Promise<InstalledSkillDetail>) => {
     if (await run(action)) {
@@ -150,9 +157,7 @@ export function SkillDetail({
       <AppConfirmDialog
         cancelLabel={t("skills.actions.cancel")}
         confirmLabel={t("skills.actions.remove")}
-        description={t("skills.detail.removeDescription", {
-          name: current.name,
-        })}
+        description={removeDescription}
         open={isRemoveOpen}
         title={t("skills.detail.removeTitle", { name: current.name })}
         variant="destructive"

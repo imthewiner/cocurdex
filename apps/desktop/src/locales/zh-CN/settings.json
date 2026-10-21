@@ -1089,7 +1089,8 @@
     "description": "Skills 教 agent 完成专门的工作。安装一次，所有读取共享 skills 文件夹的 agent 都能使用。",
     "detail": {
       "label": "{{name}} 详情",
-      "removeDescription": "从这个范围内所有 agent 文件夹移除 {{name}} 及其链接，并保留文件夹备份。",
+      "removeBrokenDescription": "{{name}} 只剩下失效链接，它们指向的文件夹已不存在。移除只会删除这些链接，不影响其他文件。",
+      "removeDescription": "将为所有 agent 删除 {{name}}，包括指向它的链接。删除前会先备份文件夹，14 天内可在 skill-backups 中找回。",
       "removeTitle": "移除 {{name}}？",
       "reviewUpdate": "查看更新",
       "updateBadge": "有更新"

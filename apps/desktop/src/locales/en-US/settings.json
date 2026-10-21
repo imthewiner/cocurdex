@@ -1095,7 +1095,8 @@
     "description": "Skills teach agents how to do specialized work. Install them once and every agent that reads the shared skills folder can use them.",
     "detail": {
       "label": "{{name}} details",
-      "removeDescription": "Removes {{name}} and its links from every agent folder in this scope. A backup of the folder is kept.",
+      "removeBrokenDescription": "{{name}} is only broken links to a folder that no longer exists. Removing it deletes those links and touches nothing else.",
+      "removeDescription": "Deletes {{name}} for every agent, including the links that point to it. The folder is backed up first, so you can restore it from skill-backups for 14 days.",
       "removeTitle": "Remove {{name}}?",
       "reviewUpdate": "Review update",
       "updateBadge": "Update available"
