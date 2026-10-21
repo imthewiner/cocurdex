@@ -50,9 +50,34 @@ function findTreeRow(itemPath) {
   return false;
 }
 
+function findFirstTreeRow(itemPaths) {
+  const shown = new Set();
+  const roots = [document];
+  for (const root of roots) {
+    for (const row of root.querySelectorAll("[data-item-path]")) {
+      shown.add(row.dataset.itemPath);
+    }
+    for (const element of root.querySelectorAll("*")) {
+      if (element.shadowRoot) roots.push(element.shadowRoot);
+    }
+  }
+  return itemPaths.find((itemPath) => shown.has(itemPath)) ?? false;
+}
+
 async function expandFolder(session, itemPath) {
   await session.waitUntil(findTreeRow, itemPath, UI_TIMEOUT_MS);
   await clickPoint(session, await session.run(findTreeRow, itemPath));
+}
+
+async function expandNestedFolder(session, parentPath, childPath) {
+  await session.waitUntil(
+    findFirstTreeRow,
+    [childPath, parentPath],
+    UI_TIMEOUT_MS,
+  );
+  const shown = await session.run(findFirstTreeRow, [childPath, parentPath]);
+  if (shown === parentPath) await expandFolder(session, parentPath);
+  await expandFolder(session, childPath);
 }
 
 runScenario("file-tree-large-workspace", {
@@ -66,7 +91,7 @@ runScenario("file-tree-large-workspace", {
     [
       "a folder the capped listing missed still shows its files",
       async ({ session }) => {
-        await expandFolder(session, "zzz/auth/");
+        await expandNestedFolder(session, "zzz/", "zzz/auth/");
         await session.waitUntil(
           findTreeRow,
           "zzz/auth/token.ts",
