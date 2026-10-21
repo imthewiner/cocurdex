@@ -2334,7 +2334,7 @@ export default interface Resources {
         value: "Value";
       };
       import: {
-        agentsDescription: "MCP servers found in Claude Code, Cursor, and Antigravity configurations on this computer.";
+        agentsDescription: "MCP servers found in {{agents}} configurations on this computer.";
         agentsTitle: "Import from other agents";
         cancel: "Cancel";
         confirm_one: "Import {{count}} server";
@@ -2349,8 +2349,12 @@ export default interface Resources {
           antigravity: "Antigravity";
           claude: "Claude Code";
           "claude-project": "Claude Code · project";
+          codex: "Codex";
+          "codex-project": "Codex · project";
           cursor: "Cursor";
           json: "JSON";
+          opencode: "OpenCode";
+          "opencode-project": "OpenCode · project";
         };
         unsupported: "Not supported";
       };

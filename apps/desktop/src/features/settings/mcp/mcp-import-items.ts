@@ -1,5 +1,6 @@
 import {
   isValidMcpServerName,
+  MCP_IMPORT_SOURCES,
   type McpImportCandidate,
   type McpImportMatch,
   type McpImportSource,
@@ -30,7 +31,17 @@ export function defaultImportSelection(items: McpImportItem[]) {
   return picked;
 }
 
-export type McpImportAgent = Exclude<McpImportSource, "claude-project">;
+export type McpImportAgent = Exclude<
+  McpImportSource,
+  "claude-project" | "codex-project" | "opencode-project"
+>;
+
+const PROJECT_SOURCE_AGENTS: Partial<Record<McpImportSource, McpImportAgent>> =
+  {
+    "claude-project": "claude",
+    "codex-project": "codex",
+    "opencode-project": "opencode",
+  };
 
 export interface McpImportAgentSummary {
   count: number;
@@ -38,8 +49,12 @@ export interface McpImportAgentSummary {
 }
 
 function importAgent(source: McpImportSource): McpImportAgent {
-  return source === "claude-project" ? "claude" : source;
+  return PROJECT_SOURCE_AGENTS[source] ?? (source as McpImportAgent);
 }
+
+export const MCP_IMPORT_AGENTS: readonly McpImportAgent[] = [
+  ...new Set(MCP_IMPORT_SOURCES.map(importAgent)),
+];
 
 export function importableAgentSummary(
   candidates: McpImportCandidate[],

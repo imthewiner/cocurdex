@@ -43,7 +43,11 @@ export interface McpLoginOutcome {
 export const MCP_IMPORT_SOURCES = [
   "claude",
   "claude-project",
+  "codex",
+  "codex-project",
   "cursor",
+  "opencode",
+  "opencode-project",
   "antigravity",
 ] as const;
 

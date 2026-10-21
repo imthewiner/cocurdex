@@ -89,7 +89,7 @@ export class DaemonMcpService {
       ? await this.workspaceRoot(workspaceId)
       : null;
     return scanMcpImports({
-      files: listMcpImportFiles(homedir(), workspaceRootPath),
+      files: listMcpImportFiles(homedir(), workspaceRootPath, this.env),
       current: await this.config.readServers(),
       validate: validatePiMcpServerConfig,
     });

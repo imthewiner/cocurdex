@@ -107,13 +107,39 @@ async function capture(session, theme) {
   return file;
 }
 
+async function writeAgentConfigs(workspaceRoot) {
+  await mkdir(path.join(workspaceRoot, ".codex"), { recursive: true });
+  await writeFile(
+    path.join(workspaceRoot, ".codex", "config.toml"),
+    '[mcp_servers.scenario-codex]\nurl = "https://codex.example.invalid/mcp"\n',
+  );
+  await mkdir(path.join(workspaceRoot, ".opencode"), { recursive: true });
+  await writeFile(
+    path.join(workspaceRoot, ".opencode", "opencode.jsonc"),
+    `{
+      // scenario
+      "mcp": {
+        "scenario-opencode": {
+          "type": "local",
+          "command": ["bunx", "scenario-mcp", "{env:TOKEN}"],
+        },
+      },
+    }`,
+  );
+}
+
+function readImportRow(key) {
+  const row = document.querySelector(`[data-mcp-import="${key}"]`);
+  return row?.querySelector("span > span + *")?.textContent ?? null;
+}
+
 runScenario("mcp-settings", {
   open: () => openScenarioApp(args),
-  setup: async ({ session }) => {
+  setup: async ({ session, workspaceRoot }) => {
     await resetMcpConfig(session);
     await openSettingsSection(session, "mcp");
     const t = (key, options) => translate(session, `settings:${key}`, options);
-    return { t };
+    return { t, workspaceRoot };
   },
   steps: [
     [
@@ -392,6 +418,42 @@ runScenario("mcp-settings", {
           config,
         );
         return {};
+      },
+    ],
+    [
+      "importing from other agents lists Codex and OpenCode servers",
+      async ({ session, t, workspaceRoot }) => {
+        await writeAgentConfigs(workspaceRoot);
+        await clickByRole(session, {
+          role: "button",
+          name: await t("mcp.list.add"),
+        });
+        await clickByRole(session, {
+          role: "menuitem",
+          name: await t("mcp.list.importFromAgents"),
+        });
+        await waitForRole(session, {
+          role: "dialog",
+          name: await t("mcp.import.agentsTitle"),
+        });
+        const expected = {
+          "codex-project:scenario-codex": `${await t("mcp.import.source.codex-project")} · https://codex.example.invalid/mcp`,
+          "opencode-project:scenario-opencode": `${await t("mcp.import.source.opencode-project")} · bunx scenario-mcp \${TOKEN}`,
+        };
+        const rows = {};
+        for (const key of Object.keys(expected)) {
+          await session.waitUntil(readImportRow, key, UI_TIMEOUT_MS);
+          rows[key] = await session.run(readImportRow, key);
+        }
+        for (const [key, text] of Object.entries(expected)) {
+          check(rows[key] === text, `${key} row`, rows);
+        }
+        await clickByRole(session, {
+          role: "button",
+          name: await t("mcp.import.cancel"),
+        });
+        await waitForNoRole(session, { role: "dialog" });
+        return { rows };
       },
     ],
     [

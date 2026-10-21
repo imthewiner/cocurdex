@@ -16,6 +16,7 @@ import {
   importableAgentSummary,
   importItemsFromCandidates,
   importItemsFromJson,
+  MCP_IMPORT_AGENTS,
   type McpImportItem,
 } from "./mcp-import-items";
 import { McpJsonEditor } from "./mcp-json-editor";
@@ -57,8 +58,11 @@ function errorMessage(error: unknown) {
 }
 
 export function McpSettingsPanel() {
-  const { t } = useTranslation("settings");
+  const { t, i18n } = useTranslation("settings");
   const mcp = useMcpSettings();
+  const importAgentNames = new Intl.ListFormat(i18n.language, {
+    type: "conjunction",
+  }).format(MCP_IMPORT_AGENTS.map((agent) => t(`mcp.import.source.${agent}`)));
   const jsonMessages = useMcpJsonMessages();
   const [mode, setMode] = useState<McpEditorMode>("form");
   const [query, setQuery] = useState("");
@@ -297,7 +301,7 @@ export function McpSettingsPanel() {
         description={
           importState?.kind === "json"
             ? t("mcp.import.jsonDescription")
-            : t("mcp.import.agentsDescription")
+            : t("mcp.import.agentsDescription", { agents: importAgentNames })
         }
         emptyText={t("mcp.import.empty")}
         items={importState?.items ?? null}
