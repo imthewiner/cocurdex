@@ -1,18 +1,22 @@
 import { readFile } from "node:fs/promises";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import {
+  type AgentMcpUnsupportedReason,
   MCP_IMPORT_SOURCES,
   type McpImportSource,
   type McpServerConfig,
   type McpServerStatus,
   type McpStatusReport,
+  mcpServerAgents,
   parseMcpServersJson,
+  supportsInjectedMcpServers,
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
 import {
   buildMcpServerConfig,
   MCP_ADD_OPTIONS,
   type McpArgs,
+  parseAgentIds,
   parseMcpArgs,
   redactMcpServer,
   stringValue,
@@ -25,10 +29,11 @@ export function mcpUsageLines() {
   return [
     "  cocurdex mcp list [--workspace <id|path>] [--json]",
     "  cocurdex mcp show [<name>]",
-    "  cocurdex mcp add <name> [--env KEY=VALUE]... [--cwd <dir>] [--description <text>] [--disabled] -- <command> [args...]",
-    "  cocurdex mcp add <name> --url <url> [--header KEY=VALUE]... [--bearer-token-env-var <NAME>] [--description <text>] [--disabled]",
+    "  cocurdex mcp add <name> [--env KEY=VALUE]... [--cwd <dir>] [--description <text>] [--disabled] [--agent <id>]... -- <command> [args...]",
+    "  cocurdex mcp add <name> --url <url> [--header KEY=VALUE]... [--bearer-token-env-var <NAME>] [--description <text>] [--disabled] [--agent <id>]...",
     "  cocurdex mcp remove <name>",
     "  cocurdex mcp enable|disable <name>",
+    "  cocurdex mcp agents <name> [<agent>...|--none] [--json]",
     "  cocurdex mcp test <name> [--workspace <id|path>] [--json]",
     "  cocurdex mcp login <name> [--workspace <id|path>]",
     "  cocurdex mcp logout <name> [--workspace <id|path>]",
@@ -60,15 +65,27 @@ function describeState(server: McpServerStatus) {
   return server.state;
 }
 
-function printStatus(report: McpStatusReport, json: boolean) {
+function printStatus(
+  report: McpStatusReport,
+  json: boolean,
+  servers: Record<string, McpServerConfig>,
+) {
   if (json) {
-    printJson(report);
+    printJson({
+      ...report,
+      servers: report.servers.map((server) => ({
+        ...server,
+        agents: agentsOf(servers, server.name),
+      })),
+    });
   } else {
     if (report.servers.length === 0 && report.errors.length === 0) {
       console.log("No MCP servers configured");
     }
     for (const server of report.servers) {
       console.log(`${server.name}: ${describeState(server)} (${server.scope})`);
+      const agents = agentsOf(servers, server.name);
+      if (agents) console.log(`  agents: ${agents.join(", ") || "none"}`);
       if (server.tools.length > 0) {
         console.log(
           `  tools: ${server.tools.map((tool) => tool.name).join(", ")}`,
@@ -89,6 +106,65 @@ function printStatus(report: McpStatusReport, json: boolean) {
       (server) => server.state !== "connected" && server.state !== "disabled",
     );
   if (failed) process.exitCode = 1;
+}
+
+function agentsOf(servers: Record<string, McpServerConfig>, name: string) {
+  const config = servers[name];
+  return config ? mcpServerAgents(config) : null;
+}
+
+const UNSUPPORTED_REASONS: Record<AgentMcpUnsupportedReason, string> = {
+  invalid: "the definition has neither a command nor a url",
+  "command-value": "a value runs a command (!cmd), which only Pi resolves",
+  "provider-auth": "it signs in through a Pi provider",
+  cwd: "it sets cwd, which only Pi supports",
+  "missing-env": "it references an environment variable the daemon lacks",
+};
+
+async function serverAgents(args: McpArgs) {
+  const [name, ...requested] = args.positional;
+  const none = args.values.has("none");
+  if (!name || (none && requested.length > 0)) {
+    throw new Error(
+      "Usage: cocurdex mcp agents <name> [<agent>...|--none] [--json]",
+    );
+  }
+  const { servers } = await readServers();
+  if (!servers[name]) throw new Error(`No MCP server named "${name}"`);
+  const updating = none || requested.length > 0;
+  const agents = updating
+    ? parseAgentIds(requested)
+    : mcpServerAgents(servers[name]);
+  if (updating) {
+    await withDaemon(() =>
+      requestDaemon("mcp.server.setAgents", { name, agents }),
+    );
+  }
+  const support = await withDaemon(() => requestDaemon("mcp.injection.check"));
+  const unsupported = support[name] ?? null;
+  const injected = agents.filter(
+    (agent) => agent !== "pi" && supportsInjectedMcpServers(agent),
+  );
+  const ignored = agents.filter(
+    (agent) => agent !== "pi" && !supportsInjectedMcpServers(agent),
+  );
+  if (args.values.has("json")) {
+    printJson({ name, agents, unsupported, ignored });
+    return;
+  }
+  console.log(
+    `${updating ? "Set" : "MCP server"} "${name}" agents: ${agents.join(", ") || "none"}`,
+  );
+  if (unsupported && injected.length > 0) {
+    console.log(
+      `  only Pi can use it: ${UNSUPPORTED_REASONS[unsupported]}; ${injected.join(", ")} will not receive it`,
+    );
+  }
+  if (ignored.length > 0) {
+    console.log(
+      `  ${ignored.join(", ")} cannot receive Cocurdex MCP servers yet`,
+    );
+  }
 }
 
 async function readServers() {
@@ -166,10 +242,10 @@ async function selectFromAgent(
     if (candidate.unsupported) {
       console.log(`skipped ${candidate.name}: ${candidate.unsupported}`);
     } else if (candidate.match === "same") {
-      console.log(`skipped ${candidate.name}: already in Pi`);
+      console.log(`skipped ${candidate.name}: already configured`);
     } else if (candidate.match === "different" && !overwrite) {
       console.log(
-        `skipped ${candidate.name}: differs from Pi's definition (use --overwrite)`,
+        `skipped ${candidate.name}: differs from the configured definition (use --overwrite)`,
       );
     } else {
       servers[candidate.name] = candidate.config;
@@ -230,7 +306,8 @@ export async function handleMcpCommand(rawArgs: string[]) {
       const report = await withDaemon(() =>
         requestDaemon("mcp.status", { workspaceId }),
       );
-      printStatus(report, args.values.has("json"));
+      const { servers } = await readServers();
+      printStatus(report, args.values.has("json"), servers);
       return true;
     }
     case "show":
@@ -246,6 +323,9 @@ export async function handleMcpCommand(rawArgs: string[]) {
       console.log(`Check it with: cocurdex mcp test ${name}`);
       return true;
     }
+    case "agents":
+      await serverAgents(parseMcpArgs(rest, { none: "flag", json: "flag" }));
+      return true;
     case "remove": {
       const name = requireName(
         parseMcpArgs(rest, {}),
@@ -278,7 +358,8 @@ export async function handleMcpCommand(rawArgs: string[]) {
       if (report.servers.length === 0) {
         throw new Error(`No MCP server named "${name}"`);
       }
-      printStatus(report, args.values.has("json"));
+      const { servers } = await readServers();
+      printStatus(report, args.values.has("json"), servers);
       return true;
     }
     case "login": {

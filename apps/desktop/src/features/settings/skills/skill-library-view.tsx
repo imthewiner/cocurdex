@@ -10,6 +10,7 @@ import {
 } from "./skill-library-model";
 import { SkillList } from "./skill-list";
 import { SkillPackDetail } from "./skill-pack-detail";
+import { SkillPackSkillDetail } from "./skill-pack-skill-detail";
 import type { SkillLibraryState } from "./use-skill-library";
 import { packDotState, type SkillPackState } from "./use-skill-pack";
 
@@ -61,7 +62,7 @@ export function SkillLibraryView({
           packSubtitle={packSubtitle}
           query={query}
           selection={
-            selectedSkill || selection.kind === "pack" ? selection : null
+            selectedSkill || selection.kind !== "skill" ? selection : null
           }
           workspaceName={library.library?.workspace?.name ?? null}
           onCheckUpdates={() => void library.checkUpdates()}
@@ -75,6 +76,16 @@ export function SkillLibraryView({
                 builtin={groups.builtin}
                 pack={pack}
                 onChanged={changed}
+                onOpenSkill={(name) =>
+                  setSelection({ kind: "packSkill", name })
+                }
+              />
+            ) : null}
+            {selection.kind === "packSkill" ? (
+              <SkillPackSkillDetail
+                key={selection.name}
+                name={selection.name}
+                onBack={() => setSelection({ kind: "pack" })}
               />
             ) : null}
             {selectedSkill ? (

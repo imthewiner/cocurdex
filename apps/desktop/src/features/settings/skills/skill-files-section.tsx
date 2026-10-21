@@ -1,10 +1,11 @@
 import type { SkillDocument, SkillFileEntry } from "@cocurdex/shared";
 import { FileCode2, FileText, FolderOpen, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsGroup } from "@/components";
-import { Button, Text } from "@/components/ui";
+import { MarkdownRenderer, SettingsGroup } from "@/components";
+import { Button, Text, ToggleGroup, ToggleGroupItem } from "@/components/ui";
 import { desktopApi } from "@/lib";
-import { formatBytes } from "./skill-library-model";
+import { formatBytes, skillDocumentBody } from "./skill-library-model";
 
 export function SkillScriptWarning({ count }: { count: number }) {
   const { t } = useTranslation("settings");
@@ -77,20 +78,70 @@ export function SkillFilesSection({
   );
 }
 
+type SkillDocumentView = "preview" | "source";
+
+function SkillDocumentViewToggle({
+  value,
+  onChange,
+}: {
+  value: SkillDocumentView;
+  onChange(view: SkillDocumentView): void;
+}) {
+  const { t } = useTranslation("settings");
+  return (
+    <ToggleGroup
+      aria-label={t("skills.document.view")}
+      spacing={0.5}
+      type="single"
+      value={value}
+      variant="segmented"
+      onValueChange={(next) => {
+        if (next === "preview" || next === "source") {
+          onChange(next);
+        }
+      }}
+    >
+      <ToggleGroupItem value="preview">
+        {t("skills.document.preview")}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="source">
+        {t("skills.document.source")}
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+
 export function SkillDocumentSection({
   document,
 }: {
   document: SkillDocument | null;
 }) {
   const { t } = useTranslation("settings");
+  const [view, setView] = useState<SkillDocumentView>("preview");
   if (!document) {
     return null;
   }
   return (
-    <SettingsGroup title="SKILL.md">
-      <pre className="max-h-96 overflow-auto py-3 font-mono text-meta whitespace-pre-wrap break-words text-foreground/90">
-        {document.content}
-      </pre>
+    <SettingsGroup
+      action={<SkillDocumentViewToggle value={view} onChange={setView} />}
+      title={t("skills.document.title")}
+    >
+      {view === "preview" ? (
+        <div className="py-4" data-skill-document="preview">
+          <MarkdownRenderer
+            className="space-y-4"
+            content={skillDocumentBody(document.content)}
+            tone="editor"
+          />
+        </div>
+      ) : (
+        <pre
+          className="py-3 font-mono text-meta whitespace-pre-wrap break-words text-foreground/90"
+          data-skill-document="source"
+        >
+          {document.content}
+        </pre>
+      )}
       {document.truncated ? (
         <Text as="div" className="py-2" size="meta" tone="muted">
           {t("skills.document.truncated")}

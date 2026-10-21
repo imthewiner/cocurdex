@@ -167,6 +167,17 @@ Extend `AppSearchableSelect` or `AppSelect` props first. Extend primitives only 
 - Derive values during render; use `useMemo` only for measured expensive computations. Avoid mirrored state, effect chains, and effect-based parent notifications. Handle user actions and related state updates in their originating event; use controlled components or lifted state when appropriate.
 - The renderer is built with the React Compiler, which memoizes render-time expressions on their React inputs (props, state, hook results). Never read mutable module state, refs, or other non-React values during render (`loaded.has(kind)`, `cache.get(id)`): the compiler caches the first result and the component keeps rendering it after the value changes. Expose such state through `useSyncExternalStore` and derive from its snapshot. A bug that disappears when you add a `console.log` or other side effect to the render is this one: the side effect makes the compiler skip the component.
 
+### Async data: stale-while-revalidate
+
+Every view that reads data asynchronously (daemon RPC, host IPC, network) caches it by key with `swr`, so returning to a view, tab, or list item renders the last result at once and refreshes it in the background. Showing a blank area or a spinner again for data the renderer has already fetched is a bug.
+
+- Fetch with `useSWR` (or `useSWRImmutable` for slow or remote data that only changes on request, such as GitHub sources or catalog searches). Do not hand-roll `useState` + mount-effect fetching, and do not tie data to component lifetime with `key` remounts.
+- Local daemon reads pass `{ dedupingInterval: 0 }`: they are cheap, in-flight requests are still shared, and the default two-second window would skip the revalidation a revisit relies on.
+- Build keys from the method name and every parameter that changes the result (`["skills.show", scope, workspaceId, name]`), and keep a feature's keys and query hooks in one `*-queries.ts` module.
+- After a mutation, write the returned value into the cache with `mutate(next, { revalidate: false })`, or revalidate with `mutate()`; do not keep a second copy of server data in local state.
+- Only the first load of a key may show nothing (or a `Spinner` for user-initiated slow work); later visits render cached data while revalidating, without a loading indicator.
+- State that the daemon pushes through subscriptions stays in its existing store (jotai or `useSyncExternalStore`); this rule covers request/response reads.
+
 ### Fast Refresh exports
 
 A `.tsx` module that exports a component is a Vite Fast Refresh boundary. `@vitejs/plugin-react` accepts the update only when every runtime export is a component, or a string, number, or boolean that stays `===` to the previous value. A plain function, hook, atom, array, or object is a new value when the module re-executes, so the plugin invalidates importers. `export *` barrels repeat that walk across the shell until `main.tsx` fully reloads, which is the long `hmr invalidate` / `hmr update` burst in the dev server log.

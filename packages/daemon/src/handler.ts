@@ -304,6 +304,13 @@ export async function handleDaemonRequest(
         request.params.name,
         request.params.enabled,
       );
+    case "mcp.server.setAgents":
+      return service.mcp.config.setServerAgents(
+        request.params.name,
+        request.params.agents,
+      );
+    case "mcp.injection.check":
+      return service.mcp.injectionSupport();
     case "mcp.servers.merge":
       return service.mcp.config.mergeServers(request.params.servers);
     case "mcp.status":

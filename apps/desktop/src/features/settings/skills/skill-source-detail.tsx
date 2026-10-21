@@ -8,8 +8,7 @@ import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "@/components";
 import { Badge, Button, IconButton, Spinner, Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
-import { skillsApi } from "./skills-api";
-import { useMountRequest } from "./use-mount-request";
+import { queryErrorMessage, useSourceSnapshotQuery } from "./skill-queries";
 
 export function SourceSkillRow({
   installed,
@@ -81,9 +80,9 @@ export function SkillSourceDetail({
   onInstall(source: string, skillPaths?: string[]): void;
 }) {
   const { t } = useTranslation("settings");
-  const { data: snapshot, error } = useMountRequest(() =>
-    skillsApi.inspectSource({ source: source.source }),
-  );
+  const query = useSourceSnapshotQuery(source.source);
+  const snapshot = query.data;
+  const error = queryErrorMessage(query.error);
   const installedNames = new Set(installed.map((skill) => skill.name));
 
   return (

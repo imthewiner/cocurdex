@@ -77,6 +77,25 @@ describe("cocurdex mcp add arguments", () => {
   });
 });
 
+describe("cocurdex mcp add --agent", () => {
+  it("records the agents that receive the server", () => {
+    expect(
+      build(["fs", "--agent", "codex", "--agent", "acp:gemini", "--", "npx"])
+        .config,
+    ).toEqual({
+      command: "npx",
+      cocurdex: { agents: ["codex", "acp:gemini"] },
+    });
+  });
+
+  it("leaves the default agents alone without --agent and rejects unknown ids", () => {
+    expect(build(["fs", "--", "npx"]).config).toEqual({ command: "npx" });
+    expect(() => build(["fs", "--agent", "gpt", "--", "npx"])).toThrow(
+      'Unknown agent "gpt"',
+    );
+  });
+});
+
 describe("redactMcpServer", () => {
   it("hides literal secrets but keeps environment references", () => {
     expect(

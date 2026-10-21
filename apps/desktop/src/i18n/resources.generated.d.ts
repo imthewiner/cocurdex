@@ -2260,6 +2260,22 @@ export default interface Resources {
         oauthClientHint: "Only needed when the server does not support dynamic client registration.";
         title: "Advanced";
       };
+      agents: {
+        access: {
+          agentUnsupported: "Cannot receive Cocurdex MCP servers yet.";
+          injected: "Added to new sessions. OAuth servers need a sign-in in that agent too.";
+          native: "Connects through Cocurdex, including sign-in and project servers.";
+        };
+        description: "Cocurdex adds this server to the selected agents when their sessions start. Their own MCP configs stay untouched.";
+        serverUnsupported: {
+          "command-value": "Only Pi can use this server: a value runs a command (!cmd).";
+          cwd: "Only Pi can use this server: it sets a working directory.";
+          invalid: "Only Pi can use this server: it has no command or URL.";
+          "missing-env": "Only Pi can use this server: it references an environment variable that is not set.";
+          "provider-auth": "Only Pi can use this server: it signs in through a Pi provider.";
+        };
+        title: "Agents";
+      };
       auth: {
         bearer: "Bearer token";
         bearerHint: "Sent as the Authorization header. Use ${VAR} to read it from the environment.";
@@ -2277,7 +2293,7 @@ export default interface Resources {
         waiting: "Waiting for authorization in the browser…";
       };
       backToForm: "Back to form";
-      description: "Tool servers available to the built-in Pi agent. New sessions pick up changes.";
+      description: "Tool servers Cocurdex gives to your agents. New sessions pick up changes.";
       detail: {
         enabled: "Enabled";
         label: "MCP server";
@@ -2287,7 +2303,7 @@ export default interface Resources {
       editJson: "Edit mcp.json";
       empty: {
         add: "Add server";
-        description: "Add a local command or remote endpoint so Pi can use its tools.";
+        description: "Add a local command or remote endpoint so your agents can use its tools.";
         discovered_one: "{{count}} server found in {{agents}}, ready to import.";
         discovered_other: "{{count}} servers found in {{agents}}, ready to import.";
         dropHint: "Finds the mcpServers in it; you confirm each one before import.";
@@ -2327,7 +2343,7 @@ export default interface Resources {
         different: "Replaces existing";
         empty: "No MCP servers found.";
         importing: "Importing…";
-        jsonDescription: "Choose the servers to add to the Pi MCP configuration.";
+        jsonDescription: "Choose the servers to add to the Cocurdex MCP configuration.";
         jsonTitle: "Import JSON";
         same: "Already added";
         source: {
@@ -2352,7 +2368,7 @@ export default interface Resources {
       };
       list: {
         add: "Add";
-        global: "Global · Pi";
+        global: "Global";
         importFromAgents: "Import from other agents";
         noMatches: "No matching servers";
         project: "Project · {{workspace}}";
@@ -2362,7 +2378,7 @@ export default interface Resources {
       removeConfirm: {
         cancel: "Cancel";
         confirm: "Remove";
-        description: '"{{name}}" will be removed from the Pi MCP configuration. Running sessions keep their current tools.';
+        description: '"{{name}}" will be removed from the Cocurdex MCP configuration. Running sessions keep their current tools.';
         title: "Remove MCP server?";
       };
       revealConfig: "Reveal in file manager";
@@ -2851,7 +2867,11 @@ export default interface Resources {
         sourceSkills_other: "{{count}} skills";
       };
       document: {
+        preview: "Preview";
+        source: "Source";
+        title: "Instructions";
         truncated: "Preview shortened. Open the file to read all of it.";
+        view: "Document view";
       };
       files: {
         reveal: "Show in file manager";

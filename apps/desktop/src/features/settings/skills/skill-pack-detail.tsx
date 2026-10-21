@@ -1,4 +1,5 @@
 import type { InstalledSkill, ProductSkillScope } from "@cocurdex/shared";
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -147,10 +148,12 @@ export function SkillPackDetail({
   builtin,
   pack,
   onChanged,
+  onOpenSkill,
 }: {
   builtin: InstalledSkill[];
   pack: SkillPackState;
   onChanged(): void;
+  onOpenSkill(name: string): void;
 }) {
   const { t } = useTranslation("settings");
   const packSkills =
@@ -189,16 +192,30 @@ export function SkillPackDetail({
           title={t("skills.pack.included", { count: packSkills.length })}
         >
           {packSkills.map((skill) => (
-            <div className="py-3" data-item-path={skill.name} key={skill.name}>
-              <Text as="div" className="font-mono" size="body" weight="medium">
-                {skill.name}
-              </Text>
-              {skill.description ? (
-                <Text as="div" className="mt-0.5" size="meta" tone="muted">
-                  {skill.description}
+            <button
+              className="-mx-4 flex items-center gap-3 px-4 py-3 text-start transition-colors first:rounded-t-card last:rounded-b-card hover:bg-muted/50"
+              data-item-path={skill.name}
+              key={skill.name}
+              type="button"
+              onClick={() => onOpenSkill(skill.name)}
+            >
+              <div className="min-w-0 flex-1">
+                <Text
+                  as="div"
+                  className="font-mono"
+                  size="body"
+                  weight="medium"
+                >
+                  {skill.name}
                 </Text>
-              ) : null}
-            </div>
+                {skill.description ? (
+                  <Text as="div" className="mt-0.5" size="meta" tone="muted">
+                    {skill.description}
+                  </Text>
+                ) : null}
+              </div>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
+            </button>
           ))}
         </SettingsGroup>
       ) : null}

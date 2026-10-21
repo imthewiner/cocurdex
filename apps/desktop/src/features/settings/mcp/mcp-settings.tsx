@@ -5,9 +5,11 @@ import type {
 } from "@cocurdex/shared";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { mutate } from "swr";
 import { Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
 import { JsonDropArea } from "../json-drop-area";
+import { McpAgentsSection } from "./mcp-agents-section";
 import { McpEmptyState } from "./mcp-empty-state";
 import { McpImportDialog } from "./mcp-import-dialog";
 import {
@@ -17,6 +19,7 @@ import {
   type McpImportItem,
 } from "./mcp-import-items";
 import { McpJsonEditor } from "./mcp-json-editor";
+import { MCP_INJECTION_KEY } from "./mcp-queries";
 import { type McpSelection, resolveSelection } from "./mcp-selection";
 import { McpServerDetail } from "./mcp-server-detail";
 import { nextServerName } from "./mcp-server-form";
@@ -86,6 +89,7 @@ export function McpSettingsPanel() {
 
   const applySaved = (file: McpConfigFile) => {
     mcp.applyConfigFile(file);
+    void mutate(MCP_INJECTION_KEY);
   };
 
   const openImport = (kind: ImportState["kind"], items: McpImportItem[]) => {
@@ -268,6 +272,14 @@ export function McpSettingsPanel() {
                     if (active.scope === "new") setNewServerStatus(result);
                     else mcp.applyStatus(result);
                   }}
+                />
+              ) : null}
+              {detail && active?.scope === "global" ? (
+                <McpAgentsSection
+                  config={detail.config}
+                  key={`${detail.key}:agents`}
+                  name={detail.name}
+                  onSaved={applySaved}
                 />
               ) : null}
               {detail ? (

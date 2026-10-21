@@ -63,6 +63,8 @@ supported. Private repositories need `GITHUB_TOKEN` in the daemon environment.
   `updateAvailable` for a newer bundled pack and `modified` when installed
   files were edited; `install` then updates or restores them (`action:
   "updated"` or `"restored"`), replacing local edits, so confirm first.
+  `cocurdex skills pack show <name>` prints a bundled skill's SKILL.md even
+  when the pack is not installed (`--json` adds its file list).
 - `search` queries the public skills.sh directory, which lists names,
   sources, and install counts but no descriptions; `inspect` the source for
   details.

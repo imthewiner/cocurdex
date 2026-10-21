@@ -107,6 +107,7 @@ const FORM_KEYS = [
   "enabled",
   "exposure",
   "oauth",
+  "cocurdex",
 ];
 
 export function serverConfigToForm(

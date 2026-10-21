@@ -1,32 +1,12 @@
 import type { InstalledSkillDetail, SkillRef } from "@cocurdex/shared";
 import { useRef, useState } from "react";
-import { useMountEffect } from "@/lib";
-import { skillsApi } from "./skills-api";
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
+import { queryErrorMessage, useSkillDetailQuery } from "./skill-queries";
 
 export function useSkillDetail(ref: SkillRef) {
-  const [detail, setDetail] = useState<InstalledSkillDetail | null>(null);
-  const [error, setError] = useState("");
+  const query = useSkillDetailQuery(ref);
+  const [actionError, setActionError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const busyRef = useRef(false);
-
-  useMountEffect(() => {
-    let active = true;
-    skillsApi.show(ref).then(
-      (next) => {
-        if (active) setDetail(next);
-      },
-      (showError) => {
-        if (active) setError(errorMessage(showError));
-      },
-    );
-    return () => {
-      active = false;
-    };
-  });
 
   const run = async (
     action: () => Promise<InstalledSkillDetail | null>,
@@ -36,15 +16,15 @@ export function useSkillDetail(ref: SkillRef) {
     }
     busyRef.current = true;
     setIsBusy(true);
-    setError("");
+    setActionError("");
     try {
       const next = await action();
       if (next) {
-        setDetail(next);
+        await query.mutate(next, { revalidate: false });
       }
       return true;
-    } catch (actionError) {
-      setError(errorMessage(actionError));
+    } catch (error) {
+      setActionError(queryErrorMessage(error));
       return false;
     } finally {
       busyRef.current = false;
@@ -52,5 +32,10 @@ export function useSkillDetail(ref: SkillRef) {
     }
   };
 
-  return { detail, error, isBusy, run };
+  return {
+    detail: query.data ?? null,
+    error: actionError || queryErrorMessage(query.error),
+    isBusy,
+    run,
+  };
 }

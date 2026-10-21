@@ -32,6 +32,9 @@ export const skillPayloadSchemas: PayloadSchemas = {
     exact<Payload<"skills.pack.getStatus">>()(packPayload),
   "skills.pack.install": exact<Payload<"skills.pack.install">>()(packPayload),
   "skills.pack.remove": exact<Payload<"skills.pack.remove">>()(packPayload),
+  "skills.pack.show": exact<Payload<"skills.pack.show">>()(
+    z.object({ name: skillName }),
+  ),
   "skills.list": exact<Payload<"skills.list">>()(listPayload),
   "skills.show": exact<Payload<"skills.show">>()(skillRef),
   "skills.remove": exact<Payload<"skills.remove">>()(skillRef),

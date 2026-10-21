@@ -3,10 +3,12 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { validatePiMcpConfigText } from "@cocurdex/agent-adapters/pi-mcp";
 import {
+  type AgentId,
   isValidMcpServerName,
   type McpConfigFile,
   type McpProjectConfigFile,
   type McpServerConfig,
+  withMcpServerAgents,
 } from "@cocurdex/shared";
 
 const DEFAULT_MCP_CONFIG = '{\n  "mcpServers": {}\n}\n';
@@ -129,6 +131,11 @@ export class DaemonMcpConfigService {
   ): Promise<McpConfigFile> {
     return this.mutate((current) => {
       const renamed = previousName !== undefined && previousName !== name;
+      const previous = current.mcpServers[previousName ?? name];
+      const next =
+        config.cocurdex === undefined && isRecord(previous?.cocurdex)
+          ? { ...config, cocurdex: previous.cocurdex }
+          : config;
       if (renamed) {
         requireServer(current, previousName);
         if (current.mcpServers[name] !== undefined) {
@@ -138,8 +145,8 @@ export class DaemonMcpConfigService {
       return {
         ...current,
         mcpServers: renamed
-          ? renameServerInPlace(current.mcpServers, previousName, name, config)
-          : { ...current.mcpServers, [name]: config },
+          ? renameServerInPlace(current.mcpServers, previousName, name, next)
+          : { ...current.mcpServers, [name]: next },
       };
     });
   }
@@ -172,6 +179,16 @@ export class DaemonMcpConfigService {
         },
       };
     });
+  }
+
+  setServerAgents(name: string, agents: AgentId[]): Promise<McpConfigFile> {
+    return this.mutate((current) => ({
+      ...current,
+      mcpServers: {
+        ...current.mcpServers,
+        [name]: withMcpServerAgents(requireServer(current, name), agents),
+      },
+    }));
   }
 
   private mutate(

@@ -3,6 +3,7 @@ import type {
   AgentDescriptor,
   AgentEvent,
   AgentInputDelivery,
+  AgentMcpServer,
   AgentPermissionMode,
   AgentPermissionRequestPayload,
   AgentPermissionResolution,
@@ -58,6 +59,7 @@ export interface CreateAgentSessionPayload {
   providerSession?: AgentProviderSessionRecord | null;
   agentTools?: AgentToolsBinding | null;
   agentToolInvoker?: AgentToolInvoker | null;
+  resolveMcpServers?(): Promise<AgentMcpServer[]>;
   onProviderSessionUpdate?(
     providerSession: AgentProviderSessionRecord | null,
   ): void;

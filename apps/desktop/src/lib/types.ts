@@ -5,6 +5,7 @@ import type {
   AcpRegistryInstalledAgent,
   AgentDescriptor,
   AgentId,
+  AgentMcpUnsupportedReason,
   AgentProviderModelAxes,
   AgentProviderSelection,
   AgentRateLimitsReadResult,
@@ -519,6 +520,10 @@ export interface ProductApi {
   ): Promise<McpConfigFile>;
   removeMcpServer(name: string): Promise<McpConfigFile>;
   setMcpServerEnabled(name: string, enabled: boolean): Promise<McpConfigFile>;
+  setMcpServerAgents(name: string, agents: AgentId[]): Promise<McpConfigFile>;
+  checkMcpInjection(): Promise<
+    Record<string, AgentMcpUnsupportedReason | null>
+  >;
   mergeMcpServers(
     servers: Record<string, McpServerConfig>,
   ): Promise<McpConfigFile>;

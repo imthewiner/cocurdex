@@ -2,13 +2,10 @@ import type {
   SkillLibraryList,
   SkillUpdateCheckResult,
 } from "@cocurdex/shared";
-import { useRef, useState } from "react";
-import { useMountEffect } from "@/lib";
+import { useState } from "react";
+import useSWR from "swr";
+import { DAEMON_READ_OPTIONS, queryErrorMessage } from "./skill-queries";
 import { skillsApi } from "./skills-api";
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export interface SkillLibraryState {
   library: SkillLibraryList | null;
@@ -20,44 +17,40 @@ export interface SkillLibraryState {
 }
 
 export function useSkillLibrary(workspaceId: string | null): SkillLibraryState {
-  const [library, setLibrary] = useState<SkillLibraryList | null>(null);
-  const [loadError, setLoadError] = useState("");
+  const query = useSWR(
+    ["skills.list", workspaceId],
+    () => skillsApi.list(workspaceId),
+    DAEMON_READ_OPTIONS,
+  );
+  const [checkError, setCheckError] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [lastCheck, setLastCheck] = useState<SkillUpdateCheckResult | null>(
     null,
   );
-  const requestRef = useRef(0);
 
   const refresh = async () => {
-    const request = ++requestRef.current;
-    try {
-      const next = await skillsApi.list(workspaceId);
-      if (request === requestRef.current) {
-        setLibrary(next);
-        setLoadError("");
-      }
-    } catch (error) {
-      if (request === requestRef.current) {
-        setLoadError(errorMessage(error));
-      }
-    }
+    await query.mutate();
   };
 
   const checkUpdates = async () => {
     setIsChecking(true);
+    setCheckError("");
     try {
       setLastCheck(await skillsApi.checkUpdates(workspaceId));
       await refresh();
     } catch (error) {
-      setLoadError(errorMessage(error));
+      setCheckError(queryErrorMessage(error));
     } finally {
       setIsChecking(false);
     }
   };
 
-  useMountEffect(() => {
-    void refresh();
-  });
-
-  return { library, loadError, isChecking, lastCheck, refresh, checkUpdates };
+  return {
+    library: query.data ?? null,
+    loadError: checkError || queryErrorMessage(query.error),
+    isChecking,
+    lastCheck,
+    refresh,
+    checkUpdates,
+  };
 }

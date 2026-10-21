@@ -8,7 +8,9 @@ import {
   removeProductSkills,
 } from "@cocurdex/product-skills";
 import type {
+  ProductSkillDetail,
   ProductSkillInfo,
+  ProductSkillShowPayload,
   ProductSkillsInstallResult,
   ProductSkillsRemoveResult,
   ProductSkillsRequestPayload,
@@ -16,7 +18,11 @@ import type {
 } from "@cocurdex/shared";
 import { hashLogValue } from "@cocurdex/shared";
 import { logDaemonDiagnostic } from "./diagnostics";
+import { readSkillDocument } from "./skills/skill-document";
+import { listSkillFiles, toSkillFileEntries } from "./skills/skill-files";
 import { parseSkillManifest } from "./skills/skill-manifest";
+
+const PACK_SKILL_NAMES: ReadonlySet<string> = new Set(PRODUCT_SKILL_NAMES);
 
 export class DaemonSkillsService {
   private readonly sourceRoot: string;
@@ -88,6 +94,27 @@ export class DaemonSkillsService {
     return {
       ...status,
       ...(await this.sourceInfo()),
+    };
+  }
+
+  async show({ name }: ProductSkillShowPayload): Promise<ProductSkillDetail> {
+    if (!PACK_SKILL_NAMES.has(name)) {
+      throw new Error(`${name} is not a Cocurdex pack skill`);
+    }
+    const skillDir = path.join(this.sourceRoot, name);
+    const [document, files] = await Promise.all([
+      readSkillDocument(skillDir),
+      listSkillFiles(skillDir).catch(() => []),
+    ]);
+    return {
+      skill: {
+        name,
+        description: document
+          ? parseSkillManifest(document.content, name).description
+          : null,
+      },
+      files: toSkillFileEntries(files),
+      document,
     };
   }
 

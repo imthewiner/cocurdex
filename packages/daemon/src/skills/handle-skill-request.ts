@@ -43,6 +43,8 @@ export async function handleSkillRequest(
       return service.skillsService.install(request.params);
     case "skills.pack.remove":
       return service.skillsService.remove(request.params);
+    case "skills.pack.show":
+      return service.skillsService.show(request.params);
     case "skills.list":
       return skills.list(request.params.workspaceId);
     case "skills.show":

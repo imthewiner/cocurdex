@@ -14,6 +14,7 @@ export const skillsApi = {
   list: (workspaceId: string | null) =>
     requestDaemon("skills.list", { workspaceId }),
   show: (ref: SkillRef) => requestDaemon("skills.show", ref),
+  showPackSkill: (name: string) => requestDaemon("skills.pack.show", { name }),
   remove: (ref: SkillRef) => requestDaemon("skills.remove", ref),
   setAgentLink: (payload: SkillAgentLinkPayload) =>
     requestDaemon("skills.setAgentLink", payload),

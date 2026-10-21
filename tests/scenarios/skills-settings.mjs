@@ -193,6 +193,83 @@ runScenario("skills-settings", {
       },
     ],
     [
+      "a bundled skill opens with a rendered document and reopens from cache",
+      async ({ session, t }) => {
+        const name = "cocurdex-issue";
+        const section = `[data-skill-pack-skill="${name}"]`;
+        await clickDataRow(
+          session,
+          `[data-skill-detail="cocurdex"] [data-item-path="${name}"]`,
+        );
+        await session.waitUntil(
+          (value) =>
+            Boolean(
+              document.querySelector(
+                `${value} [data-skill-document="preview"]`,
+              ),
+            ),
+          section,
+          UI_TIMEOUT_MS,
+        );
+        const preview = await session.run((value) => {
+          const node = document.querySelector(
+            `${value} [data-skill-document="preview"]`,
+          );
+          return {
+            headings: node.querySelectorAll("h1, h2, h3").length,
+            showsFrontmatter: node.textContent.includes(`name: cocurdex-`),
+          };
+        }, section);
+        check(preview.headings > 0, "preview renders headings", preview);
+        check(!preview.showsFrontmatter, "preview hides frontmatter", preview);
+        await clickByRole(session, {
+          role: "button",
+          name: await t("skills.document.source"),
+        });
+        const source = await session.waitUntil(
+          (value) =>
+            document
+              .querySelector(`${value} [data-skill-document="source"]`)
+              ?.textContent.startsWith("---") ?? false,
+          section,
+          UI_TIMEOUT_MS,
+        );
+        check(source, "source view shows raw SKILL.md", source);
+
+        await clickDataRow(session, "[data-skill-pack]");
+        await waitForDetail(session, "cocurdex");
+        await session.run((value) => {
+          window.__skillDocMissingFrame = false;
+          const observer = new MutationObserver(() => {
+            const node = document.querySelector(value);
+            if (node && !node.querySelector("[data-skill-document]")) {
+              window.__skillDocMissingFrame = true;
+            }
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+          window.__skillDocObserver = observer;
+        }, section);
+        await clickDataRow(
+          session,
+          `[data-skill-detail="cocurdex"] [data-item-path="${name}"]`,
+        );
+        await session.waitUntil(
+          (value) =>
+            Boolean(document.querySelector(`${value} [data-skill-document]`)),
+          section,
+          UI_TIMEOUT_MS,
+        );
+        const missingFrame = await session.run(() => {
+          window.__skillDocObserver.disconnect();
+          return window.__skillDocMissingFrame;
+        });
+        check(!missingFrame, "reopened skill renders from cache", missingFrame);
+        await clickDataRow(session, "[data-skill-pack]");
+        await waitForDetail(session, "cocurdex");
+        return { preview, missingFrame };
+      },
+    ],
+    [
       "a local folder installs two skills into the workspace",
       async ({ session, t, workspaceId }) => {
         await clickByRole(session, {

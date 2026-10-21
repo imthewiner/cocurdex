@@ -110,4 +110,12 @@ describe("MCP server form", () => {
       validateServerForm({ ...form, transport: "http", url: "npx" }, []),
     ).toBe("urlInvalid");
   });
+
+  it("leaves agent assignments out of form saves so the daemon keeps the current ones", () => {
+    const form = serverConfigToForm("fs", {
+      command: "npx",
+      cocurdex: { agents: ["codex"] },
+    });
+    expect(serverFormToConfig(form)).toEqual({ command: "npx" });
+  });
 });
