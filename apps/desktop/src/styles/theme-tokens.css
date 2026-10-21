@@ -372,6 +372,16 @@
     var(--foreground) 3%,
     var(--background)
   );
+  --settings-surface-hover: color-mix(
+    in srgb,
+    var(--foreground) 6%,
+    var(--background)
+  );
+  --settings-surface-active: color-mix(
+    in srgb,
+    var(--foreground) 9%,
+    var(--background)
+  );
 }
 
 /* Dark surface ramp (mirrors light: sunk nav < content canvas < raised card):
@@ -387,6 +397,16 @@
   --settings-surface: color-mix(
     in srgb,
     var(--foreground) 4%,
+    var(--background)
+  );
+  --settings-surface-hover: color-mix(
+    in srgb,
+    var(--foreground) 8%,
+    var(--background)
+  );
+  --settings-surface-active: color-mix(
+    in srgb,
+    var(--foreground) 12%,
     var(--background)
   );
   /* Dark canvas swallows borders and shadows, so the input plane separates by

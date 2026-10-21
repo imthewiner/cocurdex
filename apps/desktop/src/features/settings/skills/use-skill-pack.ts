@@ -10,6 +10,7 @@ export type SkillPackStatuses = Partial<
 
 export interface SkillPackState {
   statuses: SkillPackStatuses;
+  isLoaded: boolean;
   workspaceRootPath: string | null;
   refresh(): Promise<void>;
   setStatus(scope: ProductSkillScope, status: ProductSkillsStatus): void;
@@ -30,15 +31,20 @@ export function packDotState(
 
 export function useSkillPack(workspaceRootPath: string | null): SkillPackState {
   const [statuses, setStatuses] = useState<SkillPackStatuses>({});
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const refresh = async () => {
-    const [global, project] = await Promise.all([
-      desktopApi.getProductSkillsStatus("global"),
-      workspaceRootPath
-        ? desktopApi.getProductSkillsStatus("project", workspaceRootPath)
-        : null,
-    ]);
-    setStatuses(project ? { global, project } : { global });
+    try {
+      const [global, project] = await Promise.all([
+        desktopApi.getProductSkillsStatus("global"),
+        workspaceRootPath
+          ? desktopApi.getProductSkillsStatus("project", workspaceRootPath)
+          : null,
+      ]);
+      setStatuses(project ? { global, project } : { global });
+    } finally {
+      setIsLoaded(true);
+    }
   };
 
   const setStatus = (scope: ProductSkillScope, status: ProductSkillsStatus) => {
@@ -49,5 +55,5 @@ export function useSkillPack(workspaceRootPath: string | null): SkillPackState {
     void refresh();
   });
 
-  return { statuses, workspaceRootPath, refresh, setStatus };
+  return { statuses, isLoaded, workspaceRootPath, refresh, setStatus };
 }

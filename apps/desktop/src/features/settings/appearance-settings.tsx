@@ -74,7 +74,7 @@ function Stepper({
     <div className="flex h-7 items-center overflow-hidden rounded-control border border-border bg-background/60 text-body text-foreground">
       <button
         aria-label={t("actions.decrease")}
-        className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         onClick={() => updateValue(value - 1)}
         type="button"
       >
@@ -83,7 +83,7 @@ function Stepper({
       <span className="min-w-10 text-center tabular-nums">{value}</span>
       <button
         aria-label={t("actions.increase")}
-        className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex size-7 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         onClick={() => updateValue(value + 1)}
         type="button"
       >

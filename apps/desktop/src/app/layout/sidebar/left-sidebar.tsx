@@ -57,26 +57,6 @@ interface LeftSidebarProps {
   onAfterNavigate?(): void;
 }
 
-// Segmented control in sidebar tones. Selected state keys off `data-active`:
-// Base UI renamed the Tabs.Tab attribute, so the `data-selected:` variants the
-// shadcn template ships never match and have to be re-stated here.
-function SidebarTabTrigger({
-  children,
-  value,
-}: {
-  children: ReactNode;
-  value: SidebarTab;
-}) {
-  return (
-    <TabsTrigger
-      className="h-6 flex-1 rounded-control px-2 text-body font-medium text-sidebar-fg-subtle hover:text-sidebar-fg-muted dark:text-sidebar-fg-subtle dark:hover:text-sidebar-fg-muted data-active:bg-background data-active:text-sidebar-fg data-active:shadow-sm dark:data-active:bg-sidebar-accent dark:data-active:text-sidebar-fg"
-      value={value}
-    >
-      {children}
-    </TabsTrigger>
-  );
-}
-
 function SidebarShell({ children }: { children?: ReactNode }) {
   return (
     <aside className="sidebar-scrollbar @container/sidebar flex h-full min-w-0 flex-col bg-sidebar">
@@ -247,15 +227,15 @@ export function LeftSidebar({
               gutter as the list rows below, whose inset comes from the
               scroll area's pe-3 padding. */}
           <div className="shrink-0 pe-3">
-            <TabsList className="h-7 w-full gap-0.5 rounded-control bg-sidebar-surface-active p-0.5 dark:bg-background">
-              <SidebarTabTrigger value="workspaces">
+            <TabsList className="w-full">
+              <TabsTrigger value="workspaces">
                 {t("sessions:sidebar.workspacesGroup", {
                   defaultValue: "Work",
                 })}
-              </SidebarTabTrigger>
-              <SidebarTabTrigger value="chat">
+              </TabsTrigger>
+              <TabsTrigger value="chat">
                 {t("chat:sidebar.title", { defaultValue: "Chat" })}
-              </SidebarTabTrigger>
+              </TabsTrigger>
             </TabsList>
           </div>
 
