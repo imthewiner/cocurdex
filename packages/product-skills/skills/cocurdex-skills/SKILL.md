@@ -57,8 +57,12 @@ supported. Private repositories need `GITHUB_TOKEN` in the daemon environment.
   true; local edits are replaced. `skip` hides the current update until a
   newer commit appears.
 - Skills marked `builtin` (the `cocurdex-*` pack) are managed with
-  `cocurdex skills pack status|install|remove --scope project|global`, not with
-  `remove` or `add`.
+  `cocurdex skills pack list|status|install|remove --scope project|global`, not
+  with `remove` or `add`. `--scope project` targets the registered workspace
+  that contains `--root` (default: the current directory). `status` reports
+  `updateAvailable` for a newer bundled pack and `modified` when installed
+  files were edited; `install` then updates or restores them (`action:
+  "updated"` or `"restored"`), replacing local edits, so confirm first.
 - `search` queries the public skills.sh directory, which lists names,
   sources, and install counts but no descriptions; `inspect` the source for
   details.

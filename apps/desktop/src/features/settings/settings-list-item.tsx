@@ -20,11 +20,9 @@ export function SettingsListItem({
     <button
       aria-pressed={isActive}
       className={cn(
-        "flex w-full flex-col items-start gap-0.5 rounded-control border px-3 py-2 text-start transition-colors",
-        isActive &&
-          "border-primary/40 bg-primary/10 font-medium text-foreground dark:bg-primary/15",
-        !isActive &&
-          "border-border/40 bg-muted/30 text-muted-foreground hover:bg-muted/45 hover:text-foreground dark:bg-white/[0.04]",
+        "flex w-full flex-col items-start gap-0.5 rounded-control px-3 py-2 text-start transition-colors",
+        isActive && "bg-muted font-medium text-foreground",
+        !isActive && "text-foreground hover:bg-muted/50",
       )}
       type="button"
       onClick={onClick}

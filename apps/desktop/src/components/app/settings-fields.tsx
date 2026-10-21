@@ -31,10 +31,8 @@ export function SettingsGroup({
           {action ? <div className="shrink-0">{action}</div> : null}
         </div>
       ) : null}
-      <div className="rounded-card border border-border/70 bg-settings-surface px-4">
-        <div className="flex flex-col divide-y divide-border/60">
-          {children}
-        </div>
+      <div className="flex flex-col divide-y divide-border/40 rounded-card bg-settings-surface px-4">
+        {children}
       </div>
     </div>
   );

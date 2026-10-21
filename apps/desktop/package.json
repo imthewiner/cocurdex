@@ -190,7 +190,7 @@
         ]
       },
       {
-        "from": "../../packages/product-skills/skills",
+        "from": "resources/skills",
         "to": "skills",
         "filter": [
           "**/*"

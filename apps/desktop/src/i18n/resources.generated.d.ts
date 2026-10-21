@@ -2194,7 +2194,9 @@ export default interface Resources {
       workspace: "Workspace";
     };
     jsonImport: {
+      addManually: "Fill in manually";
       cancel: "Cancel";
+      chooseFile: "Choose JSON file…";
       continue: "Continue";
       pasteButton: "Paste JSON";
       pasteLabel: "JSON text";
@@ -2274,12 +2276,22 @@ export default interface Resources {
         token: "Token";
         waiting: "Waiting for authorization in the browser…";
       };
-      description: "Configure the MCP servers available to the built-in Pi agent. The Enabled switch applies immediately; other changes are written when you save. New sessions pick them up.";
+      backToForm: "Back to form";
+      description: "Tool servers available to the built-in Pi agent. New sessions pick up changes.";
       detail: {
         enabled: "Enabled";
         label: "MCP server";
         newTitle: "New server";
         projectReadOnly: "Defined in {{path}}. Project servers are read-only here; edit that file to change them.";
+      };
+      editJson: "Edit mcp.json";
+      empty: {
+        add: "Add server";
+        description: "Add a local command or remote endpoint so Pi can use its tools.";
+        discovered_one: "{{count}} server found in {{agents}}, ready to import.";
+        discovered_other: "{{count}} servers found in {{agents}}, ready to import.";
+        dropHint: "Finds the mcpServers in it; you confirm each one before import.";
+        title: "No MCP servers yet";
       };
       errors: {
         callbackPortInvalid: "The callback port must be a number from 1 to 65535.";
@@ -2328,22 +2340,18 @@ export default interface Resources {
         unsupported: "Not supported";
       };
       json: {
-        hint: "Edits the whole mcp.json file. It is validated before saving.";
         label: "MCP configuration JSON";
       };
+      jsonDescription: "Edit the config file directly. Pi's rules validate it on save.";
       jsonImport: {
         dropActive: "Drop to import";
-        dropHint: "Drop a JSON file here, or click to choose one.";
-        intro: "Add servers from an mcpServers snippet, such as one from a server's README.";
         invalidFile: "Choose a JSON text file.";
         label: "Import from JSON";
         pasteDescription: 'Paste an mcpServers object, a map of servers, or a single "name": { … } entry.';
         pasteTitle: "Paste MCP JSON";
-        title: "Import JSON";
       };
       list: {
         add: "Add";
-        empty: "No MCP servers yet. Add one, or import from another agent.";
         global: "Global · Pi";
         importFromAgents: "Import from other agents";
         noMatches: "No matching servers";
@@ -2351,17 +2359,13 @@ export default interface Resources {
         readOnly: "Read-only";
         search: "Search servers";
       };
-      mode: {
-        form: "Form";
-        json: "JSON";
-        label: "Configuration mode";
-      };
       removeConfirm: {
         cancel: "Cancel";
         confirm: "Remove";
         description: '"{{name}}" will be removed from the Pi MCP configuration. Running sessions keep their current tools.';
         title: "Remove MCP server?";
       };
+      revealConfig: "Reveal in file manager";
       state: {
         connected: "Connected";
         disabled: "Disabled";
@@ -2485,7 +2489,6 @@ export default interface Resources {
         add: "Add";
         clearKey: "Clear key";
         delete: "Delete";
-        importJson: "Import JSON";
         newProvider: "New";
         refresh: "Refresh";
         save: "Save";
@@ -2580,7 +2583,7 @@ export default interface Resources {
         confirm: "Import";
         description: "Import a pi-style models.json. Each provider is upserted with its models. Literal apiKey values are stored; $ENV and !command keys must be set manually.";
         dropActive: "Drop to import";
-        dropHint: "Drop a JSON file here, or click to choose one.";
+        dropAreaHint: "Imports providers from a pi-style models.json after you confirm.";
         importing: "Importing…";
         intro: "Add or update providers and models from a pi-style models.json.";
         invalidFile: "Choose a JSON text file.";
@@ -2890,8 +2893,8 @@ export default interface Resources {
       pack: {
         included_one: "Includes {{count}} skill";
         included_other: "Includes {{count}} skills";
-        subtitle_one: "{{count}} skill · v{{version}}";
-        subtitle_other: "{{count}} skills · v{{version}}";
+        subtitle_one: "{{count}} skill";
+        subtitle_other: "{{count}} skills";
         title: "Cocurdex skills";
       };
       problems: {
@@ -2937,6 +2940,7 @@ export default interface Resources {
         installed: "Up to date at {{path}}";
         modified: "Files were edited locally. Restore puts back the built-in version at {{path}}";
         notInstalled: "Not installed. Would write to {{path}}";
+        sourceMissing: "This build is missing the bundled skill files ({{path}}), so they cannot be installed. Reinstall or update Cocurdex.";
         updateAvailable: "A newer version is available for {{path}}";
       };
       tabs: {

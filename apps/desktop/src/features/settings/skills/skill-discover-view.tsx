@@ -73,7 +73,7 @@ export function SkillDiscoverView({
           <Input
             aria-busy={isSearching}
             aria-label={t("skills.discover.search")}
-            className="h-8 rounded-control border-border/70 bg-background/60 ps-9 pe-9 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
+            className="h-7 rounded-control border-border/70 bg-background/60 ps-9 pe-9 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
             placeholder={t("skills.discover.search")}
             type="search"
             value={query}

@@ -1,7 +1,9 @@
 import type { McpServerConfig, McpServerScope } from "@cocurdex/shared";
-import { Download, Plus, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Badge, Button, Input, Text } from "@/components/ui";
+import { Badge, DropdownMenuItem, Input, Text } from "@/components/ui";
+import { JsonAddMenu } from "../json-add-menu";
+import type { JsonTextHandler } from "../json-file-import";
 import { SettingsListItem } from "../settings-list-item";
 import {
   type McpSelection,
@@ -10,6 +12,7 @@ import {
   serverSummary,
 } from "./mcp-selection";
 import { McpStatusDot } from "./mcp-status-dot";
+import { useMcpJsonMessages } from "./use-mcp-json-messages";
 import { type McpStatusState, mcpStatusKey } from "./use-mcp-settings";
 
 interface McpServerGroupProps {
@@ -75,6 +78,7 @@ export function McpServerList({
   onImport,
   onQueryChange,
   onSelect,
+  onText,
 }: {
   project: Record<string, McpServerConfig> | null;
   query: string;
@@ -86,8 +90,10 @@ export function McpServerList({
   onImport(): void;
   onQueryChange(query: string): void;
   onSelect(selection: McpSelection): void;
+  onText: JsonTextHandler;
 }) {
   const { t } = useTranslation("settings");
+  const jsonMessages = useMcpJsonMessages();
   const globalEntries = Object.entries(servers).filter(([name, config]) =>
     matchesServerQuery(name, config, query),
   );
@@ -103,21 +109,25 @@ export function McpServerList({
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/65" />
           <Input
             aria-label={t("mcp.list.search")}
-            className="h-8 rounded-control border-border/70 bg-background/60 ps-9 pe-3 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
+            className="h-7 rounded-control border-border/70 bg-background/60 ps-9 pe-3 text-body shadow-none placeholder:text-muted-foreground/70 focus-visible:border-ring/60 focus-visible:ring-2 focus-visible:ring-ring/20"
             placeholder={t("mcp.list.search")}
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </div>
-        <Button
-          className="shrink-0"
-          type="button"
+        <JsonAddMenu
+          extraItems={
+            <DropdownMenuItem onClick={onImport}>
+              <Download className="size-3.5" />
+              {t("mcp.list.importFromAgents")}
+            </DropdownMenuItem>
+          }
+          label={t("mcp.list.add")}
+          messages={jsonMessages}
           variant="secondary"
-          onClick={onAdd}
-        >
-          <Plus className="size-4" />
-          {t("mcp.list.add")}
-        </Button>
+          onAddManually={onAdd}
+          onText={onText}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
@@ -150,16 +160,6 @@ export function McpServerList({
           ) : null}
         </div>
       </div>
-
-      <Button
-        className="shrink-0 justify-start"
-        type="button"
-        variant="ghost"
-        onClick={onImport}
-      >
-        <Download className="size-4" />
-        {t("mcp.list.importFromAgents")}
-      </Button>
     </div>
   );
 }

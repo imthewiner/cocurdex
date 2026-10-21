@@ -43,7 +43,7 @@ export function AppDropdownTriggerButton({
   return (
     <Button
       className={cn(
-        "group h-8 min-w-0 justify-between gap-2 px-2.5 text-body font-medium text-muted-foreground shadow-none transition-colors hover:text-accent-foreground data-[state=open]:text-accent-foreground disabled:cursor-default disabled:opacity-60",
+        "group h-7 min-w-0 justify-between gap-2 px-2.5 text-body font-medium text-muted-foreground shadow-none transition-colors hover:text-accent-foreground data-[state=open]:text-accent-foreground disabled:cursor-default disabled:opacity-60",
         dropdownTriggerRadiusClassNames[radius],
         dropdownTriggerAppearanceClassNames[appearance],
         className,

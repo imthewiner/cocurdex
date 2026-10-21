@@ -17,6 +17,7 @@ import {
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { SettingsGroup } from "@/components/app";
 import { Badge, Button, Spinner, Text } from "@/components/ui";
 import {
   type AdapterStatus,
@@ -434,19 +435,17 @@ export function AdapterSettingsPanel() {
           </Button>
         </div>
       </div>
-      <div className="rounded-card border border-border/70 bg-settings-surface px-4">
-        <div className="flex flex-col divide-y divide-border/60">
-          {sortedAgents.map((agent) => (
-            <AdapterRow
-              agent={agent}
-              key={agent.id}
-              onChanged={() => refresh(true)}
-              rateLimitsLoading={loadingAgentIds.includes(agent.id)}
-              rateLimitsResult={rateLimitsByAgent[agent.id]}
-            />
-          ))}
-        </div>
-      </div>
+      <SettingsGroup>
+        {sortedAgents.map((agent) => (
+          <AdapterRow
+            agent={agent}
+            key={agent.id}
+            onChanged={() => refresh(true)}
+            rateLimitsLoading={loadingAgentIds.includes(agent.id)}
+            rateLimitsResult={rateLimitsByAgent[agent.id]}
+          />
+        ))}
+      </SettingsGroup>
       <AgentRunLimitsGroup />
     </div>
   );

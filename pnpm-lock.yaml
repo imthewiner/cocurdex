@@ -232,9 +232,6 @@ importers:
       '@cocurdex/daemon':
         specifier: workspace:*
         version: link:../../packages/daemon
-      '@cocurdex/product-skills':
-        specifier: workspace:*
-        version: link:../../packages/product-skills
       '@cocurdex/rpc':
         specifier: workspace:*
         version: link:../../packages/rpc
@@ -833,6 +830,9 @@ importers:
       '@cocurdex/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@cocurdex/product-skills':
+        specifier: workspace:*
+        version: link:../../packages/product-skills
       '@cocurdex/rpc':
         specifier: workspace:*
         version: link:../../packages/rpc
@@ -986,6 +986,9 @@ importers:
       '@cocurdex/note-doc':
         specifier: workspace:*
         version: link:../../../packages/note-doc
+      '@cocurdex/product-skills':
+        specifier: workspace:*
+        version: link:../../../packages/product-skills
       '@cocurdex/rpc':
         specifier: workspace:*
         version: link:../../../packages/rpc

@@ -192,6 +192,7 @@ export const offlineApi: DesktopApi = {
     workspaceRoot: null,
     sourceAvailable: false,
     sourceRoot: "",
+    packSkills: [],
   }),
   installProductSkills: async () => ({
     ...(await offlineApi.getProductSkillsStatus("global")),

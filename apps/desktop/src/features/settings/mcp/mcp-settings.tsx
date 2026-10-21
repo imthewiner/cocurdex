@@ -3,14 +3,15 @@ import type {
   McpServerConfig,
   McpServerStatus,
 } from "@cocurdex/shared";
-import { Braces, SlidersHorizontal } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, ToggleGroup, ToggleGroupItem } from "@/components/ui";
+import { Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
-import { JsonImportDropzone } from "../json-import-dropzone";
+import { JsonDropArea } from "../json-drop-area";
+import { McpEmptyState } from "./mcp-empty-state";
 import { McpImportDialog } from "./mcp-import-dialog";
 import {
+  importableAgentSummary,
   importItemsFromCandidates,
   importItemsFromJson,
   type McpImportItem,
@@ -20,16 +21,32 @@ import { type McpSelection, resolveSelection } from "./mcp-selection";
 import { McpServerDetail } from "./mcp-server-detail";
 import { nextServerName } from "./mcp-server-form";
 import { McpServerList } from "./mcp-server-list";
+import { type McpEditorMode, McpSettingsHeader } from "./mcp-settings-header";
 import { McpToolsCard } from "./mcp-tools-card";
+import { useMcpJsonMessages } from "./use-mcp-json-messages";
 import { mcpStatusKey, useMcpSettings } from "./use-mcp-settings";
-
-type EditorMode = "form" | "json";
 
 interface ImportState {
   kind: "agents" | "json";
   items: McpImportItem[] | null;
   loadError: string;
   open: boolean;
+}
+
+type McpPanelView = "json" | "empty" | "pending" | "servers";
+
+function panelView({
+  mode,
+  isEmpty,
+  hasCandidates,
+}: {
+  mode: McpEditorMode;
+  isEmpty: boolean;
+  hasCandidates: boolean;
+}): McpPanelView {
+  if (mode === "json") return "json";
+  if (!isEmpty) return "servers";
+  return hasCandidates ? "empty" : "pending";
 }
 
 function errorMessage(error: unknown) {
@@ -39,7 +56,8 @@ function errorMessage(error: unknown) {
 export function McpSettingsPanel() {
   const { t } = useTranslation("settings");
   const mcp = useMcpSettings();
-  const [mode, setMode] = useState<EditorMode>("form");
+  const jsonMessages = useMcpJsonMessages();
+  const [mode, setMode] = useState<McpEditorMode>("form");
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState<McpSelection | null>(null);
   const [importState, setImportState] = useState<ImportState | null>(null);
@@ -126,6 +144,19 @@ export function McpSettingsPanel() {
     void mcp.refreshStatus();
   };
 
+  const startNewServer = () => {
+    setNewServerStatus(null);
+    setSelection({ scope: "new" });
+  };
+
+  const hasNoServers =
+    globalNames.length === 0 && Object.keys(projectServers).length === 0;
+  const view = panelView({
+    mode,
+    isEmpty: hasNoServers && active === null,
+    hasCandidates: mcp.importCandidates !== null,
+  });
+
   const detail = (() => {
     if (!active) return null;
     if (active.scope === "new") {
@@ -159,49 +190,14 @@ export function McpSettingsPanel() {
 
   return (
     <div className="settings-panel-enter flex min-h-0 min-w-0 flex-1 flex-col gap-5">
-      <div className="flex shrink-0 items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Text className="max-w-2xl" size="body" tone="muted">
-            {t("mcp.description")}
-          </Text>
-          <Text
-            className="font-mono"
-            size="meta"
-            title={configFile.path}
-            tone="muted"
-            truncate
-          >
-            {configFile.path}
-          </Text>
-          {mcp.status.errors.map((error) => (
-            <Text key={error} role="alert" size="meta" tone="destructive">
-              {error}
-            </Text>
-          ))}
-        </div>
-        <ToggleGroup
-          aria-label={t("mcp.mode.label")}
-          className="shrink-0"
-          spacing={0.5}
-          type="single"
-          value={mode}
-          variant="segmented"
-          onValueChange={(value) => {
-            if (value === "form" || value === "json") setMode(value);
-          }}
-        >
-          <ToggleGroupItem value="form">
-            <SlidersHorizontal className="size-3.5" />
-            {t("mcp.mode.form")}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="json">
-            <Braces className="size-3.5" />
-            {t("mcp.mode.json")}
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      <McpSettingsHeader
+        configPath={configFile.path}
+        errors={mcp.status.errors}
+        mode={mode}
+        onModeChange={setMode}
+      />
 
-      {mode === "json" ? (
+      {view === "json" ? (
         <McpJsonEditor
           file={configFile}
           key={configFile.content}
@@ -210,8 +206,21 @@ export function McpSettingsPanel() {
             void mcp.refreshStatus();
           }}
         />
-      ) : (
-        <div className="flex min-h-0 min-w-0 flex-1 gap-6">
+      ) : null}
+      {view === "empty" ? (
+        <McpEmptyState
+          summary={importableAgentSummary(mcp.importCandidates ?? [])}
+          onAddManually={startNewServer}
+          onImportAgents={() => void scanAgents()}
+          onText={importJsonText}
+        />
+      ) : null}
+      {view === "servers" ? (
+        <JsonDropArea
+          className="gap-6"
+          messages={jsonMessages}
+          onText={importJsonText}
+        >
           <McpServerList
             project={mcp.project?.servers ?? null}
             query={query}
@@ -219,13 +228,11 @@ export function McpSettingsPanel() {
             servers={mcp.servers}
             status={mcp.status}
             workspaceName={mcp.workspaceName}
-            onAdd={() => {
-              setNewServerStatus(null);
-              setSelection({ scope: "new" });
-            }}
+            onAdd={startNewServer}
             onImport={() => void scanAgents()}
             onQueryChange={setQuery}
             onSelect={setSelection}
+            onText={importJsonText}
           />
           <div className="min-h-0 min-w-0 flex-1 overflow-auto">
             <div className="flex min-w-0 flex-col gap-6 pe-1">
@@ -262,32 +269,17 @@ export function McpSettingsPanel() {
                     else mcp.applyStatus(result);
                   }}
                 />
-              ) : (
-                <div className="flex min-h-40 items-center justify-center rounded-control border border-dashed border-border/60 px-6 text-center text-body text-muted-foreground">
-                  {t("mcp.list.empty")}
-                </div>
-              )}
+              ) : null}
               {detail ? (
                 <McpToolsCard
                   isChecking={mcp.status.isChecking && !detailStatus}
                   status={detailStatus}
                 />
               ) : null}
-              <JsonImportDropzone
-                dropActiveHint={t("mcp.jsonImport.dropActive")}
-                dropHint={t("mcp.jsonImport.dropHint")}
-                intro={t("mcp.jsonImport.intro")}
-                invalidFileMessage={t("mcp.jsonImport.invalidFile")}
-                label={t("mcp.jsonImport.label")}
-                pasteDescription={t("mcp.jsonImport.pasteDescription")}
-                pasteTitle={t("mcp.jsonImport.pasteTitle")}
-                title={t("mcp.jsonImport.title")}
-                onText={importJsonText}
-              />
             </div>
           </div>
-        </div>
-      )}
+        </JsonDropArea>
+      ) : null}
 
       <McpImportDialog
         description={

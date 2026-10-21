@@ -56,15 +56,9 @@ export function McpJsonEditor({
         }}
       />
       <div className="flex min-h-8 items-center justify-between gap-3">
-        {error ? (
-          <Text role="alert" size="meta" tone="destructive">
-            {error}
-          </Text>
-        ) : (
-          <Text size="meta" tone="muted">
-            {t("mcp.json.hint")}
-          </Text>
-        )}
+        <Text role="alert" size="meta" tone="destructive">
+          {error}
+        </Text>
         <Button
           className="shrink-0"
           disabled={isSaving || !isDirty || Boolean(syntaxError)}

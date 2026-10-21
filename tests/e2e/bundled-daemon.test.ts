@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
+import { PRODUCT_SKILL_NAMES } from "@cocurdex/product-skills";
 import { createTempDirs } from "@cocurdex/shared/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -62,6 +63,19 @@ describe("bundled daemon", () => {
       expect(result.sizeBytes).toBe(bytes.byteLength);
       expect(bytes.subarray(0, 4).toString("latin1")).toBe(signature);
     }
+  });
+
+  it("finds the bundled cocurdex skills beside it", async () => {
+    const status = await requestDaemon(
+      "skills.pack.getStatus",
+      { scope: "global", workspaceRootPath: null },
+      daemon.options,
+    );
+    expect(status.sourceAvailable).toBe(true);
+    expect(status.packSkills.map((skill) => skill.name)).toEqual([
+      ...PRODUCT_SKILL_NAMES,
+    ]);
+    expect(status.packSkills.every((skill) => skill.description)).toBe(true);
   });
 
   it("connects to an MCP server through the bundled Pi runtime", async () => {
