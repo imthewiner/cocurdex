@@ -12,6 +12,7 @@
     "@cocurdex/client-runtime": "workspace:*",
     "@cocurdex/daemon": "workspace:*",
     "@cocurdex/db": "workspace:*",
+    "@cocurdex/product-skills": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*",
     "@cocurdex/test-fixtures": "workspace:*",

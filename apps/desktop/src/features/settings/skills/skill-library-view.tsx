@@ -31,8 +31,7 @@ export function SkillLibraryView({
       : undefined;
   const packStatus = pack.statuses.global;
   const packSubtitle = t("skills.pack.subtitle", {
-    count: packStatus?.skills.length ?? groups.builtin.length,
-    version: packStatus?.packVersion ?? "",
+    count: packStatus?.packSkills.length ?? groups.builtin.length,
   });
   const changed = () => {
     void library.refresh();

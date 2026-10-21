@@ -13,6 +13,7 @@
     "@cocurdex/db": "workspace:*",
     "@cocurdex/deck": "workspace:*",
     "@cocurdex/note-doc": "workspace:*",
+    "@cocurdex/product-skills": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*"
   },

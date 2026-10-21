@@ -171,7 +171,25 @@ runScenario("skills-settings", {
           ),
         );
         check(scopes.includes("global"), "pack scope rows", scopes);
-        return { scopes };
+        const packSkillCount = await session
+          .waitUntil(
+            (count) =>
+              document.querySelectorAll(
+                '[data-skill-detail="cocurdex"] [data-item-path]',
+              ).length === count,
+            7,
+            UI_TIMEOUT_MS,
+          )
+          .then(
+            () => 7,
+            () => 0,
+          );
+        check(
+          packSkillCount === 7,
+          "pack lists bundled skills",
+          packSkillCount,
+        );
+        return { scopes, packSkills: packSkillCount };
       },
     ],
     [
