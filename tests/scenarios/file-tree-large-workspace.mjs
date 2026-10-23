@@ -1,13 +1,14 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
-import { readScenarioArgs, runScenario } from "./lib/app-session.mjs";
+import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clickPoint } from "./lib/locate.mjs";
 import { closeEditorPanel, showPanelView } from "./lib/navigate.mjs";
 
 const LISTING_LIMIT = 5000;
 const FILLER_DIRECTORY_COUNT = LISTING_LIMIT + 100;
 const UI_TIMEOUT_MS = 30_000;
+const LOADED_ROWS = ["zzz/", "zzz/auth/", "zzz/auth/token.ts", "zzz/README.md"];
 
 const args = readScenarioArgs();
 
@@ -64,6 +65,46 @@ function findFirstTreeRow(itemPaths) {
   return itemPaths.find((itemPath) => shown.has(itemPath)) ?? false;
 }
 
+function treeRowsGone(itemPaths) {
+  const roots = [document];
+  for (const root of roots) {
+    for (const row of root.querySelectorAll("[data-item-path]")) {
+      if (itemPaths.includes(row.dataset.itemPath)) return false;
+    }
+    for (const element of root.querySelectorAll("*")) {
+      if (element.shadowRoot) roots.push(element.shadowRoot);
+    }
+  }
+  return true;
+}
+
+function watchTreeRows(itemPaths) {
+  const missing = new Set();
+  const sample = () => {
+    const shown = new Set();
+    const roots = [document];
+    for (const root of roots) {
+      for (const row of root.querySelectorAll("[data-item-path]")) {
+        shown.add(row.dataset.itemPath);
+      }
+      for (const element of root.querySelectorAll("*")) {
+        if (element.shadowRoot) roots.push(element.shadowRoot);
+      }
+    }
+    for (const itemPath of itemPaths) {
+      if (!shown.has(itemPath)) missing.add(itemPath);
+    }
+    window.__treeRowWatch.frame = requestAnimationFrame(sample);
+  };
+  window.__treeRowWatch = { missing, frame: requestAnimationFrame(sample) };
+  return true;
+}
+
+function stopWatchingTreeRows() {
+  cancelAnimationFrame(window.__treeRowWatch.frame);
+  return [...window.__treeRowWatch.missing];
+}
+
 async function expandFolder(session, itemPath) {
   await session.waitUntil(findTreeRow, itemPath, UI_TIMEOUT_MS);
   await clickPoint(session, await session.run(findTreeRow, itemPath));
@@ -85,7 +126,7 @@ runScenario("file-tree-large-workspace", {
   async setup(opened) {
     await seedLargeWorkspace(opened.workspaceRoot);
     const { wasOpen } = await showPanelView(opened.session, "files");
-    return { panelWasOpen: wasOpen };
+    return { panelWasOpen: wasOpen, workspaceRoot: opened.workspaceRoot };
   },
   steps: [
     [
@@ -98,6 +139,33 @@ runScenario("file-tree-large-workspace", {
           UI_TIMEOUT_MS,
         );
         await session.waitUntil(findTreeRow, "zzz/README.md", UI_TIMEOUT_MS);
+        return {};
+      },
+    ],
+    [
+      "a listing refresh keeps the loaded folder open without flicker",
+      async ({ session, workspaceRoot }) => {
+        await session.run(watchTreeRows, LOADED_ROWS);
+        await writeFile(path.join(workspaceRoot, "zzz", "late.ts"), "x\n");
+        await session.waitUntil(findTreeRow, "zzz/late.ts", UI_TIMEOUT_MS);
+        const missing = await session.run(stopWatchingTreeRows);
+        check(
+          missing.length === 0,
+          "loaded rows disappeared during the refresh",
+          { missing },
+        );
+        return {};
+      },
+    ],
+    [
+      "a deleted loaded folder leaves the tree",
+      async ({ session, workspaceRoot }) => {
+        await rm(path.join(workspaceRoot, "zzz", "auth"), { recursive: true });
+        await session.waitUntil(
+          treeRowsGone,
+          ["zzz/auth/", "zzz/auth/token.ts"],
+          UI_TIMEOUT_MS,
+        );
         return {};
       },
     ],
