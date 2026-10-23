@@ -16,7 +16,7 @@ const args = readScenarioArgs();
 function readHighlight() {
   const block = document.querySelector(".md-body-prose .md-code-block");
   const keyword = [...(block?.querySelectorAll("code span[style]") ?? [])].find(
-    (span) => span.textContent === "export",
+    (span) => span.textContent.trim() === "export",
   );
   if (!keyword) return null;
   const code = block.querySelector("code");

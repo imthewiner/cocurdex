@@ -1,7 +1,6 @@
 import {
-  areLanguagesAttached,
-  areThemesAttached,
   getFiletypeFromFileName,
+  getHighlighterIfLoaded,
   preloadHighlighter,
 } from "@pierre/diffs";
 import { PatchDiff } from "@pierre/diffs/react";
@@ -13,7 +12,9 @@ const DIFF_THEMES = { dark: "pierre-dark", light: "pierre-light" } as const;
 function useHighlighterReady(path: string) {
   const language = getFiletypeFromFileName(path);
   const [ready, setReady] = useState(
-    () => areLanguagesAttached(language) && areThemesAttached(DIFF_THEMES),
+    () =>
+      getHighlighterIfLoaded({ theme: DIFF_THEMES, lang: language }) !==
+      undefined,
   );
   useEffect(() => {
     if (ready) return;
@@ -21,6 +22,7 @@ function useHighlighterReady(path: string) {
     void preloadHighlighter({
       themes: [DIFF_THEMES.dark, DIFF_THEMES.light],
       langs: [language],
+      preferredHighlighter: "highlights",
     }).then(() => {
       if (active) setReady(true);
     });
@@ -50,6 +52,7 @@ export function SkillFilePatch({ path, patch }: SkillFilePatchProps) {
         disableFileHeader: true,
         hunkSeparators: "line-info-basic",
         overflow: "wrap",
+        preferredHighlighter: "highlights",
         theme: DIFF_THEMES,
         themeType: resolvedTheme === "light" ? "light" : "dark",
       }}

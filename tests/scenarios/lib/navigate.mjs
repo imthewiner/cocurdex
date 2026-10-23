@@ -117,7 +117,11 @@ export async function openNewIssueDialog(session) {
 
 export async function openSettingsSection(session, section) {
   const sectionName = await translate(session, `settings:sections.${section}`);
-  const sectionButton = { role: "button", name: sectionName };
+  const sectionButton = {
+    role: "button",
+    name: sectionName,
+    within: { role: "list" },
+  };
   const [visible] = await queryAllByRole(session, sectionButton);
   if (!visible) {
     await clickByRole(

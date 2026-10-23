@@ -1,13 +1,9 @@
-import { type CSSProperties, useMemo, useState } from "react";
-import type { ThemedToken } from "shiki";
-import { useMountEffect, useResolvedTheme } from "@/lib";
-import {
-  codeToTokenLines,
-  getCodeThemeId,
-  loadCodeHighlighter,
-} from "./code-textarea-highlighter";
+import type { ThemedToken } from "@pierre/highlights";
+import { type CSSProperties, useMemo } from "react";
+import { useResolvedTheme } from "@/lib";
+import { syntaxThemeFor, useSyntaxHighlighter } from "@/lib/syntax-highlight";
 
-const DEFAULT_MAX_HIGHLIGHT_LENGTH = 6000;
+const MAX_HIGHLIGHT_LENGTH = 50_000;
 
 const ITALIC = 1;
 const BOLD = 2;
@@ -21,37 +17,25 @@ export function shellTokenStyle(token: ThemedToken): CSSProperties {
   };
 }
 
-export function useShellTokenLines(
-  code: string,
-  maxLength = DEFAULT_MAX_HIGHLIGHT_LENGTH,
-) {
+export function useShellTokenLines(code: string) {
   const resolvedTheme = useResolvedTheme();
-  const [highlighter, setHighlighter] = useState<Awaited<
-    ReturnType<typeof loadCodeHighlighter>
-  > | null>(null);
-
-  useMountEffect(() => {
-    let cancelled = false;
-    void loadCodeHighlighter()
-      .then((instance) => {
-        if (!cancelled) {
-          setHighlighter(instance);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  });
+  const highlighter = useSyntaxHighlighter();
 
   return useMemo(() => {
-    if (!highlighter || code.length === 0 || code.length > maxLength) {
+    if (
+      !highlighter ||
+      code.length === 0 ||
+      code.length > MAX_HIGHLIGHT_LENGTH
+    ) {
       return null;
     }
     try {
-      return codeToTokenLines(highlighter, code, getCodeThemeId(resolvedTheme));
+      return highlighter.highlights.codeToTokens(code, {
+        lang: "bash",
+        theme: syntaxThemeFor(highlighter.themes, resolvedTheme),
+      }).tokens;
     } catch {
       return null;
     }
-  }, [code, highlighter, maxLength, resolvedTheme]);
+  }, [code, highlighter, resolvedTheme]);
 }

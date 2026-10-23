@@ -3,14 +3,8 @@ import { cn } from "@/lib";
 import { shellTokenStyle, useShellTokenLines } from "./use-shell-token-lines";
 import "./code-textarea.css";
 
-// Both layers share this so the highlighted text lands exactly on the editable
-// text. Any change here must stay on both the <pre> and the <textarea>.
-// Shiki costs roughly 0.1ms per line, and the highlight re-runs on every
-// keystroke. Past this size the cost would block typing, so the field falls
-// back to a plain textarea instead.
-const MAX_HIGHLIGHT_LENGTH = 6000;
-
 interface CodeTextareaProps {
+  "aria-label"?: string;
   className?: string;
   onChange(value: string): void;
   placeholder?: string;
@@ -21,12 +15,13 @@ interface CodeTextareaProps {
 // in one grid cell, so the scroll container is the wrapper and both scroll
 // together; the textarea is on top and owns the caret, selection, and input.
 export function CodeTextarea({
+  "aria-label": ariaLabel,
   className,
   onChange,
   placeholder,
   value,
 }: CodeTextareaProps) {
-  const tokenLines = useShellTokenLines(value, MAX_HIGHLIGHT_LENGTH);
+  const tokenLines = useShellTokenLines(value);
 
   const isHighlighted = tokenLines !== null;
 
@@ -61,6 +56,7 @@ export function CodeTextarea({
         </pre>
       ) : null}
       <textarea
+        aria-label={ariaLabel}
         className={cn(
           "code-textarea-layer col-start-1 row-start-1 m-0 min-w-0 px-2.5 py-2 break-words whitespace-pre-wrap w-full resize-none border-0 bg-transparent outline-none field-sizing-content placeholder:text-muted-foreground",
           isHighlighted
