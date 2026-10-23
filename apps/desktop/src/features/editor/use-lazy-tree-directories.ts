@@ -3,16 +3,24 @@ import { useEffect, useRef, useState } from "react";
 import type { WorkspaceFileEntry } from "@/lib";
 import { desktopApi } from "@/lib";
 import {
-  mergeDirectoryEntries,
-  missingDirectoryEntries,
+  type LoadedDirectoryChildren,
+  mergeLoadedDirectories,
+  withDirectoryChildren,
 } from "./file-tree-directory-entries";
 import { collectExpandedDirectoryPaths } from "./file-tree-expansion";
 
 type FileTreeModel = UseFileTreeResult["model"];
 
 interface LoadedDirectories {
+  rootPath: string;
+  children: LoadedDirectoryChildren;
+}
+
+interface DirectoryRequests {
   base: readonly WorkspaceFileEntry[];
-  entries: readonly WorkspaceFileEntry[];
+  rootPath: string | null;
+  directories: Set<string>;
+  latest: Map<string, number>;
 }
 
 export interface LazyTreeDirectories {
@@ -25,56 +33,71 @@ export function useLazyTreeDirectories(
   baseFiles: readonly WorkspaceFileEntry[],
 ): LazyTreeDirectories {
   const [loaded, setLoaded] = useState<LoadedDirectories | null>(null);
-  const requestedRef = useRef({
+  const requestedRef = useRef<DirectoryRequests>({
     base: baseFiles,
     rootPath,
-    directories: new Set<string>(),
+    directories: new Set(),
+    latest: new Map(),
   });
-  const entries = loaded?.base === baseFiles ? loaded.entries : [];
+  const children =
+    loaded && loaded.rootPath === rootPath ? loaded.children : null;
+
+  const requestDirectory = (
+    requests: DirectoryRequests,
+    directoryPath: string,
+  ) => {
+    if (!rootPath || requests.directories.has(directoryPath)) {
+      return;
+    }
+    requests.directories.add(directoryPath);
+    const requestId = (requests.latest.get(directoryPath) ?? 0) + 1;
+    requests.latest.set(directoryPath, requestId);
+    const isLatest = () =>
+      requestedRef.current.rootPath === rootPath &&
+      requestedRef.current.latest.get(directoryPath) === requestId;
+    const update = (entries: readonly WorkspaceFileEntry[] | null) => {
+      setLoaded((previous) => {
+        const current =
+          previous?.rootPath === rootPath ? previous.children : null;
+        return {
+          rootPath,
+          children: withDirectoryChildren(current, directoryPath, entries),
+        };
+      });
+    };
+    const relativePath = directoryPath.replace(/\/$/, "") || ".";
+    void desktopApi
+      .listWorkspaceDirectory(rootPath, relativePath)
+      .then((entries) => {
+        if (isLatest()) update(entries);
+      })
+      .catch(() => {
+        if (requestedRef.current.directories === requests.directories) {
+          requests.directories.delete(directoryPath);
+        }
+        if (isLatest()) update(null);
+      });
+  };
 
   const loadDirectory = (directoryPath: string) => {
     const requested = requestedRef.current;
     if (requested.base !== baseFiles || requested.rootPath !== rootPath) {
+      const sameRoot = requested.rootPath === rootPath;
       requestedRef.current = {
         base: baseFiles,
         rootPath,
         directories: new Set(),
+        latest: sameRoot ? requested.latest : new Map(),
       };
+      for (const loadedPath of children?.keys() ?? []) {
+        requestDirectory(requestedRef.current, loadedPath);
+      }
     }
-    const directories = requestedRef.current.directories;
-    if (!rootPath || directories.has(directoryPath)) {
-      return;
-    }
-    directories.add(directoryPath);
-    const relativePath = directoryPath.replace(/\/$/, "") || ".";
-    void desktopApi
-      .listWorkspaceDirectory(rootPath, relativePath)
-      .then((children) => {
-        if (requestedRef.current.directories !== directories) {
-          return;
-        }
-        setLoaded((previous) => {
-          const previousEntries =
-            previous?.base === baseFiles ? previous.entries : [];
-          const known = new Set(
-            [...baseFiles, ...previousEntries].map(
-              (entry) => entry.relativePath,
-            ),
-          );
-          const missing = missingDirectoryEntries(known, children);
-          if (missing.length === 0) {
-            return previous;
-          }
-          return { base: baseFiles, entries: [...previousEntries, ...missing] };
-        });
-      })
-      .catch(() => {
-        directories.delete(directoryPath);
-      });
+    requestDirectory(requestedRef.current, directoryPath);
   };
 
   return {
-    files: mergeDirectoryEntries(baseFiles, entries),
+    files: mergeLoadedDirectories(baseFiles, children),
     loadDirectory,
   };
 }
