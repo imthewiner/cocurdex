@@ -1,4 +1,8 @@
-import type { BundledLanguage, Highlighter } from "shiki";
+import {
+  getSyntaxHighlighter,
+  loadSyntaxHighlighter,
+  SYNTAX_CSS_VARIABLE_PREFIX,
+} from "@/lib/syntax-highlight";
 import { normalizeCodeLanguage } from "./code-languages";
 
 export interface CodeToken {
@@ -12,53 +16,16 @@ export type CodeTokenizer = (
   language: string,
 ) => readonly CodeToken[] | null;
 
-const CODE_THEMES = { light: "github-light", dark: "github-dark" } as const;
 const TOKEN_CACHE_LIMIT = 200;
 export const CODE_HIGHLIGHT_MAX_LENGTH = 50_000;
 
-let highlighter: Highlighter | null = null;
-let highlighterPromise: Promise<Highlighter> | null = null;
-let bundledLanguageNames: ReadonlySet<string> | null = null;
-const languageLoads = new Map<string, Promise<boolean>>();
-const unsupportedLanguages = new Set<string>();
 const tokenCache = new Map<string, readonly CodeToken[]>();
-
-function loadHighlighter() {
-  highlighterPromise ??= import("shiki")
-    .then(async ({ bundledLanguages, createHighlighter }) => {
-      bundledLanguageNames = new Set(Object.keys(bundledLanguages));
-      highlighter = await createHighlighter({
-        themes: [CODE_THEMES.light, CODE_THEMES.dark],
-        langs: [],
-      });
-      return highlighter;
-    })
-    .catch((error) => {
-      highlighterPromise = null;
-      throw error;
-    });
-  return highlighterPromise;
-}
 
 export function loadCodeLanguage(raw: string): Promise<boolean> {
   const language = normalizeCodeLanguage(raw);
-  const pending = languageLoads.get(language);
-  if (pending) return pending;
-  const load = loadHighlighter()
-    .then(async (loaded) => {
-      if (!bundledLanguageNames?.has(language)) {
-        unsupportedLanguages.add(language);
-        return false;
-      }
-      await loaded.loadLanguage(language as BundledLanguage);
-      return true;
-    })
-    .catch(() => {
-      languageLoads.delete(language);
-      return false;
-    });
-  languageLoads.set(language, load);
-  return load;
+  return loadSyntaxHighlighter()
+    .then(({ highlights }) => highlights.isSupportedLanguage(language))
+    .catch(() => false);
 }
 
 function styleOf(htmlStyle: Record<string, string> | undefined) {
@@ -79,16 +46,18 @@ function remember(key: string, tokens: readonly CodeToken[]) {
 }
 
 export const tokenizeCode: CodeTokenizer = (code, raw) => {
+  const highlighter = getSyntaxHighlighter();
+  if (!highlighter) return null;
   const language = normalizeCodeLanguage(raw);
-  if (unsupportedLanguages.has(language)) return [];
-  if (!highlighter?.getLoadedLanguages().includes(language)) return null;
+  if (!highlighter.highlights.isSupportedLanguage(language)) return [];
   const key = `${language}\0${code}`;
   const cached = tokenCache.get(key);
   if (cached) return remember(key, cached);
-  const lines = highlighter.codeToTokens(code, {
-    lang: language as BundledLanguage,
-    themes: CODE_THEMES,
+  const lines = highlighter.highlights.codeToTokens(code, {
+    lang: language,
+    themes: highlighter.themes,
     defaultColor: false,
+    cssVariablePrefix: SYNTAX_CSS_VARIABLE_PREFIX,
   }).tokens;
   const tokens = lines.flat().flatMap((token) => {
     const style = styleOf(token.htmlStyle);

@@ -1,7 +1,11 @@
 import { getNoteDocSchema, parseNoteMarkdown } from "@cocurdex/note-doc";
 import { describe, expect, it } from "vitest";
 import { buildCodeHighlightDecorations } from "@/components/markdown-body-editor/code-block/code-highlight-decorations";
-import type { CodeTokenizer } from "@/components/markdown-body-editor/code-block/code-highlighter";
+import {
+  type CodeTokenizer,
+  loadCodeLanguage,
+  tokenizeCode,
+} from "@/components/markdown-body-editor/code-block/code-highlighter";
 import {
   codeLanguageLabel,
   highlightLanguage,
@@ -62,5 +66,21 @@ describe("code languages", () => {
     expect(codeLanguageLabel("py")).toBe("Python");
     expect(codeLanguageLabel("zig")).toBe("zig");
     expect(highlightLanguage(" Zig ")).toBe("zig");
+  });
+});
+
+describe("tokenizeCode", () => {
+  it("styles supported languages with light and dark CSS variables", async () => {
+    expect(await loadCodeLanguage("ts")).toBe(true);
+    const tokens = tokenizeCode("const a = 1;", "ts") ?? [];
+    const keyword = tokens.find((token) => token.from === 0);
+    expect(keyword?.to).toBe(6);
+    expect(keyword?.style).toMatch(/--shiki-light:#[0-9a-f]{6}/);
+    expect(keyword?.style).toMatch(/--shiki-dark:#[0-9a-f]{6}/);
+  });
+
+  it("leaves unsupported languages unstyled", async () => {
+    expect(await loadCodeLanguage("not-a-language")).toBe(false);
+    expect(tokenizeCode("x = 1", "not-a-language")).toEqual([]);
   });
 });

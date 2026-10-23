@@ -65,7 +65,7 @@ function canOpenInSystemBrowser(href: string | undefined): href is string {
 }
 
 // Block code (```lang ... ```) and Mermaid blocks are rendered by Streamdown's
-// built-in CodeBlock (Shiki syntax highlighting) and MermaidBlock. We only
+// built-in CodeBlock (syntax highlighting) and MermaidBlock. We only
 // customize the surrounding markdown elements (headings, lists, tables, inline
 // code, etc.) so the chat surface tone tokens still apply.
 const linkToneClassNames: Record<MarkdownRendererTone, string> = {

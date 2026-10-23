@@ -48,7 +48,7 @@ interface MarkdownRendererProps {
 }
 
 // Streamdown 2.x ships heavyweight render paths as plugin packages.
-// - code: Shiki syntax highlighting for fenced code blocks
+// - code: syntax highlighting for fenced code blocks
 // - mermaid: diagram rendering for ```mermaid blocks
 // - math: KaTeX rendering
 // Those three are loaded on demand — see markdown-heavy-plugins.
@@ -268,7 +268,6 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           mode={hasStreamed || streaming ? "streaming" : "static"}
           parseIncompleteMarkdown={streaming}
           plugins={plugins}
-          shikiTheme={["github-light", "github-dark"]}
         >
           {normalizedContent}
         </Streamdown>

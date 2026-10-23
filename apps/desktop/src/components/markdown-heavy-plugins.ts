@@ -3,7 +3,7 @@ import { startTransition } from "react";
 import type { PluginConfig } from "streamdown";
 import { HtmlPreview } from "./markdown-html-preview";
 
-// Streamdown's heavyweight plugins (Shiki, KaTeX, Mermaid) dominate the
+// Streamdown's heavyweight plugins (syntax highlighting, KaTeX, Mermaid) dominate the
 // renderer bundle, and a message only needs them when it actually contains a
 // code fence, math, or a diagram. Loading them on demand keeps them out of the
 // startup path; until they land, that message renders with the light plugin
@@ -15,7 +15,9 @@ export type HeavyPluginKind = "code" | "math" | "mermaid";
 
 const importers: Record<HeavyPluginKind, () => Promise<PluginConfig>> = {
   code: () =>
-    import("@streamdown/code").then((module) => ({ code: module.code })),
+    import("./markdown-code-highlighter")
+      .then((module) => module.loadMarkdownCodeHighlighter())
+      .then((code) => ({ code })),
   // singleDollarTextMath keeps the $E=mc^2$ form our prompts use; double-dollar
   // blocks still work.
   math: () =>
