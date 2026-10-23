@@ -258,7 +258,7 @@ export function createMarkdownComponents(
     },
     tr({ children }: { children?: ReactNode }) {
       return (
-        <tr className="border-b border-foreground/6 last:border-b-0 dark:border-foreground/8">
+        <tr className="border-b border-foreground/3 last:border-b-0 dark:border-foreground/5">
           {children}
         </tr>
       );
