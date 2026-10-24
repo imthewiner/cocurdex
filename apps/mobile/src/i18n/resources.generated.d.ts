@@ -47,11 +47,22 @@ export default interface Resources {
       years_one: "{{count}}y";
       years_other: "{{count}}y";
     };
+    approvalsUnavailable: {
+      description: "This phone was paired without approval access.";
+      title: "Approve this on your computer";
+    };
+    composer: {
+      placeholder: "Reply to the agent";
+      send: "Send";
+      stop: "Stop";
+    };
     detail: {
+      actionFailed: "That didn't go through. Check the connection and try again.";
       awaitingInput: "Has a question for you";
       completedUnread: "Finished";
       connecting: "Connecting…";
       failed: "Run failed";
+      missing: "This session is no longer on the computer.";
       monitoring: "Working in the background";
       pendingApproval: "Waiting for your approval";
       planReady: "Plan ready for review";
@@ -63,6 +74,16 @@ export default interface Resources {
     };
     noResults: "No sessions match “{{query}}”";
     offline: "Can't reach {{host}}. Showing the last update.";
+    plan: {
+      approve: "Approve";
+      keepPlanning: "Keep Planning";
+      title: "Review the plan";
+    };
+    question: {
+      placeholder: "Your answer";
+      reply: "Reply";
+      title: "The agent has a question";
+    };
     search: "Search sessions";
     status: {
       needsYou: "Needs you";

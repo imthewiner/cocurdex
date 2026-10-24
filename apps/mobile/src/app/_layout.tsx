@@ -1,3 +1,4 @@
+import "@/runtime";
 import "@/i18n";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";

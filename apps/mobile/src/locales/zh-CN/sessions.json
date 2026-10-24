@@ -7,11 +7,22 @@
     "now": "刚刚",
     "years_other": "{{count}}年"
   },
+  "approvalsUnavailable": {
+    "description": "这台手机配对时没有授予审批权限。",
+    "title": "请在电脑上批准"
+  },
+  "composer": {
+    "placeholder": "回复 agent",
+    "send": "发送",
+    "stop": "停止"
+  },
   "detail": {
+    "actionFailed": "操作没有成功，请检查连接后重试。",
     "awaitingInput": "有问题要问你",
     "completedUnread": "已完成",
     "connecting": "正在连接…",
     "failed": "运行失败",
+    "missing": "这个会话已经不在电脑上了。",
     "monitoring": "正在后台运行",
     "pendingApproval": "等你批准",
     "planReady": "计划已写好，等你决定",
@@ -23,6 +34,16 @@
   },
   "noResults": "没有匹配“{{query}}”的会话",
   "offline": "连不上 {{host}}，显示的是最后一次更新。",
+  "plan": {
+    "approve": "批准",
+    "keepPlanning": "继续规划",
+    "title": "审阅计划"
+  },
+  "question": {
+    "placeholder": "你的回答",
+    "reply": "回复",
+    "title": "agent 有个问题"
+  },
   "search": "搜索会话",
   "status": {
     "needsYou": "需要处理",

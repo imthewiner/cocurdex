@@ -26,6 +26,13 @@ appId: dev.cocurdex.mobile
     timeout: 5000
 - assertNotVisible: ${OTHER_SESSION_TITLE}
 - takeScreenshot: sessions-search
+- tapOn: ${SEARCHED_SESSION_TITLE}
+- extendedWaitUntil:
+    visible: ${SEARCHED_SESSION_LAST_PROMPT}
+    timeout: 10000
+- assertVisible:
+    id: "composer-input"
+- takeScreenshot: session-detail
 - tapOn: ${TAB_COMPUTERS}
 - assertVisible: ${HOST_ADDRESS}
 - takeScreenshot: paired

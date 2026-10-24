@@ -1,5 +1,6 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { Button, Column, Text as UiText } from "@expo/ui";
+import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionList, StyleSheet, Text, View } from "react-native";
@@ -64,6 +65,7 @@ export function SessionList({
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const router = useRouter();
   const snapshot = useHostSessions(host.hostId);
   const sections = useMemo(
     () =>
@@ -123,7 +125,17 @@ export function SessionList({
           {section.title}
         </Text>
       )}
-      renderItem={({ item }) => <SessionRowView row={item} />}
+      renderItem={({ item }) => (
+        <SessionRowView
+          row={item}
+          onPress={() =>
+            router.push({
+              pathname: "/session/[hostId]/[sessionId]",
+              params: { hostId: host.hostId, sessionId: item.id },
+            })
+          }
+        />
+      )}
       ItemSeparatorComponent={Separator}
     />
   );

@@ -32,10 +32,16 @@ function readMessages(locale: SupportedLocale, namespace: string) {
 
 const SEARCHED_SESSION = "fixture-session-discounts";
 
-function fixtureSessionTitle(id: string) {
+function fixtureSession(id: string) {
   const session = FIXTURE_SESSIONS.find((candidate) => candidate.id === id);
   if (!session) throw new Error(`Fixture session ${id} is missing`);
-  return session.title;
+  return session;
+}
+
+function lastPrompt(id: string) {
+  const prompt = fixtureSession(id).turns.at(-1)?.prompt;
+  if (!prompt) throw new Error(`Fixture session ${id} has no turns`);
+  return prompt;
 }
 
 function flowLabels(locale: SupportedLocale) {
@@ -47,8 +53,9 @@ function flowLabels(locale: SupportedLocale) {
     SEARCH_PLACEHOLDER: sessions.search,
     WORKSPACE_NAME: FIXTURE_WORKSPACE_NAME,
     SEARCH_QUERY: "percentage",
-    SEARCHED_SESSION_TITLE: fixtureSessionTitle(SEARCHED_SESSION),
-    OTHER_SESSION_TITLE: fixtureSessionTitle("fixture-session-checkout-bug"),
+    SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
+    SEARCHED_SESSION_LAST_PROMPT: lastPrompt(SEARCHED_SESSION),
+    OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_PAIR: hosts.empty.pair,
     PAIR_ACTION: hosts.pair.action,

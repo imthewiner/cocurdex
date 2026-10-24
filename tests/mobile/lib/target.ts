@@ -8,6 +8,7 @@ export interface MobileTarget {
   setAppearance(appearance: Appearance): Promise<void>;
   setLocale(locale: SupportedLocale): Promise<void>;
   resetState(): Promise<void>;
+  launchApp(): Promise<void>;
   diagnostics(): Promise<string>;
   stop(): Promise<void>;
 }

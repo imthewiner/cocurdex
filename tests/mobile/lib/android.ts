@@ -83,6 +83,7 @@ async function freeConsolePort(sdk: string) {
 export async function startAndroidTarget(
   mobileDir: string,
   avdName: string | undefined,
+  options: { visible?: boolean } = {},
 ): Promise<MobileTarget> {
   const apkPath = androidApkPath(mobileDir);
   if (!existsSync(apkPath)) {
@@ -100,7 +101,7 @@ export async function startAndroidTarget(
       "-port",
       String(port),
       "-read-only",
-      "-no-window",
+      ...(options.visible ? [] : ["-no-window"]),
       "-no-audio",
       "-no-boot-anim",
       "-no-snapshot-save",
@@ -166,6 +167,16 @@ export async function startAndroidTarget(
       },
       resetState: async () => {
         await shell("pm", "clear", APP_ID);
+      },
+      launchApp: async () => {
+        await shell(
+          "monkey",
+          "-p",
+          APP_ID,
+          "-c",
+          "android.intent.category.LAUNCHER",
+          "1",
+        );
       },
       diagnostics: async () => {
         const devices = await runCommand(adb(sdk), ["devices", "-l"]).catch(

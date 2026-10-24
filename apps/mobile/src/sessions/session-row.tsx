@@ -1,6 +1,6 @@
 import type { SessionPrimaryState } from "@cocurdex/shared";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
 import { type SessionRow, sessionRowStatus } from "./session-sections";
 import { SessionStatusMark } from "./session-status-mark";
@@ -21,15 +21,32 @@ function useStateDetails(): Record<SessionPrimaryState, string | null> {
   };
 }
 
-export function SessionRowView({ row }: { row: SessionRow }) {
+export function SessionRowView({
+  row,
+  onPress,
+}: {
+  row: SessionRow;
+  onPress(): void;
+}) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
   const detail = useStateDetails()[row.state];
   const status = sessionRowStatus(row.state);
   const detailColor =
     status === "failed" ? colors.destructive : colors.mutedForeground;
+  const summary = [detail, age].filter(Boolean).join(", ");
   return (
-    <View style={styles.row} testID={`session-row-${row.id}`}>
+    <Pressable
+      accessibilityLabel={row.title}
+      accessibilityRole="button"
+      accessibilityValue={{ text: summary }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { backgroundColor: colors.muted },
+      ]}
+      testID={`session-row-${row.id}`}
+    >
       <View style={styles.line}>
         <Text
           numberOfLines={1}
@@ -52,7 +69,7 @@ export function SessionRowView({ row }: { row: SessionRow }) {
           <SessionStatusMark status={status} />
         </View>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
