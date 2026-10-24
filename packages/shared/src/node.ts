@@ -4,6 +4,8 @@ import path from "node:path";
 import { type EnvMap, resolveNodeGlobalProxyEnv } from "./network-proxy";
 import { isPathWithinRoots as isLexicallyWithinRoots } from "./workspace-roots";
 
+export * from "./logs";
+
 // Node-only helpers. This entry is not exported from the package root so the
 // isomorphic `@cocurdex/shared` barrel stays browser-safe; import it as
 // `@cocurdex/shared/node` from daemon or Electron main code only.

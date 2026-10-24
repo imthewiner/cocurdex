@@ -76,8 +76,11 @@ export async function handleDaemonRequest(
     case "daemon.status":
       return service.status();
     case "daemon.shutdownIfIdle":
+    case "daemon.health":
+    case "diagnostics.export":
+    case "diagnostics.logLevel.set":
       throw new Error(
-        "daemon.shutdownIfIdle is intercepted before request dispatch",
+        `${request.method} is intercepted before request dispatch`,
       );
     case "sync.pull":
       return service.pullSync(request.params);

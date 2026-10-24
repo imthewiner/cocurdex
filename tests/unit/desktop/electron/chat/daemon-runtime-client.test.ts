@@ -127,20 +127,10 @@ describe("daemon runtime replacement", () => {
       pid: current.pid,
     });
     const options = vi.mocked(spawnOwnedDaemonProcess).mock.calls[0]?.[0];
-    options?.onDiagnostic?.("stderr", "uncaught exception", "stderr");
+    options?.onOutput?.("stderr", "uncaught exception");
     expect(logger.warn).toHaveBeenCalledWith("daemon.stderr", {
       message: "uncaught exception",
       stream: "stderr",
-    });
-    options?.onDiagnostic?.(
-      "stdout",
-      JSON.stringify({ level: "info", event: "ready", details: { value: 1 } }),
-      "diagnostic",
-    );
-    expect(logger.info).toHaveBeenCalledWith("daemon.diagnostic", {
-      message: "ready",
-      stream: "stdout",
-      details: { value: 1 },
     });
   });
 

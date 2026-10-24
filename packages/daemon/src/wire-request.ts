@@ -2,15 +2,23 @@ import type { DaemonRequest } from "@cocurdex/rpc";
 import { DAEMON_METHOD_SCOPES } from "@cocurdex/rpc/method-scopes";
 import { type HostPrincipal, principalHasScope } from "@cocurdex/shared";
 import type { DaemonShutdownGate } from "./daemon-shutdown-gate";
+import { logDaemonDiagnostic } from "./diagnostics";
 import { handleDaemonRequest } from "./handler";
 import { principalActor } from "./host-access";
+import {
+  type DaemonObservability,
+  handleObservabilityRequest,
+  isObservabilityRequest,
+} from "./observability-requests";
 import type { DaemonReceiptOutcome, DaemonReceiptStore } from "./rpc-receipts";
+import { logDaemonRequest, logRejectedDaemonRequest } from "./rpc-request-log";
 import type { CocurdexDaemonService } from "./service";
 
 export interface DaemonRequestRuntime {
   service: CocurdexDaemonService;
   gate: DaemonShutdownGate;
   receipts: DaemonReceiptStore;
+  observability: DaemonObservability;
   close(): Promise<void>;
 }
 
@@ -97,7 +105,6 @@ export async function handleDaemonWireMessage(
   message: unknown,
 ) {
   const { service, gate, receipts } = runtime;
-  const { send } = connection;
   const request = message as DaemonRequest;
   const authorization = authorizeDaemonRequest(
     service.hostAccess.resolve(request.token),
@@ -105,13 +112,36 @@ export async function handleDaemonWireMessage(
     connection.remote,
   );
   if (!authorization.ok) {
-    send({
+    logRejectedDaemonRequest({
+      method: request.method,
+      code: authorization.code,
+      remote: connection.remote,
+      remoteAddress: connection.remoteAddress,
+    });
+    connection.send({
       id: request.id,
       error: { code: authorization.code, message: authorization.message },
     });
     return;
   }
   const { principal } = authorization;
+  const startedAt = performance.now();
+  let replayed = false;
+  const send = (response: Record<string, unknown>, onSent?: () => void) => {
+    const error = response.error as
+      | { code: string; message: string }
+      | undefined;
+    logDaemonRequest({
+      method: request.method,
+      requestId: request.id,
+      principal,
+      remote: connection.remote,
+      durationMs: performance.now() - startedAt,
+      replayed,
+      error,
+    });
+    connection.send(response, onSent);
+  };
   connection.onPrincipal(principal);
   const context = { principal, remoteAddress: connection.remoteAddress };
 
@@ -129,11 +159,11 @@ export async function handleDaemonWireMessage(
         { id: request.id, result },
         result.status === "accepted"
           ? () => {
-              void runtime
-                .close()
-                .catch((error: unknown) =>
-                  console.error("Daemon shutdown failed", error),
-                );
+              void runtime.close().catch((error: unknown) =>
+                logDaemonDiagnostic("error", "daemon.shutdownFailed", {
+                  error,
+                }),
+              );
             }
           : undefined,
       );
@@ -146,17 +176,30 @@ export async function handleDaemonWireMessage(
         normalizeEpoch(request.params?.epoch),
       );
     }
+    const dispatch = () => {
+      if (request.method === "daemon.subscribe") {
+        return Promise.resolve(subscribeResult);
+      }
+      if (request.method === "daemon.status") {
+        return handleDaemonRequest(service, request, context);
+      }
+      if (request.method === "daemon.health") {
+        return handleObservabilityRequest(
+          runtime.observability,
+          request,
+          principal,
+        );
+      }
+      if (isObservabilityRequest(request.method)) {
+        return gate.run(() =>
+          handleObservabilityRequest(runtime.observability, request, principal),
+        );
+      }
+      return gate.run(() => handleDaemonRequest(service, request, context));
+    };
     const run = async (): Promise<DaemonReceiptOutcome> => {
       try {
-        const result =
-          request.method === "daemon.subscribe"
-            ? subscribeResult
-            : request.method === "daemon.status"
-              ? await handleDaemonRequest(service, request, context)
-              : await gate.run(() =>
-                  handleDaemonRequest(service, request, context),
-                );
-        return { ok: true, result };
+        return { ok: true, result: await dispatch() };
       } catch (error) {
         return { ok: false, error: requestFailedError(error) };
       }
@@ -169,6 +212,7 @@ export async function handleDaemonWireMessage(
           { durable: isMutatingMethod(request.method) },
         )
       : { outcome: await run(), replayed: false };
+    replayed = execution.replayed;
     if (execution.outcome.ok) {
       send({ id: request.id, result: execution.outcome.result });
     } else {

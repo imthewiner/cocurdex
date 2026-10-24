@@ -39,6 +39,7 @@ import {
   type UpdateNotePayload,
   type UpdateViewPayload,
 } from "@cocurdex/shared";
+import { logDaemonDiagnostic } from "./diagnostics";
 import type { DaemonState } from "./state";
 
 export class DaemonDataService {
@@ -260,7 +261,7 @@ export class DaemonDataService {
           (await this.state.data.issues.linkSession({ id, sessionId })) ||
           linked;
       } catch (error) {
-        console.warn("[DaemonDataService] issue session link skipped", {
+        logDaemonDiagnostic("warn", "issue.sessionLinkSkipped", {
           issueId: id,
           error: error instanceof Error ? error.message : String(error),
         });

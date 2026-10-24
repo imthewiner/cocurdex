@@ -18,6 +18,11 @@ import {
 } from "@cocurdex/shared";
 import { withDaemon } from "./daemon-command";
 import { handleDeckCommand } from "./deck-commands";
+import {
+  diagnosticsUsageLines,
+  handleDaemonHealthCommand,
+  handleDiagnosticsCommand,
+} from "./diagnostics-commands";
 import { handleHostCommand, hostUsageLines } from "./host-commands";
 import { handleIssueCommand } from "./issue-commands";
 import { handleLinkCommand } from "./link-commands";
@@ -169,6 +174,18 @@ async function main(rawArgs: string[]) {
     const status = await withDaemon(() => requestDaemon("daemon.status"));
     printResult(status, parsed);
     return;
+  }
+
+  if (resource === "daemon" && action === "health") {
+    await handleDaemonHealthCommand(parsed);
+    return;
+  }
+
+  if (resource === "diagnostics") {
+    const handled = await handleDiagnosticsCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
   }
 
   if (resource === "worktree") {
@@ -531,7 +548,7 @@ function printUsage() {
       "  cocurdex issue labels | label create --name <name> | label delete <id|name> [--json]",
       "  cocurdex search <query> [--kind note|issue] [--workspace <id>] [--json]",
       ...skillsUsageLines(),
-      "  cocurdex daemon status",
+      ...diagnosticsUsageLines(),
       ...webUsageLines(),
       ...hostUsageLines(),
       ...worktreeUsageLines(),

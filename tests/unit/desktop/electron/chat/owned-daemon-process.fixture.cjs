@@ -12,9 +12,7 @@ writeFileSync(
   path.join(process.env.COCURDEX_USER_DATA_PATH, "grandchild.pid"),
   String(grandchild.pid),
 );
-console.log(
-  '[CocurdexDaemonDiagnostic] {"event":"fixture.diagnostic","value":1}',
-);
+console.log("fixture output");
 
 const ownerPipe = createReadStream("", { autoClose: true, fd: 3 });
 ownerPipe.resume();

@@ -75,6 +75,20 @@
       }
     },
     {
+      "includes": [
+        "packages/daemon/src/**",
+        "packages/agent-adapters/src/**",
+        "!packages/daemon/src/daemon-logging.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "error"
+          }
+        }
+      }
+    },
+    {
       "includes": ["apps/desktop/src/**", "!apps/desktop/src/components/ui/**"],
       "plugins": ["./biome-plugins/no-effect-outside-hooks.grit"]
     },

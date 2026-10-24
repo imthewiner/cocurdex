@@ -15,6 +15,23 @@ const terminalSize = {
 const pathPayload = z.object({ path: filesystemPathSchema });
 
 export const systemPayloadSchemas: PayloadSchemas = {
+  "diagnostics.export": exact<Payload<"diagnostics.export">>()(
+    z.object({
+      hostLogDirectories: z
+        .array(
+          z.object({
+            name: z.string().min(1).max(64),
+            path: filesystemPathSchema,
+          }),
+        )
+        .max(8)
+        .optional(),
+      hostMetadata: z.record(z.string(), z.unknown()).optional(),
+    }),
+  ),
+  "diagnostics.logLevel.set": exact<Payload<"diagnostics.logLevel.set">>()(
+    z.object({ level: z.enum(["debug", "info"]) }),
+  ),
   "system.openDirectory": exact<Payload<"system.openDirectory">>()(pathPayload),
   "system.revealPath": exact<Payload<"system.revealPath">>()(pathPayload),
   "terminal.spawn": exact<Payload<"terminal.spawn">>()(

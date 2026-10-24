@@ -13,7 +13,10 @@ import type {
   DaemonTransportConnection,
 } from "./transport-types.ts";
 
-export { daemonRequestTimeout } from "./client-timeout.ts";
+export {
+  daemonRequestTimeout,
+  isLongRunningDaemonMethod,
+} from "./client-timeout.ts";
 export { createSharedTransport } from "./shared-transport.ts";
 export type {
   DaemonTransport,
