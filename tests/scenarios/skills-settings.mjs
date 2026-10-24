@@ -1,4 +1,4 @@
-import { lstat, mkdir, readlink, symlink } from "node:fs/promises";
+import { lstat, mkdir, readdir, readlink, symlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { openScenarioApp } from "./lib/app.mjs";
@@ -24,6 +24,18 @@ const FIXTURE_SOURCE = path.dirname(
 );
 const FIXTURE_SKILLS = ["scenario-alpha", "scenario-beta"];
 const BROKEN_SKILL = "scenario-broken";
+const PRODUCT_SKILLS_ROOT = path.dirname(
+  path.dirname(
+    createRequire(import.meta.url).resolve(
+      "../../packages/product-skills/skills/cocurdex-issue/SKILL.md",
+    ),
+  ),
+);
+
+async function bundledSkillCount() {
+  const entries = await readdir(PRODUCT_SKILLS_ROOT, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).length;
+}
 
 const args = readScenarioArgs();
 
@@ -171,21 +183,22 @@ runScenario("skills-settings", {
           ),
         );
         check(scopes.includes("global"), "pack scope rows", scopes);
+        const expectedCount = await bundledSkillCount();
         const packSkillCount = await session
           .waitUntil(
             (count) =>
               document.querySelectorAll(
                 '[data-skill-detail="cocurdex"] [data-item-path]',
               ).length === count,
-            7,
+            expectedCount,
             UI_TIMEOUT_MS,
           )
           .then(
-            () => 7,
+            () => expectedCount,
             () => 0,
           );
         check(
-          packSkillCount === 7,
+          packSkillCount === expectedCount,
           "pack lists bundled skills",
           packSkillCount,
         );
