@@ -145,10 +145,14 @@ export function buildHostPairingLink(addressUrl: string, code: string) {
   return url.toString();
 }
 
+function asciiPunctuation(text: string) {
+  return text.normalize("NFKC").replaceAll("\u3002", ".");
+}
+
 export function parseHostPairingLink(link: string) {
   let url: URL;
   try {
-    url = new URL(link.trim());
+    url = new URL(asciiPunctuation(link).trim());
   } catch {
     return null;
   }

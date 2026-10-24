@@ -28,6 +28,7 @@ export * from "./git";
 export * from "./git-worktree";
 export * from "./host-access";
 export * from "./issues";
+export * from "./locales";
 export * from "./logging";
 export * from "./mcp";
 export * from "./mcp-agents";

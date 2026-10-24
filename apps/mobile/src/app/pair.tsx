@@ -1,23 +1,29 @@
-import { FieldGroup, Text, TextInput } from "@expo/ui";
+import { FieldGroup, Text, TextInput, type TextInputRef } from "@expo/ui";
 import Constants from "expo-constants";
-import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
-import { hosts, type PairFailure } from "@/hosts";
+import { hosts, type PairFailure, PairToolbar } from "@/hosts";
 import { useThemeColors } from "@/theme";
-import { BrandHost } from "@/ui";
+import { BrandHost, keyboardHidden } from "@/ui";
 
-const FAILURE_MESSAGES: Record<PairFailure, string> = {
-  link: "Paste the full pairing link from your computer.",
-  invalid: "This pairing link has expired or was already used.",
-  rateLimited: "Too many attempts. Wait a minute and try again.",
-  unreachable:
-    "Can't reach the computer. Check that both are on the same network.",
-};
+function useFailureMessages(): Record<PairFailure, string> {
+  const { t } = useTranslation("hosts");
+  return {
+    link: t("pair.failure.link"),
+    invalid: t("pair.failure.invalid"),
+    rateLimited: t("pair.failure.rateLimited"),
+    unreachable: t("pair.failure.unreachable"),
+  };
+}
 
 export default function PairScreen() {
+  const { t } = useTranslation("hosts");
+  const failureMessages = useFailureMessages();
   const router = useRouter();
   const colors = useThemeColors();
+  const linkInput = useRef<TextInputRef>(null);
   const [link, setLink] = useState("");
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<PairFailure | null>(null);
@@ -25,6 +31,7 @@ export default function PairScreen() {
 
   const pair = async () => {
     if (!canPair) return;
+    linkInput.current?.blur();
     setPairing(true);
     setFailure(null);
     const result = await hosts.pair(
@@ -36,27 +43,26 @@ export default function PairScreen() {
       setFailure(result.failure);
       return;
     }
+    await keyboardHidden();
     router.back();
   };
 
   return (
     <>
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          variant="done"
-          disabled={!canPair}
-          onPress={() => void pair()}
-        >
-          {pairing ? "Pairing…" : "Pair"}
-        </Stack.Toolbar.Button>
-      </Stack.Toolbar>
+      <PairToolbar
+        label={pairing ? t("pair.pairing") : t("pair.action")}
+        disabled={!canPair}
+        onPair={() => void pair()}
+      />
       <BrandHost style={styles.fill}>
         <FieldGroup>
           <FieldGroup.Section>
             <TextInput
+              ref={linkInput}
               testID="pairing-link"
-              placeholder="Pairing link"
+              placeholder={t("pair.linkPlaceholder")}
               autoCapitalize="none"
+              autoCorrect={false}
               autoFocus
               keyboardType="url"
               onChangeText={setLink}
@@ -65,12 +71,11 @@ export default function PairScreen() {
             <FieldGroup.SectionFooter>
               {failure ? (
                 <Text textStyle={{ color: colors.destructive }}>
-                  {FAILURE_MESSAGES[failure]}
+                  {failureMessages[failure]}
                 </Text>
               ) : (
                 <Text textStyle={{ color: colors.mutedForeground }}>
-                  On your computer, open Settings › Devices and create a
-                  pairing.
+                  {t("pair.hint")}
                 </Text>
               )}
             </FieldGroup.SectionFooter>

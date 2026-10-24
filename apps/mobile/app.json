@@ -14,7 +14,8 @@
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         },
-        "NSLocalNetworkUsageDescription": "Cocurdex connects to the computers you pair on your local network."
+        "NSLocalNetworkUsageDescription": "Cocurdex connects to the computers you pair on your local network.",
+        "CFBundleAllowMixedLocalizations": true
       }
     },
     "android": {
@@ -37,7 +38,16 @@
         }
       ],
       "expo-secure-store",
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": ["en", "zh-Hans"]
+        }
+      ]
+    ],
+    "locales": {
+      "zh-Hans": "./native-locales/zh-Hans.json"
+    }
   }
 }

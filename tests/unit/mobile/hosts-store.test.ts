@@ -1,5 +1,8 @@
 import type { KeyValueStorage } from "@cocurdex/client-runtime";
-import { createHostsStore } from "@cocurdex/mobile/internal/hosts/hosts-store";
+import {
+  createHostsStore,
+  forgetHostsFromPreviousInstall,
+} from "@cocurdex/mobile/internal/hosts/hosts-store";
 import { describe, expect, it, vi } from "vitest";
 
 const LINK = "http://192.168.1.20:47820/#pair=K7-2Q";
@@ -84,5 +87,46 @@ describe("createHostsStore", () => {
     hosts.remove("host-1");
 
     expect(hosts.getSnapshot()).toEqual([]);
+  });
+});
+
+function memoryMarker(exists = false) {
+  let present = exists;
+  return {
+    exists: () => present,
+    create: vi.fn(() => {
+      present = true;
+    }),
+  };
+}
+
+describe("forgetHostsFromPreviousInstall", () => {
+  it("drops hosts a previous install left in the keychain", async () => {
+    const storage = memoryStorage();
+    await createHostsStore(storage).pair(
+      LINK,
+      "Pocket",
+      hostAnswering(200, PAIRED),
+    );
+    const hosts = createHostsStore(storage);
+    const marker = memoryMarker();
+
+    forgetHostsFromPreviousInstall(marker, hosts);
+
+    expect(hosts.getSnapshot()).toEqual([]);
+    expect(createHostsStore(storage).getSnapshot()).toEqual([]);
+    expect(marker.create).toHaveBeenCalledOnce();
+  });
+
+  it("keeps hosts paired since this install", async () => {
+    const storage = memoryStorage();
+    const hosts = createHostsStore(storage);
+    const marker = memoryMarker();
+    forgetHostsFromPreviousInstall(marker, hosts);
+    await hosts.pair(LINK, "Pocket", hostAnswering(200, PAIRED));
+
+    forgetHostsFromPreviousInstall(marker, createHostsStore(storage));
+
+    expect(createHostsStore(storage).getSnapshot()).toHaveLength(1);
   });
 });

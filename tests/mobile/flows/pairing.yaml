@@ -1,0 +1,21 @@
+appId: dev.cocurdex.mobile
+---
+- launchApp
+- assertVisible: ${EMPTY_TITLE}
+- takeScreenshot: empty
+- tapOn:
+    text: ${EMPTY_PAIR}
+    retryTapIfNoChange: true
+- tapOn:
+    text: ${SYSTEM_CONTINUE}
+    optional: true
+- tapOn:
+    id: "pairing-link"
+- inputText: ${PAIRING_LINK}
+- takeScreenshot: pairing-sheet
+- tapOn: ${PAIR_ACTION}
+- extendedWaitUntil:
+    visible: ${HOST_ADDRESS}
+    timeout: 15000
+- assertNotVisible: ${LINK_PLACEHOLDER}
+- takeScreenshot: paired

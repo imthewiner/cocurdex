@@ -20,6 +20,7 @@ cocurdex issue comment <id> --body <markdown> --json
 cocurdex issue relate|unrelate <id> blocks|related|duplicate <other-id> --json
 cocurdex issue labels --json
 cocurdex issue label create --name <name> [--color <color>] --json
+cocurdex issue label update <id|name> [--name <name>] [--color <color>] --json
 cocurdex issue delete <id> --json
 cocurdex issue views --json
 ```

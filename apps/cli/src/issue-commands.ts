@@ -226,13 +226,24 @@ const ISSUE_ACTIONS: Record<string, IssueAction> = {
       printResult(label, parsed);
       return;
     }
+    if (operation === "update" && ref) {
+      const label = await withDaemon(() =>
+        requestDaemon("issue.updateLabel", {
+          id: ref,
+          name: stringFlag(parsed, "name"),
+          color: stringFlag(parsed, "color"),
+        }),
+      );
+      printResult(label, parsed);
+      return;
+    }
     if (operation === "delete" && ref) {
       await withDaemon(() => requestDaemon("issue.deleteLabel", { id: ref }));
       printResult({ id: ref, deleted: true }, parsed);
       return;
     }
     throw new Error(
-      "Usage: cocurdex issue label create --name <name> [--color <color>] | label delete <id|name>",
+      "Usage: cocurdex issue label create --name <name> [--color <color>] | label update <id|name> [--name <name>] [--color <color>] | label delete <id|name>",
     );
   },
   async views(_args, parsed) {

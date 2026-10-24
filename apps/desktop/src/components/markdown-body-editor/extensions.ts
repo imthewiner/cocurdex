@@ -7,7 +7,7 @@ import { type Extensions, ReactNodeViewRenderer } from "@tiptap/react";
 import { BoundaryParagraph } from "./boundary-paragraph";
 import { CodeBlockView } from "./code-block/code-block-view";
 import { CodeHighlight } from "./code-block/code-highlight";
-import { EntityLinkClick } from "./entity-link-click";
+import { LinkClick } from "./link-click";
 import { MarkdownPaste } from "./markdown-paste";
 import { createSlashCommand } from "./slash-command";
 import { TableEditing } from "./table/table-extension";
@@ -22,7 +22,7 @@ export function buildMarkdownBodyExtensions(
       codeBlockView: ReactNodeViewRenderer(CodeBlockView),
     }),
     CodeHighlight,
-    EntityLinkClick,
+    LinkClick,
     Placeholder.configure({
       placeholder: ({ node }) =>
         node.type.name === "paragraph" ? placeholder : "",

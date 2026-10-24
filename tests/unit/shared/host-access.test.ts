@@ -35,6 +35,14 @@ describe("parseHostPairingLink", () => {
     });
   });
 
+  it("accepts a link typed through a full-width input method", () => {
+    expect(
+      parseHostPairingLink(
+        "ｈｔｔｐ：／／10。0．2。2：38943／＃pair＝MGG8－9ShH",
+      ),
+    ).toEqual({ baseUrl: "http://10.0.2.2:38943", code: "MGG8-9ShH" });
+  });
+
   it("rejects links without a code or with another scheme", () => {
     expect(parseHostPairingLink("http://host.local:47820/")).toBeNull();
     expect(
