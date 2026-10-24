@@ -148,6 +148,15 @@ export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
       resetState: async () => {
         await runCommand("xcrun", ["simctl", "keychain", udid, "reset"]);
       },
+      diagnostics: async () => {
+        const devices = await runCommand("xcrun", [
+          "simctl",
+          "list",
+          "devices",
+          udid,
+        ]).catch((error: unknown) => String(error));
+        return `Simulator ${udid}:\n${devices.trim()}`;
+      },
       stop,
     };
   } catch (error) {

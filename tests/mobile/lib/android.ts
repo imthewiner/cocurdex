@@ -167,6 +167,16 @@ export async function startAndroidTarget(
       resetState: async () => {
         await shell("pm", "clear", APP_ID);
       },
+      diagnostics: async () => {
+        const devices = await runCommand(adb(sdk), ["devices", "-l"]).catch(
+          (error: unknown) => String(error),
+        );
+        return [
+          `Emulator ${serial} exit code: ${emulator.exitCode ?? "running"}`,
+          `adb devices:\n${devices.trim()}`,
+          `Emulator output:\n${emulatorOutput}`,
+        ].join("\n");
+      },
       stop,
     };
   } catch (error) {

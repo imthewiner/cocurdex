@@ -66,25 +66,32 @@ async function runFlow(
     "-e",
     `${key}=${value}`,
   ]);
-  await runCommand(
-    "maestro",
-    [
-      "--device",
-      target.deviceId,
-      "test",
-      ...envArgs,
-      "--test-output-dir",
-      outputDir,
-      path.join(flowsDir, flow),
-    ],
-    {
-      inherit: true,
-      env:
-        platform === "android"
-          ? { ...process.env, ANDROID_HOME: androidSdk() }
-          : process.env,
-    },
-  );
+  try {
+    await runCommand(
+      "maestro",
+      [
+        "--device",
+        target.deviceId,
+        "test",
+        ...envArgs,
+        "--test-output-dir",
+        outputDir,
+        path.join(flowsDir, flow),
+      ],
+      {
+        inherit: true,
+        env:
+          platform === "android"
+            ? { ...process.env, ANDROID_HOME: androidSdk() }
+            : process.env,
+      },
+    );
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`${reason}\n${await target.diagnostics()}`, {
+      cause: error,
+    });
+  }
 }
 
 function flowOutputRoot(tempDirs: ReturnType<typeof createTempDirs>) {
