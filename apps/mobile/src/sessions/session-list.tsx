@@ -8,7 +8,7 @@ import { layout, space, useThemeColors } from "@/theme";
 import { BrandHost } from "@/ui";
 import { SessionRowView } from "./session-row";
 import { buildSessionSections, type SessionRow } from "./session-sections";
-import { sessionsStore, useHostSessions } from "./sessions";
+import { useHostSessions } from "./sessions";
 import type { HostSessionsSnapshot } from "./sessions-store";
 
 const OFFLINE_STATES = new Set<HostSessionsSnapshot["connection"]>([
@@ -129,13 +129,12 @@ export function SessionList({
       renderItem={({ item }) => (
         <SessionRowView
           row={item}
-          onPress={() => {
-            void sessionsStore(host.hostId).markVisited(item.id);
+          onPress={() =>
             router.push({
               pathname: "/session/[hostId]/[sessionId]",
               params: { hostId: host.hostId, sessionId: item.id },
-            });
-          }}
+            })
+          }
         />
       )}
       ItemSeparatorComponent={Separator}

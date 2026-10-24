@@ -160,44 +160,75 @@ describe("createSessionsStore", () => {
     expect(fake.listenerCount()).toBe(0);
   });
 
-  it("marks an unread session visited and keeps the host's answer", async () => {
-    const unread = attention({
-      attentionState: "completed-unread",
-      primaryState: "completed-unread",
-    });
-    const visited = attention({ lastVisitedAt: "2026-10-01T00:06:00.000Z" });
+  const UNREAD = {
+    attentionState: "completed-unread",
+    primaryState: "completed-unread",
+  } as const;
+  const CHILD: SessionRecord = { ...SESSION, id: "c1", parentSessionId: "s1" };
+
+  async function viewedStore(results: Record<string, unknown[]>) {
     const fake = fakeConnection({
       "workspace.list": [[]],
-      "session.list": [[SESSION]],
-      "attention.list": [[unread]],
-      "attention.update": [visited],
+      "session.list": [[SESSION, CHILD]],
+      ...results,
     });
     const store = createSessionsStore(fake.connection);
-    store.subscribe(() => {});
+    const stopViewing = store.viewSession("s1", () => {});
     await vi.runAllTimersAsync();
+    return { fake, store, stopViewing };
+  }
 
-    await store.markVisited("s1");
+  const visitedIds = (request: ReturnType<typeof vi.fn>) =>
+    request.mock.calls
+      .filter(([method]) => method === "attention.update")
+      .map(([, payload]) => (payload as { sessionId: string }).sessionId);
 
+  it("marks an open session and its unread children visited", async () => {
+    const { fake, store } = await viewedStore({
+      "attention.list": [
+        [attention(UNREAD), attention({ ...UNREAD, sessionId: "c1" })],
+      ],
+      "attention.update": [
+        attention({ lastVisitedAt: "2026-10-01T00:06:00.000Z" }),
+        attention({ sessionId: "c1" }),
+      ],
+    });
+
+    expect(visitedIds(fake.request)).toEqual(["s1", "c1"]);
     expect(fake.request).toHaveBeenCalledWith("attention.update", {
       sessionId: "s1",
       action: "visited",
       at: expect.any(String),
     });
-    expect(store.getSnapshot().attention).toEqual([visited]);
+    expect(
+      store.getSnapshot().attention.map((entry) => entry.attentionState),
+    ).toEqual(["none", "none"]);
   });
 
-  it("does not mark a session that has nothing unread", async () => {
-    const fake = fakeConnection({
-      "workspace.list": [[]],
-      "session.list": [[SESSION]],
-      "attention.list": [[attention({})]],
+  it("marks a result that finishes while the session is open", async () => {
+    const { fake } = await viewedStore({
+      "attention.list": [[attention({})], [attention(UNREAD)]],
+      "attention.update": [attention({})],
     });
-    const store = createSessionsStore(fake.connection);
+    expect(visitedIds(fake.request)).toEqual([]);
+
+    fake.emit({ type: "turn.completed", sessionId: "s1" } as never);
+    await vi.advanceTimersByTimeAsync(ATTENTION_REFRESH_DELAY_MS);
+
+    expect(visitedIds(fake.request)).toEqual(["s1"]);
+  });
+
+  it("leaves results unread once the session is closed", async () => {
+    const { fake, store, stopViewing } = await viewedStore({
+      "attention.list": [[attention({})], [attention(UNREAD)]],
+    });
     store.subscribe(() => {});
-    await vi.runAllTimersAsync();
+    stopViewing();
 
-    await store.markVisited("s1");
+    fake.emit({ type: "turn.completed", sessionId: "s1" } as never);
+    await vi.advanceTimersByTimeAsync(ATTENTION_REFRESH_DELAY_MS);
 
-    expect(calls(fake.request, "attention.update")).toBe(0);
+    expect(store.getSnapshot().attention).toEqual([attention(UNREAD)]);
+    expect(visitedIds(fake.request)).toEqual([]);
   });
 });

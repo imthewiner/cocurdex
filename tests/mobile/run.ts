@@ -92,6 +92,8 @@ if (platform === "ios" && process.platform !== "darwin") {
   throw new Error("iOS runs need macOS with Xcode");
 }
 
+const DRIVER_STARTUP_TIMEOUT_MS = "240000";
+
 async function runFlow(
   target: MobileTarget,
   flow: string,
@@ -116,10 +118,11 @@ async function runFlow(
       ],
       {
         inherit: true,
-        env:
-          platform === "android"
-            ? { ...process.env, ANDROID_HOME: androidSdk() }
-            : process.env,
+        env: {
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: DRIVER_STARTUP_TIMEOUT_MS,
+          ...process.env,
+          ...(platform === "android" ? { ANDROID_HOME: androidSdk() } : {}),
+        },
       },
     );
   } catch (error) {

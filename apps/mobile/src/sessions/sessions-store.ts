@@ -51,6 +51,27 @@ function retitle(
   );
 }
 
+function sessionFamilies(
+  sessions: readonly SessionRecord[],
+  rootIds: readonly string[],
+) {
+  const children = new Map<string, string[]>();
+  for (const session of sessions) {
+    if (!session.parentSessionId) continue;
+    const siblings = children.get(session.parentSessionId) ?? [];
+    siblings.push(session.id);
+    children.set(session.parentSessionId, siblings);
+  }
+  const family = new Set<string>();
+  const pending = [...rootIds];
+  for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
+    if (family.has(id)) continue;
+    family.add(id);
+    pending.push(...(children.get(id) ?? []));
+  }
+  return family;
+}
+
 export function createSessionsStore(connection: SessionsConnection) {
   const listeners = new Set<() => void>();
   let snapshot: HostSessionsSnapshot = {
@@ -65,9 +86,13 @@ export function createSessionsStore(connection: SessionsConnection) {
   let attentionTimer: ReturnType<typeof setTimeout> | null = null;
   let generation = 0;
 
+  const viewed = new Map<string, number>();
+  const visiting = new Set<string>();
+
   const publish = (next: Partial<HostSessionsSnapshot>) => {
     snapshot = { ...snapshot, ...next };
     for (const listener of [...listeners]) listener();
+    if (next.attention || next.sessions) markViewedVisited();
   };
 
   async function load() {
@@ -99,10 +124,7 @@ export function createSessionsStore(connection: SessionsConnection) {
   }
 
   async function markVisited(sessionId: string) {
-    const current = snapshot.attention.find(
-      (entry) => entry.sessionId === sessionId,
-    );
-    if (current?.attentionState !== "completed-unread") return;
+    visiting.add(sessionId);
     try {
       const next = await connection.request("attention.update", {
         sessionId,
@@ -114,7 +136,24 @@ export function createSessionsStore(connection: SessionsConnection) {
           entry.sessionId === sessionId ? next : entry,
         ),
       });
-    } catch {}
+    } catch {
+    } finally {
+      visiting.delete(sessionId);
+    }
+  }
+
+  function markViewedVisited() {
+    if (viewed.size === 0) return;
+    const family = sessionFamilies(snapshot.sessions, [...viewed.keys()]);
+    for (const entry of snapshot.attention) {
+      if (
+        entry.attentionState === "completed-unread" &&
+        family.has(entry.sessionId) &&
+        !visiting.has(entry.sessionId)
+      ) {
+        void markVisited(entry.sessionId);
+      }
+    }
   }
 
   function scheduleAttention() {
@@ -153,21 +192,35 @@ export function createSessionsStore(connection: SessionsConnection) {
     };
   }
 
+  function subscribe(listener: () => void) {
+    listeners.add(listener);
+    stop ??= start();
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0 && stop) {
+        stop();
+        stop = null;
+      }
+    };
+  }
+
+  function viewSession(sessionId: string, listener: () => void) {
+    viewed.set(sessionId, (viewed.get(sessionId) ?? 0) + 1);
+    const unsubscribe = subscribe(listener);
+    markViewedVisited();
+    return () => {
+      const count = (viewed.get(sessionId) ?? 1) - 1;
+      if (count > 0) viewed.set(sessionId, count);
+      else viewed.delete(sessionId);
+      unsubscribe();
+    };
+  }
+
   return {
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      stop ??= start();
-      return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0 && stop) {
-          stop();
-          stop = null;
-        }
-      };
-    },
+    subscribe,
+    viewSession,
     getSnapshot: () => snapshot,
     reload: load,
-    markVisited,
   };
 }
 

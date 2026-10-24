@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { hostConnection, onHostConnectionRemoved } from "@/connection";
 import { createSessionsStore, type SessionsStore } from "./sessions-store";
 
@@ -19,4 +19,13 @@ export function sessionsStore(hostId: string) {
 export function useHostSessions(hostId: string) {
   const store = sessionsStore(hostId);
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
+}
+
+export function useViewedSession(hostId: string, sessionId: string) {
+  const store = sessionsStore(hostId);
+  const subscribe = useCallback(
+    (listener: () => void) => store.viewSession(sessionId, listener),
+    [store, sessionId],
+  );
+  return useSyncExternalStore(subscribe, store.getSnapshot);
 }

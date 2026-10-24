@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
-import { useHostSessions } from "@/sessions";
+import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import { Composer } from "./composer";
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
@@ -84,7 +84,7 @@ export function SessionDetailScreen({
   const detail = useSessionDetail(host.hostId, sessionId);
   const [actionFailed, setActionFailed] = useState(false);
   const observation = detail.observation;
-  const workspaces = useHostSessions(host.hostId).workspaces;
+  const workspaces = useViewedSession(host.hostId, sessionId).workspaces;
   const workspace = sessionWorkspace(observation, workspaces);
   const workspacePath =
     observation?.session.worktreePath ?? workspace?.rootPaths[0] ?? null;
