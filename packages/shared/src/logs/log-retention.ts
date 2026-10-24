@@ -5,8 +5,6 @@ import { isExpired } from "./log-paths";
 export interface PruneOptions {
   retentionDays: number;
   now?: number;
-  // Secondary safety cap applied only after day-based pruning. Days stay the
-  // primary policy; this just bounds pathological session counts within a day.
   maxFiles?: number;
   match?: (name: string) => boolean;
 }
@@ -14,6 +12,15 @@ export interface PruneOptions {
 interface LogFileStat {
   path: string;
   mtimeMs: number;
+}
+
+async function removeFile(filePath: string) {
+  try {
+    await fs.rm(filePath, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function pruneLogFiles(
@@ -39,16 +46,19 @@ export async function pruneLogFiles(
       continue;
     }
     const filePath = path.join(directory, entry.name);
-    const stat = await fs.stat(filePath);
-    files.push({ path: filePath, mtimeMs: stat.mtimeMs });
+    const stat = await fs.stat(filePath).catch(() => null);
+    if (stat) {
+      files.push({ path: filePath, mtimeMs: stat.mtimeMs });
+    }
   }
 
   const removed: string[] = [];
   const survivors: LogFileStat[] = [];
   for (const file of files) {
     if (isExpired(file.mtimeMs, now, options.retentionDays)) {
-      await fs.rm(file.path, { force: true });
-      removed.push(file.path);
+      if (await removeFile(file.path)) {
+        removed.push(file.path);
+      }
     } else {
       survivors.push(file);
     }
@@ -58,8 +68,9 @@ export async function pruneLogFiles(
     survivors.sort((a, b) => a.mtimeMs - b.mtimeMs);
     const overflow = survivors.length - options.maxFiles;
     for (let index = 0; index < overflow; index += 1) {
-      await fs.rm(survivors[index].path, { force: true });
-      removed.push(survivors[index].path);
+      if (await removeFile(survivors[index].path)) {
+        removed.push(survivors[index].path);
+      }
     }
   }
 

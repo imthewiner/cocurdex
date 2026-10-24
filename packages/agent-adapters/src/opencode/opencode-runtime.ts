@@ -3,6 +3,7 @@ import {
   getAgentVersionStatus,
   parseAgentVersion,
 } from "@cocurdex/shared";
+import { writeLog } from "@cocurdex/shared/node";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import crossSpawn from "cross-spawn";
@@ -22,8 +23,7 @@ export function logOpenCode(
     return;
   }
 
-  const suffix = details ? ` ${JSON.stringify(details)}` : "";
-  console[level](`[OpenCodeAdapter] ${message}${suffix}`);
+  writeLog(level, "opencode", message, details);
 }
 
 export function formatOpenCodeError(error: unknown): string {

@@ -4,6 +4,7 @@ const METHOD_TIMEOUTS: Partial<Record<DaemonMethod, number>> = {
   "daemon.status": 2_000,
   "daemon.subscribe": 5_000,
   "daemon.shutdownIfIdle": 5_000,
+  "diagnostics.export": 2 * 60_000,
   "workspace.runWorktreeSetup": 15 * 60_000,
   "worktree.create": 15 * 60_000,
   "worktree.remove": 15 * 60_000,
@@ -32,8 +33,15 @@ const METHOD_TIMEOUTS: Partial<Record<DaemonMethod, number>> = {
   "skills.updates.apply": 10 * 60_000,
 };
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+
+export function isLongRunningDaemonMethod(method: string) {
+  const timeout = METHOD_TIMEOUTS[method as DaemonMethod];
+  return timeout !== undefined && timeout > DEFAULT_TIMEOUT_MS;
+}
+
 export function daemonRequestTimeout(method: DaemonMethod, override?: number) {
-  const timeout = override ?? METHOD_TIMEOUTS[method] ?? 30_000;
+  const timeout = override ?? METHOD_TIMEOUTS[method] ?? DEFAULT_TIMEOUT_MS;
   if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 2_147_483_647) {
     throw new Error(
       "Daemon request timeout must be a positive finite number of milliseconds",

@@ -471,7 +471,7 @@ export class CocurdexDaemonService {
         this.expireRun(sessionId, runId, reason),
       track: (work) => void this.runs.track(work),
       onError: (error) =>
-        console.error("[CocurdexDaemonService] Run capacity failed", error),
+        logDaemonDiagnostic("error", "runs.capacityFailed", { error }),
     });
     this.runtime = new AgentRuntimeManager({
       broadcastAgentEvent: (event) => {
@@ -2152,7 +2152,7 @@ export class CocurdexDaemonService {
         (message) => this.runs.settle(run, { kind: "resolved", message }),
         (error: unknown) => {
           const message = errorMessage(error, "Unknown agent runtime error");
-          console.error("[CocurdexDaemonService] Background send failed", {
+          logDaemonDiagnostic("error", "session.backgroundSendFailed", {
             agentType: payload.session.agentType,
             error: message,
             sessionId,
@@ -2626,7 +2626,7 @@ export class CocurdexDaemonService {
 
   private wakeWorkflowWorker() {
     void this.workflowWorkerScheduler.wake().catch((error: unknown) => {
-      console.error("[CocurdexDaemonService] Workflow worker failed", error);
+      logDaemonDiagnostic("error", "workflow.workerFailed", { error });
     });
   }
 

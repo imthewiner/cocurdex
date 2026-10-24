@@ -1,8 +1,11 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { pruneLogFiles } from "@desktop/electron/logging/log-retention";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { pruneLogFiles } from "@cocurdex/shared/node";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -10,11 +13,7 @@ describe("pruneLogFiles", () => {
   let directory = "";
 
   beforeEach(async () => {
-    directory = await fs.mkdtemp(path.join(os.tmpdir(), "cocurdex-logs-"));
-  });
-
-  afterEach(async () => {
-    await fs.rm(directory, { recursive: true, force: true });
+    directory = await tempDirs.create("cocurdex-logs-");
   });
 
   async function writeFileWithAge(name: string, ageMs: number, now: number) {

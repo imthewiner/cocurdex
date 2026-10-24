@@ -4,6 +4,10 @@ export class DaemonShutdownGate {
   private activeRequests = 0;
   private draining = false;
 
+  get activeRequestCount() {
+    return this.activeRequests;
+  }
+
   async run<T>(operation: () => Promise<T>): Promise<T> {
     if (this.draining)
       throw new Error("Daemon is shutting down; request was not accepted");

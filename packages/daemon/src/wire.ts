@@ -23,6 +23,11 @@ import {
 } from "./attachment-http";
 import { createCommandReceiptLog } from "./command-receipt-log";
 import { prepareDaemonEndpoint, probeDaemonEndpoint } from "./daemon-endpoint";
+import {
+  createDaemonHealthMonitor,
+  type DaemonHealthMonitor,
+} from "./daemon-health";
+import type { DaemonLogging } from "./daemon-logging";
 import { acquireDaemonOwnership } from "./daemon-ownership";
 import { DaemonShutdownGate } from "./daemon-shutdown-gate";
 import {
@@ -40,6 +45,7 @@ import {
   getConfiguredUserDataPath,
   getDaemonMetadataPath,
   getDaemonSocketPath,
+  getDatabasePath,
 } from "./paths";
 import { createPdfHttpHandler, isPdfHttpRequest } from "./pdf-http";
 import { createDaemonReceiptStore } from "./rpc-receipts";
@@ -57,6 +63,7 @@ import {
 } from "./wire-websocket";
 
 interface StartDaemonServerOptions {
+  logging?: DaemonLogging;
   runtimeFingerprint: string;
   token: string;
   userDataPath?: string;
@@ -162,6 +169,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   }
   const startedAt = new Date().toISOString();
   let service: CocurdexDaemonService | undefined;
+  let health: DaemonHealthMonitor | undefined;
   let endpoint: Awaited<ReturnType<typeof prepareDaemonEndpoint>> | undefined;
   let ready = false;
   let metadataPublished = false;
@@ -186,7 +194,8 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     transport: DaemonTransport,
   ) => {
     const activeService = service;
-    if (!ready || !activeService) {
+    const activeHealth = health;
+    if (!ready || !activeService || !activeHealth) {
       connection.close();
       return null;
     }
@@ -229,6 +238,12 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       service: activeService,
       gate,
       receipts,
+      observability: {
+        status: () => activeService.status(),
+        health: activeHealth,
+        logging: options.logging ?? null,
+        userDataPath,
+      },
       close: async () => {
         await close();
         options.onIdleShutdown?.();
@@ -398,6 +413,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
             });
           }
         } finally {
+          health?.stop();
           await service?.shutdown();
         }
       } finally {
@@ -440,6 +456,24 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       userDataPath,
       agentToolsUrl,
       localToken: options.token,
+    });
+    const activeService = service;
+    health = createDaemonHealthMonitor({
+      pid: process.pid,
+      startedAt,
+      databasePath: getDatabasePath(userDataPath),
+      activeRequests: () => gate.activeRequestCount,
+      activeWork: () => activeService.getActiveWork(),
+      connections: () => ({
+        total: connections.size,
+        devices: [...connections.values()].filter(
+          (deviceIds) => deviceIds.size > 0,
+        ).length,
+      }),
+      agentRuntimes: () => activeService.runtime.liveSessionCount,
+      terminals: () => activeService.terminals.activeCount,
+      logLevel: () => options.logging?.level() ?? "info",
+      logDirectory: options.logging?.directory ?? null,
     });
     const hostAccess = service.hostAccess;
     agentToolHandler = createAgentToolHttpHandler(service.agentTools);

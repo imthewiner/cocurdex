@@ -1,10 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  parseDaemonOutputLine,
-  spawnOwnedDaemonProcess,
-} from "@desktop/electron/chat/owned-daemon-process";
+import { spawnOwnedDaemonProcess } from "@desktop/electron/chat/owned-daemon-process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const processGroups: number[] = [];
@@ -41,12 +38,12 @@ async function waitForProcessExit(pid: number) {
   throw new Error(`Timed out waiting for process ${pid} to exit`);
 }
 
-async function waitForDiagnostic(onDiagnostic: ReturnType<typeof vi.fn>) {
+async function waitForOutput(onOutput: ReturnType<typeof vi.fn>) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
-    if (onDiagnostic.mock.calls.length > 0) return;
+    if (onOutput.mock.calls.length > 0) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error("Timed out waiting for daemon diagnostic output");
+  throw new Error("Timed out waiting for daemon output");
 }
 
 afterEach(async () => {
@@ -65,27 +62,6 @@ afterEach(async () => {
 });
 
 describe("spawnOwnedDaemonProcess", () => {
-  it("keeps diagnostic output structured and captures stderr failures", () => {
-    expect(
-      parseDaemonOutputLine(
-        '[CocurdexDaemonDiagnostic] {"event":"daemon.ready"}',
-        "stdout",
-      ),
-    ).toEqual({
-      message: '{"event":"daemon.ready"}',
-      source: "diagnostic",
-    });
-    expect(parseDaemonOutputLine("ordinary stdout", "stdout")).toEqual({
-      message: "ordinary stdout",
-      source: "diagnostic",
-    });
-    expect(parseDaemonOutputLine("   ", "stdout")).toBeNull();
-    expect(parseDaemonOutputLine("uncaught exception", "stderr")).toEqual({
-      message: "uncaught exception",
-      source: "stderr",
-    });
-  });
-
   it.runIf(process.platform !== "win32")(
     "kills the process group when the owner pipe closes",
     async () => {
@@ -97,10 +73,10 @@ describe("spawnOwnedDaemonProcess", () => {
         import.meta.dirname,
         "owned-daemon-process.fixture.cjs",
       );
-      const onDiagnostic = vi.fn();
+      const onOutput = vi.fn();
       const ownedProcess = spawnOwnedDaemonProcess({
         daemonEntryPath,
-        onDiagnostic,
+        onOutput,
         onError: vi.fn(),
         onExit: vi.fn(),
         runtimeFingerprint: "test-runtime",
@@ -111,17 +87,14 @@ describe("spawnOwnedDaemonProcess", () => {
       }
       processGroups.push(ownedProcess.pid);
       const grandchildPid = await waitForGrandchildPid(userDataPath);
-      await waitForDiagnostic(onDiagnostic);
+      await waitForOutput(onOutput);
 
       await ownedProcess.shutdown();
       await waitForProcessExit(grandchildPid);
 
       expect(isProcessRunning(ownedProcess.pid)).toBe(false);
       expect(isProcessRunning(grandchildPid)).toBe(false);
-      expect(onDiagnostic).toHaveBeenCalledWith(
-        "stdout",
-        '{"event":"fixture.diagnostic","value":1}',
-      );
+      expect(onOutput).toHaveBeenCalledWith("stdout", "fixture output");
     },
   );
 });

@@ -52,6 +52,7 @@ import type {
   DeleteIssuePayload,
   DeleteNotePayload,
   DeleteViewPayload,
+  DiagnosticsExportResult,
   EditDeckPayload,
   EditorViewRecord,
   EntityLink,
@@ -88,6 +89,7 @@ import type {
   LinkIssueSessionPayload,
   ListEntityLinksPayload,
   LoadViewPayload,
+  LogLevel,
   ManagedWorktree,
   McpConfigFile,
   McpImportCandidate,
@@ -233,7 +235,7 @@ export {
   readDaemonWebSocketToken,
 } from "./websocket-protocol.ts";
 
-export const DAEMON_PROTOCOL_VERSION = 31;
+export const DAEMON_PROTOCOL_VERSION = 32;
 
 export interface DaemonMetadata {
   pid: number;
@@ -267,6 +269,52 @@ export interface DaemonActiveWork {
   workspaceSearches: number;
 }
 
+export interface DaemonHealth {
+  pid: number;
+  startedAt: string;
+  uptimeSeconds: number;
+  platform: string;
+  arch: string;
+  nodeVersion: string;
+  memory: {
+    rssBytes: number;
+    heapUsedBytes: number;
+    heapTotalBytes: number;
+    externalBytes: number;
+    arrayBuffersBytes: number;
+  };
+  eventLoop: {
+    windowSeconds: number;
+    utilization: number;
+    delayP50Ms: number;
+    delayP99Ms: number;
+    delayMaxMs: number;
+  };
+  activeRequests: number;
+  activeWork: DaemonActiveWork;
+  connections: { total: number; devices: number };
+  agentRuntimes: number;
+  terminals: number;
+  database: {
+    schemaVersion: number;
+    sizeBytes: number | null;
+    walBytes: number | null;
+  };
+  logs: { level: LogLevel; directory: string | null };
+}
+
+export type DaemonDiagnosticsLogLevel = Extract<LogLevel, "debug" | "info">;
+
+export interface DiagnosticsHostLogDirectory {
+  name: string;
+  path: string;
+}
+
+export interface DiagnosticsExportInput {
+  hostLogDirectories?: DiagnosticsHostLogDirectory[];
+  hostMetadata?: Record<string, unknown>;
+}
+
 export interface DaemonShutdownResult {
   status: "accepted" | "busy";
   activeRequests: number;
@@ -281,6 +329,9 @@ export interface DaemonError {
 export type DaemonRequestPayloadByMethod = {
   "daemon.status": undefined;
   "daemon.shutdownIfIdle": { pid: number; startedAt: string };
+  "daemon.health": undefined;
+  "diagnostics.export": DiagnosticsExportInput;
+  "diagnostics.logLevel.set": { level: DaemonDiagnosticsLogLevel };
   "app.bootstrap": undefined;
   "sync.pull": SyncPullInput;
   "agent.list": undefined;
@@ -623,6 +674,9 @@ export type DaemonRequestPayloadByMethod = {
 export type DaemonResultByMethod = {
   "daemon.status": DaemonStatus;
   "daemon.shutdownIfIdle": DaemonShutdownResult;
+  "daemon.health": DaemonHealth;
+  "diagnostics.export": DiagnosticsExportResult;
+  "diagnostics.logLevel.set": { level: DaemonDiagnosticsLogLevel };
   "app.bootstrap": AppBootstrapData;
   "sync.pull": SyncPullResult;
   "agent.list": AgentDescriptor[];
@@ -912,6 +966,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "app.bootstrap": true,
   "attention.list": true,
   "daemon.status": true,
+  "daemon.health": true,
   "system.fontFamilies": true,
   "system.homeDir": true,
   "host.identity": true,
