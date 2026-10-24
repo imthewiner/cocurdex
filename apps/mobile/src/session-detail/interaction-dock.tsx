@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { control, layout, space, useThemeColors } from "@/theme";
 import { ActionButton, type ActionButtonVariant } from "@/ui";
+import { PermissionPrompt } from "./permission-prompt";
 import type { PendingInteraction } from "./transcript";
 
 export interface InteractionActions {
@@ -109,8 +110,10 @@ function DockBody({
     const { record } = pending;
     return (
       <>
-        <DockTitle>{record.title}</DockTitle>
-        {record.description ? <Muted>{record.description}</Muted> : null}
+        <PermissionPrompt
+          record={record}
+          title={(text) => <DockTitle>{text}</DockTitle>}
+        />
         <View style={styles.actions}>
           {[...record.options].sort(byOptionOrder).map((option) => (
             <ActionButton
@@ -148,7 +151,7 @@ function DockBody({
             ))}
           </View>
         ) : null}
-        <QuestionAnswer onAnswer={answer} />
+        <QuestionAnswer key={record.id} onAnswer={answer} />
       </>
     );
   }

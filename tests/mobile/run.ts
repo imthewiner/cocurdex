@@ -31,6 +31,7 @@ function readMessages(locale: SupportedLocale, namespace: string) {
 }
 
 const SEARCHED_SESSION = "fixture-session-discounts";
+const CODE_SESSION = "fixture-session-checkout-audit";
 
 function fixtureSession(id: string) {
   const session = FIXTURE_SESSIONS.find((candidate) => candidate.id === id);
@@ -57,7 +58,7 @@ function flowLabels(locale: SupportedLocale) {
     SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
     SEARCHED_SESSION_LAST_PROMPT: lastPrompt(SEARCHED_SESSION),
     OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
-    CODE_SESSION_TITLE: fixtureSession("fixture-session-checkout-audit").title,
+    CODE_SESSION_TITLE: fixtureSession(CODE_SESSION).title,
     CODE_BLOCK_TEXT: "(?s)const fulfillmentSteps = .*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_PAIR: hosts.empty.pair,
@@ -153,7 +154,15 @@ async function main() {
   const tempDirs = createTempDirs();
   const outputRoot = flowOutputRoot(tempDirs);
   const daemon = await startPairingDaemon(platform, tempDirs);
+  const openedSessionState = async () =>
+    (await daemon.sessionAttention()).find(
+      (entry) => entry.sessionId === CODE_SESSION,
+    )?.attentionState;
   try {
+    const before = await openedSessionState();
+    if (before !== "completed-unread") {
+      throw new Error(`${CODE_SESSION} should start unread, not ${before}`);
+    }
     const target =
       platform === "ios"
         ? await startIosTarget(mobileDir)
@@ -173,6 +182,10 @@ async function main() {
           },
           path.join(outputRoot, `${appearance}-${locale}`),
         );
+      }
+      const after = await openedSessionState();
+      if (after === "completed-unread") {
+        throw new Error(`Opening ${CODE_SESSION} did not mark it visited`);
       }
       const devices = await daemon.pairedDevices();
       if (devices.length !== RUNS.length) {

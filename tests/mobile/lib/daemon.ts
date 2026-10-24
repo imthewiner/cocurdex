@@ -68,6 +68,7 @@ export async function startPairingDaemon(
         return buildHostPairingLink(baseUrl.origin, code);
       },
       pairedDevices: () => requestDaemon("host.devices.list", daemon.options),
+      sessionAttention: () => requestDaemon("attention.list", daemon.options),
       dispose: () => daemon.dispose(),
     };
   } catch (error) {

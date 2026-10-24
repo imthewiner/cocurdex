@@ -34,6 +34,23 @@
   },
   "noResults": "没有匹配“{{query}}”的会话",
   "offline": "连不上 {{host}}，显示的是最后一次更新。",
+  "permission": {
+    "actions": {
+      "edit": "编辑",
+      "read": "读取",
+      "use": "使用",
+      "write": "写入"
+    },
+    "detail": {
+      "command": "命令",
+      "path": "路径",
+      "pattern": "模式",
+      "query": "查询",
+      "url": "URL"
+    },
+    "fileAction": "允许智能体{{action}} {{target}}？",
+    "runCommand": "运行这条命令？"
+  },
   "plan": {
     "approve": "批准",
     "keepPlanning": "继续规划",

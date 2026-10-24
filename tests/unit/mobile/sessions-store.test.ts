@@ -2,7 +2,11 @@ import {
   ATTENTION_REFRESH_DELAY_MS,
   createSessionsStore,
 } from "@cocurdex/mobile/internal/sessions/sessions-store";
-import type { CocurdexDaemonEvent, SessionRecord } from "@cocurdex/shared";
+import type {
+  CocurdexDaemonEvent,
+  SessionAttentionSnapshot,
+  SessionRecord,
+} from "@cocurdex/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { calls, fakeConnection } from "./fake-connection";
 
@@ -18,6 +22,24 @@ const SESSION: SessionRecord = {
   updatedAt: "2026-10-01T00:00:00.000Z",
   lastMessageAt: null,
 };
+
+function attention(
+  overrides: Partial<SessionAttentionSnapshot>,
+): SessionAttentionSnapshot {
+  return {
+    sessionId: "s1",
+    runtimeState: "ready",
+    attentionState: "none",
+    primaryState: "ready",
+    activityKind: null,
+    connectionPending: false,
+    latestResultAt: "2026-10-01T00:05:00.000Z",
+    lastVisitedAt: null,
+    resultDisposition: "automatic",
+    updatedAt: "2026-10-01T00:05:00.000Z",
+    ...overrides,
+  };
+}
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -136,5 +158,46 @@ describe("createSessionsStore", () => {
     expect(fake.listenerCount()).toBe(2);
     second();
     expect(fake.listenerCount()).toBe(0);
+  });
+
+  it("marks an unread session visited and keeps the host's answer", async () => {
+    const unread = attention({
+      attentionState: "completed-unread",
+      primaryState: "completed-unread",
+    });
+    const visited = attention({ lastVisitedAt: "2026-10-01T00:06:00.000Z" });
+    const fake = fakeConnection({
+      "workspace.list": [[]],
+      "session.list": [[SESSION]],
+      "attention.list": [[unread]],
+      "attention.update": [visited],
+    });
+    const store = createSessionsStore(fake.connection);
+    store.subscribe(() => {});
+    await vi.runAllTimersAsync();
+
+    await store.markVisited("s1");
+
+    expect(fake.request).toHaveBeenCalledWith("attention.update", {
+      sessionId: "s1",
+      action: "visited",
+      at: expect.any(String),
+    });
+    expect(store.getSnapshot().attention).toEqual([visited]);
+  });
+
+  it("does not mark a session that has nothing unread", async () => {
+    const fake = fakeConnection({
+      "workspace.list": [[]],
+      "session.list": [[SESSION]],
+      "attention.list": [[attention({})]],
+    });
+    const store = createSessionsStore(fake.connection);
+    store.subscribe(() => {});
+    await vi.runAllTimersAsync();
+
+    await store.markVisited("s1");
+
+    expect(calls(fake.request, "attention.update")).toBe(0);
   });
 });

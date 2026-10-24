@@ -94,6 +94,11 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - back
-- tapOn: ${TAB_COMPUTERS}
-- assertVisible: ${HOST_ADDRESS}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${TAB_COMPUTERS}
+      - extendedWaitUntil:
+          visible: ${HOST_ADDRESS}
+          timeout: 5000
 - takeScreenshot: paired

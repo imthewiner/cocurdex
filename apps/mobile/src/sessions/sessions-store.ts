@@ -98,6 +98,25 @@ export function createSessionsStore(connection: SessionsConnection) {
     } catch {}
   }
 
+  async function markVisited(sessionId: string) {
+    const current = snapshot.attention.find(
+      (entry) => entry.sessionId === sessionId,
+    );
+    if (current?.attentionState !== "completed-unread") return;
+    try {
+      const next = await connection.request("attention.update", {
+        sessionId,
+        action: "visited",
+        at: new Date().toISOString(),
+      });
+      publish({
+        attention: snapshot.attention.map((entry) =>
+          entry.sessionId === sessionId ? next : entry,
+        ),
+      });
+    } catch {}
+  }
+
   function scheduleAttention() {
     if (attentionTimer) return;
     attentionTimer = setTimeout(refreshAttention, ATTENTION_REFRESH_DELAY_MS);
@@ -148,6 +167,7 @@ export function createSessionsStore(connection: SessionsConnection) {
     },
     getSnapshot: () => snapshot,
     reload: load,
+    markVisited,
   };
 }
 

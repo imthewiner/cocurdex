@@ -74,6 +74,23 @@ export default interface Resources {
     };
     noResults: "No sessions match “{{query}}”";
     offline: "Can't reach {{host}}. Showing the last update.";
+    permission: {
+      actions: {
+        edit: "edit";
+        read: "read";
+        use: "use";
+        write: "write";
+      };
+      detail: {
+        command: "Command";
+        path: "Path";
+        pattern: "Pattern";
+        query: "Query";
+        url: "URL";
+      };
+      fileAction: "Allow the agent to {{action}} {{target}}?";
+      runCommand: "Run this command?";
+    };
     plan: {
       approve: "Approve";
       keepPlanning: "Keep Planning";

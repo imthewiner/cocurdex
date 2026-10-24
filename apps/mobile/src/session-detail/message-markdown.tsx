@@ -11,8 +11,12 @@ import {
   useSyntaxColors,
   useThemeColors,
 } from "@/theme";
+import { externalLinkUrl } from "./external-link";
 
-const MONO_FONT = Platform.select({ ios: "Menlo", default: "monospace" });
+export const MONO_FONT = Platform.select({
+  ios: "Menlo",
+  default: "monospace",
+});
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
 
@@ -91,7 +95,10 @@ export function MessageMarkdown({
       flavor="github"
       markdownStyle={style}
       selectable
-      onLinkPress={({ url }) => void Linking.openURL(url)}
+      onLinkPress={({ url }) => {
+        const target = externalLinkUrl(url);
+        if (target) void Linking.openURL(target);
+      }}
       testID={testID}
     />
   );

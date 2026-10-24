@@ -40,6 +40,13 @@ export * from "./notes";
 export * from "./orchestration";
 export * from "./pdf-annotations";
 export * from "./peer-messaging";
+export {
+  describePermissionRequest,
+  filterDetailsCoveredByText,
+  type PermissionDetail,
+  type PermissionRequestDisplay,
+  type PermissionRequestSummary,
+} from "./permission-request-display";
 export * from "./provider-compatibility";
 export * from "./provider-json";
 export { createProviderSnapshotForModel } from "./provider-snapshot";
