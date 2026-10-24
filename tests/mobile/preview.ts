@@ -31,16 +31,16 @@ async function main() {
       : buildAndroidApp(mobileDir));
   }
   const tempDirs = createTempDirs();
-  const target =
-    platform === "ios"
-      ? await startIosTarget(mobileDir)
-      : await startAndroidTarget(mobileDir, values.avd, { visible: true });
+  const daemon = await startPairingDaemon(platform, tempDirs);
   try {
-    if (platform === "ios") {
-      await runCommand("open", ["-b", "com.apple.dt.Devices"]);
-    }
-    const daemon = await startPairingDaemon(target.hostAlias, tempDirs);
+    const target =
+      platform === "ios"
+        ? await startIosTarget(mobileDir)
+        : await startAndroidTarget(mobileDir, values.avd, { visible: true });
     try {
+      if (platform === "ios") {
+        await runCommand("open", ["-b", "com.apple.dt.Devices"]);
+      }
       const pairingLink = await daemon.createPairingLink();
       await target.launchApp();
       process.stdout.write(
@@ -48,10 +48,10 @@ async function main() {
       );
       await untilInterrupted();
     } finally {
-      await daemon.dispose();
+      await target.stop();
     }
   } finally {
-    await target.stop();
+    await daemon.dispose();
     tempDirs.cleanup();
   }
 }

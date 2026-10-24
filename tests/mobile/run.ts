@@ -11,7 +11,7 @@ import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
 import { buildIosApp, startIosTarget } from "./lib/ios";
-import type { Appearance, MobileTarget } from "./lib/target";
+import type { Appearance, MobilePlatform, MobileTarget } from "./lib/target";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const mobileDir = path.join(repoRoot, "apps/mobile");
@@ -77,11 +77,16 @@ const { values } = parseArgs({
   },
 });
 
-const platform =
-  values.platform ?? (process.platform === "darwin" ? "ios" : "android");
-if (platform !== "ios" && platform !== "android") {
-  throw new Error(`--platform must be ios or android, not ${platform}`);
+function parsePlatform(value: string | undefined): MobilePlatform {
+  const requested =
+    value ?? (process.platform === "darwin" ? "ios" : "android");
+  if (requested !== "ios" && requested !== "android") {
+    throw new Error(`--platform must be ios or android, not ${requested}`);
+  }
+  return requested;
 }
+
+const platform = parsePlatform(values.platform);
 if (platform === "ios" && process.platform !== "darwin") {
   throw new Error("iOS runs need macOS with Xcode");
 }
@@ -147,12 +152,12 @@ async function main() {
   }
   const tempDirs = createTempDirs();
   const outputRoot = flowOutputRoot(tempDirs);
-  const target =
-    platform === "ios"
-      ? await startIosTarget(mobileDir)
-      : await startAndroidTarget(mobileDir, values.avd);
+  const daemon = await startPairingDaemon(platform, tempDirs);
   try {
-    const daemon = await startPairingDaemon(target.hostAlias, tempDirs);
+    const target =
+      platform === "ios"
+        ? await startIosTarget(mobileDir)
+        : await startAndroidTarget(mobileDir, values.avd);
     try {
       for (const { appearance, locale } of RUNS) {
         await target.resetState();
@@ -176,13 +181,13 @@ async function main() {
         );
       }
     } finally {
-      await daemon.dispose();
+      await target.stop();
     }
     process.stdout.write(
       `${JSON.stringify({ platform, ok: true, screenshots: values.keep ? outputRoot : null })}\n`,
     );
   } finally {
-    await target.stop();
+    await daemon.dispose();
     if (!values.keep) await tempDirs.cleanup();
   }
 }

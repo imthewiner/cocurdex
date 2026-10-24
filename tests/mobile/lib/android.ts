@@ -5,7 +5,7 @@ import { killProcessTree, spawnCommand } from "@cocurdex/agent-adapters";
 import { FatalWaitError, runCommand, waitUntil } from "./command";
 import type { MobileTarget } from "./target";
 
-const EMULATOR_HOST_ALIAS = "10.0.2.2";
+export const EMULATOR_HOST_ALIAS = "10.0.2.2";
 const APP_ID = "dev.cocurdex.mobile";
 const BOOT_TIMEOUT_MS = 240_000;
 const FIRST_CONSOLE_PORT = 5554;
@@ -170,11 +170,16 @@ export async function startAndroidTarget(
     });
     await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
     for (const ime of parseLines(await shell("ime", "list", "-s"))) {
-      await shell("ime", "disable", ime);
+      await shell("pm", "disable-user", "--user", "0", imePackage(ime));
+    }
+    const remainingImes = parseLines(await shell("ime", "list", "-s"));
+    if (remainingImes.length > 0) {
+      throw new Error(
+        `Input methods still enabled: ${remainingImes.join(", ")}`,
+      );
     }
     return {
       deviceId: serial,
-      hostAlias: EMULATOR_HOST_ALIAS,
       setAppearance: async (appearance) => {
         await shell(
           "cmd",
@@ -234,6 +239,10 @@ class EmulatorExitedError extends FatalWaitError {
   constructor(code: number) {
     super(`Emulator exited with ${code} before booting`);
   }
+}
+
+function imePackage(ime: string) {
+  return ime.split("/")[0] ?? ime;
 }
 
 function parseLines(output: string) {

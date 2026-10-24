@@ -9,6 +9,8 @@ import {
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { buildHostPairingLink } from "@cocurdex/shared";
 import type { createTempDirs } from "@cocurdex/shared/testing";
+import { EMULATOR_HOST_ALIAS } from "./android";
+import type { MobilePlatform } from "./target";
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -26,7 +28,7 @@ function freePort() {
 }
 
 export async function startPairingDaemon(
-  hostAlias: string | null,
+  platform: MobilePlatform,
   tempDirs: ReturnType<typeof createTempDirs>,
 ) {
   if (!existsSync(bundledDaemonPath)) {
@@ -54,7 +56,7 @@ export async function startPairingDaemon(
       status.addresses[0];
     if (!address) throw new Error("Remote access reported no address");
     const baseUrl = new URL(address.url);
-    if (hostAlias) baseUrl.hostname = hostAlias;
+    if (platform === "android") baseUrl.hostname = EMULATOR_HOST_ALIAS;
     return {
       hostAddress: baseUrl.host,
       async createPairingLink() {

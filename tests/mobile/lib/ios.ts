@@ -113,7 +113,6 @@ export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
     await runCommand("xcrun", ["simctl", "install", udid, appPath]);
     return {
       deviceId: udid,
-      hostAlias: null,
       setAppearance: async (appearance) => {
         await runCommand("xcrun", [
           "simctl",
