@@ -1,0 +1,35 @@
+{
+  "name": "@cocurdex/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./internal/*": "./src/*.ts"
+  },
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate:theme-colors": "node scripts/generate-theme-colors.mjs",
+    "check:theme-colors": "node scripts/generate-theme-colors.mjs --check"
+  },
+  "dependencies": {
+    "@cocurdex/client-runtime": "workspace:*",
+    "@cocurdex/rpc": "workspace:*",
+    "@cocurdex/shared": "workspace:*",
+    "expo": "~58.0.17",
+    "expo-build-properties": "~58.0.11",
+    "expo-secure-store": "~58.0.2",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-native": "0.88.0"
+  },
+  "devDependencies": {
+    "@types/culori": "4.0.1",
+    "@types/react": "~19.3.0",
+    "culori": "4.0.2",
+    "typescript": "6.0.3"
+  }
+}
