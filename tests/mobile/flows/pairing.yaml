@@ -1,0 +1,20 @@
+appId: dev.cocurdex.mobile
+---
+- launchApp:
+    clearState: true
+- assertVisible: "No Computers"
+- takeScreenshot: empty
+- tapOn: "Pair a Computer"
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    id: "pairing-link"
+- inputText: ${PAIRING_LINK}
+- takeScreenshot: pairing-sheet
+- tapOn: "Pair"
+- extendedWaitUntil:
+    visible: ${HOST_ADDRESS}
+    timeout: 15000
+- assertNotVisible: "Pairing link"
+- takeScreenshot: paired

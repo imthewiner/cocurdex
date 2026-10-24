@@ -941,6 +941,28 @@ importers:
         specifier: ^24.19.2
         version: 24.19.2
 
+  tests/mobile:
+    dependencies:
+      '@cocurdex/agent-adapters':
+        specifier: workspace:*
+        version: link:../../packages/agent-adapters
+      '@cocurdex/daemon':
+        specifier: workspace:*
+        version: link:../../packages/daemon
+      '@cocurdex/e2e':
+        specifier: workspace:*
+        version: link:../e2e
+      '@cocurdex/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   tests/unit/agent-adapters:
     dependencies:
       '@cocurdex/agent-adapters':

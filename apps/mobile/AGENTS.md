@@ -17,9 +17,10 @@ Rules for `apps/mobile`, in addition to the repository root `AGENTS.md`. iOS and
 
 1. `pnpm --filter @cocurdex/mobile typecheck`.
 2. `pnpm exec expo export --platform ios` and `--platform android` from `apps/mobile` to prove both bundles resolve, with `--output-dir` pointing at a temporary directory.
-3. For user-facing changes, run the app on a simulator or emulator with `pnpm --filter @cocurdex/mobile ios` or `android` and check light and dark.
+3. For user-facing changes, run the app on a simulator or emulator with `pnpm --filter @cocurdex/mobile ios` or `android` and check light and dark. Metro started without a TTY runs in CI mode and serves no edits; start it with `CI=false` when you change code while it runs.
+4. Run the Maestro flows: `pnpm --filter @cocurdex/mobile-e2e test -- --platform ios|android [--build]`. The runner builds a Release app with `--build`, starts its own simulator or read-only emulator and an isolated daemon, runs every flow in light and dark, and removes what it started. It needs the Maestro CLI and Java 17+.
 
-Unit tests for mobile modules live in `tests/unit/mobile` and import them through `@cocurdex/mobile/internal/<path>`.
+Unit tests for mobile modules live in `tests/unit/mobile` and import them through `@cocurdex/mobile/internal/<path>`. UI flows live in `tests/mobile/flows` as Maestro YAML: locate elements by visible text, accessibility label, or `testID`, and add a flow or extend one for every user-facing change.
 
 ## Visual language
 
@@ -31,6 +32,8 @@ The app looks and behaves like a native iOS app on iPhone and a native Material 
 - Brand teal is the platform tint (iOS `tint`, Android `seedColor`) and otherwise a small mark only: unread dots, selected checks, links, the running mark, done status. Never fill a large surface with it or with a status color.
 - Each screen shows at most three hues; neutrals do not count. Every hue means one thing app-wide: teal is active or healthy (running, unread, done, online), blue is waiting for the user, red is failure or a destructive action, and orange is only an issue's in-progress status. Content colors (diff lines, syntax highlighting, user-chosen labels) appear only in content views such as a diff; summaries elsewhere, like `+36 −2` in a transcript, stay neutral.
 - Content lists (sessions, issues, notes, transcripts) are plain full-width lists with the platform's separators, virtualized with `FlatList`. Settings and forms use the platform's grouped form (`@expo/ui` `List`/`FieldGroup`: inset grouped on iOS, Material lists on Android). Keep a bordered surface only when the object itself is a card: a kanban card or a slide thumbnail.
+- A form sheet puts its primary action in the sheet's toolbar (`Stack.Toolbar`) and its validation message in the section footer. Never insert or remove nodes between `FieldGroup` sections while a field can be focused: SwiftUI aborts the app when a focused field's section is rebuilt.
+- Content lists on iOS use SwiftUI `List` with `listStyle("plain")` and row backgrounds set to the theme background; the universal `List` renders inset grouped.
 - Transient overlays (pickers, action menus, session configuration, confirmations) are native sheets with detents (`@expo/ui` `BottomSheet` or a `formSheet` route); a short destructive confirmation may use the platform alert. Do not build custom modals.
 - Session states that wait for the user (permission, question, plan approval, failed run) dock at the bottom, above or in place of the composer, without a scrim, so the transcript stays scrollable for context; this matches the desktop's docked cards. Once resolved, they remain in the transcript as history.
 - Spacing sits on a 4pt grid with one 16px side margin for custom content; native lists and forms keep their own insets. Custom tappable content keeps a 44pt (iOS) / 48dp (Android) hit area.

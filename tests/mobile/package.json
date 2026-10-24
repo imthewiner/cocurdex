@@ -1,0 +1,19 @@
+{
+  "name": "@cocurdex/mobile-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx run.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cocurdex/agent-adapters": "workspace:*",
+    "@cocurdex/daemon": "workspace:*",
+    "@cocurdex/e2e": "workspace:*",
+    "@cocurdex/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "^4.23.15"
+  }
+}
