@@ -140,6 +140,9 @@ export async function startAndroidTarget(
       throw new Error(`${reason}\nEmulator output:\n${emulatorOutput}`);
     });
     await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
+    for (const ime of parseLines(await shell("ime", "list", "-s"))) {
+      await shell("ime", "disable", ime);
+    }
     return {
       deviceId: serial,
       hostAlias: EMULATOR_HOST_ALIAS,
@@ -176,4 +179,11 @@ class EmulatorExitedError extends FatalWaitError {
   constructor(code: number) {
     super(`Emulator exited with ${code} before booting`);
   }
+}
+
+function parseLines(output: string) {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
 }
