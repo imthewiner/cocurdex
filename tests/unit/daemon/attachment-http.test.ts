@@ -64,7 +64,7 @@ describe("createAttachmentHttpHandler", () => {
 
   const upload = (
     token: string | null,
-    body: BodyInit,
+    body: Buffer,
     kind: "image" | "document" = "image",
   ) =>
     fetch(buildDaemonAttachmentUploadUrl(webSocketUrl, kind, "shot.gif"), {
