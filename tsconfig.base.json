@@ -37,6 +37,7 @@
         "./packages/agent-adapters/src/*"
       ],
       "@cocurdex/agent-core/internal/*": ["./packages/agent-core/src/*"],
+      "@cocurdex/mobile/internal/*": ["./apps/mobile/src/*"],
       "@cocurdex/client-runtime/internal/*": [
         "./packages/client-runtime/src/*"
       ],

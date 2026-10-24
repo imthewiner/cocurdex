@@ -222,33 +222,6 @@ export const workspacePayloadSchemas = {
   "fs.listDirectories": exact<Payload<"fs.listDirectories">>()(
     z.object({ path: filesystemPathSchema.optional() }),
   ),
-  "attachment.importImage": exact<Payload<"attachment.importImage">>()(
-    z.object({
-      dataUrl: z.string().max(45_000_000).startsWith("data:image/"),
-      height: z.number().int().nonnegative(),
-      mimeType: z.string().min(1).max(255),
-      name: z.string().min(1).max(1024),
-      sizeBytes: z.number().int().nonnegative(),
-      width: z.number().int().nonnegative(),
-    }),
-  ),
-  "attachment.importDocument": exact<Payload<"attachment.importDocument">>()(
-    z.strictObject({
-      dataUrl: z
-        .string()
-        .max(45_000_000)
-        .startsWith("data:application/pdf;base64,"),
-      mimeType: z.literal("application/pdf"),
-      name: z.string().min(1).max(1024),
-      sizeBytes: z
-        .number()
-        .int()
-        .nonnegative()
-        .max(32 * 1024 * 1024),
-    }),
-  ),
-  "attachment.readImageDataUrl":
-    exact<Payload<"attachment.readImageDataUrl">>()(filePathPayload),
   "pdf.loadAnnotations":
     exact<Payload<"pdf.loadAnnotations">>()(filePathPayload),
   "pdf.updateAnnotations": exact<Payload<"pdf.updateAnnotations">>()(

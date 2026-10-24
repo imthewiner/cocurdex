@@ -17,6 +17,10 @@ import {
   createAgentToolHttpHandler,
   isAgentToolHttpRequest,
 } from "./agent-tools";
+import {
+  createAttachmentHttpHandler,
+  isAttachmentHttpRequest,
+} from "./attachment-http";
 import { createCommandReceiptLog } from "./command-receipt-log";
 import { prepareDaemonEndpoint, probeDaemonEndpoint } from "./daemon-endpoint";
 import {
@@ -313,77 +317,56 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     );
     if (onMessage) readJsonLines(socket, onMessage);
   });
-  let agentToolHandler:
-    | ReturnType<typeof createAgentToolHttpHandler>
-    | undefined;
-  let pdfHandler: ReturnType<typeof createPdfHttpHandler> | undefined;
-  let deckDownloadHandler:
-    | ReturnType<typeof createDeckDownloadHttpHandler>
-    | undefined;
-  let deckAssetHandler:
-    | ReturnType<typeof createDeckAssetHttpHandler>
-    | undefined;
+  type HttpHandler = (
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+  ) => Promise<void>;
+  let agentToolHandler: HttpHandler | undefined;
+  let pdfHandler: HttpHandler | undefined;
+  let deckDownloadHandler: HttpHandler | undefined;
+  let deckAssetHandler: HttpHandler | undefined;
+  let attachmentHandler: HttpHandler | undefined;
   const webAssetHandler = options.webRoot
     ? createWebAssetHandler(options.webRoot)
     : undefined;
-  const httpServer = http.createServer((request, response) => {
-    if (isDeckAssetHttpRequest(request)) {
-      if (!ready || !deckAssetHandler) {
-        response.writeHead(503);
-        response.end();
-        return;
-      }
-      void deckAssetHandler(request, response).catch(() => {
-        if (!response.headersSent) response.writeHead(500);
-        response.end();
-      });
-      return;
-    }
-    if (isDeckDownloadHttpRequest(request)) {
-      if (!ready || !deckDownloadHandler) {
-        response.writeHead(503);
-        response.end();
-        return;
-      }
-      void deckDownloadHandler(request, response).catch(() => {
-        if (!response.headersSent) response.writeHead(500);
-        response.end();
-      });
-      return;
-    }
-    if (isPdfHttpRequest(request)) {
-      if (!ready || !pdfHandler) {
-        response.writeHead(503);
-        response.end();
-        return;
-      }
-      void pdfHandler(request, response).catch(() => {
-        if (!response.headersSent) response.writeHead(500);
-        response.end();
-      });
-      return;
-    }
-    if (!isAgentToolHttpRequest(request)) {
-      if (!webAssetHandler) {
-        response.writeHead(404);
-        response.end();
-        return;
-      }
-      void webAssetHandler(request, response).catch(() => {
-        if (!response.headersSent) response.writeHead(500);
-        response.end();
-      });
-      return;
-    }
-    if (!ready || !agentToolHandler) {
-      response.writeHead(503);
-      response.end();
-      return;
-    }
-    void agentToolHandler(request, response).catch(() => {
+  const readyRoutes: [
+    (request: http.IncomingMessage) => boolean,
+    () => HttpHandler | undefined,
+  ][] = [
+    [isAttachmentHttpRequest, () => attachmentHandler],
+    [isDeckAssetHttpRequest, () => deckAssetHandler],
+    [isDeckDownloadHttpRequest, () => deckDownloadHandler],
+    [isPdfHttpRequest, () => pdfHandler],
+    [isAgentToolHttpRequest, () => agentToolHandler],
+  ];
+  const serve = (
+    handler: HttpHandler,
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+  ) => {
+    void handler(request, response).catch(() => {
       if (!response.headersSent) response.writeHead(500);
       response.end();
     });
+  };
+  const httpServer = http.createServer((request, response) => {
+    const route = readyRoutes.find(([matches]) => matches(request));
+    if (route) {
+      const handler = route[1]();
+      if (!ready || !handler) {
+        response.writeHead(503);
+        response.end();
+        return;
+      }
+      serve(handler, request, response);
+      return;
+    }
+    if (!webAssetHandler) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+    serve(webAssetHandler, request, response);
   });
   const listenHttp = (port: number) =>
     new Promise<string>((resolve, reject) => {
@@ -521,9 +504,18 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       resolvePrincipal: (token) => hostAccess.resolve(token),
       locate: locateDeckAsset,
     });
+    attachmentHandler = createAttachmentHttpHandler({
+      remote: false,
+      isAllowedRequest: (request) =>
+        isLoopbackHostHeader(request.headers.host) &&
+        isAllowedWebSocketOrigin(request.headers.origin),
+      resolvePrincipal: (token) => hostAccess.resolve(token),
+      store: service.attachments,
+    });
     remoteListener = createRemoteAccessListener(
       createRemoteServerFactory({
         hostAccess,
+        attachments: service.attachments,
         machineName: os.hostname(),
         resolvePdfPath,
         redeemDeckDownload,

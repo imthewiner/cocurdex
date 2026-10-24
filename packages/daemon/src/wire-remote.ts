@@ -7,6 +7,11 @@ import {
 import type { WebSocket } from "ws";
 import { isAgentToolHttpRequest } from "./agent-tools";
 import {
+  createAttachmentHttpHandler,
+  isAttachmentHttpRequest,
+} from "./attachment-http";
+import type { DaemonAttachmentStore } from "./attachment-store";
+import {
   createDeckAssetHttpHandler,
   createDeckDownloadHttpHandler,
   type DeckFile,
@@ -35,6 +40,7 @@ const SESSION_CHECKS_PER_WINDOW = 60;
 
 export interface RemoteServerFactoryOptions {
   hostAccess: HostAccessService;
+  attachments: DaemonAttachmentStore;
   machineName: string;
   webRoot?: string;
   resolvePdfPath(filePath: string): Promise<string>;
@@ -96,6 +102,14 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     locate: options.locateDeckAsset,
   });
 
+  const attachmentHandler = createAttachmentHttpHandler({
+    remote: true,
+    isAllowedRequest: (request) =>
+      isAllowedRemoteOrigin(request.headers.origin, request.headers.host),
+    resolvePrincipal: (token) => options.hostAccess.resolve(token),
+    store: options.attachments,
+  });
+
   const handleRequest = async (
     request: http.IncomingMessage,
     response: http.ServerResponse,
@@ -123,6 +137,10 @@ export function createRemoteServerFactory(options: RemoteServerFactoryOptions) {
     }
     if (isDeckAssetHttpRequest(request)) {
       await deckAssetHandler(request, response);
+      return;
+    }
+    if (isAttachmentHttpRequest(request)) {
+      await attachmentHandler(request, response);
       return;
     }
     if (isAgentToolHttpRequest(request) || !webAssetHandler) {

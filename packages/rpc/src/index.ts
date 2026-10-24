@@ -53,7 +53,6 @@ import type {
   DeleteNotePayload,
   DeleteViewPayload,
   DiagnosticsExportResult,
-  DocumentAttachment,
   EditDeckPayload,
   EditorViewRecord,
   EntityLink,
@@ -80,11 +79,8 @@ import type {
   HostIdentity,
   HostPairingRecord,
   HostRemoteAccessStatus,
-  ImageAttachment,
   ImportDeckImagePayload,
   ImportDeckPayload,
-  ImportDocumentAttachmentPayload,
-  ImportImageAttachmentPayload,
   InstalledSkillDetail,
   IssueDetail,
   IssueLabel,
@@ -493,9 +489,6 @@ export type DaemonRequestPayloadByMethod = {
   "network.proxy.set": { settings: NetworkProxySettings };
   "attention.list": undefined;
   "attention.update": UpdateSessionAttentionPayload;
-  "attachment.importImage": ImportImageAttachmentPayload;
-  "attachment.importDocument": ImportDocumentAttachmentPayload;
-  "attachment.readImageDataUrl": { filePath: string };
   "file.readText": { filePath: string };
   "file.exists": { filePath: string };
   "fs.listDirectories": { path?: string };
@@ -801,9 +794,6 @@ export type DaemonResultByMethod = {
   "network.proxy.set": NetworkProxySettings;
   "attention.list": SessionAttentionSnapshot[];
   "attention.update": SessionAttentionSnapshot;
-  "attachment.importImage": ImageAttachment;
-  "attachment.importDocument": DocumentAttachment;
-  "attachment.readImageDataUrl": string;
   "file.readText": string;
   "file.exists": boolean;
   "fs.listDirectories": HostDirectoryListing;

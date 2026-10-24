@@ -9,7 +9,7 @@ describe("desktopApi", () => {
     expect(typeof desktopApi.getWorkspaceGitDiff).toBe("function");
     expect(typeof desktopApi.getWorkspaceGitStatus).toBe("function");
     expect(typeof desktopApi.importImageAttachment).toBe("function");
-    expect(typeof desktopApi.readImageAttachmentDataUrl).toBe("function");
+    expect(typeof desktopApi.importDocumentAttachment).toBe("function");
     expect(typeof desktopApi.archiveSession).toBe("function");
     expect(typeof desktopApi.deleteSession).toBe("function");
     expect(typeof desktopApi.listProviderTemplates).toBe("function");

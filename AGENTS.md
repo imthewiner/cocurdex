@@ -10,7 +10,7 @@
 - Every client — the Electron desktop app, the web client, and the planned mobile app — must keep functional correctness, user experience, performance, and memory use at the same bar. Do not trade one for another: a change that works but buffers whole files, duplicates large payloads across processes, blocks a shared connection, or regresses first paint is not done. Move large or binary data by streaming with on-demand reads (for example HTTP `Range`), not as base64 or whole-file RPC payloads, and measure size, latency, and peak memory on realistic inputs before and after.
 - Work autonomously. Do everything you can run or verify yourself — builds, dev app restarts, daemon rebuilds, CDP attaches, CLI calls, PR checks — instead of asking the user to do it or waiting for them. Ask only for decisions that belong to the user or for actions you cannot perform, such as credentials, interactive logins, or physical devices.
 - Write only code and tests. Do not write documentation in any form: no READMEs, design docs, ADRs, glossaries, guides, code comments (`//`, block comments, JSX comments), or JSDoc. Express intent through naming, types, structure, and tests. Tool-required directives and agent instruction files (`AGENTS.md`, skills) are the only exceptions.
-- Prefer the latest stable dependencies. Use prerelease or deprecated versions only when explicitly requested or required for compatibility.
+- Prefer the latest stable dependencies. Use prerelease or deprecated versions only when explicitly requested or required for compatibility. Before adding or upgrading a dependency, read its current release from the registry (`npm view <package> version dist-tags`); do not take versions from memory, templates, scaffolders, or reference projects. When a platform pins a dependency set (an Expo SDK pins `react-native` and `react`), use the latest stable release of the platform and the versions it pins. Latest means the newest release that passes pnpm's minimum release age: widen the range so pnpm can pick it, and never add `minimumReleaseAgeExclude` entries, which pnpm and scaffolders may write on their own; revert them.
 - Verify current information, versions, API behavior, platform limits, troubleshooting, configuration, and third-party tooling against official documentation, repositories, release notes, or standards before drawing conclusions or changing code. Prefer current official sources when sources conflict and explain the choice. If verification is unavailable, state the uncertainty and limit conclusions to local evidence. Verify advice with cost, risk, or long-term maintenance implications.
 
 ## Cross-platform
@@ -80,8 +80,9 @@ Persisted user data outlives any single release. Never delete, recreate, or rewr
 After edits, run applicable checks in this order and fix reported issues:
 
 1. For new `t("...")` calls, run `pnpm --filter @cocurdex/desktop i18n:extract`, complete en-US and zh-CN translations, then run `pnpm --filter @cocurdex/desktop i18n:types` and `pnpm exec biome check --write apps/desktop/src/i18n` (biome normalizes the generated `.d.ts`; CI fails on stale output). `src/locales/*.json` and `src/i18n/*.generated.d.ts` are generated artifacts: resolve merge conflicts by rerunning this chain, never by hand-editing them.
-2. Run the affected packages' TypeScript checks, scoped to changed TypeScript source files.
-3. Run `pnpm exec biome check --write <changed-files>` for supported files. For Markdown-only changes, run `git diff --check`; no TypeScript check is needed.
+2. When a change touches `theme-preset.css` or `theme-tokens.css`, run `pnpm --filter @cocurdex/mobile generate:theme-colors`; mobile colors are generated from them and CI fails on stale output.
+3. Run the affected packages' TypeScript checks, scoped to changed TypeScript source files.
+4. Run `pnpm exec biome check --write <changed-files>` for supported files. For Markdown-only changes, run `git diff --check`; no TypeScript check is needed.
 
 Use TDD for critical pure functions and similarly stable logic. UI, feature flows, and rapidly changing behavior do not require TDD; add valuable regression coverage when behavior stabilizes.
 
@@ -119,21 +120,6 @@ Prefer measuring over guessing. When a symptom involves rendering, layout, timin
 
 Final visual and UX acceptance stays with the user. After your end-to-end check, briefly state what changed and which screen to inspect. Diagnose runtime errors, console exceptions, and reproducible functional failures yourself through code, logs, and a CDP session.
 
-## Mobile visual language
-
-The mobile app has no code yet. These rules govern its mockups now and move into `apps/mobile/AGENTS.md` when the app is scaffolded, where spacing, color, and radius become theme tokens that components must use instead of raw values. The look is professional, calm, and immersive; it shares the desktop's neutral palette and semantic tokens and covers light and dark for every screen.
-
-- Content runs edge to edge. Group rows into full-bleed lists separated by hairline dividers inset to the text column; do not wrap lists, settings, or sections in bordered cards or panels. Keep a bordered surface only when the object itself is a card: a kanban card, a slide thumbnail, a text input.
-- The accent color is a small mark only: unread dots, selected checks, links, the running mark, done status. Primary buttons, switches, and the send button use the foreground color (dark on light, light on dark); destructive buttons use a muted background with destructive text. Never fill a large surface with the accent or a tinted status color.
-- Each screen shows at most three hues; neutrals (foreground, muted, border, grays) do not count. Every hue means one thing app-wide: the teal accent is active or healthy (running, unread, done, online), blue is waiting for the user, red is failure or a destructive action, and orange is only an issue's in-progress status. Content colors (diff lines, syntax highlighting, user-chosen labels) appear only in content views such as a diff; summaries elsewhere, like `+36 −2` in a transcript, stay neutral.
-- Every transient overlay (pickers, action menus, session configuration, confirmations) is a sheet that rises from the bottom over a scrim. Do not use centered dialogs.
-- Session states that wait for the user (permission, question, plan approval, failed run) dock at the bottom, above or in place of the composer, without a scrim, so the transcript stays scrollable for context; this matches the desktop's docked cards. Once resolved, they remain in the transcript as history.
-- Spacing sits on a 4pt grid. One 16px side margin aligns text, rows, controls, and divider insets. List rows are at least 44px tall with 8px vertical padding; a section title sits 4px above its list; sections are 16px apart; a bottom action area has 12px above and 30px below, including the home indicator. Bottom sheets use a 16px radius.
-- The UI is compact, and control sizes come from two tokens only: standard controls (buttons, text fields, reply fields, search fields) are 40px tall with an 8px radius, and compact controls (inline buttons, segmented controls, icon buttons inside a field) are 32px tall with a 6px radius. Controls placed side by side share one height. Icon buttons without a visible box keep a 44px hit area. Do not set a one-off control height or radius.
-- In two-line rows, leading icons and trailing status align with the title line; only avatar-sized tiles (about 36px) center on the whole row. A list's trailing column holds the same kind of content in every row, for example time on the title line and one fixed status slot on the second line.
-- Layouts are fluid from 320px to 430px wide. Width comes only from the 16px side margin; never fix a pixel width on a container, column, or control. Mockups are drawn at 390×844, with 320×568 boards for screens that crowd. When side-by-side controls do not fit, wrap the row and give the primary action its own line at the bottom; do not shrink type or truncate a button label. Secondary row details (model, branch, counts) drop to the second line instead of competing with the title. Single-line titles truncate; a switcher button such as the computer name may shrink and truncate. Board columns are the screen width minus 90px so the next column always peeks in, and message bubbles are at most 85% wide.
-- Wider screens (tablet) change navigation, not components: they may switch to split panes or anchored popovers at the shell level, while components never branch on screen width. Tablet layouts need their own mockups before implementation.
-
 ## Code structure and imports
 
 - Keep feature-specific components, hooks, utilities, types, and fixtures together. Move shared code outward only as its reuse scope grows; cross-app reuse belongs in `packages`, not imports between apps.
@@ -143,6 +129,7 @@ The mobile app has no code yet. These rules govern its mockups now and move into
 - Avoid long lines and nested ternaries. Use named values, helpers, `if`, or lookup tables for complex branches.
 - Before editing a code file over 400 lines, prefer extracting cohesive components, hooks, utilities, or fixtures unless that reduces clarity or expands scope. Markdown files are exempt.
 - Desktop-specific rules (barrels, lazy loading, UI components, appearance tokens, React hooks, Fast Refresh) live in `apps/desktop/AGENTS.md`.
+- Mobile-specific rules (Expo, native projects, credentials, visual language) live in `apps/mobile/AGENTS.md`.
 
 ## Product knowledge and skills
 
