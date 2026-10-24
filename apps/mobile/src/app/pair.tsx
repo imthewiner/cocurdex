@@ -1,17 +1,10 @@
-import {
-  Button,
-  Column,
-  FieldGroup,
-  Text,
-  TextInput,
-  useNativeState,
-} from "@expo/ui";
+import { FieldGroup, Text, TextInput } from "@expo/ui";
 import Constants from "expo-constants";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { hosts, type PairFailure } from "@/hosts";
-import { space, useThemeColors } from "@/theme";
+import { useThemeColors } from "@/theme";
 import { BrandHost } from "@/ui";
 
 const FAILURE_MESSAGES: Record<PairFailure, string> = {
@@ -25,14 +18,13 @@ const FAILURE_MESSAGES: Record<PairFailure, string> = {
 export default function PairScreen() {
   const router = useRouter();
   const colors = useThemeColors();
-  const params = useLocalSearchParams<{ link?: string }>();
-  const initialLink = params.link ?? "";
-  const linkField = useNativeState(initialLink);
-  const [link, setLink] = useState(initialLink);
+  const [link, setLink] = useState("");
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<PairFailure | null>(null);
+  const canPair = !pairing && link.trim() !== "";
 
   const pair = async () => {
+    if (!canPair) return;
     setPairing(true);
     setFailure(null);
     const result = await hosts.pair(
@@ -48,32 +40,44 @@ export default function PairScreen() {
   };
 
   return (
-    <BrandHost style={styles.fill}>
-      <Column spacing={space.md}>
-        <FieldGroup>
-          <TextInput
-            testID="pairing-link"
-            placeholder="Pairing link"
-            autoCapitalize="none"
-            autoFocus
-            keyboardType="url"
-            value={linkField}
-            onChangeText={setLink}
-            onSubmitEditing={() => void pair()}
-          />
-        </FieldGroup>
-        {failure ? (
-          <Text textStyle={{ color: colors.destructive }}>
-            {FAILURE_MESSAGES[failure]}
-          </Text>
-        ) : null}
-        <Button
-          label={pairing ? "Pairing…" : "Pair"}
-          disabled={pairing || link.trim() === ""}
+    <>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          variant="done"
+          disabled={!canPair}
           onPress={() => void pair()}
-        />
-      </Column>
-    </BrandHost>
+        >
+          {pairing ? "Pairing…" : "Pair"}
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
+      <BrandHost style={styles.fill}>
+        <FieldGroup>
+          <FieldGroup.Section>
+            <TextInput
+              testID="pairing-link"
+              placeholder="Pairing link"
+              autoCapitalize="none"
+              autoFocus
+              keyboardType="url"
+              onChangeText={setLink}
+              onSubmitEditing={() => void pair()}
+            />
+            <FieldGroup.SectionFooter>
+              {failure ? (
+                <Text textStyle={{ color: colors.destructive }}>
+                  {FAILURE_MESSAGES[failure]}
+                </Text>
+              ) : (
+                <Text textStyle={{ color: colors.mutedForeground }}>
+                  On your computer, open Settings › Devices and create a
+                  pairing.
+                </Text>
+              )}
+            </FieldGroup.SectionFooter>
+          </FieldGroup.Section>
+        </FieldGroup>
+      </BrandHost>
+    </>
   );
 }
 

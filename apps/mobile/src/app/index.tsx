@@ -1,13 +1,11 @@
 import AddIcon from "@expo/material-symbols/add.xml";
-import { List, ListItem, Text } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
-import { Platform, StyleSheet } from "react-native";
-import { EmptyHosts, useSavedHosts } from "@/hosts";
-import { BrandHost } from "@/ui";
+import { Platform } from "react-native";
+import { EmptyHosts, HostsList, useSavedHosts } from "@/hosts";
 
 export default function ComputersScreen() {
   const router = useRouter();
-  const saved = useSavedHosts();
+  const hasHosts = useSavedHosts().length > 0;
   const openPairing = () => router.push("/pair");
 
   return (
@@ -19,26 +17,7 @@ export default function ComputersScreen() {
           onPress={openPairing}
         />
       </Stack.Toolbar>
-      {saved.length === 0 ? (
-        <EmptyHosts onPair={openPairing} />
-      ) : (
-        <BrandHost style={styles.fill}>
-          <List>
-            {saved.map((host) => (
-              <ListItem
-                key={host.hostId}
-                supportingText={new URL(host.baseUrl).host}
-              >
-                <Text>{host.name}</Text>
-              </ListItem>
-            ))}
-          </List>
-        </BrandHost>
-      )}
+      {hasHosts ? <HostsList /> : <EmptyHosts onPair={openPairing} />}
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});
