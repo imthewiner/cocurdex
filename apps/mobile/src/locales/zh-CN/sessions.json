@@ -1,0 +1,37 @@
+{
+  "age": {
+    "days_other": "{{count}}天",
+    "hours_other": "{{count}}小时",
+    "minutes_other": "{{count}}分钟",
+    "months_other": "{{count}}个月",
+    "now": "刚刚",
+    "years_other": "{{count}}年"
+  },
+  "detail": {
+    "awaitingInput": "有问题要问你",
+    "completedUnread": "已完成",
+    "connecting": "正在连接…",
+    "failed": "运行失败",
+    "monitoring": "正在后台运行",
+    "pendingApproval": "等你批准",
+    "planReady": "计划已写好，等你决定",
+    "working": "正在运行…"
+  },
+  "empty": {
+    "description": "在 {{host}} 上开始的会话会显示在这里。",
+    "title": "没有会话"
+  },
+  "noResults": "没有匹配“{{query}}”的会话",
+  "offline": "连不上 {{host}}，显示的是最后一次更新。",
+  "search": "搜索会话",
+  "status": {
+    "needsYou": "需要处理",
+    "running": "运行中",
+    "unread": "未读"
+  },
+  "unavailable": {
+    "description": "请确认电脑没有休眠，并且和手机在同一网络。",
+    "retry": "重试",
+    "title": "连不上 {{host}}"
+  }
+}

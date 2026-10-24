@@ -12,10 +12,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navigationThemes[scheme]}>
       <Stack>
-        <Stack.Screen
-          name="index"
-          options={{ title: t("screens.computers"), headerLargeTitle: true }}
-        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="pair"
           options={{

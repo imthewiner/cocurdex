@@ -1,6 +1,10 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import {
+  FIXTURE_SESSIONS,
+  FIXTURE_WORKSPACE_NAME,
+} from "@cocurdex/e2e/fixture-db/recipe";
 import type { SupportedLocale } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/shared/testing";
 import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
@@ -26,9 +30,25 @@ function readMessages(locale: SupportedLocale, namespace: string) {
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
+const SEARCHED_SESSION = "fixture-session-discounts";
+
+function fixtureSessionTitle(id: string) {
+  const session = FIXTURE_SESSIONS.find((candidate) => candidate.id === id);
+  if (!session) throw new Error(`Fixture session ${id} is missing`);
+  return session.title;
+}
+
 function flowLabels(locale: SupportedLocale) {
   const hosts = readMessages(locale, "hosts");
+  const common = readMessages(locale, "common");
+  const sessions = readMessages(locale, "sessions");
   return {
+    TAB_COMPUTERS: common.tabs.computers,
+    SEARCH_PLACEHOLDER: sessions.search,
+    WORKSPACE_NAME: FIXTURE_WORKSPACE_NAME,
+    SEARCH_QUERY: "percentage",
+    SEARCHED_SESSION_TITLE: fixtureSessionTitle(SEARCHED_SESSION),
+    OTHER_SESSION_TITLE: fixtureSessionTitle("fixture-session-checkout-bug"),
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_PAIR: hosts.empty.pair,
     PAIR_ACTION: hosts.pair.action,
@@ -122,7 +142,7 @@ async function main() {
       ? await startIosTarget(mobileDir)
       : await startAndroidTarget(mobileDir, values.avd);
   try {
-    const daemon = await startPairingDaemon(target.hostAlias);
+    const daemon = await startPairingDaemon(target.hostAlias, tempDirs);
     try {
       for (const { appearance, locale } of RUNS) {
         await target.resetState();

@@ -1,11 +1,14 @@
 import { existsSync } from "node:fs";
 import net from "node:net";
+import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
+import { installFixtureDb } from "@cocurdex/e2e/fixture-db/install";
 import {
   bundledDaemonPath,
   spawnDaemon,
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { buildHostPairingLink } from "@cocurdex/shared";
+import type { createTempDirs } from "@cocurdex/shared/testing";
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -22,11 +25,20 @@ function freePort() {
   });
 }
 
-export async function startPairingDaemon(hostAlias: string | null) {
+export async function startPairingDaemon(
+  hostAlias: string | null,
+  tempDirs: ReturnType<typeof createTempDirs>,
+) {
   if (!existsSync(bundledDaemonPath)) {
     throw new Error(`Missing ${bundledDaemonPath}; run with --build first`);
   }
-  const daemon = await spawnDaemon({ entry: "bundled" });
+  const root = tempDirs.createSync("cocu-m-");
+  const userDataPath = path.join(root, "data");
+  await installFixtureDb({
+    userDataPath,
+    workspaceParent: path.join(root, "ws"),
+  });
+  const daemon = await spawnDaemon({ entry: "bundled", userDataPath });
   try {
     const port = await freePort();
     const status = await requestDaemon(

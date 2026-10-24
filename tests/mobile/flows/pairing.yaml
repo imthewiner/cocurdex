@@ -15,7 +15,17 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: pairing-sheet
 - tapOn: ${PAIR_ACTION}
 - extendedWaitUntil:
-    visible: ${HOST_ADDRESS}
+    visible: ${WORKSPACE_NAME}
     timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
+- takeScreenshot: sessions
+- tapOn: ${SEARCH_PLACEHOLDER}
+- inputText: ${SEARCH_QUERY}
+- extendedWaitUntil:
+    visible: ${SEARCHED_SESSION_TITLE}
+    timeout: 5000
+- assertNotVisible: ${OTHER_SESSION_TITLE}
+- takeScreenshot: sessions-search
+- tapOn: ${TAB_COMPUTERS}
+- assertVisible: ${HOST_ADDRESS}
 - takeScreenshot: paired

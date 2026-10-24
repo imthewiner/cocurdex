@@ -15,6 +15,7 @@ export type {
   GenerateGitCommitMessagePayload,
   ResolvedCommitMessageModel,
 } from "./commit-message";
+export * from "./compact-relative-time";
 export * from "./context-compaction";
 export * from "./context-handoff";
 export * from "./context-transfer";
