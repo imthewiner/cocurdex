@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --import tsx run.ts",
+    "flows": "node --import tsx run.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

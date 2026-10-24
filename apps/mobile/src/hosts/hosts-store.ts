@@ -52,7 +52,25 @@ export function createHostsStore(storage: KeyValueStorage) {
       store.remove(hostId);
       publish();
     },
+    clear() {
+      store.clear();
+      publish();
+    },
   };
 }
 
 export type HostsStore = ReturnType<typeof createHostsStore>;
+
+export interface InstallMarker {
+  exists(): boolean;
+  create(): void;
+}
+
+export function forgetHostsFromPreviousInstall(
+  marker: InstallMarker,
+  hosts: Pick<HostsStore, "clear">,
+) {
+  if (marker.exists()) return;
+  hosts.clear();
+  marker.create();
+}

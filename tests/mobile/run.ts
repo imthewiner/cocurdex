@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { createTempDirs } from "@cocurdex/shared/testing";
@@ -62,6 +63,14 @@ async function runFlow(
   );
 }
 
+function flowOutputRoot(tempDirs: ReturnType<typeof createTempDirs>) {
+  const artifactsDir = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+  if (!artifactsDir) return tempDirs.createSync("cocu-mobile-");
+  const outputRoot = path.join(artifactsDir, `mobile-${platform}`);
+  mkdirSync(outputRoot, { recursive: true });
+  return outputRoot;
+}
+
 async function main() {
   await runCommand("maestro", ["--version"]).catch(() => {
     throw new Error("Maestro CLI is missing; install it and Java 17+");
@@ -72,7 +81,7 @@ async function main() {
       : buildAndroidApp(mobileDir));
   }
   const tempDirs = createTempDirs();
-  const outputRoot = tempDirs.createSync("cocu-mobile-");
+  const outputRoot = flowOutputRoot(tempDirs);
   const target =
     platform === "ios"
       ? await startIosTarget(mobileDir)

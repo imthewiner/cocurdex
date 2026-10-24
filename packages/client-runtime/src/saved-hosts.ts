@@ -76,6 +76,9 @@ export function createSavedHostStore(
     remove(hostId: string) {
       write(read().filter((saved) => saved.hostId !== hostId));
     },
+    clear() {
+      write([]);
+    },
   };
 }
 
