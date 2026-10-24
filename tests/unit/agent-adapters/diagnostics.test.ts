@@ -1,50 +1,49 @@
 import { logAdapterDiagnostic } from "@cocurdex/agent-adapters/internal/diagnostics";
-import { COCURDEX_DAEMON_DIAGNOSTIC_PREFIX } from "@cocurdex/shared";
-import { afterEach, describe, expect, it, vi } from "vitest";
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.restoreAllMocks();
-});
+import {
+  executableNameForLog,
+  processExitLogLevel,
+} from "@cocurdex/agent-adapters/internal/shared/process-tree";
+import { installLogSink, type LogRecord } from "@cocurdex/shared/node";
+import { describe, expect, it } from "vitest";
 
 describe("logAdapterDiagnostic", () => {
-  it("emits a prefixed structured payload the daemon host can parse", () => {
-    vi.stubEnv("COCURDEX_DIAGNOSTICS", "1");
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
-
-    logAdapterDiagnostic("info", "[AcpAgentAdapter] session opened", {
-      sessionId: "session-1",
+  it("writes adapter records under their own scope with sanitized details", () => {
+    const records: LogRecord[] = [];
+    const restore = installLogSink({
+      accepts: () => true,
+      write: (record) => records.push(record),
     });
+    try {
+      logAdapterDiagnostic("info", "[AcpAgentAdapter] session opened", {
+        sessionId: "session-1",
+        prompt: "do not log me",
+      });
+    } finally {
+      restore();
+    }
 
-    expect(info).toHaveBeenCalledWith(
-      `${COCURDEX_DAEMON_DIAGNOSTIC_PREFIX}${JSON.stringify({
-        details: { sessionId: "session-1" },
+    expect(records).toEqual([
+      expect.objectContaining({
+        details: { prompt: "[redacted]", sessionId: "session-1" },
         event: "[AcpAgentAdapter] session opened",
-        level: "info",
-      })}`,
-    );
+        scope: "agent-adapters",
+      }),
+    ]);
+  });
+});
+
+describe("process lifecycle logging", () => {
+  it("names executables without their directory or Windows shim extension", () => {
+    expect(executableNameForLog("/home/dev/.local/bin/claude")).toBe("claude");
+    expect(
+      executableNameForLog("C:\\Users\\dev\\AppData\\npm\\codex.cmd"),
+    ).toBe("codex");
+    expect(executableNameForLog("npx")).toBe("npx");
   });
 
-  it("emits info-level diagnostics without the opt-in flag", () => {
-    vi.stubEnv("COCURDEX_DIAGNOSTICS", "0");
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
-
-    logAdapterDiagnostic("info", "adapter.event");
-
-    expect(info).toHaveBeenCalledWith(
-      `${COCURDEX_DAEMON_DIAGNOSTIC_PREFIX}${JSON.stringify({
-        event: "adapter.event",
-        level: "info",
-      })}`,
-    );
-  });
-
-  it("keeps debug-level diagnostics gated behind the opt-in flag", () => {
-    vi.stubEnv("COCURDEX_DIAGNOSTICS", "0");
-    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
-
-    logAdapterDiagnostic("debug", "adapter.event");
-
-    expect(debug).not.toHaveBeenCalled();
+  it("warns only for a non-zero exit that no signal caused", () => {
+    expect(processExitLogLevel(0, null)).toBe("info");
+    expect(processExitLogLevel(null, "SIGTERM")).toBe("info");
+    expect(processExitLogLevel(1, null)).toBe("warn");
   });
 });

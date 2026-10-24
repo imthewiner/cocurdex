@@ -3,7 +3,7 @@ import {
   buildSessionLogFileName,
   isExpired,
   sanitizeSessionId,
-} from "@desktop/electron/logging/log-paths";
+} from "@cocurdex/shared/node";
 import { describe, expect, it } from "vitest";
 
 describe("log-paths", () => {

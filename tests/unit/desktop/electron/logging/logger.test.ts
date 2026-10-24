@@ -1,21 +1,28 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
 const writtenEntries: Record<string, unknown>[] = [];
+const transportFailure = { active: false };
 
 vi.mock("electron-log/main.js", () => {
   const scoped = {
     debug: (entry: Record<string, unknown>) => writtenEntries.push(entry),
-    error: (entry: Record<string, unknown>) => writtenEntries.push(entry),
+    error: (entry: Record<string, unknown>) => {
+      writtenEntries.push(entry);
+      if (transportFailure.active) {
+        console.error(new Error("Render frame was disposed"));
+      }
+    },
     info: (entry: Record<string, unknown>) => writtenEntries.push(entry),
     warn: (entry: Record<string, unknown>) => writtenEntries.push(entry),
   };
   return {
     default: {
       scope: () => scoped,
-      transports: { console: {}, file: {} },
+      transports: { console: {}, file: {}, ipc: {} },
     },
   };
 });
@@ -24,28 +31,23 @@ import { readDiagnosticsPreferences } from "@desktop/electron/logging/diagnostic
 import {
   configureLogging,
   createUpstreamLogger,
-  exportDiagnostics,
   isDiagnosticsVerbose,
   setDiagnosticsVerbose,
   shutdownLogging,
 } from "@desktop/electron/logging/logger";
 
-const tempRoots: string[] = [];
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
 afterEach(async () => {
   await shutdownLogging();
   delete process.env.COCURDEX_DIAGNOSTICS;
-  for (const root of tempRoots.splice(0)) {
-    await fs.rm(root, { recursive: true, force: true });
-  }
 });
 
 async function makeLoggingContext() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cocurdex-logger-"));
-  tempRoots.push(root);
+  const root = await tempDirs.create("cocurdex-logger-");
   const logDirectory = path.join(root, "logs");
   const sessionLogDirectory = path.join(logDirectory, "sessions");
-  const diagnosticsDirectory = path.join(root, "diagnostics");
   const diagnosticsPreferencesPath = path.join(
     root,
     "diagnostics-preferences.json",
@@ -53,14 +55,32 @@ async function makeLoggingContext() {
   await fs.mkdir(sessionLogDirectory, { recursive: true });
   configureLogging({
     appVersion: "1.0.0-test",
-    diagnosticsDirectory,
     diagnosticsPreferencesPath,
     logDirectory,
     sessionLogDirectory,
     verbose: false,
   });
-  return { diagnosticsDirectory, diagnosticsPreferencesPath, logDirectory };
+  return { diagnosticsPreferencesPath };
 }
+
+describe("console capture", () => {
+  it("does not feed console output raised while writing a log back into the log", async () => {
+    await makeLoggingContext();
+    writtenEntries.length = 0;
+    transportFailure.active = true;
+    const stderr = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+    try {
+      console.error("first failure");
+    } finally {
+      transportFailure.active = false;
+      stderr.mockRestore();
+    }
+
+    expect(
+      writtenEntries.filter((entry) => entry.event === "console.error"),
+    ).toHaveLength(1);
+  });
+});
 
 describe("createUpstreamLogger", () => {
   it("forwards third-party messages through log sanitization", () => {
@@ -103,59 +123,5 @@ describe("setDiagnosticsVerbose", () => {
     expect(readDiagnosticsPreferences(diagnosticsPreferencesPath).verbose).toBe(
       false,
     );
-  });
-});
-
-describe("exportDiagnostics", () => {
-  it("re-sanitizes legacy log content and writes a summary", async () => {
-    const { logDirectory } = await makeLoggingContext();
-    const home = os.homedir();
-    await fs.writeFile(
-      path.join(logDirectory, "main-legacy.log"),
-      [
-        `stale line ${home}/secret-project token sk-abcdefghijklmnop1234`,
-        JSON.stringify({
-          event: "app.warning",
-          level: "warn",
-          scope: "app",
-          timestamp: "2026-01-01T00:00:00.000Z",
-        }),
-        "",
-      ].join("\n"),
-    );
-
-    const result = await exportDiagnostics({
-      crashReports: [{ id: "dump-1", modifiedAt: "2026-01-01T00:00:00.000Z" }],
-    });
-
-    const exportedLog = await fs.readFile(
-      path.join(result.outputPath, "main-legacy.log"),
-      "utf8",
-    );
-    expect(exportedLog).not.toContain(home);
-    expect(exportedLog).not.toContain("sk-abcdefghijklmnop1234");
-    expect(exportedLog).toContain("app.warning");
-
-    const metadata = JSON.parse(
-      await fs.readFile(path.join(result.outputPath, "metadata.json"), "utf8"),
-    ) as Record<string, unknown>;
-    expect(metadata.crashReports).toEqual([
-      { id: "dump-1", modifiedAt: "2026-01-01T00:00:00.000Z" },
-    ]);
-    expect(metadata.appVersion).toBe("1.0.0-test");
-    expect(typeof metadata.uptimeSeconds).toBe("number");
-
-    const summary = JSON.parse(
-      await fs.readFile(path.join(result.outputPath, "summary.json"), "utf8"),
-    ) as {
-      eventCounts: { event: string; count: number }[];
-      levelCounts: Record<string, number>;
-      recentProblems: { event: string }[];
-    };
-    expect(summary.levelCounts.warn).toBe(1);
-    expect(summary.recentProblems[0]?.event).toBe("app.warning");
-    expect(
-      summary.eventCounts.some((entry) => entry.event === "app.warning"),
-    ).toBe(true);
   });
 });

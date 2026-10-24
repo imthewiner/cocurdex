@@ -3,17 +3,59 @@ import {
   execFile,
   type SpawnOptions,
 } from "node:child_process";
+import path from "node:path";
+import { performance } from "node:perf_hooks";
 import { promisify } from "node:util";
 import crossSpawn from "cross-spawn";
+import { logAdapterDiagnostic } from "../diagnostics";
 
 const execFileAsync = promisify(execFile);
+
+export function executableNameForLog(command: string) {
+  const base = path.win32.basename(path.posix.basename(command));
+  return base.replace(/\.(?:exe|cmd|bat|com)$/i, "") || "[unknown]";
+}
+
+export function processExitLogLevel(
+  code: number | null,
+  signal: NodeJS.Signals | null,
+) {
+  return code !== null && code !== 0 && signal === null ? "warn" : "info";
+}
+
+function observeProcessLifecycle(child: ChildProcess, command: string) {
+  const executable = executableNameForLog(command);
+  const startedAt = performance.now();
+  if (child.pid === undefined) {
+    logAdapterDiagnostic("warn", "process.spawnFailed", { executable });
+    return;
+  }
+  logAdapterDiagnostic("debug", "process.spawned", {
+    executable,
+    pid: child.pid,
+  });
+  child.once("exit", (code, signal) => {
+    logAdapterDiagnostic(processExitLogLevel(code, signal), "process.exited", {
+      code,
+      durationMs: Math.round(performance.now() - startedAt),
+      executable,
+      pid: child.pid,
+      signal,
+    });
+  });
+}
 
 export function spawnCommand(
   command: string,
   args: readonly string[],
   options: SpawnOptions,
 ): ChildProcess {
-  return crossSpawn(command, [...args], { windowsHide: true, ...options });
+  const child = crossSpawn(command, [...args], {
+    windowsHide: true,
+    ...options,
+  });
+  observeProcessLifecycle(child, command);
+  return child;
 }
 
 export function collectDescendantPids(processTable: string, rootPid: number) {

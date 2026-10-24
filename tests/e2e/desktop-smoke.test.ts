@@ -143,6 +143,15 @@ describe("desktop app boot", () => {
     expect(status.pid).toBe(metadata.pid);
     expect(status.startedAt).toBe(metadata.startedAt);
 
+    const daemonLogDirectory = path.join(userDataPath, "logs", "daemon");
+    const health = await requestDaemon("daemon.health", { metadata });
+    expect(health.logs.directory).toBe(daemonLogDirectory);
+    expect(
+      readFileSync(path.join(daemonLogDirectory, "daemon.log"), "utf8"),
+    ).toContain('"event":"daemon.started"');
+    const desktopLog = path.join(userDataPath, "logs", "desktop", "main.log");
+    await waitFor(() => existsSync(desktopLog), 10_000);
+
     const title = "Renderer WebSocket note ".repeat(4);
     const window = app.windows().find((candidate) => !candidate.isClosed());
     if (!window) throw new Error("No open desktop window");

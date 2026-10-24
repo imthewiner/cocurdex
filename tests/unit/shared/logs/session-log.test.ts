@@ -1,27 +1,23 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import {
-  closeAllSessionLogs,
-  configureSessionLogs,
-  pruneSessionLogs,
-  writeSessionLog,
-} from "@desktop/electron/logging/session-log";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+  createSessionLogWriter,
+  type SessionLogWriter,
+} from "@cocurdex/shared/node";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
-async function flush() {
-  // Allow the write stream to drain to disk before assertions.
-  await new Promise((resolve) => setTimeout(resolve, 20));
-}
-
-describe("session-log", () => {
+describe("createSessionLogWriter", () => {
   let directory = "";
+  let writer: SessionLogWriter;
 
   beforeEach(async () => {
-    directory = await fs.mkdtemp(path.join(os.tmpdir(), "cocurdex-session-"));
-    configureSessionLogs({
+    directory = await tempDirs.create("cocurdex-session-");
+    writer = createSessionLogWriter({
       directory,
       retentionDays: 7,
       maxFiles: 100,
@@ -30,20 +26,17 @@ describe("session-log", () => {
   });
 
   afterEach(async () => {
-    await closeAllSessionLogs();
-    await fs.rm(directory, { recursive: true, force: true });
+    await writer.closeAll();
   });
 
   it("writes entries for a session into a single timestamped file", async () => {
-    writeSessionLog("session-1", JSON.stringify({ event: "first" }));
-    writeSessionLog("session-1", JSON.stringify({ event: "second" }));
-    await flush();
-    await closeAllSessionLogs();
+    writer.write("session-1", JSON.stringify({ event: "first" }));
+    writer.write("session-1", JSON.stringify({ event: "second" }));
+    await writer.closeAll();
 
     const entries = await fs.readdir(directory);
     const sessionFiles = entries.filter((name) => name.includes("session-1"));
     expect(sessionFiles).toHaveLength(1);
-
     const content = await fs.readFile(
       path.join(directory, sessionFiles[0]),
       "utf8",
@@ -54,10 +47,9 @@ describe("session-log", () => {
   });
 
   it("writes separate files for different sessions", async () => {
-    writeSessionLog("session-a", "a");
-    writeSessionLog("session-b", "b");
-    await flush();
-    await closeAllSessionLogs();
+    writer.write("session-a", "a");
+    writer.write("session-b", "b");
+    await writer.closeAll();
 
     const entries = await fs.readdir(directory);
     expect(entries.filter((n) => n.includes("session-a"))).toHaveLength(1);
@@ -70,8 +62,6 @@ describe("session-log", () => {
     const staleTime = new Date(Date.now() - 30 * DAY_MS);
     await fs.utimes(stalePath, staleTime, staleTime);
 
-    const removed = await pruneSessionLogs();
-
-    expect(removed).toContain(stalePath);
+    expect(await writer.prune()).toContain(stalePath);
   });
 });

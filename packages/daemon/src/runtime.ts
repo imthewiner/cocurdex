@@ -23,6 +23,7 @@ import {
   type AgentSlashCommand,
   type AgentUsageRecord,
   agentToolNameFromPermissionTitle,
+  errorKindForLog,
   hashLogValue,
   hostForLog,
   isAssistantSessionId,
@@ -33,6 +34,7 @@ import {
   workspacePathsEqual,
 } from "@cocurdex/shared";
 import type { AgentToolSessionBinding } from "./agent-tools";
+import { logDaemonDiagnostic } from "./diagnostics";
 import { createEventBroadcastCoalescer } from "./event-broadcast-coalescer";
 
 export interface RuntimePersistence {
@@ -152,6 +154,10 @@ export class AgentRuntimeManager {
     | ((agentId: AgentId) => Promise<AgentMcpServer[]>)
     | null;
 
+  get liveSessionCount() {
+    return this.sessionRuntimes.size;
+  }
+
   constructor(options: AgentRuntimeManagerOptions) {
     this.broadcastCoalescer = createEventBroadcastCoalescer(
       options.broadcastAgentEvent,
@@ -218,7 +224,11 @@ export class AgentRuntimeManager {
     this.persistQueue = persistence.then(
       () => undefined,
       (error) => {
-        console.error("[AgentRuntimeManager] Failed to persist event", error);
+        logDaemonDiagnostic("error", "runtime.eventPersistFailed", {
+          error,
+          eventType: event.type,
+          sessionId: event.sessionId,
+        });
       },
     );
     void persistence.then(
@@ -604,7 +614,7 @@ export class AgentRuntimeManager {
       promptMessageId: payload.messageId ?? null,
       usage: null,
     };
-    console.info("[AgentRuntimeManager] send message payload", {
+    logDaemonDiagnostic("info", "runtime.turnStarted", {
       agentType: payload.session.agentType,
       attachments:
         payload.attachments?.map((attachment) =>
@@ -645,6 +655,11 @@ export class AgentRuntimeManager {
         delivery: payload.delivery,
       });
 
+      logDaemonDiagnostic("info", "runtime.turnFinished", {
+        cancelled: turnTracker.cancelled,
+        durationMs: Math.round(performance.now() - startedAt),
+        sessionId: payload.session.id,
+      });
       if (!turnTracker.cancelled) {
         if (message.role === "assistant") turnTracker.messageId ??= message.id;
         this.emitAgentEvent({
@@ -658,6 +673,15 @@ export class AgentRuntimeManager {
       }
 
       return message;
+    } catch (error) {
+      logDaemonDiagnostic("warn", "runtime.turnFailed", {
+        agentType: payload.session.agentType,
+        durationMs: Math.round(performance.now() - startedAt),
+        error,
+        errorKind: errorKindForLog(error),
+        sessionId: payload.session.id,
+      });
+      throw error;
     } finally {
       if (this.activeTurnTrackers.get(payload.session.id) === turnTracker) {
         this.activeTurnTrackers.delete(payload.session.id);

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
+import { getDesktopLogDirectory } from "@cocurdex/daemon/paths";
 import type { BrowserAnnotation } from "@cocurdex/shared";
 import { hashLogValue, hostForLog } from "@cocurdex/shared";
 import {
@@ -492,10 +493,9 @@ app
     }
 
     const userDataPath = app.getPath("userData");
-    const logsPath = app.getPath("logs");
+    const logsPath = getDesktopLogDirectory(userDataPath);
     configureLogging({
       appVersion: app.getVersion(),
-      diagnosticsDirectory: path.join(userDataPath, "diagnostics"),
       diagnosticsPreferencesPath: path.join(
         userDataPath,
         "diagnostics-preferences.json",

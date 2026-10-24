@@ -62,6 +62,22 @@ export function getDaemonMetadataPath(userDataPath = getDefaultUserDataPath()) {
   return path.join(userDataPath, DAEMON_METADATA_FILENAME);
 }
 
+export function getDaemonLogDirectory(userDataPath = getDefaultUserDataPath()) {
+  return path.join(userDataPath, "logs", "daemon");
+}
+
+export function getDesktopLogDirectory(
+  userDataPath = getDefaultUserDataPath(),
+) {
+  return path.join(userDataPath, "logs", "desktop");
+}
+
+export function getDiagnosticsDirectory(
+  userDataPath = getDefaultUserDataPath(),
+) {
+  return path.join(userDataPath, "diagnostics");
+}
+
 export function getDatabasePath(userDataPath = getDefaultUserDataPath()) {
   return path.join(userDataPath, DATABASE_FILENAME);
 }

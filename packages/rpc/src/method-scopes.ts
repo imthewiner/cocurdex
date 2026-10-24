@@ -3,6 +3,7 @@ import type { DaemonMethod } from "./index.ts";
 
 export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "daemon.status": "read",
+  "daemon.health": "read",
   "app.bootstrap": "read",
   "sync.pull": "read",
   "agent.list": "read",
@@ -246,6 +247,8 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "mcp.logout": "credentials",
   "mcp.import.scan": "credentials",
   "daemon.shutdownIfIdle": "host.admin",
+  "diagnostics.export": "host.admin",
+  "diagnostics.logLevel.set": "host.admin",
   "system.openDirectory": "host.admin",
   "system.revealPath": "host.admin",
   "acpRegistry.install": "host.admin",
