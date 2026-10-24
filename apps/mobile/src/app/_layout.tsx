@@ -1,6 +1,8 @@
 import { Stack, ThemeProvider } from "expo-router";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import { navigationThemes } from "@/theme";
+
+const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 
 export default function RootLayout() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
@@ -15,7 +17,7 @@ export default function RootLayout() {
           name="pair"
           options={{
             title: "Pair a Computer",
-            presentation: "formSheet",
+            presentation: PAIR_PRESENTATION,
             sheetAllowedDetents: [0.6, 1],
             sheetGrabberVisible: true,
           }}

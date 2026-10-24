@@ -288,7 +288,7 @@ jobs:
           tools="${ANDROID_HOME}/cmdline-tools/latest/bin"
           yes | "${tools}/sdkmanager" --licenses > /dev/null
           "${tools}/sdkmanager" emulator platform-tools "${ANDROID_SYSTEM_IMAGE}"
-          echo no | "${tools}/avdmanager" create avd --force --name cocurdex-ci --package "${ANDROID_SYSTEM_IMAGE}" --device pixel_9
+          echo no | "${tools}/avdmanager" create avd --force --name cocurdex-ci --package "${ANDROID_SYSTEM_IMAGE}" --device pixel_6
       - name: Run mobile flows
         run: pnpm --filter @cocurdex/mobile-e2e flows -- --platform ${{ matrix.platform }} --build ${{ matrix.platform == 'android' && '--avd cocurdex-ci' || '' }}
         env:

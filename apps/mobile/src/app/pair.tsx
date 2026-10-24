@@ -1,9 +1,9 @@
 import { FieldGroup, Text, TextInput } from "@expo/ui";
 import Constants from "expo-constants";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
-import { hosts, type PairFailure } from "@/hosts";
+import { hosts, type PairFailure, PairToolbar } from "@/hosts";
 import { useThemeColors } from "@/theme";
 import { BrandHost } from "@/ui";
 
@@ -41,15 +41,11 @@ export default function PairScreen() {
 
   return (
     <>
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          variant="done"
-          disabled={!canPair}
-          onPress={() => void pair()}
-        >
-          {pairing ? "Pairing…" : "Pair"}
-        </Stack.Toolbar.Button>
-      </Stack.Toolbar>
+      <PairToolbar
+        label={pairing ? "Pairing…" : "Pair"}
+        disabled={!canPair}
+        onPair={() => void pair()}
+      />
       <BrandHost style={styles.fill}>
         <FieldGroup>
           <FieldGroup.Section>
