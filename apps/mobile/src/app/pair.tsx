@@ -62,6 +62,7 @@ export default function PairScreen() {
               testID="pairing-link"
               placeholder={t("pair.linkPlaceholder")}
               autoCapitalize="none"
+              autoCorrect={false}
               autoFocus
               keyboardType="url"
               onChangeText={setLink}
