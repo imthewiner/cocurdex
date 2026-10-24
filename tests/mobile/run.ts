@@ -100,6 +100,10 @@ async function main() {
     throw new Error("Maestro CLI is missing; install it and Java 17+");
   });
   if (values.build) {
+    await runCommand("pnpm", ["--filter", "@cocurdex/desktop", "prepare:cli"], {
+      cwd: repoRoot,
+      inherit: true,
+    });
     await (platform === "ios"
       ? buildIosApp(mobileDir)
       : buildAndroidApp(mobileDir));

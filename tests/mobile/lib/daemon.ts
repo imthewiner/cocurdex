@@ -1,6 +1,10 @@
+import { existsSync } from "node:fs";
 import net from "node:net";
 import { requestDaemon } from "@cocurdex/daemon/client";
-import { spawnDaemon } from "@cocurdex/e2e/helpers/daemon-process";
+import {
+  bundledDaemonPath,
+  spawnDaemon,
+} from "@cocurdex/e2e/helpers/daemon-process";
 import { buildHostPairingLink } from "@cocurdex/shared";
 
 function freePort() {
@@ -19,7 +23,10 @@ function freePort() {
 }
 
 export async function startPairingDaemon(hostAlias: string | null) {
-  const daemon = await spawnDaemon();
+  if (!existsSync(bundledDaemonPath)) {
+    throw new Error(`Missing ${bundledDaemonPath}; run with --build first`);
+  }
+  const daemon = await spawnDaemon({ entry: "bundled" });
   try {
     const port = await freePort();
     const status = await requestDaemon(

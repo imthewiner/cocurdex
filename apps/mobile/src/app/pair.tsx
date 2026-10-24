@@ -1,12 +1,12 @@
-import { FieldGroup, Text, TextInput } from "@expo/ui";
+import { FieldGroup, Text, TextInput, type TextInputRef } from "@expo/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { hosts, type PairFailure, PairToolbar } from "@/hosts";
 import { useThemeColors } from "@/theme";
-import { BrandHost } from "@/ui";
+import { BrandHost, keyboardHidden } from "@/ui";
 
 function useFailureMessages(): Record<PairFailure, string> {
   const { t } = useTranslation("hosts");
@@ -23,6 +23,7 @@ export default function PairScreen() {
   const failureMessages = useFailureMessages();
   const router = useRouter();
   const colors = useThemeColors();
+  const linkInput = useRef<TextInputRef>(null);
   const [link, setLink] = useState("");
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<PairFailure | null>(null);
@@ -30,6 +31,7 @@ export default function PairScreen() {
 
   const pair = async () => {
     if (!canPair) return;
+    linkInput.current?.blur();
     setPairing(true);
     setFailure(null);
     const result = await hosts.pair(
@@ -41,6 +43,7 @@ export default function PairScreen() {
       setFailure(result.failure);
       return;
     }
+    await keyboardHidden();
     router.back();
   };
 
@@ -55,6 +58,7 @@ export default function PairScreen() {
         <FieldGroup>
           <FieldGroup.Section>
             <TextInput
+              ref={linkInput}
               testID="pairing-link"
               placeholder={t("pair.linkPlaceholder")}
               autoCapitalize="none"

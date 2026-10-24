@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { killProcessTree, spawnCommand } from "@cocurdex/agent-adapters";
-import { runCommand, waitUntil } from "./command";
+import { FatalWaitError, runCommand, waitUntil } from "./command";
 import type { MobileTarget } from "./target";
 
 const EMULATOR_HOST_ALIAS = "10.0.2.2";
@@ -10,6 +10,11 @@ const APP_ID = "dev.cocurdex.mobile";
 const BOOT_TIMEOUT_MS = 240_000;
 const FIRST_CONSOLE_PORT = 5554;
 const LAST_CONSOLE_PORT = 5682;
+const EMULATOR_OUTPUT_LIMIT = 16_384;
+
+function emulatorGpuMode(platform: NodeJS.Platform) {
+  return platform === "linux" ? "swiftshader_indirect" : "auto";
+}
 
 export function defaultAndroidSdk(platform: NodeJS.Platform, home: string) {
   if (platform === "darwin") return path.join(home, "Library/Android/sdk");
@@ -99,9 +104,19 @@ export async function startAndroidTarget(
       "-no-audio",
       "-no-boot-anim",
       "-no-snapshot-save",
+      "-gpu",
+      emulatorGpuMode(process.platform),
     ],
-    { stdio: "ignore" },
+    { stdio: ["ignore", "pipe", "pipe"] },
   );
+  let emulatorOutput = "";
+  const keepOutput = (chunk: Buffer) => {
+    emulatorOutput = (emulatorOutput + chunk.toString("utf8")).slice(
+      -EMULATOR_OUTPUT_LIMIT,
+    );
+  };
+  emulator.stdout?.on("data", keepOutput);
+  emulator.stderr?.on("data", keepOutput);
   const shell = (...args: string[]) =>
     runCommand(adb(sdk), ["-s", serial, "shell", ...args]);
   const stop = async () => {
@@ -112,10 +127,18 @@ export async function startAndroidTarget(
   };
   try {
     await waitUntil(
-      async () => (await shell("getprop", "sys.boot_completed")).trim() === "1",
+      async () => {
+        if (emulator.exitCode !== null) {
+          throw new EmulatorExitedError(emulator.exitCode);
+        }
+        return (await shell("getprop", "sys.boot_completed")).trim() === "1";
+      },
       BOOT_TIMEOUT_MS,
       `${serial} to boot`,
-    );
+    ).catch((error: unknown) => {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new Error(`${reason}\nEmulator output:\n${emulatorOutput}`);
+    });
     await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
     return {
       deviceId: serial,
@@ -146,5 +169,11 @@ export async function startAndroidTarget(
   } catch (error) {
     await stop();
     throw error;
+  }
+}
+
+class EmulatorExitedError extends FatalWaitError {
+  constructor(code: number) {
+    super(`Emulator exited with ${code} before booting`);
   }
 }

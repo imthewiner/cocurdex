@@ -1,10 +1,11 @@
 appId: dev.cocurdex.mobile
 ---
-- launchApp:
-    clearState: true
+- launchApp
 - assertVisible: ${EMPTY_TITLE}
 - takeScreenshot: empty
-- tapOn: ${EMPTY_PAIR}
+- tapOn:
+    text: ${EMPTY_PAIR}
+    retryTapIfNoChange: true
 - tapOn:
     text: ${SYSTEM_CONTINUE}
     optional: true
