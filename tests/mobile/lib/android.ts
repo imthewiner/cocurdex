@@ -6,6 +6,7 @@ import { runCommand, waitUntil } from "./command";
 import type { MobileTarget } from "./target";
 
 const EMULATOR_HOST_ALIAS = "10.0.2.2";
+const APP_ID = "dev.cocurdex.mobile";
 const BOOT_TIMEOUT_MS = 240_000;
 const FIRST_CONSOLE_PORT = 5554;
 const LAST_CONSOLE_PORT = 5682;
@@ -127,8 +128,18 @@ export async function startAndroidTarget(
           appearance === "dark" ? "yes" : "no",
         );
       },
+      setLocale: async (locale) => {
+        await shell(
+          "cmd",
+          "locale",
+          "set-app-locales",
+          APP_ID,
+          "--locales",
+          locale,
+        );
+      },
       resetState: async () => {
-        await shell("pm", "clear", "dev.cocurdex.mobile");
+        await shell("pm", "clear", APP_ID);
       },
       stop,
     };

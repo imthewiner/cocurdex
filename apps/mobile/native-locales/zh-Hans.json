@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSLocalNetworkUsageDescription": "Cocurdex 通过局域网连接你配对的电脑。"
+  }
+}

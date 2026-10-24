@@ -134,15 +134,20 @@ jobs:
           pnpm exec expo export --platform android --output-dir "${RUNNER_TEMP}/mobile-android"
       - name: Check desktop translations
         run: pnpm --filter @cocurdex/desktop i18n:lint
+      - name: Check mobile translations
+        run: pnpm --filter @cocurdex/mobile i18n:lint
       - name: Check i18n generated files are up to date
         run: |
-          pnpm --filter @cocurdex/desktop i18n:extract
-          pnpm --filter @cocurdex/desktop i18n:types
-          pnpm exec biome check --write apps/desktop/src/locales apps/desktop/src/i18n
-          if [[ -n "$(git status --porcelain -- apps/desktop/src/locales apps/desktop/src/i18n)" ]]; then
-            git status --short -- apps/desktop/src/locales apps/desktop/src/i18n
-            git diff -- apps/desktop/src/locales apps/desktop/src/i18n | head -200
-            echo "::error::i18n generated files are stale. Run 'pnpm --filter @cocurdex/desktop i18n:extract' and 'i18n:types', then 'pnpm exec biome check --write apps/desktop/src/locales apps/desktop/src/i18n', and commit the result."
+          for app in desktop mobile; do
+            pnpm --filter "@cocurdex/${app}" i18n:extract
+            pnpm --filter "@cocurdex/${app}" i18n:types
+          done
+          paths=(apps/desktop/src/locales apps/desktop/src/i18n apps/mobile/src/locales apps/mobile/src/i18n)
+          pnpm exec biome check --write "${paths[@]}"
+          if [[ -n "$(git status --porcelain -- "${paths[@]}")" ]]; then
+            git status --short -- "${paths[@]}"
+            git diff -- "${paths[@]}" | head -200
+            echo "::error::i18n generated files are stale. Run 'pnpm --filter @cocurdex/<app> i18n:extract' and 'i18n:types' for desktop and mobile, then 'pnpm exec biome check --write' on their src/locales and src/i18n, and commit the result."
             exit 1
           fi
       - name: Check desktop dependency cycles

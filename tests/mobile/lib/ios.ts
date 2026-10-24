@@ -1,9 +1,18 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import type { SupportedLocale } from "@cocurdex/shared";
 import { runCommand } from "./command";
 import type { MobileTarget } from "./target";
 
 const PREFERRED_DEVICE_TYPE = "iPhone 16 Pro";
+
+const IOS_LANGUAGES: Record<
+  SupportedLocale,
+  { language: string; locale: string }
+> = {
+  "en-US": { language: "en-US", locale: "en_US" },
+  "zh-CN": { language: "zh-Hans-CN", locale: "zh_CN" },
+};
 
 interface SimctlRuntime {
   identifier: string;
@@ -111,6 +120,29 @@ export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
           udid,
           "appearance",
           appearance,
+        ]);
+      },
+      setLocale: async (locale) => {
+        const { language, locale: region } = IOS_LANGUAGES[locale];
+        const defaults = [
+          "simctl",
+          "spawn",
+          udid,
+          "defaults",
+          "write",
+          "Apple Global Domain",
+        ];
+        await runCommand("xcrun", [
+          ...defaults,
+          "AppleLanguages",
+          "-array",
+          language,
+        ]);
+        await runCommand("xcrun", [
+          ...defaults,
+          "AppleLocale",
+          "-string",
+          region,
         ]);
       },
       resetState: async () => {

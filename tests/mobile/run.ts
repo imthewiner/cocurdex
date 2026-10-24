@@ -1,6 +1,7 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import type { SupportedLocale } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/shared/testing";
 import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
 import { runCommand } from "./lib/command";
@@ -11,7 +12,30 @@ import type { Appearance, MobileTarget } from "./lib/target";
 const repoRoot = path.resolve(import.meta.dirname, "../..");
 const mobileDir = path.join(repoRoot, "apps/mobile");
 const flowsDir = path.join(import.meta.dirname, "flows");
-const APPEARANCES: Appearance[] = ["light", "dark"];
+const RUNS: { appearance: Appearance; locale: SupportedLocale }[] = [
+  { appearance: "light", locale: "en-US" },
+  { appearance: "dark", locale: "zh-CN" },
+];
+const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
+  "en-US": "Continue",
+  "zh-CN": "继续",
+};
+
+function readMessages(locale: SupportedLocale, namespace: string) {
+  const file = path.join(mobileDir, "src/locales", locale, `${namespace}.json`);
+  return JSON.parse(readFileSync(file, "utf8"));
+}
+
+function flowLabels(locale: SupportedLocale) {
+  const hosts = readMessages(locale, "hosts");
+  return {
+    EMPTY_TITLE: hosts.empty.title,
+    EMPTY_PAIR: hosts.empty.pair,
+    PAIR_ACTION: hosts.pair.action,
+    LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
+    SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
+  };
+}
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== "--"),
@@ -89,23 +113,25 @@ async function main() {
   try {
     const daemon = await startPairingDaemon(target.hostAlias);
     try {
-      for (const appearance of APPEARANCES) {
+      for (const { appearance, locale } of RUNS) {
         await target.resetState();
         await target.setAppearance(appearance);
+        await target.setLocale(locale);
         await runFlow(
           target,
           "pairing.yaml",
           {
+            ...flowLabels(locale),
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
           },
-          path.join(outputRoot, appearance),
+          path.join(outputRoot, `${appearance}-${locale}`),
         );
       }
       const devices = await daemon.pairedDevices();
-      if (devices.length !== APPEARANCES.length) {
+      if (devices.length !== RUNS.length) {
         throw new Error(
-          `Expected ${APPEARANCES.length} paired devices, daemon has ${devices.length}`,
+          `Expected ${RUNS.length} paired devices, daemon has ${devices.length}`,
         );
       }
     } finally {
