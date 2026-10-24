@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { killProcessTree } from "@cocurdex/agent-adapters";
@@ -8,6 +8,7 @@ import {
   readDaemonMetadata,
   requestDaemon,
 } from "@cocurdex/daemon/client";
+import { getDaemonLogDirectory } from "@cocurdex/daemon/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
 import { createTempDirs } from "@cocurdex/shared/testing";
 
@@ -35,6 +36,13 @@ export const bundledDaemonPath = path.join(
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 20_000;
+const LOG_TAIL_LINES = 40;
+
+async function daemonLogTail(userDataPath: string) {
+  const logPath = path.join(getDaemonLogDirectory(userDataPath), "daemon.log");
+  const text = await readFile(logPath, "utf8").catch(() => "(no daemon log)");
+  return text.split(/\r?\n/).slice(-LOG_TAIL_LINES).join("\n");
+}
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -177,6 +185,7 @@ export async function spawnDaemon(
       await killProcessTree(child.pid);
     }
     await exit;
+    const logTail = await daemonLogTail(userDataPath);
     if (!options.userDataPath) {
       await rm(userDataPath, {
         recursive: true,
@@ -188,7 +197,7 @@ export async function spawnDaemon(
     const cause =
       lastError instanceof Error ? lastError.message : String(lastError);
     throw new Error(
-      `Cocurdex daemon did not become ready.\nstderr:\n${stderr()}\nlast error: ${cause}`,
+      `Cocurdex daemon did not become ready in ${STARTUP_TIMEOUT_MS} ms.\nstderr:\n${stderr()}\nlast error: ${cause}\ndaemon log:\n${logTail}`,
     );
   }
 
