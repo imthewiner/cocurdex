@@ -1,2 +1,2 @@
 export { SessionList } from "./session-list";
-export { sessionsStore } from "./sessions";
+export { sessionsStore, useHostSessions } from "./sessions";

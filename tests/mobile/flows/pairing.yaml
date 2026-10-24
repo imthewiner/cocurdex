@@ -19,7 +19,34 @@ appId: dev.cocurdex.mobile
     timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
-- tapOn: ${SEARCH_PLACEHOLDER}
+- scrollUntilVisible:
+    element: ${CODE_SESSION_TITLE}
+- tapOn: ${CODE_SESSION_TITLE}
+- extendedWaitUntil:
+    visible: ${CODE_BLOCK_TEXT}
+    timeout: 10000
+- takeScreenshot: session-code-block
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_SESSIONS}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${SEARCH_PLACEHOLDER}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: ".*search_button"
 - inputText: ${SEARCH_QUERY}
 - extendedWaitUntil:
     visible: ${SEARCHED_SESSION_TITLE}
@@ -32,7 +59,18 @@ appId: dev.cocurdex.mobile
     timeout: 10000
 - assertVisible:
     id: "composer-input"
+- assertNotVisible: ${TAB_COMPUTERS}
 - takeScreenshot: session-detail
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_SESSIONS}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
 - tapOn: ${TAB_COMPUTERS}
 - assertVisible: ${HOST_ADDRESS}
 - takeScreenshot: paired

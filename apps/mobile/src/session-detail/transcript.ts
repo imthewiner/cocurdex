@@ -1,10 +1,11 @@
-import type {
-  AgentPermissionRequestRecord,
-  AgentPlanApprovalRecord,
-  AgentQuestionRequestRecord,
-  AgentToolCallRecord,
-  MessageRecord,
-  SessionInteractionSnapshot,
+import {
+  type AgentPermissionRequestRecord,
+  type AgentPlanApprovalRecord,
+  type AgentQuestionRequestRecord,
+  type AgentToolCallRecord,
+  getToolCallInputSummary,
+  type MessageRecord,
+  type SessionInteractionSnapshot,
 } from "@cocurdex/shared";
 
 export type TranscriptItem =
@@ -14,6 +15,7 @@ export type TranscriptItem =
       kind: "tool";
       id: string;
       title: string;
+      detail: string | null;
       status: AgentToolCallRecord["status"];
     };
 
@@ -26,6 +28,7 @@ export interface TranscriptInput {
   messages: readonly MessageRecord[];
   activeMessages: readonly MessageRecord[];
   toolCalls: readonly AgentToolCallRecord[];
+  workspacePath: string | null;
 }
 
 interface Ordered {
@@ -72,6 +75,16 @@ function orderedMessages(
   });
 }
 
+function toolItem(
+  call: AgentToolCallRecord,
+  workspacePath: string | null,
+): TranscriptItem {
+  const title = call.title.charAt(0).toUpperCase() + call.title.slice(1);
+  const summary = getToolCallInputSummary(call, workspacePath);
+  const detail = summary && !title.includes(summary) ? summary : null;
+  return { kind: "tool", id: call.id, title, detail, status: call.status };
+}
+
 export function buildTranscript(input: TranscriptInput): TranscriptItem[] {
   const finishedIds = new Set(input.messages.map((message) => message.id));
   const finished = [
@@ -79,12 +92,7 @@ export function buildTranscript(input: TranscriptInput): TranscriptItem[] {
     ...input.toolCalls.map((call) => ({
       seq: call.seq,
       at: call.startedAt,
-      item: {
-        kind: "tool" as const,
-        id: call.id,
-        title: call.title,
-        status: call.status,
-      },
+      item: toolItem(call, input.workspacePath),
     })),
   ].sort(compareOrdered);
   const streaming = orderedMessages(

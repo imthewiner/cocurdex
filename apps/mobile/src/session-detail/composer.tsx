@@ -2,7 +2,7 @@ import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { control, layout, space, useThemeColors } from "@/theme";
+import { layout, space, useThemeColors } from "@/theme";
 
 export function Composer({
   running,
@@ -38,7 +38,7 @@ export function Composer({
     <View
       style={[
         styles.bar,
-        { borderTopColor: colors.border, backgroundColor: colors.background },
+        { borderColor: colors.border, backgroundColor: colors.card },
       ]}
     >
       <TextInput
@@ -49,10 +49,7 @@ export function Composer({
         multiline
         placeholder={t("composer.placeholder")}
         placeholderTextColor={colors.mutedForeground}
-        style={[
-          styles.input,
-          { borderColor: colors.input, color: colors.foreground },
-        ]}
+        style={[styles.input, { color: colors.foreground }]}
       />
       <Pressable
         accessibilityRole="button"
@@ -80,30 +77,33 @@ export function Composer({
   );
 }
 
+const COMPOSER_RADIUS = 26;
+const SEND_SIZE = 36;
+
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "flex-end",
     gap: space.sm,
-    paddingHorizontal: layout.sideMargin,
-    paddingTop: space.sm,
-    paddingBottom: space.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: space.md,
+    marginBottom: space.xs,
+    paddingLeft: layout.sideMargin,
+    paddingRight: space.sm,
+    paddingVertical: space.sm,
+    borderRadius: COMPOSER_RADIUS,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   input: {
     flex: 1,
-    minHeight: control.standard.height,
+    minHeight: SEND_SIZE,
     maxHeight: 132,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: control.standard.radius,
-    paddingHorizontal: space.md,
-    paddingVertical: 9,
-    fontSize: 16,
+    paddingVertical: space.sm,
+    fontSize: 17,
   },
   send: {
-    width: control.standard.height,
-    height: control.standard.height,
-    borderRadius: control.standard.radius,
+    width: SEND_SIZE,
+    height: SEND_SIZE,
+    borderRadius: SEND_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
   },

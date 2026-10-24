@@ -1,7 +1,12 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import type { AgentPlanApprovalOutcome } from "@cocurdex/shared";
+import type {
+  AgentPlanApprovalOutcome,
+  SessionObservationSnapshot,
+  WorkspaceRecord,
+} from "@cocurdex/shared";
 import { randomUUID } from "expo-crypto";
 import { Stack } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,11 +16,14 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
+import { useHostSessions } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import { Composer } from "./composer";
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
 import { createSessionDetailStore } from "./session-detail-store";
+import { SessionTitle } from "./session-title";
 import { buildTranscript, pendingInteraction } from "./transcript";
 import { TranscriptView } from "./transcript-view";
 
@@ -24,6 +32,23 @@ function useSessionDetail(hostId: string, sessionId: string) {
     createSessionDetailStore(hostConnection(hostId), sessionId),
   );
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
+}
+
+function sessionWorkspace(
+  observation: SessionObservationSnapshot | null,
+  workspaces: readonly WorkspaceRecord[],
+) {
+  const workspaceId = observation?.session.workspaceId;
+  return workspaces.find((entry) => entry.id === workspaceId) ?? null;
+}
+
+function sessionSubtitle(
+  observation: SessionObservationSnapshot | null,
+  workspace: WorkspaceRecord | null,
+) {
+  const model = observation?.session.providerSnapshot?.modelName;
+  const parts = [workspace?.name, model].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function StatusLine({ text, failed }: { text: string; failed: boolean }) {
@@ -54,12 +79,19 @@ export function SessionDetailScreen({
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const headerHeight = useHeaderHeight();
+  const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const detail = useSessionDetail(host.hostId, sessionId);
   const [actionFailed, setActionFailed] = useState(false);
   const observation = detail.observation;
+  const workspaces = useHostSessions(host.hostId).workspaces;
+  const workspace = sessionWorkspace(observation, workspaces);
+  const workspacePath =
+    observation?.session.worktreePath ?? workspace?.rootPaths[0] ?? null;
   const items = useMemo(
-    () => (observation ? buildTranscript(observation) : []),
-    [observation],
+    () =>
+      observation ? buildTranscript({ ...observation, workspacePath }) : [],
+    [observation, workspacePath],
   );
   const pending = observation
     ? pendingInteraction(observation.interactions)
@@ -128,11 +160,22 @@ export function SessionDetailScreen({
 
   return (
     <>
-      <Stack.Screen options={{ title, headerLargeTitle: false }} />
+      <Stack.Screen
+        options={{
+          title,
+          headerLargeTitle: false,
+          headerTitle: () => (
+            <SessionTitle
+              title={title}
+              subtitle={sessionSubtitle(observation, workspace)}
+            />
+          ),
+        }}
+      />
       <KeyboardAvoidingView
         style={[styles.fill, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+        keyboardVerticalOffset={headerHeight - bottomInset}
       >
         {detail.loaded && detail.missing ? (
           <View style={styles.center}>
@@ -156,20 +199,22 @@ export function SessionDetailScreen({
             {t("detail.actionFailed")}
           </Text>
         ) : null}
-        {pending ? (
-          <InteractionDock
-            pending={pending}
-            canApprove={canApprove}
-            actions={actions}
-          />
-        ) : (
-          <Composer
-            running={running}
-            canSend={canInteract && detail.loaded && !detail.missing}
-            onSend={send}
-            onStop={stop}
-          />
-        )}
+        <View style={{ paddingBottom: bottomInset }}>
+          {pending ? (
+            <InteractionDock
+              pending={pending}
+              canApprove={canApprove}
+              actions={actions}
+            />
+          ) : (
+            <Composer
+              running={running}
+              canSend={canInteract && detail.loaded && !detail.missing}
+              onSend={send}
+              onStop={stop}
+            />
+          )}
+        </View>
       </KeyboardAvoidingView>
     </>
   );

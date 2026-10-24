@@ -55,6 +55,7 @@ describe("buildTranscript", () => {
       ],
       activeMessages: [],
       toolCalls: [tool("cart", 2, "completed")],
+      workspacePath: null,
     });
 
     expect(items).toEqual([
@@ -63,9 +64,35 @@ describe("buildTranscript", () => {
         kind: "tool",
         id: "cart",
         title: "Read src/cart.ts",
+        detail: null,
         status: "completed",
       },
       { kind: "assistant", id: "a1", text: "Done.", streaming: false },
+    ]);
+  });
+
+  it("names a tool by its action and workspace-relative target", () => {
+    const items = buildTranscript({
+      messages: [],
+      activeMessages: [],
+      toolCalls: [
+        {
+          ...tool("read", 1, "completed"),
+          title: "read",
+          rawInput: { path: "/work/acme-shop/src/cart.ts" },
+        },
+        {
+          ...tool("bash", 2, "failed"),
+          title: "bash",
+          rawInput: { command: "pnpm   test" },
+        },
+      ],
+      workspacePath: "/work/acme-shop",
+    });
+
+    expect(items).toMatchObject([
+      { title: "Read", detail: "src/cart.ts", status: "completed" },
+      { title: "Bash", detail: "pnpm test", status: "failed" },
     ]);
   });
 
@@ -79,6 +106,7 @@ describe("buildTranscript", () => {
       ],
       activeMessages: [],
       toolCalls: [],
+      workspacePath: null,
     });
 
     expect(items.map((item) => item.id)).toEqual(["a1"]);
@@ -92,6 +120,7 @@ describe("buildTranscript", () => {
         message("u1", 1, "user", "Go"),
       ],
       toolCalls: [],
+      workspacePath: null,
     });
 
     expect(items).toEqual([

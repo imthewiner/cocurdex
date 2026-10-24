@@ -9,10 +9,6 @@ export default function SessionsLayout() {
         name="index"
         options={{ title: t("screens.sessions"), headerLargeTitle: true }}
       />
-      <Stack.Screen
-        name="session/[hostId]/[sessionId]"
-        options={{ title: "", headerBackButtonDisplayMode: "minimal" }}
-      />
     </Stack>
   );
 }

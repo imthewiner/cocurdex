@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import {
   getDisplayDirectory,
   getWorkspaceRelativePath,
   withoutWorkspaceCd,
-} from "@/features/agent/tool-call/tool-call-display-path";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 const POSIX_ROOT = "/Users/me/repo";
 const WINDOWS_ROOT = "C:\\Users\\me\\repo";

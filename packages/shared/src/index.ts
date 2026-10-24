@@ -70,6 +70,17 @@ export {
   isToolCallId,
   summarizeToolCallDiff,
 } from "./tool-call";
+export {
+  getCommandPreview,
+  getDisplayDirectory,
+  getLineRangeLabel,
+  getToolCallInputSummary,
+  getWorkspaceRelativePath,
+  sanitizeCommand,
+  truncateMiddle,
+  unwrapShellCommand,
+  withoutWorkspaceCd,
+} from "./tool-call-display";
 export * from "./workflow";
 export * from "./workspace-change-diff";
 export * from "./workspace-change-tools";

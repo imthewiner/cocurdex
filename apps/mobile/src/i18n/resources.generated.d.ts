@@ -90,6 +90,11 @@ export default interface Resources {
       running: "Running";
       unread: "Unread";
     };
+    tool: {
+      completed: "Done";
+      failed: "Failed";
+      running: "Running";
+    };
     unavailable: {
       description: "Check that the computer is awake and on the same network.";
       retry: "Try Again";

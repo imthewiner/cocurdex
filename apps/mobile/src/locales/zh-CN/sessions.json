@@ -50,6 +50,11 @@
     "running": "运行中",
     "unread": "未读"
   },
+  "tool": {
+    "completed": "已完成",
+    "failed": "失败",
+    "running": "运行中"
+  },
   "unavailable": {
     "description": "请确认电脑没有休眠，并且和手机在同一网络。",
     "retry": "重试",

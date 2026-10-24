@@ -1,7 +1,10 @@
 import { SymbolView } from "expo-symbols";
+import type { TFunction } from "i18next";
 import { useMemo } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
+import { MessageMarkdown } from "./message-markdown";
 import type { TranscriptItem } from "./transcript";
 
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
@@ -35,6 +38,44 @@ function ToolStatusIcon({
   );
 }
 
+function toolStatusLabel(status: ToolStatus, t: TFunction<"sessions">) {
+  if (status === "completed") return t("tool.completed");
+  if (status === "failed") return t("tool.failed");
+  return t("tool.running");
+}
+
+function ToolRow({
+  item,
+  colors,
+}: {
+  item: Extract<TranscriptItem, { kind: "tool" }>;
+  colors: ThemeColors;
+}) {
+  const { t } = useTranslation("sessions");
+  const label = item.detail ? `${item.title} ${item.detail}` : item.title;
+  return (
+    <View
+      accessible
+      accessibilityLabel={label}
+      accessibilityValue={{ text: toolStatusLabel(item.status, t) }}
+      style={styles.tool}
+    >
+      <ToolStatusIcon status={item.status} colors={colors} />
+      <Text
+        numberOfLines={1}
+        style={[styles.toolText, { color: colors.mutedForeground }]}
+      >
+        {item.title}
+        {item.detail ? (
+          <Text
+            style={[styles.toolDetail, { color: colors.foreground }]}
+          >{` ${item.detail}`}</Text>
+        ) : null}
+      </Text>
+    </View>
+  );
+}
+
 function TranscriptRow({
   item,
   colors,
@@ -56,26 +97,13 @@ function TranscriptRow({
   }
   if (item.kind === "assistant") {
     return (
-      <Text
-        selectable
-        style={[styles.body, { color: colors.foreground }]}
+      <MessageMarkdown
+        markdown={item.text}
         testID={`transcript-assistant-${item.id}`}
-      >
-        {item.text}
-      </Text>
+      />
     );
   }
-  return (
-    <View style={styles.tool}>
-      <ToolStatusIcon status={item.status} colors={colors} />
-      <Text
-        numberOfLines={1}
-        style={[styles.toolTitle, { color: colors.mutedForeground }]}
-      >
-        {item.title}
-      </Text>
-    </View>
-  );
+  return <ToolRow item={item} colors={colors} />;
 }
 
 export function TranscriptView({
@@ -118,9 +146,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.sm,
-    minHeight: 28,
+    minHeight: 24,
   },
-  toolTitle: { flex: 1, fontSize: 14 },
+  toolText: { flex: 1, fontSize: 14 },
+  toolDetail: {
+    fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
+  },
   iconSlot: {
     width: 16,
     height: 16,

@@ -26,6 +26,28 @@ export function defaultAndroidSdk(platform: NodeJS.Platform, home: string) {
   return path.join(home, "Android/Sdk");
 }
 
+function androidStudioJdkCandidates(platform: NodeJS.Platform, home: string) {
+  if (platform === "darwin") {
+    const bundle = "Android Studio.app/Contents/jbr/Contents/Home";
+    return [
+      path.join("/Applications", bundle),
+      path.join(home, "Applications", bundle),
+    ];
+  }
+  if (platform === "win32") {
+    const programFiles = process.env.ProgramFiles ?? "C:\\Program Files";
+    return [path.join(programFiles, "Android", "Android Studio", "jbr")];
+  }
+  return ["/opt/android-studio/jbr", path.join(home, "android-studio", "jbr")];
+}
+
+function androidJavaHome() {
+  if (process.env.JAVA_HOME) return process.env.JAVA_HOME;
+  return androidStudioJdkCandidates(process.platform, os.homedir()).find(
+    (candidate) => existsSync(candidate),
+  );
+}
+
 export function androidSdk() {
   return (
     process.env.ANDROID_HOME ??
@@ -39,7 +61,13 @@ function adb(sdk: string) {
 }
 
 export async function buildAndroidApp(mobileDir: string) {
-  const env = { ...process.env, ANDROID_HOME: androidSdk(), CI: "1" };
+  const javaHome = androidJavaHome();
+  const env = {
+    ...process.env,
+    ANDROID_HOME: androidSdk(),
+    CI: "1",
+    ...(javaHome ? { JAVA_HOME: javaHome } : {}),
+  };
   await runCommand(
     "pnpm",
     ["exec", "expo", "prebuild", "--platform", "android"],
@@ -169,14 +197,20 @@ export async function startAndroidTarget(
         await shell("pm", "clear", APP_ID);
       },
       launchApp: async () => {
-        await shell(
-          "monkey",
-          "-p",
-          APP_ID,
+        const resolved = await shell(
+          "cmd",
+          "package",
+          "resolve-activity",
+          "--brief",
           "-c",
           "android.intent.category.LAUNCHER",
-          "1",
+          APP_ID,
         );
+        const component = parseLines(resolved).at(-1);
+        if (!component?.includes("/")) {
+          throw new Error(`${APP_ID} has no launcher activity:\n${resolved}`);
+        }
+        await shell("am", "start", "-W", "-n", component);
       },
       diagnostics: async () => {
         const devices = await runCommand(adb(sdk), ["devices", "-l"]).catch(

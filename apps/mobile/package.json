@@ -39,6 +39,7 @@
     "react": "19.3.0",
     "react-i18next": "^17.1.0",
     "react-native": "0.88.0",
+    "react-native-enriched-markdown": "^1.1.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0"
   },
@@ -48,5 +49,9 @@
     "culori": "4.0.2",
     "i18next-cli": "^1.77.0",
     "typescript": "6.0.3"
+  },
+  "enriched-markdown": {
+    "enableCodeHighlight": true,
+    "enableMath": false
   }
 }
