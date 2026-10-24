@@ -142,6 +142,63 @@ describe("cocurdex CLI against a running daemon", () => {
     ).toContain(issue.id);
   });
 
+  it("renames a label without detaching its issues", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const label = JSON.parse(
+      (
+        await runCli(
+          ["issue", "label", "create", "--name", "old-name", "--json"],
+          options,
+        )
+      ).stdout,
+    ) as { id: string };
+    const issue = JSON.parse(
+      (
+        await runCli(
+          [
+            "issue",
+            "create",
+            "--title",
+            "Labeled issue",
+            "--labels",
+            "old-name",
+            "--json",
+          ],
+          options,
+        )
+      ).stdout,
+    ) as { id: string };
+
+    const renamed = await runCli(
+      [
+        "issue",
+        "label",
+        "update",
+        "old-name",
+        "--name",
+        "new-name",
+        "--color",
+        "teal",
+        "--json",
+      ],
+      options,
+    );
+    expect(renamed.code).toBe(0);
+    expect(JSON.parse(renamed.stdout)).toEqual({
+      id: label.id,
+      name: "new-name",
+      color: "teal",
+    });
+
+    const listed = await runCli(
+      ["issue", "list", "--label", "new-name", "--json"],
+      options,
+    );
+    expect(
+      (JSON.parse(listed.stdout) as { id: string }[]).map((entry) => entry.id),
+    ).toEqual([issue.id]);
+  });
+
   it("links a note and an issue through CLI commands", async () => {
     const options = { userDataPath: daemon.userDataPath };
     const note = JSON.parse(

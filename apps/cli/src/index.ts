@@ -545,7 +545,7 @@ function printUsage() {
       "  cocurdex deck read <file.pptx> [--json]",
       "  cocurdex issue list|show|create|update|move|delete|comment|views [--view <id>] [--json]",
       "  cocurdex issue relate|unrelate <id> blocks|related|duplicate <id> [--json]",
-      "  cocurdex issue labels | label create --name <name> | label delete <id|name> [--json]",
+      "  cocurdex issue labels | label create --name <name> | label update <id|name> [--name <name>] [--color <color>] | label delete <id|name> [--json]",
       "  cocurdex search <query> [--kind note|issue] [--workspace <id>] [--json]",
       ...skillsUsageLines(),
       ...diagnosticsUsageLines(),
