@@ -4,4 +4,5 @@ export {
   themeColors,
   useThemeColors,
 } from "./colors";
-export { control, layout, radius, space } from "./metrics";
+export { layout, space } from "./metrics";
+export { navigationThemes } from "./navigation";

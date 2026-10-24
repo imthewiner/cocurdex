@@ -9,6 +9,7 @@ import {
   verifyHostCredential,
 } from "@cocurdex/client-runtime";
 import type { DaemonConnectionInfo } from "@cocurdex/rpc";
+import { HOST_PAIRING_LINK_PARAM } from "@cocurdex/shared";
 import { offlineApi } from "./offline-api";
 import type { HostBridge, HostCapabilities } from "./types";
 
@@ -160,7 +161,7 @@ export async function resolveWebHostAccess(
     return localAccess(location, localToken, deps.localDaemonUrl);
   }
 
-  const code = nonEmpty(fragment.get("pair"));
+  const code = nonEmpty(fragment.get(HOST_PAIRING_LINK_PARAM));
   const pairing = code ? await tryPairing(location, code, deps) : null;
   if (pairing?.host) return deviceAccess(location, pairing.host);
 
@@ -207,7 +208,7 @@ function snapshotLocation(): WebLocation {
 
 function dropFragmentCredentials() {
   const fragment = readFragment(window.location.hash);
-  if (!fragment.has("token") && !fragment.has("pair")) return;
+  if (!fragment.has("token") && !fragment.has(HOST_PAIRING_LINK_PARAM)) return;
   const { pathname, search } = window.location;
   window.history.replaceState(window.history.state, "", pathname + search);
 }

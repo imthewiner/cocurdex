@@ -133,10 +133,28 @@ export function buildLocalWebClientUrl(webSocketUrl: string, token: string) {
   return url.toString();
 }
 
+export const HOST_PAIRING_LINK_PARAM = "pair";
+
 export function buildHostPairingLink(addressUrl: string, code: string) {
   const url = new URL(addressUrl);
   url.pathname = "/";
   url.search = "";
-  url.hash = new URLSearchParams({ pair: code }).toString();
+  url.hash = new URLSearchParams({
+    [HOST_PAIRING_LINK_PARAM]: code,
+  }).toString();
   return url.toString();
+}
+
+export function parseHostPairingLink(link: string) {
+  let url: URL;
+  try {
+    url = new URL(link.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  const code = new URLSearchParams(url.hash.slice(1))
+    .get(HOST_PAIRING_LINK_PARAM)
+    ?.trim();
+  return code ? { baseUrl: url.origin, code } : null;
 }

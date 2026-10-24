@@ -2,9 +2,8 @@
   "name": "@cocurdex/mobile",
   "version": "0.1.0",
   "private": true,
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "exports": {
-    ".": "./index.ts",
     "./internal/*": "./src/*.ts"
   },
   "scripts": {
@@ -19,12 +18,19 @@
     "@cocurdex/client-runtime": "workspace:*",
     "@cocurdex/rpc": "workspace:*",
     "@cocurdex/shared": "workspace:*",
+    "@expo/material-symbols": "^0.1.1",
+    "@expo/ui": "~58.0.0",
     "expo": "~58.0.17",
     "expo-build-properties": "~58.0.11",
+    "expo-constants": "~58.0.0",
+    "expo-linking": "~58.0.0",
+    "expo-router": "~58.0.0",
     "expo-secure-store": "~58.0.2",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
-    "react-native": "0.88.0"
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0"
   },
   "devDependencies": {
     "@types/culori": "4.0.1",

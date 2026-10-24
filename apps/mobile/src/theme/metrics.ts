@@ -10,23 +10,7 @@ export const space = {
 
 export const layout = {
   sideMargin: 16,
-  sectionGap: 16,
-  sectionTitleGap: 4,
-  rowMinHeight: 44,
-  rowPaddingVertical: 8,
-  actionAreaTop: 12,
-  actionAreaBottom: 30,
-  hitArea: 44,
   avatarTile: 36,
   bubbleMaxWidthRatio: 0.85,
   boardColumnPeek: 90,
-} as const;
-
-export const control = {
-  standard: { height: 40, radius: 8 },
-  compact: { height: 32, radius: 6 },
-} as const;
-
-export const radius = {
-  sheet: 16,
 } as const;
