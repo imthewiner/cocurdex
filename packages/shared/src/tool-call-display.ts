@@ -34,8 +34,16 @@ function isWindowsPath(path: string) {
   return WINDOWS_DRIVE_PATH.test(path) || path.startsWith("\\\\");
 }
 
+function trimTrailingSeparators(path: string) {
+  let end = path.length;
+  while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
+    end -= 1;
+  }
+  return path.slice(0, end);
+}
+
 function toComparablePath(path: string, windows: boolean) {
-  const trimmed = path.trim().replace(/[\\/]+$/, "");
+  const trimmed = trimTrailingSeparators(path.trim());
   return windows ? trimmed.replaceAll("\\", "/").toLowerCase() : trimmed;
 }
 
