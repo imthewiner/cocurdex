@@ -97,6 +97,7 @@ export function SessionList({
       style={styles.fill}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
       sections={sections}
       keyExtractor={(row) => row.id}
       stickySectionHeadersEnabled={false}

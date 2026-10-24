@@ -11,6 +11,7 @@ const BOOT_TIMEOUT_MS = 240_000;
 const FIRST_CONSOLE_PORT = 5554;
 const LAST_CONSOLE_PORT = 5682;
 const EMULATOR_OUTPUT_LIMIT = 16_384;
+const IME_DISABLE_TIMEOUT_MS = 15_000;
 
 function emulatorGpuMode(platform: NodeJS.Platform) {
   return platform === "linux" ? "swiftshader_indirect" : "auto";
@@ -169,15 +170,7 @@ export async function startAndroidTarget(
       throw new Error(`${reason}\nEmulator output:\n${emulatorOutput}`);
     });
     await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
-    for (const ime of parseLines(await shell("ime", "list", "-s"))) {
-      await shell("pm", "disable-user", "--user", "0", imePackage(ime));
-    }
-    const remainingImes = parseLines(await shell("ime", "list", "-s"));
-    if (remainingImes.length > 0) {
-      throw new Error(
-        `Input methods still enabled: ${remainingImes.join(", ")}`,
-      );
-    }
+    await disableInputMethods(shell);
     return {
       deviceId: serial,
       setAppearance: async (appearance) => {
@@ -239,6 +232,20 @@ class EmulatorExitedError extends FatalWaitError {
   constructor(code: number) {
     super(`Emulator exited with ${code} before booting`);
   }
+}
+
+async function disableInputMethods(
+  shell: (...args: string[]) => Promise<string>,
+) {
+  const listImes = async () => parseLines(await shell("ime", "list", "-s"));
+  for (const ime of await listImes()) {
+    await shell("pm", "disable-user", "--user", "0", imePackage(ime));
+  }
+  await waitUntil(
+    async () => (await listImes()).length === 0,
+    IME_DISABLE_TIMEOUT_MS,
+    "input methods to be disabled",
+  );
 }
 
 function imePackage(ime: string) {

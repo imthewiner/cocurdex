@@ -3,12 +3,17 @@ appId: dev.cocurdex.mobile
 - launchApp
 - assertVisible: ${EMPTY_TITLE}
 - takeScreenshot: empty
-- tapOn:
-    text: ${EMPTY_PAIR}
-    retryTapIfNoChange: true
-- tapOn:
-    text: ${SYSTEM_CONTINUE}
-    optional: true
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${EMPTY_PAIR}
+      - tapOn:
+          text: ${SYSTEM_CONTINUE}
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: "pairing-link"
+          timeout: 5000
 - tapOn:
     id: "pairing-link"
 - inputText: ${PAIRING_LINK}
@@ -25,12 +30,19 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${CODE_BLOCK_TEXT}
     timeout: 10000
+- waitForAnimationToEnd
 - takeScreenshot: session-code-block
 - runFlow:
     when:
       platform: iOS
     commands:
-      - tapOn: ${TAB_SESSIONS}
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
 - runFlow:
     when:
       platform: Android
@@ -52,20 +64,31 @@ appId: dev.cocurdex.mobile
     visible: ${SEARCHED_SESSION_TITLE}
     timeout: 5000
 - assertNotVisible: ${OTHER_SESSION_TITLE}
+- waitForAnimationToEnd
 - takeScreenshot: sessions-search
-- tapOn: ${SEARCHED_SESSION_TITLE}
-- extendedWaitUntil:
-    visible: ${SEARCHED_SESSION_LAST_PROMPT}
-    timeout: 10000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${SEARCHED_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible: ${SEARCHED_SESSION_LAST_PROMPT}
+          timeout: 10000
 - assertVisible:
     id: "composer-input"
 - assertNotVisible: ${TAB_COMPUTERS}
+- waitForAnimationToEnd
 - takeScreenshot: session-detail
 - runFlow:
     when:
       platform: iOS
     commands:
-      - tapOn: ${TAB_SESSIONS}
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
 - runFlow:
     when:
       platform: Android
