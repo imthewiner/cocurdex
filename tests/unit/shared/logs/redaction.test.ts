@@ -123,6 +123,15 @@ describe("logger sanitization", () => {
     );
   });
 
+  it("ignores trailing separators on the home directory", () => {
+    expect(redactSensitiveText("/srv/alice/project", "/srv/alice//")).toBe(
+      "~/project",
+    );
+    expect(redactSensitiveText("D:\\data\\alice\\x", "D:\\data\\alice\\")).toBe(
+      "~\\x",
+    );
+  });
+
   it("redacts common credential shapes in free text", () => {
     const text = [
       "key sk-ant-api03-aaaabbbbccccddddeeee",

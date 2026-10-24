@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -92,8 +92,12 @@ describe("daemon observability", () => {
       fileCount: number;
     };
     expect(
-      realpathSync(exported.outputPath).startsWith(
-        realpathSync(daemon.userDataPath),
+      existsSync(
+        path.join(
+          daemon.userDataPath,
+          "diagnostics",
+          path.basename(exported.outputPath),
+        ),
       ),
     ).toBe(true);
     expect(readdirSync(path.join(exported.outputPath, "daemon"))).toContain(

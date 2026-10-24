@@ -101,8 +101,16 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function trimTrailingSeparators(value: string) {
+  let end = value.length;
+  while (end > 0 && (value[end - 1] === "/" || value[end - 1] === "\\")) {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 function homeDirectoryPatterns(homeDir: string) {
-  const trimmed = homeDir.trim().replace(/[/\\]+$/, "");
+  const trimmed = trimTrailingSeparators(homeDir.trim());
   if (trimmed.length < 2) {
     return [];
   }

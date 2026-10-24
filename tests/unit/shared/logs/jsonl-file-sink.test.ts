@@ -8,7 +8,7 @@ import {
   type LogRecord,
 } from "@cocurdex/shared/node";
 import { createTempDirs } from "@cocurdex/shared/testing";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();
 afterAll(() => tempDirs.cleanup());
@@ -66,8 +66,16 @@ describe("createJsonlFileSink", () => {
       minimumLevel: "info",
     });
 
-    for (let index = 0; index < 10; index += 1) {
-      sink.write(record({ event: `event-${index}` }));
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-01-01T00:00:00Z"),
+    });
+    try {
+      for (let index = 0; index < 10; index += 1) {
+        sink.write(record({ event: `event-${index}` }));
+      }
+    } finally {
+      vi.useRealTimers();
     }
     await sink.close();
 

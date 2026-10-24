@@ -1,5 +1,6 @@
 import {
   closeSync,
+  existsSync,
   fstatSync,
   mkdirSync,
   openSync,
@@ -95,16 +96,21 @@ export function createJsonlFileSink(
     }
   };
 
+  const unusedArchivePath = () => {
+    const baseName = buildArchiveLogFileName(options.fileName, new Date());
+    const extension = path.extname(baseName);
+    const stem = baseName.slice(0, baseName.length - extension.length);
+    let candidate = path.join(options.directory, baseName);
+    for (let index = 1; existsSync(candidate); index += 1) {
+      candidate = path.join(options.directory, `${stem}-${index}${extension}`);
+    }
+    return candidate;
+  };
+
   const rotate = () => {
     closeDescriptor();
     try {
-      renameSync(
-        filePath,
-        path.join(
-          options.directory,
-          buildArchiveLogFileName(options.fileName, new Date()),
-        ),
-      );
+      renameSync(filePath, unusedArchivePath());
     } catch {
       rotationRetryAt = Date.now() + ROTATION_RETRY_DELAY_MS;
     }
