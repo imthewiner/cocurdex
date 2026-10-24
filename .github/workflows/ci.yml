@@ -291,6 +291,9 @@ jobs:
         if: matrix.platform == 'android'
         run: |
           tools="${ANDROID_HOME}/cmdline-tools/latest/bin"
+          export ANDROID_AVD_HOME="${RUNNER_TEMP}/android-avd"
+          mkdir -p "${ANDROID_AVD_HOME}"
+          echo "ANDROID_AVD_HOME=${ANDROID_AVD_HOME}" >> "${GITHUB_ENV}"
           yes | "${tools}/sdkmanager" --licenses > /dev/null
           "${tools}/sdkmanager" emulator platform-tools "${ANDROID_SYSTEM_IMAGE}"
           echo no | "${tools}/avdmanager" create avd --force --name cocurdex-ci --package "${ANDROID_SYSTEM_IMAGE}" --device pixel_6
