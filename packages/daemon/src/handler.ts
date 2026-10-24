@@ -113,12 +113,6 @@ export async function handleDaemonRequest(
       return service.listSessionAttention();
     case "attention.update":
       return service.updateSessionAttention(request.params);
-    case "attachment.importImage":
-      return service.attachments.importImage(request.params);
-    case "attachment.importDocument":
-      return service.attachments.importDocument(request.params);
-    case "attachment.readImageDataUrl":
-      return service.attachments.readImageDataUrl(request.params.filePath);
     case "note.list":
       return service.dataService.listNotes();
     case "note.get":

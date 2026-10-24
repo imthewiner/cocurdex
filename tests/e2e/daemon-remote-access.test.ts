@@ -1,4 +1,6 @@
+import { readdir } from "node:fs/promises";
 import net from "node:net";
+import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import {
   createDaemonRpcClient,
@@ -6,8 +8,12 @@ import {
   daemonWebSocketProtocols,
 } from "@cocurdex/rpc/client";
 import {
+  buildDaemonAttachmentUploadUrl,
+  buildDaemonImageAttachmentUrl,
   HOST_PAIRING_HTTP_PATH,
   HOST_SESSION_HTTP_PATH,
+  type HostAccessScope,
+  type ImageAttachment,
 } from "@cocurdex/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
@@ -62,10 +68,14 @@ async function enableRemoteAccess(daemon: DaemonProcess) {
   return port;
 }
 
-async function pairDevice(daemon: DaemonProcess, port: number) {
+async function pairDevice(
+  daemon: DaemonProcess,
+  port: number,
+  scopes: HostAccessScope[] = ["read"],
+) {
   const { code } = await requestDaemon(
     "host.pairing.create",
-    { label: "Phone", scopes: ["read"] },
+    { label: "Phone", scopes },
     daemon.options,
   );
   const response = await exchange(port, { code, label: "Pixel" });
@@ -139,6 +149,53 @@ describe("remote host access", () => {
         "pairing.rejected",
       ]),
     );
+  });
+
+  it("streams image attachments to and from a device that may interact", async () => {
+    const daemon = await spawnDaemon();
+    daemons.push(daemon);
+    const port = await enableRemoteAccess(daemon);
+    const writer = await pairDevice(daemon, port, [
+      "read",
+      "files.read",
+      "interact",
+    ]);
+    const reader = await pairDevice(daemon, port, ["read"]);
+    const webSocketUrl = `ws://127.0.0.1:${port}`;
+    const gif = Buffer.from([
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x04, 0x00, 0x05, 0x00, 0x00, 0x00,
+      0x00,
+    ]);
+    const upload = (token: string) =>
+      fetch(buildDaemonAttachmentUploadUrl(webSocketUrl, "image", "a.gif"), {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+        body: gif,
+      });
+
+    expect((await upload(reader.paired.token)).status).toBe(403);
+    await expect(
+      readdir(path.join(daemon.userDataPath, "image-attachments")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+
+    const uploaded = await upload(writer.paired.token);
+    expect(uploaded.status).toBe(201);
+    const attachment = (await uploaded.json()) as ImageAttachment;
+    expect(attachment).toMatchObject({ width: 4, height: 5, name: "a.gif" });
+
+    const imageUrl = buildDaemonImageAttachmentUrl(
+      webSocketUrl,
+      attachment.filePath,
+    );
+    const denied = await fetch(imageUrl, {
+      headers: { authorization: `Bearer ${reader.paired.token}` },
+    });
+    expect(denied.status).toBe(403);
+    const read = await fetch(imageUrl, {
+      headers: { authorization: `Bearer ${writer.paired.token}` },
+    });
+    expect(read.status).toBe(200);
+    expect(Buffer.from(await read.arrayBuffer())).toEqual(gif);
   });
 
   it("refuses the local full-access token on the remote listener", async () => {

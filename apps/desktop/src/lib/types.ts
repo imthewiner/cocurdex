@@ -219,22 +219,6 @@ export type {
   WorkspaceGitTreeStatus,
 } from "@cocurdex/shared";
 
-export interface ImportImageAttachmentPayload {
-  dataUrl: string;
-  height: number;
-  mimeType: string;
-  name: string;
-  sizeBytes: number;
-  width: number;
-}
-
-export interface ImportDocumentAttachmentPayload {
-  dataUrl: string;
-  mimeType: "application/pdf";
-  name: string;
-  sizeBytes: number;
-}
-
 /** Status of the `cocurdex` shell command install (PATH). */
 export interface CliPathStatus {
   available: boolean;
@@ -708,13 +692,11 @@ export interface ProductApi {
   onWorkspaceGitStateChanged(
     listener: (event: WorkspaceFilesChangedEvent) => void,
   ): () => void;
-  importImageAttachment(
-    payload: ImportImageAttachmentPayload,
-  ): Promise<ImageAttachment>;
+  importImageAttachment(file: Blob, name: string): Promise<ImageAttachment>;
   importDocumentAttachment(
-    payload: ImportDocumentAttachmentPayload,
+    file: Blob,
+    name: string,
   ): Promise<DocumentAttachment>;
-  readImageAttachmentDataUrl(filePath: string): Promise<string>;
   startProviderAuthLogin(
     providerId: string,
     method: ProviderAuthMethod,

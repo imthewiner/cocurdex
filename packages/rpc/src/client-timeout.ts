@@ -13,8 +13,6 @@ const METHOD_TIMEOUTS: Partial<Record<DaemonMethod, number>> = {
   "mcp.server.test": 3 * 60_000,
   "mcp.login.start": 3 * 60_000,
   "mcp.login.wait": 10 * 60_000,
-  "attachment.importImage": 2 * 60_000,
-  "attachment.importDocument": 2 * 60_000,
   "deck.import": 2 * 60_000,
   "deck.readPptx": 2 * 60_000,
   "git.generateCommitMessage": 2 * 60_000,

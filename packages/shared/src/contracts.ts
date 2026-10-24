@@ -516,22 +516,6 @@ export interface ImageAttachment {
   height: number;
 }
 
-export interface ImportImageAttachmentPayload {
-  dataUrl: string;
-  height: number;
-  mimeType: string;
-  name: string;
-  sizeBytes: number;
-  width: number;
-}
-
-export interface ImportDocumentAttachmentPayload {
-  dataUrl: string;
-  mimeType: string;
-  name: string;
-  sizeBytes: number;
-}
-
 export interface DocumentAttachment {
   kind: "document";
   id: string;

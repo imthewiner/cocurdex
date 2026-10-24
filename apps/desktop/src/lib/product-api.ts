@@ -1,3 +1,4 @@
+import { uploadAttachment } from "./attachment-upload";
 import { requestDaemon as rpc } from "./daemon-client";
 import type { ProductRequestApi } from "./types";
 
@@ -339,11 +340,9 @@ export const daemonProductApi: ProductRequestApi = {
   issueRemoveRelation: (payload) => rpc("issue.removeRelation", payload),
   issueComment: (payload) => rpc("issue.comment", payload),
   searchDocuments: (payload) => rpc("search.documents", payload),
-  importImageAttachment: (payload) => rpc("attachment.importImage", payload),
-  importDocumentAttachment: (payload) =>
-    rpc("attachment.importDocument", payload),
-  readImageAttachmentDataUrl: (filePath) =>
-    rpc("attachment.readImageDataUrl", { filePath }),
+  importImageAttachment: (file, name) => uploadAttachment("image", file, name),
+  importDocumentAttachment: (file, name) =>
+    uploadAttachment("document", file, name),
   startProviderAuthLogin: (providerId, method) =>
     rpc("provider.auth.login.start", { providerId, method }),
   nextProviderAuthLogin: (loginId) =>

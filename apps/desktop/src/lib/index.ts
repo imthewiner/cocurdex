@@ -4,6 +4,7 @@ export {
   openHtmlPreviewInBrowser,
 } from "./browser-preview-events";
 export { readCssVarPx } from "./css-length";
+export { createDaemonBlobUrlStore } from "./daemon-blob-urls";
 export { requestDaemon, resolveLocalDaemonConnection } from "./daemon-client";
 export { logRendererDiagnostic } from "./diagnostics";
 export { onOpenEntity, openEntity } from "./entity-events";
@@ -44,8 +45,6 @@ export type {
   GitContentsOmittedReason,
   GitFileStagedState,
   HostCapabilities,
-  ImportDocumentAttachmentPayload,
-  ImportImageAttachmentPayload,
   WorkspaceFileEntry,
   WorkspaceGitDiffQuery,
   WorkspaceGitDiffStatus,
