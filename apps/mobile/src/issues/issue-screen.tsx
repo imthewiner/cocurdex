@@ -1,21 +1,20 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import type { IssueSummary } from "@cocurdex/shared";
+import type { EntityLink, IssueSummary } from "@cocurdex/shared";
 import { RNHostView, Text as UiText } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
+import { LinkedEntitiesSection } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { space, useThemeColors } from "@/theme";
-import {
-  BrandHost,
-  Form,
-  FormRow,
-  FormSection,
-  HostedAccessory,
-  ListNotice,
-} from "@/ui";
+import { BrandHost, Form, FormRow, FormSection, ListNotice } from "@/ui";
 import { useIssueDetail, useIssueView } from "./issue-queries";
-import { IssueStatusMark } from "./issue-status-mark";
+import { IssueStatusIcon } from "./issue-status-mark";
+
+function isShownAsIssueStructure(link: EntityLink) {
+  if (link.removable) return false;
+  return link.relation === "child" || link.relation === "worked-on-by";
+}
 
 function SubIssueRow({
   issue,
@@ -29,12 +28,7 @@ function SubIssueRow({
       testID={`issue-child-${issue.id}`}
       onPress={onPress}
       leading={
-        <HostedAccessory>
-          <IssueStatusMark
-            category={issue.statusCategory}
-            label={issue.status}
-          />
-        </HostedAccessory>
+        <IssueStatusIcon category={issue.statusCategory} label={issue.status} />
       }
       supportingText={issue.identifier}
     >
@@ -103,6 +97,7 @@ export function IssueScreen({
                   {description ? (
                     <MarkdownText
                       markdown={description}
+                      hostId={host.hostId}
                       testID="issue-description"
                     />
                   ) : null}
@@ -112,12 +107,10 @@ export function IssueScreen({
           >
             <FormRow
               leading={
-                <HostedAccessory>
-                  <IssueStatusMark
-                    category={issue.statusCategory}
-                    label={status?.title ?? issue.status}
-                  />
-                </HostedAccessory>
+                <IssueStatusIcon
+                  category={issue.statusCategory}
+                  label={status?.title ?? issue.status}
+                />
               }
               trailing={
                 <UiText textStyle={muted}>
@@ -188,6 +181,11 @@ export function IssueScreen({
               ))}
             </FormSection>
           ) : null}
+          <LinkedEntitiesSection
+            hostId={host.hostId}
+            entity={{ kind: "issue", id: issue.id }}
+            hideLink={isShownAsIssueStructure}
+          />
         </Form>
       </BrandHost>
     </>

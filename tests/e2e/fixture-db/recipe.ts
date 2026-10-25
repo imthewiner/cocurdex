@@ -350,7 +350,8 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
           {
             text: [
               "There is no `src/checkout.ts` in this project. ",
-              "Checkout totals come from `cartSubtotal` in `src/cart.ts`.",
+              "Checkout totals come from `cartSubtotal`, defined in:\n\n",
+              "`src/cart.ts`",
             ],
           },
         ],

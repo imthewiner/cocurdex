@@ -24,6 +24,7 @@ export * from "./data-events";
 export * from "./decks";
 export * from "./entity-links";
 export * from "./execution-tree";
+export * from "./file-path-candidates";
 export * from "./files";
 export * from "./git";
 export * from "./git-worktree";
@@ -88,6 +89,13 @@ export {
   summarizeToolCallDiff,
   toolCallResourceLinkPath,
 } from "./tool-call";
+export {
+  type ActivityAction,
+  type ActivityActionCount,
+  getActivityAction,
+  summarizeToolActions,
+  type ToolActionSummary,
+} from "./tool-call-activity";
 export {
   getCommandPreview,
   getDisplayDirectory,

@@ -19,28 +19,26 @@ export function WorkspaceFilter({
   const current = workspaces.find((workspace) => workspace.id === workspaceId);
   const title = current?.name ?? t("allWorkspaces");
   return (
-    <Stack.Toolbar placement="right">
-      <Stack.Toolbar.Menu
-        title={title}
-        icon={Platform.OS === "ios" ? "folder" : FolderIcon}
-        accessibilityLabel={t("workspaceFilter", { workspace: title })}
+    <Stack.Toolbar.Menu
+      title={title}
+      icon={Platform.OS === "ios" ? "folder" : FolderIcon}
+      accessibilityLabel={t("workspaceFilter", { workspace: title })}
+    >
+      <Stack.Toolbar.MenuAction
+        isOn={workspaceId === null}
+        onPress={() => onChange(null)}
       >
+        {t("allWorkspaces")}
+      </Stack.Toolbar.MenuAction>
+      {workspaces.map((workspace) => (
         <Stack.Toolbar.MenuAction
-          isOn={workspaceId === null}
-          onPress={() => onChange(null)}
+          key={workspace.id}
+          isOn={workspace.id === workspaceId}
+          onPress={() => onChange(workspace.id)}
         >
-          {t("allWorkspaces")}
+          {workspace.name}
         </Stack.Toolbar.MenuAction>
-        {workspaces.map((workspace) => (
-          <Stack.Toolbar.MenuAction
-            key={workspace.id}
-            isOn={workspace.id === workspaceId}
-            onPress={() => onChange(workspace.id)}
-          >
-            {workspace.name}
-          </Stack.Toolbar.MenuAction>
-        ))}
-      </Stack.Toolbar.Menu>
-    </Stack.Toolbar>
+      ))}
+    </Stack.Toolbar.Menu>
   );
 }

@@ -1,7 +1,9 @@
+import { Text as LabelText } from "@expo/ui";
 import { SymbolView } from "expo-symbols";
 import { StyleSheet, Text, View } from "react-native";
 import { space, useThemeColors } from "@/theme";
-import { HostedAccessory } from "@/ui";
+import { FormRow } from "./form-row";
+import { HostedAccessory } from "./hosted-accessory";
 
 export function SelectedMark({ selected }: { selected: boolean }) {
   const colors = useThemeColors();
@@ -20,13 +22,15 @@ export function SelectedMark({ selected }: { selected: boolean }) {
 export function RowValue({
   value,
   detail,
+  onPress,
 }: {
   value: string;
   detail?: string | null;
+  onPress?(): void;
 }) {
   const colors = useThemeColors();
   return (
-    <HostedAccessory>
+    <HostedAccessory onPress={onPress}>
       <View style={styles.row}>
         <View style={styles.values}>
           <Text
@@ -73,3 +77,27 @@ const styles = StyleSheet.create({
   value: { fontSize: 17 },
   detail: { fontSize: 13 },
 });
+
+export function ValueFormRow({
+  testID,
+  label,
+  value,
+  detail,
+  onPress,
+}: {
+  testID: string;
+  label: string;
+  value: string;
+  detail?: string | null;
+  onPress(): void;
+}) {
+  return (
+    <FormRow
+      testID={testID}
+      onPress={onPress}
+      trailing={<RowValue value={value} detail={detail} onPress={onPress} />}
+    >
+      <LabelText>{label}</LabelText>
+    </FormRow>
+  );
+}

@@ -1,15 +1,48 @@
-import { type ReactNode, useState } from "react";
+import type { MermaidAppearance } from "@cocurdex/shared";
+import { useRouter } from "expo-router";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, useColorScheme, View } from "react-native";
+import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import { SvgCss } from "react-native-svg/css";
 import { WebView } from "react-native-webview";
 import { space } from "@/theme";
+import { diagrams, useDiagram } from "./mermaid-cache";
 import {
   allowsMermaidNavigation,
   mermaidDocument,
   parseMermaidMessage,
 } from "./mermaid-document";
 
-type DiagramState = { kind: "rendering" } | { kind: "ready"; height: number };
+function DiagramRenderer({
+  source,
+  appearance,
+}: {
+  source: string;
+  appearance: MermaidAppearance;
+}) {
+  return (
+    <View style={styles.renderer} pointerEvents="none">
+      <WebView
+        source={{ html: mermaidDocument(source, appearance) }}
+        originWhitelist={["about:blank"]}
+        scrollEnabled={false}
+        javaScriptEnabled
+        setSupportMultipleWindows={false}
+        allowsLinkPreview={false}
+        onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
+        onError={() => diagrams.failed(source, appearance)}
+        onMessage={({ nativeEvent }) => {
+          const message = parseMermaidMessage(nativeEvent.data);
+          if (message?.type === "error") diagrams.failed(source, appearance);
+          if (message?.type === "rendered") {
+            const { svg, width, height } = message;
+            diagrams.rendered(source, appearance, { svg, width, height });
+          }
+        }}
+      />
+    </View>
+  );
+}
 
 export function MermaidDiagram({
   source,
@@ -19,42 +52,33 @@ export function MermaidDiagram({
   fallback: ReactNode;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const appearance = useColorScheme() === "dark" ? "dark" : "light";
-  const [failed, setFailed] = useState(false);
-  const [state, setState] = useState<DiagramState>({ kind: "rendering" });
-  if (failed) return fallback;
-  const height = state.kind === "ready" ? state.height : 1;
+  const entry = useDiagram(source, appearance);
+  if (entry?.kind === "failed") return fallback;
+  if (!entry)
+    return <DiagramRenderer source={source} appearance={appearance} />;
+  const { svg, width, height } = entry.diagram;
   return (
-    <View
-      accessible
-      accessibilityRole="image"
+    <Pressable
+      accessibilityRole="imagebutton"
       accessibilityLabel={t("markdown.diagram")}
+      accessibilityHint={t("markdown.openDiagram")}
       testID="mermaid-diagram"
-      style={[styles.frame, { height }]}
+      onPress={() =>
+        router.push({
+          pathname: "/diagram/[diagramId]",
+          params: { diagramId: entry.id },
+        })
+      }
+      style={[styles.frame, { maxWidth: width, aspectRatio: width / height }]}
     >
-      <WebView
-        source={{ html: mermaidDocument(source, appearance) }}
-        originWhitelist={["about:blank"]}
-        scrollEnabled={false}
-        javaScriptEnabled
-        setSupportMultipleWindows={false}
-        allowsLinkPreview={false}
-        onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
-        style={styles.web}
-        onError={() => setFailed(true)}
-        onMessage={({ nativeEvent }) => {
-          const message = parseMermaidMessage(nativeEvent.data);
-          if (message?.type === "error") setFailed(true);
-          if (message?.type === "size") {
-            setState({ kind: "ready", height: message.height });
-          }
-        }}
-      />
-    </View>
+      <SvgCss xml={svg} width="100%" height="100%" />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  frame: { width: "100%", marginBottom: space.sm, overflow: "hidden" },
-  web: { backgroundColor: "transparent" },
+  renderer: { width: "100%", height: 1, opacity: 0 },
+  frame: { width: "100%", alignSelf: "center", marginBottom: space.sm },
 });

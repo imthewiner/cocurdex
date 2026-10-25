@@ -1,16 +1,13 @@
-import CloseIcon from "@expo/material-symbols/close.xml";
-import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
-  View,
 } from "react-native";
 import { useSavedHosts } from "@/hosts";
 import { themeColors } from "@/theme";
+import { CloseButton } from "@/ui";
 import { imageAttachmentSource } from "./image-attachments";
 
 const viewerColors = themeColors.dark;
@@ -32,13 +29,7 @@ export function ImageViewerScreen({
   const { width, height } = useWindowDimensions();
   return (
     <>
-      <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "xmark" : CloseIcon}
-          accessibilityLabel={t("image.close")}
-          onPress={onClose}
-        />
-      </Stack.Toolbar>
+      <CloseButton accessibilityLabel={t("image.close")} onPress={onClose} />
       <ScrollView
         style={styles.fill}
         contentContainerStyle={styles.center}

@@ -1,6 +1,8 @@
-import { Stack } from "expo-router";
+import AddIcon from "@expo/material-symbols/add.xml";
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Platform } from "react-native";
 import {
   EmptyHosts,
   HostSwitcher,
@@ -13,6 +15,7 @@ export default function IssuesScreen() {
   const { t } = useTranslation("issues");
   const { openPaste, openScan } = usePairingRoutes();
   const host = useCurrentHost();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   if (!host) {
@@ -32,11 +35,27 @@ export default function IssuesScreen() {
         }}
       />
       <HostSwitcher current={host} onPair={openPaste} />
-      <WorkspaceFilter
-        host={host}
-        workspaceId={workspaceId}
-        onChange={setWorkspaceId}
-      />
+      <Stack.Toolbar placement="right">
+        <WorkspaceFilter
+          host={host}
+          workspaceId={workspaceId}
+          onChange={setWorkspaceId}
+        />
+        {host.scopes.includes("interact") ? (
+          <Stack.Toolbar.Button
+            icon={Platform.OS === "ios" ? "plus" : AddIcon}
+            accessibilityLabel={t("create.open")}
+            onPress={() =>
+              router.push({
+                pathname: "/new-issue/[hostId]",
+                params: workspaceId
+                  ? { hostId: host.hostId, workspaceId }
+                  : { hostId: host.hostId },
+              })
+            }
+          />
+        ) : null}
+      </Stack.Toolbar>
       <IssueList host={host} workspaceId={workspaceId} query={query} />
     </>
   );

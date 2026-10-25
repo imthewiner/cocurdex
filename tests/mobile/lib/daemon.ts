@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { readFile, realpath } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
@@ -9,9 +10,17 @@ import {
   bundledDaemonPath,
   daemonLogTail,
   spawnDaemon,
+  waitFor,
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
-import { type AgentId, buildHostPairingLink } from "@cocurdex/shared";
+import {
+  type AgentId,
+  buildDaemonAttachmentUploadUrl,
+  buildHostPairingLink,
+  entityUri,
+  HOST_PAIRING_HTTP_PATH,
+  type ImageAttachment,
+} from "@cocurdex/shared";
 import type { createTempDirs } from "@cocurdex/shared/testing";
 import { EMULATOR_HOST_ALIAS } from "./android";
 import type { MobilePlatform } from "./target";
@@ -20,6 +29,10 @@ const AGENT_MODEL_ID = "e2e-agent-model";
 const AGENT_MODEL_NAME = "E2E Agent Model";
 const STUB_REQUEST_TAIL = 6;
 const DAEMON_LOG_TAIL = 150;
+const IMAGE_FIXTURE = path.join(
+  import.meta.dirname,
+  "../fixtures/checkout-screenshot.png",
+);
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -36,6 +49,71 @@ function freePort() {
   });
 }
 
+async function uploadImage(
+  options: Parameters<typeof requestDaemon>[2],
+  origin: string,
+  file: string,
+) {
+  const { code } = await requestDaemon(
+    "host.pairing.create",
+    { label: "Mobile e2e uploader", scopes: ["read", "interact"] },
+    options,
+  );
+  const exchanged = await fetch(`${origin}${HOST_PAIRING_HTTP_PATH}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code, label: "Mobile e2e uploader" }),
+  });
+  if (!exchanged.ok) throw new Error(`Pairing failed: ${exchanged.status}`);
+  const { token, deviceId } = (await exchanged.json()) as {
+    token: string;
+    deviceId: string;
+  };
+  try {
+    const webSocketUrl = origin.replace(/^http/, "ws");
+    const uploaded = await fetch(
+      buildDaemonAttachmentUploadUrl(
+        webSocketUrl,
+        "image",
+        path.basename(file),
+      ),
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "image/png",
+        },
+        body: await readFile(file),
+      },
+    );
+    if (uploaded.status !== 201) {
+      throw new Error(`Image upload failed: ${uploaded.status}`);
+    }
+    return (await uploaded.json()) as ImageAttachment;
+  } finally {
+    await requestDaemon("host.devices.revoke", { deviceId }, options);
+  }
+}
+
+async function pointWorkspacesAtFixtures(
+  options: Parameters<typeof requestDaemon>[2],
+  fixture: Awaited<ReturnType<typeof installFixtureDb>>,
+) {
+  const saved = await requestDaemon("workspace.list", options);
+  for (const installed of fixture.installedWorkspaces) {
+    const workspace = saved.find((entry) => entry.id === installed.id);
+    if (!workspace) continue;
+    const rootPaths = await Promise.all(
+      installed.rootPaths.map((rootPath) => realpath(rootPath)),
+    );
+    await requestDaemon(
+      "workspace.save",
+      { workspace: { ...workspace, rootPaths } },
+      options,
+    );
+  }
+}
+
 export async function startPairingDaemon(
   platform: MobilePlatform,
   tempDirs: ReturnType<typeof createTempDirs>,
@@ -45,13 +123,14 @@ export async function startPairingDaemon(
   }
   const root = tempDirs.createSync("cocu-m-");
   const userDataPath = path.join(root, "data");
-  await installFixtureDb({
+  const fixture = await installFixtureDb({
     userDataPath,
     workspaceParent: path.join(root, "ws"),
   });
   const daemon = await spawnDaemon({ entry: "bundled", userDataPath });
   const stub = await startStubLlmServer();
   try {
+    await pointWorkspacesAtFixtures(daemon.options, fixture);
     const providerSnapshot = await saveStubProvider(daemon, stub);
     const now = new Date().toISOString();
     await requestDaemon(
@@ -84,6 +163,7 @@ export async function startPairingDaemon(
       status.addresses.find((candidate) => candidate.kind === "lan") ??
       status.addresses[0];
     if (!address) throw new Error("Remote access reported no address");
+    const localOrigin = new URL(address.url).origin;
     const baseUrl = new URL(address.url);
     if (platform === "android") baseUrl.hostname = EMULATOR_HOST_ALIAS;
     return {
@@ -107,7 +187,13 @@ export async function startPairingDaemon(
         return agent.label;
       },
       sessions: () => requestDaemon("session.list", daemon.options),
-      pairedDevices: () => requestDaemon("host.devices.list", daemon.options),
+      async pairedDevices() {
+        const devices = await requestDaemon(
+          "host.devices.list",
+          daemon.options,
+        );
+        return devices.filter((device) => device.revokedAt === null);
+      },
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
       async createReplyingSession(title: string, reply: string) {
         stub.plan = { kind: "stream", chunks: [reply] };
@@ -125,6 +211,59 @@ export async function startPairingDaemon(
           },
           daemon.options,
         );
+      },
+      async createImageSession(title: string, prompt: string, reply: string) {
+        const attachment = await uploadImage(
+          daemon.options,
+          localOrigin,
+          IMAGE_FIXTURE,
+        );
+        stub.plan = { kind: "stream", chunks: [reply] };
+        const answered = stub.requests.length;
+        const session = await requestDaemon(
+          "session.configure",
+          {
+            id: crypto.randomUUID(),
+            workspaceId: FIXTURE_WORKSPACE_ID,
+            sessionKind: "main",
+            title,
+            agentType: "pi",
+            writeMode: "read-only",
+            sessionModeId: null,
+            providerSnapshot,
+          },
+          daemon.options,
+        );
+        await requestDaemon(
+          "session.send",
+          {
+            sessionId: session.id,
+            messageId: crypto.randomUUID(),
+            content: prompt,
+            attachments: [attachment],
+          },
+          daemon.options,
+        );
+        await waitFor(() => stub.requests.length > answered, 30_000);
+        return session;
+      },
+      async createNoteLinkingIssue(noteTitle: string, issueTitle: string) {
+        const view = await requestDaemon("issue.loadView", {}, daemon.options);
+        const issue = view?.issues.find(
+          (candidate) => candidate.title === issueTitle,
+        );
+        if (!issue) throw new Error(`Fixture issue ${issueTitle} is missing`);
+        const linkText = `${issue.identifier} ${issue.title}`;
+        await requestDaemon(
+          "note.create",
+          {
+            title: noteTitle,
+            workspaceId: FIXTURE_WORKSPACE_ID,
+            bodyMarkdown: `[${linkText}](${entityUri({ kind: "issue", id: issue.id })})`,
+          },
+          daemon.options,
+        );
+        return linkText;
       },
       sentPrompts: () =>
         stub.requests.map((request) => JSON.stringify(request.body.messages)),

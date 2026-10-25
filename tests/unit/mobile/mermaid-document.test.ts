@@ -2,6 +2,7 @@ import {
   allowsMermaidNavigation,
   MERMAID_SCRIPT_URL,
   mermaidDocument,
+  mermaidViewerDocument,
   parseMermaidMessage,
 } from "@cocurdex/mobile/internal/markdown/mermaid-document";
 import { describe, expect, it } from "vitest";
@@ -48,14 +49,32 @@ describe("allowsMermaidNavigation", () => {
   });
 });
 
+describe("mermaidViewerDocument", () => {
+  it("shows the rendered diagram without running any script", () => {
+    const html = mermaidViewerDocument("<svg></svg>", "#0a0a0a");
+    expect(html).not.toContain("<script");
+    expect(html).toContain("default-src 'none'");
+    expect(html).not.toContain("script-src");
+    expect(html).toContain("user-scalable=yes");
+  });
+});
+
 describe("parseMermaidMessage", () => {
-  it("accepts sizes and errors and ignores anything else", () => {
-    expect(parseMermaidMessage('{"type":"size","height":120}')).toEqual({
-      type: "size",
-      height: 120,
-    });
+  it("accepts rendered diagrams and errors and ignores anything else", () => {
+    expect(
+      parseMermaidMessage(
+        '{"type":"rendered","svg":"<svg/>","width":320,"height":120}',
+      ),
+    ).toEqual({ type: "rendered", svg: "<svg/>", width: 320, height: 120 });
     expect(parseMermaidMessage('{"type":"error"}')).toEqual({ type: "error" });
-    expect(parseMermaidMessage('{"type":"size","height":0}')).toBeNull();
+    expect(
+      parseMermaidMessage(
+        '{"type":"rendered","svg":"<svg/>","width":0,"height":120}',
+      ),
+    ).toBeNull();
+    expect(
+      parseMermaidMessage('{"type":"rendered","width":1,"height":1}'),
+    ).toBeNull();
     expect(parseMermaidMessage("not json")).toBeNull();
   });
 });

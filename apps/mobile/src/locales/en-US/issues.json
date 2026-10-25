@@ -1,5 +1,14 @@
 {
   "allWorkspaces": "All Workspaces",
+  "create": {
+    "creating": "Creating…",
+    "descriptionPlaceholder": "Add a description",
+    "failed": "Couldn't create the issue. Check the connection and try again.",
+    "hint": "You can hand it to an agent once it's created.",
+    "open": "New Issue",
+    "submit": "Create",
+    "titlePlaceholder": "Issue title"
+  },
   "empty": {
     "description": "Issues you track on {{host}} appear here.",
     "title": "No Issues"
@@ -8,7 +17,8 @@
     "labels": "Labels",
     "none": "None",
     "priority": "Priority",
-    "status": "Status"
+    "status": "Status",
+    "workspace": "Workspace"
   },
   "missing": "This issue was deleted on the computer.",
   "noResults": "No issues match “{{query}}”",

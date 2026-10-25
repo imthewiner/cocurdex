@@ -1,4 +1,3 @@
-import CloseIcon from "@expo/material-symbols/close.xml";
 import { Button } from "@expo/ui";
 import {
   type BarcodeScanningResult,
@@ -7,12 +6,11 @@ import {
 } from "expo-camera";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { space, themeColors } from "@/theme";
-import { BrandHost } from "@/ui";
+import { BrandHost, CloseButton } from "@/ui";
 import { hosts, selectHost } from "./hosts";
 import { createScanGate, type ScanFailure } from "./scan-attempts";
 
@@ -106,13 +104,7 @@ export function ScanPairing({
 
   return (
     <>
-      <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "xmark" : CloseIcon}
-          accessibilityLabel={t("scan.close")}
-          onPress={onClose}
-        />
-      </Stack.Toolbar>
+      <CloseButton accessibilityLabel={t("scan.close")} onPress={onClose} />
       <View style={styles.fill}>
         {granted ? (
           <CameraView

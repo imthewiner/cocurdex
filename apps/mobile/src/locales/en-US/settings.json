@@ -1,0 +1,21 @@
+{
+  "about": {
+    "pairedComputers": "Paired Computers",
+    "title": "About",
+    "version": "Version"
+  },
+  "appearance": {
+    "dark": "Dark",
+    "light": "Light",
+    "system": "Match System",
+    "title": "Appearance"
+  },
+  "language": {
+    "system": "Match System",
+    "title": "Language"
+  },
+  "sessions": {
+    "archived": "Archived Sessions",
+    "title": "Sessions"
+  }
+}

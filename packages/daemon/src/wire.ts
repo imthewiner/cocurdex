@@ -61,6 +61,10 @@ import {
   attachDaemonWebSocketServer,
   closeWebSocketServer,
 } from "./wire-websocket";
+import {
+  createWorkspaceFileHttpHandler,
+  isWorkspaceFileHttpRequest,
+} from "./workspace-file-http";
 
 interface StartDaemonServerOptions {
   logging?: DaemonLogging;
@@ -334,6 +338,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
   ) => Promise<void>;
   let agentToolHandler: HttpHandler | undefined;
   let pdfHandler: HttpHandler | undefined;
+  let workspaceFileHandler: HttpHandler | undefined;
   let deckDownloadHandler: HttpHandler | undefined;
   let deckAssetHandler: HttpHandler | undefined;
   let attachmentHandler: HttpHandler | undefined;
@@ -348,6 +353,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     [isDeckAssetHttpRequest, () => deckAssetHandler],
     [isDeckDownloadHttpRequest, () => deckDownloadHandler],
     [isPdfHttpRequest, () => pdfHandler],
+    [isWorkspaceFileHttpRequest, () => workspaceFileHandler],
     [isAgentToolHttpRequest, () => agentToolHandler],
   ];
   const serve = (
@@ -497,6 +503,16 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       resolvePrincipal: (token) => hostAccess.resolve(token),
       resolvePdfPath,
     });
+    const resolveWorkspaceFilePath =
+      service.resolveWorkspaceFilePath.bind(service);
+    workspaceFileHandler = createWorkspaceFileHttpHandler({
+      remote: false,
+      isAllowedRequest: (request) =>
+        isLoopbackHostHeader(request.headers.host) &&
+        isAllowedWebSocketOrigin(request.headers.origin),
+      resolvePrincipal: (token) => hostAccess.resolve(token),
+      resolveFilePath: resolveWorkspaceFilePath,
+    });
     const redeemDeckDownload = service.decks.redeemDownload.bind(service.decks);
     deckDownloadHandler = createDeckDownloadHttpHandler({
       isAllowedRequest: (request) =>
@@ -529,6 +545,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
         attachments: service.attachments,
         machineName: os.hostname(),
         resolvePdfPath,
+        resolveWorkspaceFilePath,
         redeemDeckDownload,
         locateDeckAsset,
         webRoot: options.webRoot,

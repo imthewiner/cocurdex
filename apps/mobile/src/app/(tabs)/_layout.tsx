@@ -12,9 +12,16 @@ export default function TabsLayout() {
       {...(Platform.OS === "android"
         ? {
             backgroundColor: colors.background,
-            indicatorColor: colors.muted,
+            disableIndicator: true,
             rippleColor: colors.muted,
-            iconColor: colors.foreground,
+            iconColor: {
+              default: colors.mutedForeground,
+              selected: colors.foreground,
+            },
+            labelStyle: {
+              default: { color: colors.mutedForeground },
+              selected: { color: colors.foreground },
+            },
             labelVisibilityMode: "labeled" as const,
           }
         : {})}

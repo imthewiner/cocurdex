@@ -24,9 +24,11 @@ function useStateDetails(): Record<SessionPrimaryState, string | null> {
 export function SessionRowView({
   row,
   onPress,
+  onLongPress,
 }: {
   row: SessionRow;
   onPress(): void;
+  onLongPress(): void;
 }) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
@@ -42,6 +44,7 @@ export function SessionRowView({
       accessibilityRole="button"
       accessibilityValue={{ text: summary }}
       onPress={onPress}
+      onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
         pressed && { backgroundColor: colors.muted },

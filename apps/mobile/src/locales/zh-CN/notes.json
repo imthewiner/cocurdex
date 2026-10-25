@@ -1,4 +1,13 @@
 {
+  "create": {
+    "bodyPlaceholder": "用 Markdown 书写",
+    "creating": "正在创建…",
+    "failed": "无法创建笔记，请检查连接后重试。",
+    "hint": "Agent 也能读取和编辑这篇笔记。",
+    "open": "新建笔记",
+    "submit": "创建",
+    "titlePlaceholder": "标题"
+  },
   "empty": {
     "description": "在 {{host}} 上写的笔记会显示在这里。",
     "title": "没有笔记"
@@ -11,5 +20,6 @@
   "unavailable": {
     "retry": "重试",
     "title": "无法从 {{host}} 加载笔记"
-  }
+  },
+  "workspace": "工作区"
 }

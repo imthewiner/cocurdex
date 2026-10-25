@@ -1,5 +1,6 @@
 import AddIcon from "@expo/material-symbols/add.xml";
-import { Stack } from "expo-router";
+import SettingsIcon from "@expo/material-symbols/settings.xml";
+import { router, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import {
@@ -16,6 +17,13 @@ export default function ComputersScreen() {
 
   return (
     <>
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon={Platform.OS === "ios" ? "gearshape" : SettingsIcon}
+          accessibilityLabel={t("screens.settings")}
+          onPress={() => router.push("/settings")}
+        />
+      </Stack.Toolbar>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "plus" : AddIcon}

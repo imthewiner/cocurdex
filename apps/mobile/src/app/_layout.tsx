@@ -21,7 +21,11 @@ export default function RootLayout() {
   const grouped = useGroupedColors();
   return (
     <ThemeProvider value={navigationThemes[scheme]}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          statusBarStyle: scheme === "dark" ? "light" : "dark",
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="session/[hostId]/[sessionId]"
@@ -55,7 +59,35 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="settings"
+          options={{
+            title: t("screens.settings"),
+            headerBackButtonDisplayMode: "minimal",
+            animation: PUSH_ANIMATION,
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
+        />
+        <Stack.Screen
+          name="archived/[hostId]"
+          options={{
+            title: t("screens.archived"),
+            headerBackButtonDisplayMode: "minimal",
+            animation: PUSH_ANIMATION,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
           name="tool-call/[hostId]/[sessionId]/[toolCallId]"
+          options={{
+            title: "",
+            headerBackButtonDisplayMode: "minimal",
+            animation: PUSH_ANIMATION,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="file/[hostId]"
           options={{
             title: "",
             headerBackButtonDisplayMode: "minimal",
@@ -75,6 +107,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="diagram/[diagramId]"
+          options={{
+            title: "",
+            presentation: "fullScreenModal",
+            headerTransparent: true,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
           name="pair"
           options={{
             title: t("screens.pair"),
@@ -86,6 +127,24 @@ export default function RootLayout() {
         <Stack.Screen
           name="new-session"
           options={{ headerShown: false, presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="new-issue/[hostId]"
+          options={{
+            title: t("screens.newIssue"),
+            presentation: "modal",
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
+        />
+        <Stack.Screen
+          name="new-note/[hostId]"
+          options={{
+            title: t("screens.newNote"),
+            presentation: "modal",
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
         />
         <Stack.Screen
           name="scan"

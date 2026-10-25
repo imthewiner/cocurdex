@@ -1,0 +1,21 @@
+{
+  "about": {
+    "pairedComputers": "已配对电脑",
+    "title": "关于",
+    "version": "版本"
+  },
+  "appearance": {
+    "dark": "深色",
+    "light": "浅色",
+    "system": "跟随系统",
+    "title": "外观"
+  },
+  "language": {
+    "system": "跟随系统",
+    "title": "语言"
+  },
+  "sessions": {
+    "archived": "已归档会话",
+    "title": "会话"
+  }
+}

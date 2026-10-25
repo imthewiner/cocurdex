@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Linking, Platform, View } from "react-native";
 import {
@@ -11,7 +12,14 @@ import {
   useSyntaxColors,
   useThemeColors,
 } from "@/theme";
+import { entityLinkHref, entityLinkRef } from "./entity-link";
 import { externalLinkUrl } from "./external-link";
+import { useExistingFiles } from "./file-link-queries";
+import {
+  collectFileLinkTargets,
+  linkFilePaths,
+  parseFileLinkHref,
+} from "./file-links";
 import { splitMermaidBlocks } from "./markdown-segments";
 import { MermaidDiagram } from "./mermaid-diagram";
 
@@ -51,6 +59,7 @@ function markdownStyle(
       fontSize: 14,
       color: colors.foreground,
       backgroundColor: colors.chatCodeInline,
+      borderColor: colors.chatCodeInline,
     },
     codeBlock: {
       fontFamily: MONO_FONT,
@@ -89,12 +98,40 @@ function markdownStyle(
   };
 }
 
+function useOpenLink(hostId: string | undefined) {
+  const router = useRouter();
+  return (url: string) => {
+    const external = externalLinkUrl(url);
+    if (external) {
+      void Linking.openURL(external);
+      return;
+    }
+    const file = hostId ? parseFileLinkHref(url) : null;
+    if (file && hostId) {
+      router.push({
+        pathname: "/file/[hostId]",
+        params: {
+          hostId,
+          path: file.path,
+          ...(file.line === null ? {} : { line: String(file.line) }),
+        },
+      });
+      return;
+    }
+    const ref = entityLinkRef(url);
+    const href = ref && hostId ? entityLinkHref(hostId, ref) : null;
+    if (href) router.push(href);
+  };
+}
+
 function MarkdownBlock({
   markdown,
   style,
+  onOpenLink,
 }: {
   markdown: string;
   style: MarkdownStyle;
+  onOpenLink(url: string): void;
 }) {
   return (
     <EnrichedMarkdownText
@@ -103,28 +140,53 @@ function MarkdownBlock({
       markdownStyle={style}
       selectable
       enableTaskListItemToggle={false}
-      onLinkPress={({ url }) => {
-        const target = externalLinkUrl(url);
-        if (target) void Linking.openURL(target);
-      }}
+      onLinkPress={({ url }) => onOpenLink(url)}
     />
+  );
+}
+
+function useFileLinkedMarkdown(
+  markdown: string,
+  hostId: string | undefined,
+  fileRoot: string | null | undefined,
+) {
+  const linkable = hostId !== undefined && fileRoot !== undefined;
+  const paths = useMemo(
+    () =>
+      linkable
+        ? collectFileLinkTargets(markdown, fileRoot).map(
+            (target) => target.path,
+          )
+        : [],
+    [linkable, markdown, fileRoot],
+  );
+  const existing = useExistingFiles(hostId, paths);
+  return useMemo(
+    () => (linkable ? linkFilePaths(markdown, fileRoot, existing) : markdown),
+    [linkable, markdown, fileRoot, existing],
   );
 }
 
 export function MarkdownText({
   markdown,
+  hostId,
+  fileRoot,
   testID,
 }: {
   markdown: string;
+  hostId?: string;
+  fileRoot?: string | null;
   testID?: string;
 }) {
+  const linked = useFileLinkedMarkdown(markdown, hostId, fileRoot);
+  const openLink = useOpenLink(hostId);
   const colors = useThemeColors();
   const syntaxColors = useSyntaxColors();
   const style = useMemo(
     () => markdownStyle(colors, syntaxColors),
     [colors, syntaxColors],
   );
-  const segments = useMemo(() => splitMermaidBlocks(markdown), [markdown]);
+  const segments = useMemo(() => splitMermaidBlocks(linked), [linked]);
   return (
     <View testID={testID}>
       {segments.map((segment) =>
@@ -133,6 +195,7 @@ export function MarkdownText({
             key={`markdown-${segment.line}`}
             markdown={segment.text}
             style={style}
+            onOpenLink={openLink}
           />
         ) : (
           <MermaidDiagram
@@ -142,6 +205,7 @@ export function MarkdownText({
               <MarkdownBlock
                 markdown={`~~~~\n${segment.source}\n~~~~`}
                 style={style}
+                onOpenLink={openLink}
               />
             }
           />
