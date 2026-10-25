@@ -4,6 +4,7 @@ import {
 } from "@cocurdex/mobile/internal/session-detail/transcript";
 import type {
   AgentToolCallRecord,
+  ImageAttachment,
   MessageRecord,
   SessionInteractionSnapshot,
 } from "@cocurdex/shared";
@@ -47,6 +48,33 @@ function tool(
 }
 
 describe("buildTranscript", () => {
+  it("keeps a user message that carries only images", () => {
+    const photo: ImageAttachment = {
+      kind: "image",
+      id: "img-1",
+      name: "receipt.png",
+      mimeType: "image/png",
+      sizeBytes: 1024,
+      filePath: "/data/image-attachments/img-1.png",
+      width: 300,
+      height: 200,
+    };
+    const items = buildTranscript({
+      messages: [
+        message("u1", 1, "user", "", {
+          attachments: [photo, { kind: "context-folder", folderPath: "/w" }],
+        }),
+      ],
+      activeMessages: [],
+      toolCalls: [],
+      workspacePath: null,
+    });
+
+    expect(items).toEqual([
+      { kind: "user", id: "u1", text: "", images: [photo] },
+    ]);
+  });
+
   it("interleaves messages and tool calls in journal order", () => {
     const items = buildTranscript({
       messages: [
@@ -59,7 +87,7 @@ describe("buildTranscript", () => {
     });
 
     expect(items).toEqual([
-      { kind: "user", id: "u1", text: "Add discount codes" },
+      { kind: "user", id: "u1", text: "Add discount codes", images: [] },
       {
         kind: "tool",
         id: "cart",
@@ -124,7 +152,7 @@ describe("buildTranscript", () => {
     });
 
     expect(items).toEqual([
-      { kind: "user", id: "u1", text: "Go" },
+      { kind: "user", id: "u1", text: "Go", images: [] },
       {
         kind: "assistant",
         id: "a2",

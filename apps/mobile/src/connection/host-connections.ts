@@ -1,18 +1,53 @@
 import {
   createHostRegistry,
+  foregroundWakeup,
   type HostConnection,
   type LifecycleSignal,
+  type NetworkSignal,
   savedHostEndpoint,
 } from "@cocurdex/client-runtime";
+import { addNetworkStateListener, getNetworkStateAsync } from "expo-network";
 import { AppState } from "react-native";
 import { hosts } from "@/hosts";
 
 const lifecycle: LifecycleSignal = {
   subscribeForeground(listener) {
+    let backgroundedAt =
+      AppState.currentState === "background" ? Date.now() : null;
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") listener();
+      if (state === "background") {
+        backgroundedAt = Date.now();
+        return;
+      }
+      if (state !== "active") return;
+      listener(foregroundWakeup(backgroundedAt, Date.now()));
+      backgroundedAt = null;
     });
     return () => subscription.remove();
+  },
+};
+
+let connected: boolean | undefined;
+const networkListeners = new Set<(online: boolean) => void>();
+
+function updateConnected(next: boolean | undefined) {
+  if (next === undefined || next === connected) return;
+  connected = next;
+  for (const listener of networkListeners) listener(next);
+}
+
+addNetworkStateListener((event) => updateConnected(event.isConnected));
+void getNetworkStateAsync()
+  .then((event) => {
+    if (connected === undefined) updateConnected(event.isConnected);
+  })
+  .catch(() => undefined);
+
+const network: NetworkSignal = {
+  isOnline: () => connected !== false,
+  subscribe(listener) {
+    networkListeners.add(listener);
+    return () => networkListeners.delete(listener);
   },
 };
 
@@ -31,6 +66,7 @@ export function hostConnection(hostId: string): HostConnection {
       hostId,
       platform: {
         lifecycle,
+        network,
         resolveEndpoint: async () => savedHostEndpoint(pairedHost(hostId)),
       },
     })

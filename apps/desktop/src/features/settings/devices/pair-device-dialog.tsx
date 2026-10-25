@@ -24,6 +24,7 @@ import { desktopApi } from "@/lib";
 import { SettingsSelect } from "../settings-select";
 import { CopyButton } from "./copy-button";
 import { useFormatDateTime, useScopeLabels } from "./host-access-labels";
+import { PairingQrCode } from "./pairing-qr-code";
 
 const DEFAULT_SCOPES: HostAccessScope[] = ["read", "interact", "approvals"];
 const TTL_OPTIONS = ["10", "30", "60"];
@@ -99,11 +100,20 @@ function CreatedPairing({
       {addresses.map((address) => {
         const link = buildHostPairingLink(address.url, created.code);
         return (
-          <div className="flex min-w-0 items-center gap-2" key={address.url}>
-            <Text className="min-w-0 flex-1 font-mono" size="meta" truncate>
-              {link}
-            </Text>
-            <CopyButton value={link} />
+          <div
+            className="flex min-w-0 flex-col items-center gap-2"
+            key={address.url}
+          >
+            <PairingQrCode
+              label={t("devices.pair.qrLabel", { address: address.url })}
+              link={link}
+            />
+            <div className="flex w-full min-w-0 items-center gap-2">
+              <Text className="min-w-0 flex-1 font-mono" size="meta" truncate>
+                {link}
+              </Text>
+              <CopyButton value={link} />
+            </div>
           </div>
         );
       })}

@@ -147,6 +147,14 @@ export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
       },
       resetState: async () => {
         await runCommand("xcrun", ["simctl", "keychain", udid, "reset"]);
+        await runCommand("xcrun", [
+          "simctl",
+          "privacy",
+          udid,
+          "grant",
+          "camera",
+          IOS_APP_ID,
+        ]);
       },
       launchApp: async () => {
         await runCommand("xcrun", ["simctl", "launch", udid, IOS_APP_ID]);

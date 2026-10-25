@@ -3,10 +3,13 @@ import net from "node:net";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { installFixtureDb } from "@cocurdex/e2e/fixture-db/install";
+import { FIXTURE_WORKSPACE_ID } from "@cocurdex/e2e/fixture-db/recipe";
+import { saveStubProvider } from "@cocurdex/e2e/helpers/chat-session";
 import {
   bundledDaemonPath,
   spawnDaemon,
 } from "@cocurdex/e2e/helpers/daemon-process";
+import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
 import { buildHostPairingLink } from "@cocurdex/shared";
 import type { createTempDirs } from "@cocurdex/shared/testing";
 import { EMULATOR_HOST_ALIAS } from "./android";
@@ -41,7 +44,9 @@ export async function startPairingDaemon(
     workspaceParent: path.join(root, "ws"),
   });
   const daemon = await spawnDaemon({ entry: "bundled", userDataPath });
+  const stub = await startStubLlmServer();
   try {
+    const providerSnapshot = await saveStubProvider(daemon, stub);
     const port = await freePort();
     const status = await requestDaemon(
       "host.remoteAccess.set",
@@ -69,10 +74,33 @@ export async function startPairingDaemon(
       },
       pairedDevices: () => requestDaemon("host.devices.list", daemon.options),
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
-      dispose: () => daemon.dispose(),
+      async createReplyingSession(title: string, reply: string) {
+        stub.plan = { kind: "stream", chunks: [reply] };
+        return requestDaemon(
+          "session.configure",
+          {
+            id: crypto.randomUUID(),
+            workspaceId: FIXTURE_WORKSPACE_ID,
+            sessionKind: "main",
+            title,
+            agentType: "pi",
+            writeMode: "read-only",
+            sessionModeId: null,
+            providerSnapshot,
+          },
+          daemon.options,
+        );
+      },
+      sentPrompts: () =>
+        stub.requests.map((request) => JSON.stringify(request.body.messages)),
+      async dispose() {
+        await daemon.dispose();
+        await stub.close();
+      },
     };
   } catch (error) {
     await daemon.dispose();
+    await stub.close();
     throw error;
   }
 }

@@ -53,6 +53,8 @@ function flowLabels(locale: SupportedLocale) {
     TAB_COMPUTERS: common.tabs.computers,
     TAB_SESSIONS: common.tabs.sessions,
     SEARCH_PLACEHOLDER: sessions.search,
+    SEND_ACTION: sessions.composer.send,
+    ATTACH_ACTION: sessions.composer.attach,
     WORKSPACE_NAME: FIXTURE_WORKSPACE_NAME,
     SEARCH_QUERY: "percentage",
     SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
@@ -61,10 +63,20 @@ function flowLabels(locale: SupportedLocale) {
     CODE_SESSION_TITLE: fixtureSession(CODE_SESSION).title,
     CODE_BLOCK_TEXT: "(?s)const fulfillmentSteps = .*",
     EMPTY_TITLE: hosts.empty.title,
-    EMPTY_PAIR: hosts.empty.pair,
+    EMPTY_SCAN: hosts.empty.scan,
+    SCAN_TITLE: hosts.scan.title,
+    SCAN_PASTE: hosts.scan.paste,
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
+  };
+}
+
+function sendLabels(locale: SupportedLocale) {
+  return {
+    SEND_SESSION_TITLE: `Mobile reply check ${locale}`,
+    SEND_PROMPT: `Summarize the cart module ${locale}`,
+    SEND_REPLY: `The cart module totals line items ${locale}`,
   };
 }
 
@@ -172,6 +184,11 @@ async function main() {
         : await startAndroidTarget(mobileDir, values.avd);
     try {
       for (const { appearance, locale } of RUNS) {
+        const send = sendLabels(locale);
+        await daemon.createReplyingSession(
+          send.SEND_SESSION_TITLE,
+          send.SEND_REPLY,
+        );
         await target.resetState();
         await target.setAppearance(appearance);
         await target.setLocale(locale);
@@ -180,6 +197,7 @@ async function main() {
           "pairing.yaml",
           {
             ...flowLabels(locale),
+            ...send,
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
           },
@@ -189,6 +207,13 @@ async function main() {
       const after = await openedSessionState();
       if (after === "completed-unread") {
         throw new Error(`Opening ${CODE_SESSION} did not mark it visited`);
+      }
+      const prompts = daemon.sentPrompts().join("\n");
+      for (const { locale } of RUNS) {
+        const { SEND_PROMPT } = sendLabels(locale);
+        if (!prompts.includes(SEND_PROMPT)) {
+          throw new Error(`The agent never received "${SEND_PROMPT}"`);
+        }
       }
       const devices = await daemon.pairedDevices();
       if (devices.length !== RUNS.length) {

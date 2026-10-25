@@ -1,10 +1,22 @@
-import { FieldGroup, Text, TextInput, type TextInputRef } from "@expo/ui";
+import {
+  Button,
+  FieldGroup,
+  Text,
+  TextInput,
+  type TextInputRef,
+} from "@expo/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
-import { hosts, type PairFailure, PairToolbar, selectHost } from "@/hosts";
+import {
+  hosts,
+  type PairFailure,
+  PairToolbar,
+  selectHost,
+  usePairingRoutes,
+} from "@/hosts";
 import { useThemeColors } from "@/theme";
 import { BrandHost, keyboardHidden } from "@/ui";
 
@@ -22,6 +34,7 @@ export default function PairScreen() {
   const { t } = useTranslation("hosts");
   const failureMessages = useFailureMessages();
   const router = useRouter();
+  const { switchToScan } = usePairingRoutes();
   const colors = useThemeColors();
   const linkInput = useRef<TextInputRef>(null);
   const [link, setLink] = useState("");
@@ -46,6 +59,12 @@ export default function PairScreen() {
     selectHost(result.host.hostId);
     await keyboardHidden();
     router.back();
+  };
+
+  const scanInstead = async () => {
+    linkInput.current?.blur();
+    await keyboardHidden();
+    await switchToScan();
   };
 
   return (
@@ -80,6 +99,13 @@ export default function PairScreen() {
                 </Text>
               )}
             </FieldGroup.SectionFooter>
+          </FieldGroup.Section>
+          <FieldGroup.Section>
+            <Button
+              variant="text"
+              label={t("pair.scanInstead")}
+              onPress={() => void scanInstead()}
+            />
           </FieldGroup.Section>
         </FieldGroup>
       </BrandHost>

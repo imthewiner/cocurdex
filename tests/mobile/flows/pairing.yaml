@@ -6,7 +6,16 @@ appId: dev.cocurdex.mobile
 - retry:
     maxRetries: 2
     commands:
-      - tapOn: ${EMPTY_PAIR}
+      - tapOn: ${EMPTY_SCAN}
+      - extendedWaitUntil:
+          visible: ${SCAN_TITLE}
+          timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: scan
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${SCAN_PASTE}
       - tapOn:
           text: ${SYSTEM_CONTINUE}
           optional: true
@@ -26,10 +35,13 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: sessions
 - scrollUntilVisible:
     element: ${CODE_SESSION_TITLE}
-- tapOn: ${CODE_SESSION_TITLE}
-- extendedWaitUntil:
-    visible: ${CODE_BLOCK_TEXT}
-    timeout: 10000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${CODE_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible: ${CODE_BLOCK_TEXT}
+          timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-code-block
 - runFlow:
@@ -48,6 +60,53 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - back
+- scrollUntilVisible:
+    element: ${SEND_SESSION_TITLE}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${SEND_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible:
+            id: "composer-input"
+          timeout: 10000
+- assertVisible: ${ATTACH_ACTION}
+- tapOn:
+    id: "composer-input"
+- inputText: ${SEND_PROMPT}
+- tapOn: ${SEND_ACTION}
+- extendedWaitUntil:
+    visible: ${SEND_REPLY}
+    timeout: 20000
+- assertVisible: ${SEND_PROMPT}
+- tapOn: ${SEND_REPLY}
+- waitForAnimationToEnd
+- takeScreenshot: session-reply
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          while:
+            visible:
+              id: "composer-input"
+          times: 2
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible: ${WORKSPACE_NAME}
+          timeout: 5000
 - runFlow:
     when:
       platform: iOS

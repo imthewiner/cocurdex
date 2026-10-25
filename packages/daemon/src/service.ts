@@ -68,6 +68,7 @@ import {
   isChatWorkspaceId,
   isHandoffVisibleMessage,
   isToolCallId,
+  type MessageAttachment,
   messageAgentLookup,
   newAssistantSessionId,
   normalizeAgentRoleAvatar,
@@ -112,7 +113,11 @@ import { logDaemonDiagnostic } from "./diagnostics";
 import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
 import { commitGitChanges } from "./git";
-import { HostAccessService, listHostAddresses } from "./host-access";
+import {
+  HostAccessService,
+  LOCAL_REQUEST_CONTEXT,
+  listHostAddresses,
+} from "./host-access";
 import { DaemonMcpService } from "./mcp-service";
 import { probeNetworkProxy } from "./network-proxy-probe";
 import {
@@ -125,6 +130,7 @@ import { DaemonPdfAnnotationsService } from "./pdf-annotations";
 import { PeerMessagingService } from "./peer-messaging";
 import { DaemonProviderService } from "./provider";
 import { CodexLoginSessions } from "./provider/codex-login";
+import { withServerProviderConnection } from "./provider/server-connection";
 import { generateProviderSessionTitle } from "./provider/session-title";
 import {
   ProviderCredentials,
@@ -864,6 +870,27 @@ export class CocurdexDaemonService {
     );
   }
 
+  async assertClientAttachmentsAccess(
+    principal: HostPrincipal,
+    attachments: readonly MessageAttachment[] | undefined,
+  ) {
+    if (principal.kind === "local") return;
+    for (const attachment of attachments ?? []) {
+      if (attachment.kind === "context-item") continue;
+      if (attachment.kind === "image" || attachment.kind === "document") {
+        if (this.attachments.isStoredFile(attachment)) continue;
+        throw new Error(
+          `Attachment is not a stored upload (path=${attachment.filePath})`,
+        );
+      }
+      const filePath =
+        attachment.kind === "context-folder"
+          ? attachment.folderPath
+          : attachment.filePath;
+      await this.assertClientPathAccess(principal, filePath, "file");
+    }
+  }
+
   async workspaceFileExists(filePath: string) {
     if (!(await this.scanPolicy.canAccessFile(filePath))) {
       return false;
@@ -1572,11 +1599,40 @@ export class CocurdexDaemonService {
     return aggregate;
   }
 
-  async saveSessionConfiguration(input: SessionConfiguration) {
+  async saveSessionConfiguration(
+    input: SessionConfiguration,
+    principal: HostPrincipal = LOCAL_REQUEST_CONTEXT.principal,
+  ) {
     validateSessionConfiguration(input);
-    return this.sessionCommands.run(input.id, () =>
-      this.configureSession(input),
+    return this.sessionCommands.run(input.id, async () =>
+      this.configureSession(
+        principalHasScope(principal, "credentials")
+          ? input
+          : await this.withServerProviderConnection(input),
+      ),
     );
+  }
+
+  private async withServerProviderConnection(
+    input: SessionConfiguration,
+  ): Promise<SessionConfiguration> {
+    const snapshot = input.providerSnapshot;
+    if (!snapshot) return input;
+    const configs = await this.state.listProviderConfigs();
+    const config =
+      configs.find((candidate) => candidate.id === snapshot.providerId) ?? null;
+    const models = config ? await this.state.listProviderModels(config.id) : [];
+    const stored = await this.state.getSession(input.id);
+    return {
+      ...input,
+      providerSnapshot: withServerProviderConnection(snapshot, {
+        config,
+        model:
+          models.find((candidate) => candidate.modelId === snapshot.modelId) ??
+          null,
+        stored: stored?.providerSnapshot ?? null,
+      }),
+    };
   }
 
   private async configureSession(input: SessionConfiguration) {

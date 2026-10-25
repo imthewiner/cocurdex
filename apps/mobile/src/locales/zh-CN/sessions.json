@@ -12,7 +12,12 @@
     "title": "请在电脑上批准"
   },
   "composer": {
+    "attach": "添加照片",
+    "imageFailed": "图片上传失败，请检查连接后重试。",
+    "imageTooLarge": "图片超过 10 MB。",
+    "imageUnsupported": "只能附加 PNG、JPEG、GIF 和 WebP 图片。",
     "placeholder": "回复 agent",
+    "removeImage": "移除 {{name}}",
     "send": "发送",
     "stop": "停止"
   },

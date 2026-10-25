@@ -85,8 +85,17 @@ interface DaemonTransport {
 
 const LOCAL_TRANSPORT: DaemonTransport = { remote: false, remoteAddress: null };
 
-function encodeWireMessage(message: unknown) {
-  return `${JSON.stringify(message)}\n`;
+const CREDENTIAL_FIELDS = new Set(["headersJson"]);
+
+function withholdCredentialFields(key: string, value: unknown) {
+  return CREDENTIAL_FIELDS.has(key) && value != null ? null : value;
+}
+
+function encodeWireMessage(message: unknown, withholdCredentials = false) {
+  const json = withholdCredentials
+    ? JSON.stringify(message, withholdCredentialFields)
+    : JSON.stringify(message);
+  return `${json}\n`;
 }
 
 function parseWebSocketJsonFrame(data: { toString(): string }) {
@@ -202,8 +211,11 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     const deviceIds = new Set<string>();
     connections.set(connection, deviceIds);
     let subscribedToDaemonEvents = false;
+    let principal: HostPrincipal | null = null;
     const send = (message: unknown, onSent?: () => void) => {
-      connection.send(encodeWireMessage(message), onSent);
+      const withholdCredentials =
+        principal !== null && !principalHasScope(principal, "credentials");
+      connection.send(encodeWireMessage(message, withholdCredentials), onSent);
     };
     const sendEvent = (entry: DaemonEventJournalEntry) => {
       send({
@@ -219,7 +231,6 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
     const terminalListener = (event: TerminalDaemonEvent) => {
       send({ event, type: "daemon.event" } satisfies DaemonEventEnvelope);
     };
-    let principal: HostPrincipal | null = null;
     let releaseTerminalClient: (() => void) | null = null;
     const subscribeToTerminals = () => {
       if (releaseTerminalClient || !principal) return;

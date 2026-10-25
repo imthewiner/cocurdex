@@ -13,8 +13,10 @@ export default interface Resources {
   };
   hosts: {
     empty: {
-      description: "On your computer, open Settings › Devices, create a pairing code, and paste its link here.";
+      description: "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.";
       pair: "Pair a Computer";
+      paste: "Paste Pairing Link";
+      scan: "Scan to Pair";
       title: "No Computers";
     };
     pair: {
@@ -28,6 +30,22 @@ export default interface Resources {
       hint: "On your computer, open Settings › Devices and create a pairing code.";
       linkPlaceholder: "Pairing link";
       pairing: "Pairing…";
+      scanInstead: "Scan Instead";
+    };
+    scan: {
+      blocked: {
+        description: "Allow camera access in Settings to scan a pairing code, or paste the pairing link instead.";
+        openSettings: "Open Settings";
+        title: "Camera access is off";
+      };
+      close: "Close";
+      failure: {
+        notPairingCode: "This isn't a Cocurdex pairing code.";
+      };
+      hint: "On your computer, open Settings › Devices › Pair Device.";
+      paste: "Paste Pairing Link";
+      title: "Scan the pairing QR code on your computer";
+      viewfinder: "Viewfinder";
     };
     switcher: {
       label: "Computer: {{host}}";
@@ -52,7 +70,12 @@ export default interface Resources {
       title: "Approve this on your computer";
     };
     composer: {
+      attach: "Attach Photo";
+      imageFailed: "The image couldn't be uploaded. Check the connection and try again.";
+      imageTooLarge: "That image is larger than 10 MB.";
+      imageUnsupported: "Only PNG, JPEG, GIF, and WebP images can be attached.";
       placeholder: "Reply to the agent";
+      removeImage: "Remove {{name}}";
       send: "Send";
       stop: "Stop";
     };

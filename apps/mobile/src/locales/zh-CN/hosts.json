@@ -1,7 +1,9 @@
 {
   "empty": {
-    "description": "在电脑上打开 设置 › 设备，生成配对码，然后把它的链接粘贴到这里。",
+    "description": "在电脑上打开 Cocurdex 的 设置 › 设备，生成配对二维码，再用这台手机扫一下。",
     "pair": "配对电脑",
+    "paste": "粘贴配对链接",
+    "scan": "扫码配对",
     "title": "还没有电脑"
   },
   "pair": {
@@ -14,7 +16,23 @@
     },
     "hint": "在电脑上打开 设置 › 设备，生成配对码。",
     "linkPlaceholder": "配对链接",
-    "pairing": "正在配对…"
+    "pairing": "正在配对…",
+    "scanInstead": "改为扫码"
+  },
+  "scan": {
+    "blocked": {
+      "description": "在系统设置里允许使用相机后即可扫码，也可以改为粘贴配对链接。",
+      "openSettings": "打开设置",
+      "title": "相机权限已关闭"
+    },
+    "close": "关闭",
+    "failure": {
+      "notPairingCode": "这不是 Cocurdex 的配对二维码。"
+    },
+    "hint": "在电脑上打开 设置 › 设备 › 配对设备",
+    "paste": "粘贴配对链接",
+    "title": "扫描电脑上的配对二维码",
+    "viewfinder": "取景框"
   },
   "switcher": {
     "label": "电脑：{{host}}"

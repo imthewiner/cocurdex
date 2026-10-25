@@ -1,6 +1,7 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type {
   AgentPlanApprovalOutcome,
+  ImageAttachment,
   SessionObservationSnapshot,
   WorkspaceRecord,
 } from "@cocurdex/shared";
@@ -21,6 +22,11 @@ import { hostConnection } from "@/connection";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import { Composer } from "./composer";
+import {
+  imageAttachmentSource,
+  pickImages,
+  uploadImage,
+} from "./image-attachments";
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
 import { createSessionDetailStore } from "./session-detail-store";
 import { SessionTitle } from "./session-title";
@@ -136,12 +142,12 @@ export function SessionDetailScreen({
     },
   };
 
-  const send = (content: string) => {
+  const send = (content: string, attachments: ImageAttachment[]) => {
     const messageId = randomUUID();
     return attempt(() =>
       connection.command(
         "session.send",
-        { sessionId, messageId, content },
+        { sessionId, messageId, content, attachments },
         { idempotencyKey: messageId },
       ),
     );
@@ -186,6 +192,9 @@ export function SessionDetailScreen({
         ) : (
           <TranscriptView
             items={items}
+            imageSource={(attachment) =>
+              imageAttachmentSource(host, attachment)
+            }
             footer={
               status ? <StatusLine text={status} failed={failed} /> : undefined
             }
@@ -212,6 +221,8 @@ export function SessionDetailScreen({
               canSend={canInteract && detail.loaded && !detail.missing}
               onSend={send}
               onStop={stop}
+              onPickImages={pickImages}
+              onUploadImage={(image) => uploadImage(host, image)}
             />
           )}
         </View>
