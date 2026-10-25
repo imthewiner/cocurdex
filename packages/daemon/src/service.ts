@@ -606,6 +606,19 @@ export class CocurdexDaemonService {
   }
 
   async archiveSession(sessionId: string) {
+    const archived = await this.archiveSessionQuietly(sessionId);
+    if (archived) this.announceSessionsChanged();
+    return archived;
+  }
+
+  private announceSessionsChanged() {
+    this.events.emit("daemon.event", {
+      type: "data.changed",
+      areas: ["agent"],
+    });
+  }
+
+  private async archiveSessionQuietly(sessionId: string) {
     validateSessionId(sessionId);
     await this.team.onLeadStopped(sessionId);
     await this.scriptRuns.cancelForRequester(sessionId);
@@ -617,6 +630,12 @@ export class CocurdexDaemonService {
   }
 
   async restoreSession(sessionId: string) {
+    const restored = await this.restoreSessionQuietly(sessionId);
+    if (restored.length > 0) this.announceSessionsChanged();
+    return restored;
+  }
+
+  private async restoreSessionQuietly(sessionId: string) {
     validateSessionId(sessionId);
     return this.sessionCommands.run(sessionId, () =>
       this.state.restoreSession(sessionId),
@@ -643,7 +662,7 @@ export class CocurdexDaemonService {
     );
     const archivedSessionIds: string[] = [];
     for (const rootId of rootIds) {
-      if (await this.archiveSession(rootId)) {
+      if (await this.archiveSessionQuietly(rootId)) {
         archivedSessionIds.push(rootId);
       }
     }
@@ -660,7 +679,7 @@ export class CocurdexDaemonService {
     sessionIds.forEach(validateSessionId);
     const restored: SessionRecord[] = [];
     for (const sessionId of new Set(sessionIds)) {
-      restored.push(...(await this.restoreSession(sessionId)));
+      restored.push(...(await this.restoreSessionQuietly(sessionId)));
     }
     if (restored.length > 0) {
       this.events.emit("daemon.event", {
@@ -895,6 +914,16 @@ export class CocurdexDaemonService {
           : attachment.filePath;
       await this.assertClientPathAccess(principal, filePath, "file");
     }
+  }
+
+  async resolveWorkspaceFilePath(filePath: string) {
+    const resolvedPath = path.resolve(filePath);
+    if (!(await this.scanPolicy.canAccessFile(resolvedPath))) {
+      throw new Error(
+        `File is outside every registered workspace (path=${resolvedPath})`,
+      );
+    }
+    return resolvedPath;
   }
 
   async workspaceFileExists(filePath: string) {
@@ -1610,13 +1639,15 @@ export class CocurdexDaemonService {
     principal: HostPrincipal = LOCAL_REQUEST_CONTEXT.principal,
   ) {
     validateSessionConfiguration(input);
-    return this.sessionCommands.run(input.id, async () =>
+    const session = await this.sessionCommands.run(input.id, async () =>
       this.configureSession(
         principalHasScope(principal, "credentials")
           ? input
           : await this.withServerProviderConnection(input),
       ),
     );
+    this.announceSessionsChanged();
+    return session;
   }
 
   private async newSessionContext(
@@ -1794,6 +1825,7 @@ export class CocurdexDaemonService {
       workspaceRootPath,
     );
     await this.releaseSessionWorktree(session, workspace);
+    this.announceSessionsChanged();
   }
 
   async forkSession(payload: ForkSessionPayload): Promise<SessionRecord> {

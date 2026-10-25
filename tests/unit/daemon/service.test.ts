@@ -508,6 +508,29 @@ describe("CocurdexDaemonService follow-up queue", () => {
     await service.shutdown();
   });
 
+  it("broadcasts a session list change for every session mutation", async () => {
+    const service = await createService();
+    const changes: unknown[] = [];
+    service.events.on("daemon.event", (event) => {
+      if (event.type === "data.changed") changes.push(event);
+    });
+    const change = { type: "data.changed", areas: ["agent"] };
+    try {
+      await service.saveSessionConfiguration(
+        sessionConfiguration({ ...createSession(), id: "session-2" }),
+      );
+      expect(changes).toEqual([change]);
+      await service.archiveSession("session-2");
+      expect(changes).toHaveLength(2);
+      await service.restoreSession("session-2");
+      expect(changes).toHaveLength(3);
+      await service.deleteSession("session-2");
+      expect(changes).toEqual([change, change, change, change]);
+    } finally {
+      await service.shutdown();
+    }
+  });
+
   it("broadcasts a data change when a follow-up queues behind an active turn", async () => {
     const service = await createService();
     const events: unknown[] = [];
