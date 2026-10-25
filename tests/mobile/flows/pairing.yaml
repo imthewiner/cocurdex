@@ -131,7 +131,8 @@ appId: dev.cocurdex.mobile
 - scrollUntilVisible:
     element: ${DIAGRAM_HEADING}
     direction: UP
-    timeout: 30000
+    speed: 90
+    timeout: 90000
 - scrollUntilVisible:
     element:
       id: "mermaid-diagram"
