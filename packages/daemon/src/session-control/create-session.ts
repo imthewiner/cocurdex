@@ -2,6 +2,7 @@ import {
   type AgentDescriptor,
   type AgentId,
   type AgentPermissionMode,
+  type AgentRoleRecord,
   type CompatibleProviderModel,
   type CreateSessionPayload,
   createProviderSnapshotForModel,
@@ -19,7 +20,10 @@ export interface NewSessionContext {
   defaultModel(
     agentId: AgentId,
   ): Promise<{ providerId: string; modelId: string } | null>;
+  role: AgentRoleRecord | null;
 }
+
+type ModelSelection = { providerId: string; modelId: string };
 
 function writeModeForAgent(agentId: AgentId): SessionRecord["writeMode"] {
   return isAcpRegistryAgentId(agentId) || agentId === "claude-agent"
@@ -50,10 +54,11 @@ function resolveAgent(
 async function resolveModel(
   agentId: AgentId,
   requested: CreateSessionPayload["model"],
+  preset: ModelSelection | null,
   context: NewSessionContext,
 ) {
   const models = await context.compatibleModels(agentId);
-  const find = (selection: { providerId: string; modelId: string } | null) =>
+  const find = (selection: ModelSelection | null) =>
     selection
       ? models.find(
           (item) =>
@@ -74,6 +79,7 @@ async function resolveModel(
     (session) => session.agentType === agentId && session.providerSnapshot,
   )?.providerSnapshot;
   return (
+    find(preset) ??
     find(await context.defaultModel(agentId)) ??
     find(
       recent
@@ -104,6 +110,7 @@ function allowedPermissionModes(
 function resolvePermissionMode(
   agent: AgentDescriptor,
   requested: AgentPermissionMode | null | undefined,
+  preset: AgentPermissionMode | null,
   allowed: readonly AgentPermissionMode[],
   workspaceSessions: readonly SessionRecord[],
 ) {
@@ -113,6 +120,7 @@ function resolvePermissionMode(
     }
     return requested;
   }
+  if (preset && allowed.includes(preset)) return preset;
   const recent = workspaceSessions.find(
     (session) => session.agentType === agent.id && session.permissionMode,
   )?.permissionMode;
@@ -120,16 +128,36 @@ function resolvePermissionMode(
   return allowed[0];
 }
 
+function rolePreset(role: AgentRoleRecord | null, agentId: AgentId) {
+  if (!role || role.agentId !== agentId) {
+    return { model: null, permissionMode: null };
+  }
+  return {
+    model:
+      role.providerId && role.modelId
+        ? { providerId: role.providerId, modelId: role.modelId }
+        : null,
+    permissionMode: role.permissionMode,
+  };
+}
+
 async function resolveChoices(
   input: CreateSessionPayload,
   context: NewSessionContext,
 ) {
-  const agent = resolveAgent(input.agentType, context);
-  const model = await resolveModel(agent.id, input.model, context);
+  const agent = resolveAgent(input.agentType ?? context.role?.agentId, context);
+  const preset = rolePreset(context.role, agent.id);
+  const model = await resolveModel(
+    agent.id,
+    input.model,
+    preset.model,
+    context,
+  );
   const permissionModes = allowedPermissionModes(agent, model);
   const permissionMode = resolvePermissionMode(
     agent,
     input.permissionMode,
+    preset.permissionMode,
     permissionModes,
     context.workspaceSessions,
   );
@@ -171,7 +199,7 @@ export async function resolveNewSession(
     writeMode: writeModeForAgent(agent.id),
     sessionModeId: null,
     permissionMode,
-    agentRoleId: null,
+    agentRoleId: context.role?.id ?? null,
     providerSnapshot: model ? createProviderSnapshotForModel(model) : null,
     worktreePath: null,
   };

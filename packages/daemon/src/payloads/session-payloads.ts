@@ -59,6 +59,7 @@ const createSessionPayload = z.object({
     .custom<AgentPermissionMode>((value) => idSchema.safeParse(value).success)
     .nullable()
     .optional(),
+  agentRoleId: idSchema.nullable().optional(),
   title: z.string().max(200).optional(),
 });
 

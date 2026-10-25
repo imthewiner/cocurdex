@@ -150,6 +150,51 @@ describe("cocurdex CLI against a running daemon", () => {
     expect(unknownModel.stderr).toContain(
       "cli-stub/missing is not available for pi",
     );
+
+    const role = await requestDaemon(
+      "agentRole.save",
+      {
+        name: "CLI Reviewer",
+        agentId: "pi",
+        providerId: "cli-stub",
+        modelId: "cli-agent-model",
+        modelName: "CLI Agent Model",
+        permissionMode: null,
+        sessionModeId: null,
+        reasoningEffort: null,
+        serviceTier: null,
+        fastMode: null,
+        thinkingLevel: null,
+        openCodeAgent: null,
+        openCodeVariant: null,
+      },
+      daemon.options,
+    );
+    const withRole = await runCli(
+      [
+        "session",
+        "create",
+        "--workspace",
+        workspacePath,
+        "--role",
+        role.id,
+        "--json",
+      ],
+      options,
+    );
+    expect(withRole.code).toBe(0);
+    expect(JSON.parse(withRole.stdout)).toMatchObject({
+      agentType: "pi",
+      agentRoleId: role.id,
+      providerSnapshot: { providerId: "cli-stub", modelId: "cli-agent-model" },
+    });
+
+    const unknownRole = await runCli(
+      ["session", "create", "--workspace", workspacePath, "--role", "missing"],
+      options,
+    );
+    expect(unknownRole.code).not.toBe(0);
+    expect(unknownRole.stderr).toContain("Agent role missing was not found");
   });
 
   it("runs the note lifecycle through CLI commands", async () => {

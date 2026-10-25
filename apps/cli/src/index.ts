@@ -552,7 +552,7 @@ function printUsage() {
       ...worktreeUsageLines(),
       "  cocurdex workspace list",
       "  cocurdex session list",
-      "  cocurdex session create --workspace <id|path> [--agent <agent>] [--provider <provider> --model <model>] [--permission <mode>] [--title <title>]",
+      "  cocurdex session create --workspace <id|path> [--agent <agent>] [--provider <provider> --model <model>] [--permission <mode>] [--role <role-id>] [--title <title>]",
       "  cocurdex session tui [session-id]",
       "  cocurdex session tui --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
       "  cocurdex session send <session-id> <prompt>",
@@ -621,6 +621,7 @@ async function createSession(parsed: ParsedArgs) {
       permissionMode: stringFlag(parsed, "permission") as
         | AgentPermissionMode
         | undefined,
+      agentRoleId: stringFlag(parsed, "role"),
       title: stringFlag(parsed, "title"),
     });
   });

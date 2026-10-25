@@ -1651,10 +1651,18 @@ export class CocurdexDaemonService {
   }
 
   private async newSessionContext(
-    workspaceId: string,
+    input: CreateSessionPayload,
   ): Promise<NewSessionContext> {
     const sessions = await this.state.listSessions();
+    const role = input.agentRoleId
+      ? await this.state.getAgentRole(input.agentRoleId)
+      : null;
+    if (input.agentRoleId && !role) {
+      throw new Error(`Agent role ${input.agentRoleId} was not found.`);
+    }
+    const { workspaceId } = input;
     return {
+      role,
       agents: await this.listAgents(),
       workspaceSessions: sessions
         .filter((session) => session.workspaceId === workspaceId)
@@ -1669,7 +1677,7 @@ export class CocurdexDaemonService {
   async resolveNewSessionDefaults(input: CreateSessionPayload) {
     return resolveNewSessionDefaults(
       input,
-      await this.newSessionContext(input.workspaceId),
+      await this.newSessionContext(input),
     );
   }
 
@@ -1677,7 +1685,7 @@ export class CocurdexDaemonService {
     const configuration = await resolveNewSession(
       input,
       crypto.randomUUID(),
-      await this.newSessionContext(input.workspaceId),
+      await this.newSessionContext(input),
     );
     return this.saveSessionConfiguration(configuration);
   }
