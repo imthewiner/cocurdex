@@ -1,5 +1,5 @@
 import CloseIcon from "@expo/material-symbols/close.xml";
-import LinkIcon from "@expo/material-symbols/link.xml";
+import { Button } from "@expo/ui";
 import {
   type BarcodeScanningResult,
   CameraView,
@@ -12,14 +12,17 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { space, themeColors } from "@/theme";
+import { BrandHost } from "@/ui";
 import { hosts, selectHost } from "./hosts";
-import type { PairFailure } from "./hosts-store";
+import {
+  type ScanAttempt,
+  type ScanFailure,
+  shouldPairScannedCode,
+} from "./scan-attempts";
 
 const scanColors = themeColors.dark;
 const SCAN_FOREGROUND = scanColors.foreground;
 const CORNER = { size: 48, width: 4, radius: 28 } as const;
-
-type ScanFailure = PairFailure | "notPairingCode";
 
 function useScanFailureMessages(): Record<ScanFailure, string> {
   const { t } = useTranslation("hosts");
@@ -82,11 +85,10 @@ export function ScanPairing({
   const [permission] = useCameraPermissions();
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<ScanFailure | null>(null);
-  const lastScanned = useRef<string | null>(null);
+  const lastAttempt = useRef<ScanAttempt | null>(null);
 
   const handleScan = async ({ data }: BarcodeScanningResult) => {
-    if (data === lastScanned.current) return;
-    lastScanned.current = data;
+    if (!shouldPairScannedCode(lastAttempt.current, data, Date.now())) return;
     setPairing(true);
     setFailure(null);
     const result = await hosts.pair(
@@ -94,6 +96,8 @@ export function ScanPairing({
       Constants.deviceName ?? "Cocurdex Mobile",
     );
     setPairing(false);
+    const failed = "failure" in result ? result.failure : null;
+    lastAttempt.current = { data, failure: failed, at: Date.now() };
     if ("failure" in result) {
       setFailure(result.failure);
       return;
@@ -114,14 +118,6 @@ export function ScanPairing({
           accessibilityLabel={t("scan.close")}
           onPress={onClose}
         />
-      </Stack.Toolbar>
-      <Stack.Toolbar placement="bottom">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "link" : LinkIcon}
-          onPress={onPaste}
-        >
-          {t("scan.paste")}
-        </Stack.Toolbar.Button>
       </Stack.Toolbar>
       <View style={styles.fill}>
         {granted ? (
@@ -150,6 +146,11 @@ export function ScanPairing({
             </Text>
           </View>
         )}
+        <View style={styles.footer}>
+          <BrandHost colorScheme="dark" matchContents>
+            <Button variant="text" label={t("scan.paste")} onPress={onPaste} />
+          </BrandHost>
+        </View>
       </View>
     </>
   );
@@ -216,4 +217,5 @@ const styles = StyleSheet.create({
   },
   failure: { color: scanColors.destructive },
   link: { color: SCAN_FOREGROUND, fontWeight: "600", marginTop: space.md },
+  footer: { alignItems: "center", paddingBottom: space.xxl },
 });

@@ -79,7 +79,11 @@ appId: dev.cocurdex.mobile
     visible: ${SEND_REPLY}
     timeout: 20000
 - assertVisible: ${SEND_PROMPT}
-- hideKeyboard
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
 - waitForAnimationToEnd
 - takeScreenshot: session-reply
 - runFlow:
@@ -97,7 +101,16 @@ appId: dev.cocurdex.mobile
     when:
       platform: Android
     commands:
-      - back
+      - repeat:
+          while:
+            visible:
+              id: "composer-input"
+          times: 2
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible: ${WORKSPACE_NAME}
+          timeout: 5000
 - runFlow:
     when:
       platform: iOS
