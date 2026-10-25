@@ -1,12 +1,4 @@
 {
-  "age": {
-    "days_other": "{{count}}天",
-    "hours_other": "{{count}}小时",
-    "minutes_other": "{{count}}分钟",
-    "months_other": "{{count}}个月",
-    "now": "刚刚",
-    "years_other": "{{count}}年"
-  },
   "approvalsUnavailable": {
     "description": "这台手机配对时没有授予审批权限。",
     "title": "请在电脑上批准"
@@ -37,6 +29,33 @@
     "description": "在 {{host}} 上开始的会话会显示在这里。",
     "title": "没有会话"
   },
+  "newSession": {
+    "addOnComputer": "新工作区只能在电脑上添加。",
+    "agent": "Agent",
+    "agentDefaultModel": "这个 Agent 没有可用的服务商模型，会使用它自带的默认模型。",
+    "availability": {
+      "available": "可用",
+      "error": "在电脑上启动失败",
+      "missing": "电脑上未安装",
+      "unsupported": "电脑不支持"
+    },
+    "failed": "会话没能开始。请检查连接后重试。",
+    "mode": "模式",
+    "model": "模型",
+    "modelsFromComputer": "模型来自电脑上配置的服务商。",
+    "noModes": "这个 Agent 没有可选的权限模式。",
+    "none": "无",
+    "open": "新建会话",
+    "promptPlaceholder": "要让 Agent 做什么？",
+    "runsOn": "在 {{host}} 上运行。",
+    "searchWorkspaces": "搜索工作区",
+    "sessionCount_other": "{{count}} 个会话",
+    "start": "开始",
+    "starting": "正在开始…",
+    "title": "新会话",
+    "where": "运行位置",
+    "workspace": "工作区"
+  },
   "noResults": "没有匹配“{{query}}”的会话",
   "offline": "连不上 {{host}}，显示的是最后一次更新。",
   "permission": {
@@ -55,6 +74,38 @@
     },
     "fileAction": "允许智能体{{action}} {{target}}？",
     "runCommand": "运行这条命令？"
+  },
+  "permissionMode": {
+    "claude-accept-edits": "自动接受编辑",
+    "claude-auto": "自动模式",
+    "claude-bypass-permissions": "跳过权限确认",
+    "claude-default": "默认权限",
+    "claude-plan": "计划",
+    "codex-auto": "自动",
+    "codex-full-access": "完全访问",
+    "codex-read-only": "只读",
+    "descriptions": {
+      "claude-accept-edits": "自动接受文件编辑，命令仍会询问",
+      "claude-auto": "由 Claude 判断何时询问",
+      "claude-bypass-permissions": "跳过所有权限确认",
+      "claude-default": "编辑和命令前都会询问",
+      "claude-plan": "只做计划，不编辑也不执行命令",
+      "codex-auto": "读写工作区文件并执行命令，联网或越界编辑前询问",
+      "codex-full-access": "不再询问，可编辑工作区外文件并联网",
+      "codex-read-only": "只读取工作区文件，编辑和联网前询问",
+      "grok-always-approve": "自动批准所有工具调用",
+      "grok-ask": "每次工具调用前询问",
+      "grok-auto": "由 Grok 判断何时询问",
+      "opencode-allow": "自动批准所有工具调用",
+      "opencode-ask": "每次工具调用前询问",
+      "opencode-deny": "拒绝所有需要授权的工具调用"
+    },
+    "grok-always-approve": "全部批准",
+    "grok-ask": "每次询问",
+    "grok-auto": "自动判断",
+    "opencode-allow": "允许",
+    "opencode-ask": "询问",
+    "opencode-deny": "拒绝"
   },
   "plan": {
     "approve": "批准",

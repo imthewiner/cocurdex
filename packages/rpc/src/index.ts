@@ -37,6 +37,7 @@ import type {
   CreateIssuePayload,
   CreateNotePayload,
   CreateScriptRunPayload,
+  CreateSessionPayload,
   CreateTeamPayload,
   CreateViewPayload,
   CreateWorkflowPayload,
@@ -105,6 +106,7 @@ import type {
   MoveNotePayload,
   NetworkProxySettings,
   NetworkProxyTestResult,
+  NewSessionDefaults,
   NoteBacklinksPayload,
   NoteDocSnapshot,
   NoteLink,
@@ -385,6 +387,8 @@ export type DaemonRequestPayloadByMethod = {
   "session.switchAgent": { sessionId: string; agentType: AgentId };
   "session.contextTransfers": { sessionId: string };
   "session.configure": SessionConfiguration;
+  "session.create": CreateSessionPayload;
+  "session.resolveNew": CreateSessionPayload;
   "session.get": { sessionId: string };
   "session.listPeers": { sessionId: string };
   "session.sendPeerMessage": SendPeerMessagePayload;
@@ -734,6 +738,8 @@ export type DaemonResultByMethod = {
   "session.switchAgent": SessionRecord;
   "session.contextTransfers": ContextTransferRecord[];
   "session.configure": SessionRecord;
+  "session.create": SessionRecord;
+  "session.resolveNew": NewSessionDefaults;
   "session.get": SessionRecord | null;
   "session.delete": null;
   "session.archive": SessionRecord | null;

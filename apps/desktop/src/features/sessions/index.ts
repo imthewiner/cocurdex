@@ -133,7 +133,6 @@ export {
   updateSessionTitleAtom,
   upsertSessionAtom,
 } from "./session-store";
-export { generateLocalSessionTitle } from "./session-title";
 export {
   buildVisibleSessionTree,
   collectSessionSubtreeIds,

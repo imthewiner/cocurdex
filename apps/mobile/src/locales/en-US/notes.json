@@ -1,0 +1,15 @@
+{
+  "empty": {
+    "description": "Notes you write on {{host}} appear here.",
+    "title": "No Notes"
+  },
+  "emptyBody": "This note is empty.",
+  "missing": "This note was deleted on the computer.",
+  "noResults": "No notes match “{{query}}”",
+  "noWorkspace": "No Workspace",
+  "search": "Search notes",
+  "unavailable": {
+    "retry": "Try Again",
+    "title": "Couldn’t load notes from {{host}}"
+  }
+}

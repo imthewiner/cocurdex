@@ -1,0 +1,26 @@
+{
+  "allWorkspaces": "All Workspaces",
+  "empty": {
+    "description": "Issues you track on {{host}} appear here.",
+    "title": "No Issues"
+  },
+  "field": {
+    "labels": "Labels",
+    "none": "None",
+    "priority": "Priority",
+    "status": "Status"
+  },
+  "missing": "This issue was deleted on the computer.",
+  "noResults": "No issues match “{{query}}”",
+  "search": "Search issues",
+  "sectionTitle_one": "{{status}} {{count}}",
+  "sectionTitle_other": "{{status}} {{count}}",
+  "sessions": "Agent Sessions",
+  "subIssues": "Sub-issues {{done}}/{{total}}",
+  "unavailable": {
+    "retry": "Try Again",
+    "title": "Couldn’t load issues from {{host}}"
+  },
+  "untitledSession": "Untitled session",
+  "workspaceFilter": "Workspace: {{workspace}}"
+}

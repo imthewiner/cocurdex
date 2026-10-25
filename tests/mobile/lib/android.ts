@@ -215,9 +215,23 @@ export async function startAndroidTarget(
         const devices = await runCommand(adb(sdk), ["devices", "-l"]).catch(
           (error: unknown) => String(error),
         );
+        const appLog = await runCommand(adb(sdk), [
+          "-s",
+          serial,
+          "logcat",
+          "-d",
+          "-b",
+          "crash,main",
+          "-s",
+          "AndroidRuntime:E",
+          "ReactNativeJS:*",
+          "libc:F",
+          "DEBUG:F",
+        ]).catch((error: unknown) => String(error));
         return [
           `Emulator ${serial} exit code: ${emulator.exitCode ?? "running"}`,
           `adb devices:\n${devices.trim()}`,
+          `App log:\n${appLog.trim()}`,
           `Emulator output:\n${emulatorOutput}`,
         ].join("\n");
       },

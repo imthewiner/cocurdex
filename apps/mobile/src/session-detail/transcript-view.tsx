@@ -12,8 +12,8 @@ import {
   Text,
   View,
 } from "react-native";
+import { MarkdownText } from "@/markdown";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
-import { MessageMarkdown } from "./message-markdown";
 import type { TranscriptItem } from "./transcript";
 
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
@@ -148,7 +148,7 @@ function TranscriptRow({
   }
   if (item.kind === "assistant") {
     return (
-      <MessageMarkdown
+      <MarkdownText
         markdown={item.text}
         testID={`transcript-assistant-${item.id}`}
       />

@@ -27,7 +27,7 @@ function subscribe(listener: () => void) {
 }
 
 export function useAgeLabel(timestamp: string) {
-  const { t } = useTranslation("sessions");
+  const { t } = useTranslation();
   const current = useSyncExternalStore(subscribe, () => now);
   const { count, unit } = getCompactRelativeTime(timestamp, current);
   const labels = {

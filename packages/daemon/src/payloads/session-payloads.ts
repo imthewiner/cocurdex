@@ -1,5 +1,6 @@
 import {
   AGENT_ROLE_AVATAR_COLORS,
+  type AgentPermissionMode,
   SCRIPT_RUN_HARD_MAX_AGENTS,
   SCRIPT_RUN_MAX_SCHEMA_ATTEMPTS,
   TEAM_MAX_MEMBERS,
@@ -47,6 +48,20 @@ const agentRoleAvatarSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+const createSessionPayload = z.object({
+  workspaceId: idSchema,
+  agentType: agentIdSchema.optional(),
+  model: z
+    .object({ providerId: idSchema, modelId: z.string().min(1).max(512) })
+    .nullable()
+    .optional(),
+  permissionMode: z
+    .custom<AgentPermissionMode>((value) => idSchema.safeParse(value).success)
+    .nullable()
+    .optional(),
+  title: z.string().max(200).optional(),
+});
+
 export const sessionPayloadSchemas = {
   "sync.pull": exact<Payload<"sync.pull">>()(
     z.object({
@@ -83,6 +98,9 @@ export const sessionPayloadSchemas = {
   "session.configure": loose<Payload<"session.configure">>()(
     z.looseObject({ id: idSchema, workspaceId: idSchema }),
   ),
+  "session.create": exact<Payload<"session.create">>()(createSessionPayload),
+  "session.resolveNew":
+    exact<Payload<"session.resolveNew">>()(createSessionPayload),
   "session.delete": exact<Payload<"session.delete">>()(sessionIdPayload),
   "session.archive": exact<Payload<"session.archive">>()(sessionIdPayload),
   "session.restore": exact<Payload<"session.restore">>()(sessionIdPayload),

@@ -1339,6 +1339,21 @@ export interface DeleteSessionPayload {
   sessionId: string;
 }
 
+export interface CreateSessionPayload {
+  workspaceId: string;
+  agentType?: AgentId;
+  model?: { providerId: string; modelId: string } | null;
+  permissionMode?: AgentPermissionMode | null;
+  title?: string;
+}
+
+export interface NewSessionDefaults {
+  agentType: AgentId;
+  model: { providerId: string; modelId: string; name: string } | null;
+  permissionMode: AgentPermissionMode | null;
+  permissionModes: AgentPermissionMode[];
+}
+
 export interface RefineSessionTitlePayload {
   sessionId: string;
   message: string;

@@ -7,13 +7,19 @@ import { FIXTURE_WORKSPACE_ID } from "@cocurdex/e2e/fixture-db/recipe";
 import { saveStubProvider } from "@cocurdex/e2e/helpers/chat-session";
 import {
   bundledDaemonPath,
+  daemonLogTail,
   spawnDaemon,
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
-import { buildHostPairingLink } from "@cocurdex/shared";
+import { type AgentId, buildHostPairingLink } from "@cocurdex/shared";
 import type { createTempDirs } from "@cocurdex/shared/testing";
 import { EMULATOR_HOST_ALIAS } from "./android";
 import type { MobilePlatform } from "./target";
+
+const AGENT_MODEL_ID = "e2e-agent-model";
+const AGENT_MODEL_NAME = "E2E Agent Model";
+const STUB_REQUEST_TAIL = 6;
+const DAEMON_LOG_TAIL = 150;
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -47,6 +53,24 @@ export async function startPairingDaemon(
   const stub = await startStubLlmServer();
   try {
     const providerSnapshot = await saveStubProvider(daemon, stub);
+    const now = new Date().toISOString();
+    await requestDaemon(
+      "provider.model.save",
+      {
+        model: {
+          providerId: providerSnapshot.providerId,
+          modelId: AGENT_MODEL_ID,
+          name: AGENT_MODEL_NAME,
+          api: "openai-completions",
+          enabled: true,
+          source: "manual",
+          capabilities: ["chat", "agent"],
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      daemon.options,
+    );
     const port = await freePort();
     const status = await requestDaemon(
       "host.remoteAccess.set",
@@ -67,11 +91,22 @@ export async function startPairingDaemon(
       async createPairingLink() {
         const { code } = await requestDaemon(
           "host.pairing.create",
-          { label: "Mobile e2e", scopes: ["read", "files.read", "interact"] },
+          {
+            label: "Mobile e2e",
+            scopes: ["read", "files.read", "interact", "execute"],
+          },
           daemon.options,
         );
         return buildHostPairingLink(baseUrl.origin, code);
       },
+      agentModelName: AGENT_MODEL_NAME,
+      async agentLabel(agentId: AgentId) {
+        const agents = await requestDaemon("agent.list", daemon.options);
+        const agent = agents.find((candidate) => candidate.id === agentId);
+        if (!agent) throw new Error(`The daemon offers no ${agentId} agent`);
+        return agent.label;
+      },
+      sessions: () => requestDaemon("session.list", daemon.options),
       pairedDevices: () => requestDaemon("host.devices.list", daemon.options),
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
       async createReplyingSession(title: string, reply: string) {
@@ -93,6 +128,29 @@ export async function startPairingDaemon(
       },
       sentPrompts: () =>
         stub.requests.map((request) => JSON.stringify(request.body.messages)),
+      async diagnostics() {
+        const sessions = await requestDaemon(
+          "session.list",
+          daemon.options,
+        ).catch((error: unknown) => `session.list failed: ${String(error)}`);
+        const sessionLines = Array.isArray(sessions)
+          ? sessions.map(
+              (session) =>
+                `${session.id} ${session.status} ${session.agentType} ${session.title}`,
+            )
+          : [sessions];
+        const requestLines = stub.requests
+          .slice(-STUB_REQUEST_TAIL)
+          .map((request) => JSON.stringify(request.body.messages).slice(-300));
+        return [
+          "--- daemon sessions",
+          ...sessionLines,
+          `--- llm stub requests (${stub.requests.length} total, last ${STUB_REQUEST_TAIL})`,
+          ...requestLines,
+          "--- daemon log",
+          await daemonLogTail(daemon.userDataPath, DAEMON_LOG_TAIL),
+        ].join("\n");
+      },
       async dispose() {
         await daemon.dispose();
         await stub.close();

@@ -15,8 +15,9 @@ import {
   type HostAccessScope,
   type ImageAttachment,
 } from "@cocurdex/shared";
-import { afterEach, describe, expect, it } from "vitest";
-import { startChatSession } from "./helpers/chat-session";
+import { createTempDirs } from "@cocurdex/shared/testing";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { saveStubProvider, startChatSession } from "./helpers/chat-session";
 import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
 import { startStubLlmServer } from "./helpers/llm-stub";
 
@@ -103,6 +104,9 @@ async function waitUntil(condition: () => boolean, timeoutMs = 15_000) {
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
 }
+
+const tempDirs = createTempDirs();
+afterAll(() => tempDirs.cleanup());
 
 const daemons: DaemonProcess[] = [];
 
@@ -282,6 +286,90 @@ describe("remote host access", () => {
         daemon.options,
       );
       expect(local?.providerSnapshot?.headersJson).toContain("e2e-key");
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("lets a device that may execute start a session the daemon configures", async () => {
+    const stub = await startStubLlmServer();
+    const daemon = await spawnDaemon();
+    daemons.push(daemon);
+    try {
+      const port = await enableRemoteAccess(daemon);
+      await saveStubProvider(daemon, stub);
+      const now = new Date().toISOString();
+      await requestDaemon(
+        "provider.model.save",
+        {
+          model: {
+            providerId: "e2e-stub",
+            modelId: "e2e-agent-model",
+            name: "E2E Agent Model",
+            api: "openai-completions",
+            enabled: true,
+            source: "manual",
+            capabilities: ["chat", "agent"],
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+        daemon.options,
+      );
+      await requestDaemon(
+        "workspace.save",
+        {
+          workspace: {
+            id: "phone-workspace",
+            name: "acme-shop",
+            rootPaths: [tempDirs.createSync("phone-ws-")],
+            createdAt: now,
+            updatedAt: now,
+            lastOpenedAt: now,
+            sortOrder: 0,
+          },
+        },
+        daemon.options,
+      );
+      const executor = await pairDevice(daemon, port, [
+        "read",
+        "interact",
+        "execute",
+      ]);
+      const viewer = await pairDevice(daemon, port, ["read", "interact"]);
+      const request = {
+        workspaceId: "phone-workspace",
+        agentType: "pi" as const,
+        model: { providerId: "e2e-stub", modelId: "e2e-agent-model" },
+        title: "Phone task",
+      };
+
+      await expect(
+        remoteClient(port, viewer.paired.token).request(
+          "session.create",
+          request,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+      const client = remoteClient(port, executor.paired.token);
+      const session = await client.request("session.create", request);
+      expect(session).toMatchObject({
+        workspaceId: "phone-workspace",
+        agentType: "pi",
+        sessionKind: "main",
+        title: "Phone task",
+        providerSnapshot: { providerId: "e2e-stub", headersJson: null },
+      });
+      expect(JSON.stringify(session)).not.toContain("e2e-key");
+
+      stub.plan = { kind: "stream", chunks: ["On it"] };
+      const sent = stub.nextRequest();
+      await client.request("session.send", {
+        sessionId: session.id,
+        messageId: crypto.randomUUID(),
+        content: "Summarize the cart module",
+      });
+      expect((await sent).authorization).toBe("Bearer e2e-key");
     } finally {
       await stub.close();
     }

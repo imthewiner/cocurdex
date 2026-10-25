@@ -69,14 +69,25 @@ function markdownStyle(
       borderColor: colors.chatBorder,
       headerBackgroundColor: colors.muted,
       headerTextColor: colors.foreground,
+      rowEvenBackgroundColor: colors.background,
+      rowOddBackgroundColor: colors.muted,
       borderRadius: 8,
       marginBottom: space.sm,
+    },
+    taskList: {
+      checkedColor: colors.tint,
+      borderColor: colors.mutedForeground,
+      checkmarkColor: colors.primaryForeground,
+      checkedTextColor: colors.mutedForeground,
+      checkedStrikethrough: true,
+      checkboxSize: 18,
+      checkboxBorderRadius: 9,
     },
     thematicBreak: { color: colors.border },
   };
 }
 
-export function MessageMarkdown({
+export function MarkdownText({
   markdown,
   testID,
 }: {
@@ -95,6 +106,7 @@ export function MessageMarkdown({
       flavor="github"
       markdownStyle={style}
       selectable
+      enableTaskListItemToggle={false}
       onLinkPress={({ url }) => {
         const target = externalLinkUrl(url);
         if (target) void Linking.openURL(target);

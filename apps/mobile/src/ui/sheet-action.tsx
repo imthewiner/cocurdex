@@ -1,9 +1,9 @@
 import { Button } from "@expo/ui";
 import { Stack } from "expo-router";
-import { BrandHost } from "@/ui";
-import type { PairToolbarProps } from "./pair-toolbar-props";
+import { BrandHost } from "./brand-host";
+import type { SheetActionProps } from "./sheet-action-props";
 
-export function PairToolbar({ label, disabled, onPair }: PairToolbarProps) {
+export function SheetAction({ label, disabled, onPress }: SheetActionProps) {
   return (
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.View>
@@ -12,7 +12,7 @@ export function PairToolbar({ label, disabled, onPair }: PairToolbarProps) {
             variant="text"
             label={label}
             disabled={disabled}
-            onPress={onPair}
+            onPress={onPress}
           />
         </BrandHost>
       </Stack.Toolbar.View>

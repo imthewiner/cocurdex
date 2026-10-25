@@ -177,6 +177,8 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "terminal.kill": "execute",
   "assistant.session.getOrCreate": "execute",
   "session.configure": "execute",
+  "session.create": "execute",
+  "session.resolveNew": "read",
   "session.fork": "execute",
   "session.switchAgent": "execute",
   "team.create": "execute",

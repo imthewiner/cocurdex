@@ -430,6 +430,10 @@ export async function handleDaemonRequest(
       );
     case "session.contextTransfers":
       return service.listContextTransfers(request.params.sessionId);
+    case "session.resolveNew":
+      return service.resolveNewSessionDefaults(request.params);
+    case "session.create":
+      return service.createSession(request.params);
     case "session.configure":
       return service.saveSessionConfiguration(
         request.params,

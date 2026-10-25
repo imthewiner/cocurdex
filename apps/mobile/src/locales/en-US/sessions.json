@@ -1,17 +1,4 @@
 {
-  "age": {
-    "days_one": "{{count}}d",
-    "days_other": "{{count}}d",
-    "hours_one": "{{count}}h",
-    "hours_other": "{{count}}h",
-    "minutes_one": "{{count}}m",
-    "minutes_other": "{{count}}m",
-    "months_one": "{{count}}mo",
-    "months_other": "{{count}}mo",
-    "now": "now",
-    "years_one": "{{count}}y",
-    "years_other": "{{count}}y"
-  },
   "approvalsUnavailable": {
     "description": "This phone was paired without approval access.",
     "title": "Approve this on your computer"
@@ -42,6 +29,34 @@
     "description": "Sessions you start on {{host}} appear here.",
     "title": "No Sessions"
   },
+  "newSession": {
+    "addOnComputer": "Add new workspaces on the computer.",
+    "agent": "Agent",
+    "agentDefaultModel": "No provider models for this agent; it uses its own default model.",
+    "availability": {
+      "available": "Ready",
+      "error": "Failed to start on the computer",
+      "missing": "Not installed on the computer",
+      "unsupported": "Not supported on the computer"
+    },
+    "failed": "Couldn't start the session. Check the connection and try again.",
+    "mode": "Mode",
+    "model": "Model",
+    "modelsFromComputer": "Models come from the providers set up on the computer.",
+    "noModes": "This agent has no permission modes to choose from.",
+    "none": "None",
+    "open": "New session",
+    "promptPlaceholder": "What should the agent do?",
+    "runsOn": "Runs on {{host}}.",
+    "searchWorkspaces": "Search workspaces",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "start": "Start",
+    "starting": "Starting…",
+    "title": "New session",
+    "where": "Run on",
+    "workspace": "Workspace"
+  },
   "noResults": "No sessions match “{{query}}”",
   "offline": "Can't reach {{host}}. Showing the last update.",
   "permission": {
@@ -60,6 +75,38 @@
     },
     "fileAction": "Allow the agent to {{action}} {{target}}?",
     "runCommand": "Run this command?"
+  },
+  "permissionMode": {
+    "claude-accept-edits": "Accept edits",
+    "claude-auto": "Auto mode",
+    "claude-bypass-permissions": "Bypass permissions",
+    "claude-default": "Default permissions",
+    "claude-plan": "Plan",
+    "codex-auto": "Auto",
+    "codex-full-access": "Full Access",
+    "codex-read-only": "Read Only",
+    "descriptions": {
+      "claude-accept-edits": "Applies file edits automatically; still asks for commands",
+      "claude-auto": "Claude decides when to ask",
+      "claude-bypass-permissions": "Skips every permission prompt",
+      "claude-default": "Asks before edits and commands",
+      "claude-plan": "Plans only; no edits or commands",
+      "codex-auto": "Edits workspace files and runs commands; asks before network or outside edits",
+      "codex-full-access": "Never asks; can edit files outside the workspace and reach the network",
+      "codex-read-only": "Reads workspace files; asks before edits or network access",
+      "grok-always-approve": "Approves every tool call automatically",
+      "grok-ask": "Asks before every tool call",
+      "grok-auto": "Grok decides when to ask",
+      "opencode-allow": "Approves every tool call automatically",
+      "opencode-ask": "Asks before every tool call",
+      "opencode-deny": "Rejects every tool call that needs permission"
+    },
+    "grok-always-approve": "Approve all",
+    "grok-ask": "Ask each time",
+    "grok-auto": "Auto decide",
+    "opencode-allow": "Allow",
+    "opencode-ask": "Ask",
+    "opencode-deny": "Deny"
   },
   "plan": {
     "approve": "Approve",

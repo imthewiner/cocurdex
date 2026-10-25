@@ -38,10 +38,13 @@ const STARTUP_TIMEOUT_MS = 20_000;
 const SHUTDOWN_TIMEOUT_MS = 20_000;
 const LOG_TAIL_LINES = 40;
 
-async function daemonLogTail(userDataPath: string) {
+export async function daemonLogTail(
+  userDataPath: string,
+  lines = LOG_TAIL_LINES,
+) {
   const logPath = path.join(getDaemonLogDirectory(userDataPath), "daemon.log");
   const text = await readFile(logPath, "utf8").catch(() => "(no daemon log)");
-  return text.split(/\r?\n/).slice(-LOG_TAIL_LINES).join("\n");
+  return text.split(/\r?\n/).slice(-lines).join("\n");
 }
 
 export function sleep(ms: number) {

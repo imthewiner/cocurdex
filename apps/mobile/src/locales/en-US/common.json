@@ -1,11 +1,28 @@
 {
+  "age": {
+    "days_one": "{{count}}d",
+    "days_other": "{{count}}d",
+    "hours_one": "{{count}}h",
+    "hours_other": "{{count}}h",
+    "minutes_one": "{{count}}m",
+    "minutes_other": "{{count}}m",
+    "months_one": "{{count}}mo",
+    "months_other": "{{count}}mo",
+    "now": "now",
+    "years_one": "{{count}}y",
+    "years_other": "{{count}}y"
+  },
   "screens": {
     "computers": "Computers",
+    "issues": "Issues",
+    "notes": "Notes",
     "pair": "Pair a Computer",
     "sessions": "Sessions"
   },
   "tabs": {
     "computers": "Computers",
+    "issues": "Issues",
+    "notes": "Notes",
     "sessions": "Sessions"
   }
 }
