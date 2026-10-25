@@ -1,5 +1,5 @@
 import type { IssueRecord } from "@cocurdex/shared";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
 import { IssueStatusMark } from "./issue-status-mark";
 
@@ -33,7 +33,7 @@ export function IssueRowView({
       </View>
       <View style={styles.text}>
         <Text
-          numberOfLines={2}
+          numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
         >
           {issue.title}
@@ -42,7 +42,8 @@ export function IssueRowView({
           numberOfLines={1}
           style={[styles.detail, { color: colors.mutedForeground }]}
         >
-          {detail}
+          <Text style={styles.identifier}>{issue.identifier}</Text>
+          {labelNames.map((name) => ` · ${name}`).join("")}
         </Text>
       </View>
     </Pressable>
@@ -60,6 +61,10 @@ const styles = StyleSheet.create({
   },
   mark: { height: 22, justifyContent: "center" },
   text: { flex: 1, gap: 2 },
-  title: { fontSize: 17, lineHeight: 22, fontWeight: "600" },
-  detail: { fontSize: 13, fontVariant: ["tabular-nums"] },
+  title: { fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  detail: { fontSize: 13, lineHeight: 18 },
+  identifier: {
+    fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
+    fontSize: 12,
+  },
 });

@@ -29,6 +29,9 @@
     "description": "在 {{host}} 上开始的会话会显示在这里。",
     "title": "没有会话"
   },
+  "image": {
+    "close": "关闭"
+  },
   "newSession": {
     "addOnComputer": "新工作区只能在电脑上添加。",
     "agent": "Agent",
@@ -125,7 +128,14 @@
   },
   "tool": {
     "completed": "已完成",
+    "copyOutput": "复制输出",
+    "duration": "{{seconds}} 秒",
     "failed": "失败",
+    "input": "输入",
+    "noOutput": "没有输出",
+    "output": "输出",
+    "outputFailed": "无法加载输出",
+    "outputTail": "末尾 64 KB",
     "running": "运行中"
   },
   "unavailable": {

@@ -34,8 +34,15 @@ export * from "./locales";
 export * from "./logging";
 export * from "./mcp";
 export * from "./mcp-agents";
+export {
+  MERMAID_THEME_CSS,
+  MERMAID_THEME_VARIABLES,
+  type MermaidAppearance,
+  type MermaidThemeVariables,
+} from "./mermaid-theme";
 export * from "./network-proxy";
 export * from "./network-proxy-runtime";
+export * from "./note-excerpt";
 export * from "./note-markdown";
 export * from "./notes";
 export * from "./orchestration";
@@ -74,9 +81,12 @@ export {
 export * from "./team";
 export * from "./terminal";
 export {
+  formatToolCallData,
+  formatToolCallOutput,
   type GetToolCallResultInput,
   isToolCallId,
   summarizeToolCallDiff,
+  toolCallResourceLinkPath,
 } from "./tool-call";
 export {
   getCommandPreview,

@@ -27,6 +27,11 @@ appId: dev.cocurdex.mobile
     id: "pairing-link"
 - inputText: ${PAIRING_LINK}
 - takeScreenshot: pairing-sheet
+- extendedWaitUntil:
+    visible:
+      text: ${PAIR_ACTION}
+      enabled: true
+    timeout: 5000
 - tapOn: ${PAIR_ACTION}
 - extendedWaitUntil:
     visible: ${WORKSPACE_NAME}
@@ -44,6 +49,97 @@ appId: dev.cocurdex.mobile
           timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-code-block
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- scrollUntilVisible:
+    element: ${TOOL_SESSION_TITLE}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${TOOL_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-tool-.*"
+          timeout: 10000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "transcript-tool-.*"
+      - extendedWaitUntil:
+          visible:
+            id: "tool-call-input"
+          timeout: 5000
+- assertVisible: ${TOOL_INPUT_TITLE}
+- waitForAnimationToEnd
+- takeScreenshot: tool-call
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 5%, 9%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "transcript-tool-.*"
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- scrollUntilVisible:
+    element: ${DIAGRAM_SESSION_TITLE}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${DIAGRAM_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible:
+            id: "composer-input"
+          timeout: 10000
+- scrollUntilVisible:
+    element: ${DIAGRAM_HEADING}
+    direction: UP
+    speed: 90
+    timeout: 90000
+- scrollUntilVisible:
+    element:
+      id: "mermaid-diagram"
+    direction: UP
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: session-mermaid
 - runFlow:
     when:
       platform: iOS

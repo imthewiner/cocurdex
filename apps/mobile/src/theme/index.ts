@@ -1,8 +1,10 @@
 export {
+  type GroupedColors,
   type SyntaxColors,
   type ThemeColors,
   type ThemeName,
   themeColors,
+  useGroupedColors,
   useSyntaxColors,
   useThemeColors,
 } from "./colors";

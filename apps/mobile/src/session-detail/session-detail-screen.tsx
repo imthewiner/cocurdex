@@ -6,9 +6,9 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { randomUUID } from "expo-crypto";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   KeyboardAvoidingView,
@@ -28,17 +28,10 @@ import {
   uploadImage,
 } from "./image-attachments";
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
-import { createSessionDetailStore } from "./session-detail-store";
+import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
 import { buildTranscript, pendingInteraction } from "./transcript";
 import { TranscriptView } from "./transcript-view";
-
-function useSessionDetail(hostId: string, sessionId: string) {
-  const [store] = useState(() =>
-    createSessionDetailStore(hostConnection(hostId), sessionId),
-  );
-  return useSyncExternalStore(store.subscribe, store.getSnapshot);
-}
 
 function sessionWorkspace(
   observation: SessionObservationSnapshot | null,
@@ -192,9 +185,24 @@ export function SessionDetailScreen({
         ) : (
           <TranscriptView
             items={items}
-            imageSource={(attachment) =>
-              imageAttachmentSource(host, attachment)
-            }
+            actions={{
+              imageSource: (attachment) =>
+                imageAttachmentSource(host, attachment),
+              onOpenImage: (attachment) =>
+                router.push({
+                  pathname: "/image/[hostId]",
+                  params: {
+                    hostId: host.hostId,
+                    filePath: attachment.filePath,
+                    name: attachment.name,
+                  },
+                }),
+              onOpenTool: (toolCallId) =>
+                router.push({
+                  pathname: "/tool-call/[hostId]/[sessionId]/[toolCallId]",
+                  params: { hostId: host.hostId, sessionId, toolCallId },
+                }),
+            }}
             footer={
               status ? <StatusLine text={status} failed={failed} /> : undefined
             }

@@ -1,3 +1,4 @@
+import "./plural-rules";
 import { DEFAULT_LOCALE, supportedLocales } from "@cocurdex/shared";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";

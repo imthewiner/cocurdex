@@ -15,6 +15,7 @@ export default function TabsLayout() {
             indicatorColor: colors.muted,
             rippleColor: colors.muted,
             iconColor: colors.foreground,
+            labelVisibilityMode: "labeled" as const,
           }
         : {})}
     >

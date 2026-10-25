@@ -34,6 +34,7 @@ export function SessionRowView({
   const status = sessionRowStatus(row.state);
   const detailColor =
     status === "failed" ? colors.destructive : colors.mutedForeground;
+  const secondary = detail ?? row.model;
   const summary = [detail, age].filter(Boolean).join(", ");
   return (
     <Pressable
@@ -58,13 +59,13 @@ export function SessionRowView({
           {age}
         </Text>
       </View>
-      {detail ? (
+      {secondary ? (
         <View style={styles.line}>
           <Text
             numberOfLines={1}
             style={[styles.detail, { color: detailColor }]}
           >
-            {detail}
+            {secondary}
           </Text>
           <SessionStatusMark status={status} />
         </View>
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  title: { flex: 1, fontSize: 17, fontWeight: "600" },
-  age: { fontSize: 15, fontVariant: ["tabular-nums"] },
-  detail: { flex: 1, fontSize: 15 },
+  title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  age: { fontSize: 13, fontVariant: ["tabular-nums"] },
+  detail: { flex: 1, fontSize: 15, lineHeight: 20 },
 });

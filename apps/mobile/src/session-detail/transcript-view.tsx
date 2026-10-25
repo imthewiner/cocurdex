@@ -8,6 +8,7 @@ import {
   Image,
   type ImageURISource,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -19,6 +20,12 @@ import type { TranscriptItem } from "./transcript";
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
 export type ImageSource = (attachment: ImageAttachment) => ImageURISource;
 
+export interface TranscriptActions {
+  imageSource: ImageSource;
+  onOpenImage(attachment: ImageAttachment): void;
+  onOpenTool(toolCallId: string): void;
+}
+
 const IMAGE_ASPECT = { min: 0.5, max: 2 } as const;
 
 function imageAspect(attachment: ImageAttachment) {
@@ -29,23 +36,26 @@ function imageAspect(attachment: ImageAttachment) {
 
 function UserImages({
   images,
-  imageSource,
+  actions,
   colors,
 }: {
   images: readonly ImageAttachment[];
-  imageSource: ImageSource;
+  actions: TranscriptActions;
   colors: ThemeColors;
 }) {
   return images.map((image) => (
-    <Image
+    <Pressable
       key={image.id}
+      accessibilityRole="imagebutton"
       accessibilityLabel={image.name}
-      source={imageSource(image)}
-      style={[
-        styles.image,
-        { aspectRatio: imageAspect(image), backgroundColor: colors.muted },
-      ]}
-    />
+      onPress={() => actions.onOpenImage(image)}
+      style={[styles.image, { aspectRatio: imageAspect(image) }]}
+    >
+      <Image
+        source={actions.imageSource(image)}
+        style={[styles.imageFill, { backgroundColor: colors.muted }]}
+      />
+    </Pressable>
   ));
 }
 
@@ -87,18 +97,22 @@ function toolStatusLabel(status: ToolStatus, t: TFunction<"sessions">) {
 function ToolRow({
   item,
   colors,
+  onOpen,
 }: {
   item: Extract<TranscriptItem, { kind: "tool" }>;
   colors: ThemeColors;
+  onOpen(): void;
 }) {
   const { t } = useTranslation("sessions");
   const label = item.detail ? `${item.title} ${item.detail}` : item.title;
   return (
-    <View
-      accessible
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityValue={{ text: toolStatusLabel(item.status, t) }}
+      onPress={onOpen}
       style={styles.tool}
+      testID={`transcript-tool-${item.id}`}
     >
       <ToolStatusIcon status={item.status} colors={colors} />
       <Text
@@ -112,27 +126,28 @@ function ToolRow({
           >{` ${item.detail}`}</Text>
         ) : null}
       </Text>
-    </View>
+      <SymbolView
+        name={{ ios: "chevron.right", android: "chevron_right" }}
+        size={12}
+        tintColor={colors.mutedForeground}
+      />
+    </Pressable>
   );
 }
 
 function TranscriptRow({
   item,
   colors,
-  imageSource,
+  actions,
 }: {
   item: TranscriptItem;
   colors: ThemeColors;
-  imageSource: ImageSource;
+  actions: TranscriptActions;
 }) {
   if (item.kind === "user") {
     return (
       <View style={styles.userTurn} testID={`transcript-user-${item.id}`}>
-        <UserImages
-          images={item.images}
-          imageSource={imageSource}
-          colors={colors}
-        />
+        <UserImages images={item.images} actions={actions} colors={colors} />
         {item.text ? (
           <View style={[styles.bubble, { backgroundColor: colors.muted }]}>
             <Text
@@ -154,17 +169,23 @@ function TranscriptRow({
       />
     );
   }
-  return <ToolRow item={item} colors={colors} />;
+  return (
+    <ToolRow
+      item={item}
+      colors={colors}
+      onOpen={() => actions.onOpenTool(item.id)}
+    />
+  );
 }
 
 export function TranscriptView({
   items,
   footer,
-  imageSource,
+  actions,
 }: {
   items: readonly TranscriptItem[];
   footer?: React.ReactElement;
-  imageSource: ImageSource;
+  actions: TranscriptActions;
 }) {
   const colors = useThemeColors();
   const newestFirst = useMemo(() => [...items].reverse(), [items]);
@@ -177,7 +198,7 @@ export function TranscriptView({
       contentContainerStyle={styles.content}
       ListHeaderComponent={footer}
       renderItem={({ item }) => (
-        <TranscriptRow item={item} colors={colors} imageSource={imageSource} />
+        <TranscriptRow item={item} colors={colors} actions={actions} />
       )}
     />
   );
@@ -190,7 +211,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   userTurn: { alignItems: "flex-end", gap: space.xs },
-  image: { width: "60%", borderRadius: 16 },
+  image: { width: "60%", borderRadius: 16, overflow: "hidden" },
+  imageFill: { width: "100%", height: "100%" },
   bubble: {
     maxWidth: `${layout.bubbleMaxWidthRatio * 100}%`,
     paddingHorizontal: 14,
@@ -202,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.sm,
-    minHeight: 24,
+    minHeight: 32,
   },
   toolText: { flex: 1, fontSize: 14 },
   toolDetail: {
