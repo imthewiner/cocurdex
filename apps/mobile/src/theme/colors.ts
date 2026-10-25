@@ -34,3 +34,17 @@ export function useThemeColors(): ThemeColors {
 export function useSyntaxColors(): SyntaxColors {
   return syntax[useThemeName()];
 }
+
+export interface GroupedColors {
+  page: string;
+  cell: string;
+}
+
+const GROUPED: Record<ThemeName, GroupedColors> = {
+  light: { page: generated.light.muted, cell: generated.light.card },
+  dark: { page: generated.dark.background, cell: generated.dark.card },
+};
+
+export function useGroupedColors(): GroupedColors {
+  return GROUPED[useThemeName()];
+}

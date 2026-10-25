@@ -14,6 +14,9 @@ export default interface Resources {
       years_one: "{{count}}y";
       years_other: "{{count}}y";
     };
+    markdown: {
+      diagram: "Diagram";
+    };
     screens: {
       computers: "Computers";
       issues: "Issues";
@@ -140,6 +143,9 @@ export default interface Resources {
       description: "Sessions you start on {{host}} appear here.";
       title: "No Sessions";
     };
+    image: {
+      close: "Close";
+    };
     newSession: {
       addOnComputer: "Add new workspaces on the computer.";
       agent: "Agent";
@@ -237,7 +243,13 @@ export default interface Resources {
     };
     tool: {
       completed: "Done";
+      copyOutput: "Copy Output";
+      duration: "{{seconds}} s";
       failed: "Failed";
+      input: "Input";
+      noOutput: "No output";
+      output: "Output";
+      outputTail: "Last 64 KB";
       running: "Running";
     };
     unavailable: {

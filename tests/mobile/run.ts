@@ -34,6 +34,8 @@ function readMessages(locale: SupportedLocale, namespace: string) {
 
 const SEARCHED_SESSION = "fixture-session-discounts";
 const CODE_SESSION = "fixture-session-checkout-audit";
+const TOOL_SESSION = "fixture-session-checkout-bug";
+const DIAGRAM_SESSION = "fixture-session-checkout-diagrams";
 
 function fixtureSession(id: string) {
   const session = FIXTURE_SESSIONS.find((candidate) => candidate.id === id);
@@ -90,6 +92,11 @@ function flowLabels(locale: SupportedLocale) {
     OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
     CODE_SESSION_TITLE: fixtureSession(CODE_SESSION).title,
     CODE_BLOCK_TEXT: "(?s)const fulfillmentSteps = .*",
+    TOOL_SESSION_TITLE: fixtureSession(TOOL_SESSION).title,
+    DIAGRAM_SESSION_TITLE: fixtureSession(DIAGRAM_SESSION).title,
+    DIAGRAM_PROMPT: "Draw each checkout stage as a flowchart.",
+    DIAGRAM_HEADING: "1. Cart boundary",
+    TOOL_INPUT_TITLE: sessions.tool.input,
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
     SCAN_TITLE: hosts.scan.title,

@@ -29,6 +29,9 @@
     "description": "Sessions you start on {{host}} appear here.",
     "title": "No Sessions"
   },
+  "image": {
+    "close": "Close"
+  },
   "newSession": {
     "addOnComputer": "Add new workspaces on the computer.",
     "agent": "Agent",
@@ -126,7 +129,13 @@
   },
   "tool": {
     "completed": "Done",
+    "copyOutput": "Copy Output",
+    "duration": "{{seconds}} s",
     "failed": "Failed",
+    "input": "Input",
+    "noOutput": "No output",
+    "output": "Output",
+    "outputTail": "Last 64 KB",
     "running": "Running"
   },
   "unavailable": {

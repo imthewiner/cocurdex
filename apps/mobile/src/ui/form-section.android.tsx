@@ -7,6 +7,7 @@ import {
   Shapes,
 } from "@expo/ui/jetpack-compose/modifiers";
 import { Children, isValidElement } from "react";
+import { useGroupedColors } from "@/theme";
 import type { FormSectionProps } from "./form-props";
 
 const OUTER_RADIUS = 20;
@@ -30,6 +31,7 @@ export function FormSection({
   children,
 }: FormSectionProps) {
   const colors = useMaterialColors();
+  const grouped = useGroupedColors();
   const rows = Children.toArray(children).filter(isValidElement);
   return (
     <Column verticalArrangement={{ spacedBy: 4 }} modifiers={[fillMaxWidth()]}>
@@ -55,7 +57,7 @@ export function FormSection({
               modifiers={[
                 fillMaxWidth(),
                 clip(rowShape(index, rows.length)),
-                background(colors.surfaceContainer),
+                background(grouped.cell),
               ]}
             >
               {row}

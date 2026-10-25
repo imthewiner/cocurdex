@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Linking, Platform } from "react-native";
+import { Linking, Platform, View } from "react-native";
 import {
   EnrichedMarkdownText,
   type MarkdownStyle,
@@ -12,6 +12,8 @@ import {
   useThemeColors,
 } from "@/theme";
 import { externalLinkUrl } from "./external-link";
+import { splitMermaidBlocks } from "./markdown-segments";
+import { MermaidDiagram } from "./mermaid-diagram";
 
 export const MONO_FONT = Platform.select({
   ios: "Menlo",
@@ -87,6 +89,28 @@ function markdownStyle(
   };
 }
 
+function MarkdownBlock({
+  markdown,
+  style,
+}: {
+  markdown: string;
+  style: MarkdownStyle;
+}) {
+  return (
+    <EnrichedMarkdownText
+      markdown={markdown}
+      flavor="github"
+      markdownStyle={style}
+      selectable
+      enableTaskListItemToggle={false}
+      onLinkPress={({ url }) => {
+        const target = externalLinkUrl(url);
+        if (target) void Linking.openURL(target);
+      }}
+    />
+  );
+}
+
 export function MarkdownText({
   markdown,
   testID,
@@ -100,18 +124,29 @@ export function MarkdownText({
     () => markdownStyle(colors, syntaxColors),
     [colors, syntaxColors],
   );
+  const segments = useMemo(() => splitMermaidBlocks(markdown), [markdown]);
   return (
-    <EnrichedMarkdownText
-      markdown={markdown}
-      flavor="github"
-      markdownStyle={style}
-      selectable
-      enableTaskListItemToggle={false}
-      onLinkPress={({ url }) => {
-        const target = externalLinkUrl(url);
-        if (target) void Linking.openURL(target);
-      }}
-      testID={testID}
-    />
+    <View testID={testID}>
+      {segments.map((segment) =>
+        segment.kind === "markdown" ? (
+          <MarkdownBlock
+            key={`markdown-${segment.line}`}
+            markdown={segment.text}
+            style={style}
+          />
+        ) : (
+          <MermaidDiagram
+            key={`mermaid-${segment.line}`}
+            source={segment.source}
+            fallback={
+              <MarkdownBlock
+                markdown={`~~~~\n${segment.source}\n~~~~`}
+                style={style}
+              />
+            }
+          />
+        ),
+      )}
+    </View>
   );
 }

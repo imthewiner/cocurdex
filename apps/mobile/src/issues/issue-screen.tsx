@@ -17,9 +17,17 @@ import {
 import { useIssueDetail, useIssueView } from "./issue-queries";
 import { IssueStatusMark } from "./issue-status-mark";
 
-function SubIssueRow({ issue }: { issue: IssueSummary }) {
+function SubIssueRow({
+  issue,
+  onPress,
+}: {
+  issue: IssueSummary;
+  onPress(): void;
+}) {
   return (
     <FormRow
+      testID={`issue-child-${issue.id}`}
+      onPress={onPress}
       leading={
         <HostedAccessory>
           <IssueStatusMark
@@ -167,7 +175,16 @@ export function IssueScreen({
               })}
             >
               {children.map((child) => (
-                <SubIssueRow key={child.id} issue={child} />
+                <SubIssueRow
+                  key={child.id}
+                  issue={child}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/issue/[hostId]/[issueId]",
+                      params: { hostId: host.hostId, issueId: child.id },
+                    })
+                  }
+                />
               ))}
             </FormSection>
           ) : null}

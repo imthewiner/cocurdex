@@ -211,6 +211,7 @@ export function createSessionDetailStore(
       };
     },
     getSnapshot: () => snapshot,
+    observed: () => listeners.size > 0,
     reload: load,
   };
 }

@@ -19,6 +19,7 @@ export interface SessionRow {
   title: string;
   activityAt: string;
   state: SessionPrimaryState;
+  model: string | null;
 }
 
 export interface SessionSection {
@@ -134,6 +135,7 @@ export function buildSessionSections(
       title: session.title,
       activityAt: session.lastMessageAt ?? session.updatedAt,
       state: states.get(session.id) ?? "ready",
+      model: session.providerSnapshot?.modelName ?? null,
     });
     rowsByWorkspace.set(workspace.id, rows);
   }

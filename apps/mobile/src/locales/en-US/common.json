@@ -12,6 +12,9 @@
     "years_one": "{{count}}y",
     "years_other": "{{count}}y"
   },
+  "markdown": {
+    "diagram": "Diagram"
+  },
   "screens": {
     "computers": "Computers",
     "issues": "Issues",

@@ -58,6 +58,6 @@ const styles = StyleSheet.create({
     paddingRight: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  title: { flex: 1, fontSize: 17, fontWeight: "600" },
-  age: { fontSize: 15, fontVariant: ["tabular-nums"] },
+  title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  age: { fontSize: 13, fontVariant: ["tabular-nums"] },
 });

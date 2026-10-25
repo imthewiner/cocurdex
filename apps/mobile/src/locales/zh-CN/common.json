@@ -7,6 +7,9 @@
     "now": "刚刚",
     "years_other": "{{count}}年"
   },
+  "markdown": {
+    "diagram": "图表"
+  },
   "screens": {
     "computers": "电脑",
     "issues": "Issues",
