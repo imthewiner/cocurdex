@@ -113,7 +113,11 @@ import { logDaemonDiagnostic } from "./diagnostics";
 import { loadExecutionTree } from "./execution-tree";
 import { listHostDirectories } from "./fs-browse";
 import { commitGitChanges } from "./git";
-import { HostAccessService, listHostAddresses } from "./host-access";
+import {
+  HostAccessService,
+  LOCAL_REQUEST_CONTEXT,
+  listHostAddresses,
+} from "./host-access";
 import { DaemonMcpService } from "./mcp-service";
 import { probeNetworkProxy } from "./network-proxy-probe";
 import {
@@ -126,6 +130,7 @@ import { DaemonPdfAnnotationsService } from "./pdf-annotations";
 import { PeerMessagingService } from "./peer-messaging";
 import { DaemonProviderService } from "./provider";
 import { CodexLoginSessions } from "./provider/codex-login";
+import { withServerProviderConnection } from "./provider/server-connection";
 import { generateProviderSessionTitle } from "./provider/session-title";
 import {
   ProviderCredentials,
@@ -1594,11 +1599,40 @@ export class CocurdexDaemonService {
     return aggregate;
   }
 
-  async saveSessionConfiguration(input: SessionConfiguration) {
+  async saveSessionConfiguration(
+    input: SessionConfiguration,
+    principal: HostPrincipal = LOCAL_REQUEST_CONTEXT.principal,
+  ) {
     validateSessionConfiguration(input);
-    return this.sessionCommands.run(input.id, () =>
-      this.configureSession(input),
+    return this.sessionCommands.run(input.id, async () =>
+      this.configureSession(
+        principalHasScope(principal, "credentials")
+          ? input
+          : await this.withServerProviderConnection(input),
+      ),
     );
+  }
+
+  private async withServerProviderConnection(
+    input: SessionConfiguration,
+  ): Promise<SessionConfiguration> {
+    const snapshot = input.providerSnapshot;
+    if (!snapshot) return input;
+    const configs = await this.state.listProviderConfigs();
+    const config =
+      configs.find((candidate) => candidate.id === snapshot.providerId) ?? null;
+    const models = config ? await this.state.listProviderModels(config.id) : [];
+    const stored = await this.state.getSession(input.id);
+    return {
+      ...input,
+      providerSnapshot: withServerProviderConnection(snapshot, {
+        config,
+        model:
+          models.find((candidate) => candidate.modelId === snapshot.modelId) ??
+          null,
+        stored: stored?.providerSnapshot ?? null,
+      }),
+    };
   }
 
   private async configureSession(input: SessionConfiguration) {

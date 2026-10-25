@@ -431,7 +431,10 @@ export async function handleDaemonRequest(
     case "session.contextTransfers":
       return service.listContextTransfers(request.params.sessionId);
     case "session.configure":
-      return service.saveSessionConfiguration(request.params);
+      return service.saveSessionConfiguration(
+        request.params,
+        context.principal,
+      );
     case "session.get":
       return service.getSession(request.params.sessionId);
     case "session.listPeers":
