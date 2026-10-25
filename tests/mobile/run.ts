@@ -144,6 +144,7 @@ async function runFlow(
   flow: string,
   env: Record<string, string>,
   outputDir: string,
+  daemonDiagnostics: () => Promise<string>,
 ) {
   const envArgs = Object.entries(env).flatMap(([key, value]) => [
     "-e",
@@ -172,9 +173,13 @@ async function runFlow(
     );
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`${reason}\n${await target.diagnostics()}`, {
-      cause: error,
-    });
+    const daemonState = await daemonDiagnostics();
+    throw new Error(
+      `${reason}\n${await target.diagnostics()}\n${daemonState}`,
+      {
+        cause: error,
+      },
+    );
   }
 }
 
@@ -237,6 +242,7 @@ async function main() {
             HOST_ADDRESS: daemon.hostAddress,
           },
           path.join(outputRoot, `${appearance}-${locale}`),
+          daemon.diagnostics,
         );
       }
       const after = await openedSessionState();

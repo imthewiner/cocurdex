@@ -7,6 +7,7 @@ import { FIXTURE_WORKSPACE_ID } from "@cocurdex/e2e/fixture-db/recipe";
 import { saveStubProvider } from "@cocurdex/e2e/helpers/chat-session";
 import {
   bundledDaemonPath,
+  daemonLogTail,
   spawnDaemon,
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
@@ -17,6 +18,8 @@ import type { MobilePlatform } from "./target";
 
 const AGENT_MODEL_ID = "e2e-agent-model";
 const AGENT_MODEL_NAME = "E2E Agent Model";
+const STUB_REQUEST_TAIL = 6;
+const DAEMON_LOG_TAIL = 150;
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -125,6 +128,29 @@ export async function startPairingDaemon(
       },
       sentPrompts: () =>
         stub.requests.map((request) => JSON.stringify(request.body.messages)),
+      async diagnostics() {
+        const sessions = await requestDaemon(
+          "session.list",
+          daemon.options,
+        ).catch((error: unknown) => `session.list failed: ${String(error)}`);
+        const sessionLines = Array.isArray(sessions)
+          ? sessions.map(
+              (session) =>
+                `${session.id} ${session.status} ${session.agentType} ${session.title}`,
+            )
+          : [sessions];
+        const requestLines = stub.requests
+          .slice(-STUB_REQUEST_TAIL)
+          .map((request) => JSON.stringify(request.body.messages).slice(-300));
+        return [
+          "--- daemon sessions",
+          ...sessionLines,
+          `--- llm stub requests (${stub.requests.length} total, last ${STUB_REQUEST_TAIL})`,
+          ...requestLines,
+          "--- daemon log",
+          await daemonLogTail(daemon.userDataPath, DAEMON_LOG_TAIL),
+        ].join("\n");
+      },
       async dispose() {
         await daemon.dispose();
         await stub.close();
