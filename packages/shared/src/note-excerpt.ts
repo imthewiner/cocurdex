@@ -8,10 +8,10 @@ function plainInline(line: string) {
   return line
     .replace(/^\s*(>\s*)+/, "")
     .replace(/^\s*([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?/, "")
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/!\[([^\][]*)\]\([^()]*\)/g, "$1")
+    .replace(/\[([^\][]+)\]\([^()]*\)/g, "$1")
     .replace(
-      /\[\[([^\]|]+)(\|([^\]]+))?\]\]/g,
+      /\[\[([^\][|]+)(\|([^\][]+))?\]\]/g,
       (_match, target, _alias, alias) => String(alias ?? target),
     )
     .replace(/(\*\*|__|~~|`)/g, "")

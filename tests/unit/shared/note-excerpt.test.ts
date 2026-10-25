@@ -27,4 +27,19 @@ describe("noteExcerpt", () => {
     expect(excerpt.length).toBeLessThanOrEqual(160);
     expect(excerpt.endsWith("…")).toBe(true);
   });
+
+  it("reads repeated unclosed image and link markup in linear time", () => {
+    const line = `Intro ${"![\\".repeat(20_000)} ${"![](".repeat(20_000)} ${"[[a|".repeat(20_000)}`;
+    const started = performance.now();
+    expect(noteExcerpt(line)?.startsWith("Intro ![")).toBe(true);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
+  it("keeps the text of links and images inside brackets", () => {
+    expect(
+      noteExcerpt(
+        "See [docs](https://example.invalid) and ![logo](a.png) [x [y](z)",
+      ),
+    ).toBe("See docs and logo [x y");
+  });
 });
