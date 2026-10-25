@@ -1,6 +1,7 @@
 import {
   toolCallDurationMs,
   toolCallInputText,
+  toolCallOutputPlaceholder,
   toolCallOutputTail,
   toolCallResultSource,
 } from "@cocurdex/mobile/internal/session-detail/tool-call-view";
@@ -78,5 +79,21 @@ describe("toolCallDurationMs", () => {
   it("measures finished calls only", () => {
     expect(toolCallDurationMs(call({}))).toBe(12_400);
     expect(toolCallDurationMs(call({ status: "in_progress" }))).toBeNull();
+  });
+});
+
+describe("toolCallOutputPlaceholder", () => {
+  it("waits for a result only while it is being fetched", () => {
+    expect(toolCallOutputPlaceholder(true, { data: undefined })).toBe(
+      "loading",
+    );
+    expect(
+      toolCallOutputPlaceholder(true, {
+        data: undefined,
+        error: new Error("offline"),
+      }),
+    ).toBe("failed");
+    expect(toolCallOutputPlaceholder(true, { data: null })).toBe("none");
+    expect(toolCallOutputPlaceholder(false, { data: undefined })).toBe("none");
   });
 });

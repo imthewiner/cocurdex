@@ -12,6 +12,7 @@ import { useToolCallResult } from "./tool-call-queries";
 import {
   toolCallDurationMs,
   toolCallInputText,
+  toolCallOutputPlaceholder,
   toolCallOutputTail,
   toolCallResultSource,
 } from "./tool-call-view";
@@ -99,7 +100,12 @@ export function ToolCallScreen({
   const output = toolCallOutputTail(toolCallResultSource(call, loaded.data));
   const title = call.title.charAt(0).toUpperCase() + call.title.slice(1);
   const outputText = output?.text ?? null;
-  const loadingOutput = needsResult && loaded.data === undefined;
+  const placeholder = toolCallOutputPlaceholder(needsResult, loaded);
+  const placeholderText = {
+    loading: "",
+    failed: t("tool.outputFailed"),
+    none: t("tool.noOutput"),
+  }[placeholder];
 
   return (
     <>
@@ -139,8 +145,18 @@ export function ToolCallScreen({
             testID="tool-call-output"
           />
         ) : (
-          <Text style={[styles.empty, { color: colors.mutedForeground }]}>
-            {loadingOutput ? "" : t("tool.noOutput")}
+          <Text
+            style={[
+              styles.empty,
+              {
+                color:
+                  placeholder === "failed"
+                    ? colors.destructive
+                    : colors.mutedForeground,
+              },
+            ]}
+          >
+            {placeholderText}
           </Text>
         )}
       </ScrollView>

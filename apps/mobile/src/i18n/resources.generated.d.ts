@@ -249,6 +249,7 @@ export default interface Resources {
       input: "Input";
       noOutput: "No output";
       output: "Output";
+      outputFailed: "Couldn't load the output";
       outputTail: "Last 64 KB";
       running: "Running";
     };

@@ -43,6 +43,16 @@ export function toolCallOutputTail(
   return { text: text.slice(text.length - limit), truncated: true };
 }
 
+export type ToolCallOutputPlaceholder = "loading" | "failed" | "none";
+
+export function toolCallOutputPlaceholder(
+  needsResult: boolean,
+  fetched: { data: AgentToolCallResult | null | undefined; error?: unknown },
+): ToolCallOutputPlaceholder {
+  if (!needsResult || fetched.data !== undefined) return "none";
+  return fetched.error ? "failed" : "loading";
+}
+
 export function toolCallDurationMs(call: AgentToolCallRecord) {
   if (call.status !== "completed" && call.status !== "failed") return null;
   const elapsed = Date.parse(call.updatedAt) - Date.parse(call.startedAt);

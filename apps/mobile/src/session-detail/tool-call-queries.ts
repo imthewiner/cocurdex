@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import { hostConnection } from "@/connection";
 
-const DAEMON_READ = { dedupingInterval: 0 };
+const RESULT_READ = { dedupingInterval: 0, keepPreviousData: true };
 
 export function useToolCallResult(
   hostId: string,
@@ -14,6 +14,6 @@ export function useToolCallResult(
       : (["session.getToolCallResult", hostId, toolCallId, version] as const),
     ([method, host, id]) =>
       hostConnection(host).request(method, { toolCallId: id }),
-    DAEMON_READ,
+    RESULT_READ,
   );
 }
