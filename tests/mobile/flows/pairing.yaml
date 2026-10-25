@@ -79,11 +79,7 @@ appId: dev.cocurdex.mobile
     visible: ${SEND_REPLY}
     timeout: 20000
 - assertVisible: ${SEND_PROMPT}
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - hideKeyboard
+- tapOn: ${SEND_REPLY}
 - waitForAnimationToEnd
 - takeScreenshot: session-reply
 - runFlow:
