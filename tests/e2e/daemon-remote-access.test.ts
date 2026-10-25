@@ -16,7 +16,9 @@ import {
   type ImageAttachment,
 } from "@cocurdex/shared";
 import { afterEach, describe, expect, it } from "vitest";
+import { startChatSession } from "./helpers/chat-session";
 import { type DaemonProcess, spawnDaemon } from "./helpers/daemon-process";
+import { startStubLlmServer } from "./helpers/llm-stub";
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -84,6 +86,22 @@ async function pairDevice(
     code,
     paired: (await response.json()) as { token: string; deviceId: string },
   };
+}
+
+function collectFrames(socket: WebSocket) {
+  const frames: string[] = [];
+  socket.addEventListener("message", (message) => {
+    frames.push(String(message.data));
+  });
+  return frames;
+}
+
+async function waitUntil(condition: () => boolean, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error("Timed out waiting");
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
 }
 
 const daemons: DaemonProcess[] = [];
@@ -198,6 +216,74 @@ describe("remote host access", () => {
       });
       expect(read.status).toBe(200);
       expect(Buffer.from(await read.arrayBuffer())).toEqual(gif);
+    }
+  });
+
+  it("withholds provider headers from devices without credentials access", async () => {
+    const stub = await startStubLlmServer();
+    const daemon = await spawnDaemon();
+    daemons.push(daemon);
+    try {
+      const port = await enableRemoteAccess(daemon);
+      const session = await startChatSession(daemon, stub);
+      const { paired } = await pairDevice(daemon, port, ["read", "interact"]);
+      const client = remoteClient(port, paired.token);
+
+      const responses = await Promise.all([
+        client.request("provider.listConfigs", undefined),
+        client.request("provider.listCompatibleForAgent", { agentId: "pi" }),
+        client.request("session.get", { sessionId: session.id }),
+        client.request("session.list", undefined),
+      ]);
+      expect(responses[2]?.providerSnapshot).toMatchObject({
+        providerId: "e2e-stub",
+        headersJson: null,
+      });
+      expect(JSON.stringify(responses)).not.toContain("e2e-key");
+
+      const socket = new WebSocket(
+        `ws://127.0.0.1:${port}`,
+        daemonWebSocketProtocols(paired.token),
+      );
+      await new Promise<void>((resolve, reject) => {
+        socket.addEventListener("open", () => resolve());
+        socket.addEventListener("error", () =>
+          reject(new Error("open failed")),
+        );
+      });
+      const frames = collectFrames(socket);
+      socket.send(
+        JSON.stringify({
+          id: "1",
+          method: "daemon.subscribe",
+          params: {},
+          token: paired.token,
+        }),
+      );
+      stub.plan = { kind: "stream", chunks: ["Hello"] };
+      await requestDaemon(
+        "session.send",
+        {
+          sessionId: session.id,
+          messageId: crypto.randomUUID(),
+          content: "hi there",
+        },
+        daemon.options,
+      );
+      await waitUntil(() =>
+        frames.some((frame) => frame.includes('"turn.completed"')),
+      );
+      socket.close();
+      expect(frames.join("\n")).not.toContain("e2e-key");
+
+      const local = await requestDaemon(
+        "session.get",
+        { sessionId: session.id },
+        daemon.options,
+      );
+      expect(local?.providerSnapshot?.headersJson).toContain("e2e-key");
+    } finally {
+      await stub.close();
     }
   });
 
