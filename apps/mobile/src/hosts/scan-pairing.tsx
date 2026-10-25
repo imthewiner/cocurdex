@@ -8,17 +8,13 @@ import {
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import { Stack } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { space, themeColors } from "@/theme";
 import { BrandHost } from "@/ui";
 import { hosts, selectHost } from "./hosts";
-import {
-  type ScanAttempt,
-  type ScanFailure,
-  shouldPairScannedCode,
-} from "./scan-attempts";
+import { createScanGate, type ScanFailure } from "./scan-attempts";
 
 const scanColors = themeColors.dark;
 const SCAN_FOREGROUND = scanColors.foreground;
@@ -85,19 +81,17 @@ export function ScanPairing({
   const [permission] = useCameraPermissions();
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<ScanFailure | null>(null);
-  const lastAttempt = useRef<ScanAttempt | null>(null);
+  const [gate] = useState(createScanGate);
 
   const handleScan = async ({ data }: BarcodeScanningResult) => {
-    if (!shouldPairScannedCode(lastAttempt.current, data, Date.now())) return;
+    if (!gate.begin(data, Date.now())) return;
     setPairing(true);
     setFailure(null);
-    const result = await hosts.pair(
-      data,
-      Constants.deviceName ?? "Cocurdex Mobile",
-    );
+    const result = await hosts
+      .pair(data, Constants.deviceName ?? "Cocurdex Mobile")
+      .catch(() => ({ failure: "unreachable" as const }));
     setPairing(false);
-    const failed = "failure" in result ? result.failure : null;
-    lastAttempt.current = { data, failure: failed, at: Date.now() };
+    gate.finish(data, "failure" in result ? result.failure : null, Date.now());
     if ("failure" in result) {
       setFailure(result.failure);
       return;
