@@ -161,6 +161,7 @@ describe("remote host access", () => {
       "interact",
     ]);
     const reader = await pairDevice(daemon, port, ["read"]);
+    const approver = await pairDevice(daemon, port, ["approvals"]);
     const webSocketUrl = `ws://127.0.0.1:${port}`;
     const gif = Buffer.from([
       0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x04, 0x00, 0x05, 0x00, 0x00, 0x00,
@@ -188,14 +189,16 @@ describe("remote host access", () => {
       attachment.filePath,
     );
     const denied = await fetch(imageUrl, {
-      headers: { authorization: `Bearer ${reader.paired.token}` },
+      headers: { authorization: `Bearer ${approver.paired.token}` },
     });
     expect(denied.status).toBe(403);
-    const read = await fetch(imageUrl, {
-      headers: { authorization: `Bearer ${writer.paired.token}` },
-    });
-    expect(read.status).toBe(200);
-    expect(Buffer.from(await read.arrayBuffer())).toEqual(gif);
+    for (const device of [writer, reader]) {
+      const read = await fetch(imageUrl, {
+        headers: { authorization: `Bearer ${device.paired.token}` },
+      });
+      expect(read.status).toBe(200);
+      expect(Buffer.from(await read.arrayBuffer())).toEqual(gif);
+    }
   });
 
   it("refuses the local full-access token on the remote listener", async () => {
