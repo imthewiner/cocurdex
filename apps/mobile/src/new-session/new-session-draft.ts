@@ -98,3 +98,26 @@ export function draftWorkspaceId(
   );
   return (chosen ?? choices[0])?.workspace.id ?? null;
 }
+
+export interface ResolvedChoices {
+  agentType: AgentId;
+  model?: ModelChoice | null;
+  permissionMode?: AgentPermissionMode | null;
+  permissionModes?: readonly AgentPermissionMode[];
+}
+
+export function displayedChoices(
+  draft: NewSessionDraft,
+  resolved: ResolvedChoices | undefined,
+) {
+  const agentType = draft.agentType ?? resolved?.agentType ?? null;
+  const current = resolved && resolved.agentType === agentType;
+  return {
+    agentType,
+    model: draft.model ?? (current ? (resolved.model ?? null) : null),
+    permissionMode:
+      draft.permissionMode ??
+      (current ? (resolved.permissionMode ?? null) : null),
+    permissionModes: current ? (resolved.permissionModes ?? []) : [],
+  };
+}

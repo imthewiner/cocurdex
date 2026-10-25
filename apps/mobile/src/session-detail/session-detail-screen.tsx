@@ -10,17 +10,12 @@ import { router, Stack } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
+import { ShimmerText } from "@/ui";
 import { Composer } from "./composer";
 import {
   imageAttachmentSource,
@@ -30,16 +25,10 @@ import {
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
+import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
 import { buildTranscript, pendingInteraction } from "./transcript";
+import { type CondensedItem, condenseTranscript } from "./transcript-activity";
 import { TranscriptView } from "./transcript-view";
-
-function sessionWorkspace(
-  observation: SessionObservationSnapshot | null,
-  workspaces: readonly WorkspaceRecord[],
-) {
-  const workspaceId = observation?.session.workspaceId;
-  return workspaces.find((entry) => entry.id === workspaceId) ?? null;
-}
 
 function sessionSubtitle(
   observation: SessionObservationSnapshot | null,
@@ -53,20 +42,41 @@ function sessionSubtitle(
 function StatusLine({ text, failed }: { text: string; failed: boolean }) {
   const colors = useThemeColors();
   return (
-    <View style={styles.statusLine}>
-      {failed ? null : (
-        <View style={[styles.ring, { borderColor: colors.brandMark }]} />
+    <View style={styles.statusLine} accessibilityLiveRegion="polite">
+      {failed ? (
+        <Text style={[styles.statusText, { color: colors.destructive }]}>
+          {text}
+        </Text>
+      ) : (
+        <ShimmerText
+          text={text}
+          baseColor={colors.mutedForeground}
+          highlightColor={colors.foreground}
+          style={styles.statusText}
+          testID="session-running-status"
+        />
       )}
-      <Text
-        style={[
-          styles.statusText,
-          { color: failed ? colors.destructive : colors.mutedForeground },
-        ]}
-      >
-        {text}
-      </Text>
     </View>
   );
+}
+
+type LivePhase = "thinking" | "usingTools" | "responding";
+
+function livePhase(items: readonly CondensedItem[]): LivePhase {
+  const last = items.at(-1);
+  if (last?.kind === "assistant" && last.streaming) return "responding";
+  const tools =
+    last?.kind === "activity"
+      ? last.items
+      : last?.kind === "tool"
+        ? [last]
+        : [];
+  const active = tools.some(
+    (item) =>
+      item.kind === "tool" &&
+      (item.status === "pending" || item.status === "in_progress"),
+  );
+  return active ? "usingTools" : "thinking";
 }
 
 export function SessionDetailScreen({
@@ -85,12 +95,20 @@ export function SessionDetailScreen({
   const observation = detail.observation;
   const workspaces = useViewedSession(host.hostId, sessionId).workspaces;
   const workspace = sessionWorkspace(observation, workspaces);
-  const workspacePath =
-    observation?.session.worktreePath ?? workspace?.rootPaths[0] ?? null;
+  const workspacePath = sessionWorkspacePath(observation, workspace);
+  const running =
+    observation?.session.status === "running" ||
+    observation?.activeRun?.status === "running";
   const items = useMemo(
     () =>
-      observation ? buildTranscript({ ...observation, workspacePath }) : [],
-    [observation, workspacePath],
+      observation
+        ? condenseTranscript(
+            buildTranscript({ ...observation, workspacePath }),
+            observation.toolCalls,
+            running,
+          )
+        : [],
+    [observation, workspacePath, running],
   );
   const pending = observation
     ? pendingInteraction(observation.interactions)
@@ -98,9 +116,8 @@ export function SessionDetailScreen({
   const connection = hostConnection(host.hostId);
   const canInteract = host.scopes.includes("interact");
   const canApprove = host.scopes.includes("approvals");
-  const running =
-    observation?.session.status === "running" ||
-    observation?.activeRun?.status === "running";
+  const canFork = host.scopes.includes("execute");
+  const canReadFiles = host.scopes.includes("files.read");
   const failed = observation?.session.status === "error";
 
   const attempt = async (run: () => Promise<unknown>) => {
@@ -146,16 +163,32 @@ export function SessionDetailScreen({
     );
   };
 
+  const fork = (throughMessageId: string) => {
+    void attempt(async () => {
+      const forked = await connection.request("session.fork", {
+        sessionId,
+        throughMessageId,
+        title: t("message.forkTitle", { title }),
+      });
+      router.push({
+        pathname: "/session/[hostId]/[sessionId]",
+        params: { hostId: host.hostId, sessionId: forked.id },
+      });
+    });
+  };
+
   const stop = () => {
     void attempt(() => connection.request("session.stop", { sessionId }));
   };
 
   const title = observation?.session.title ?? "";
-  const status = failed
-    ? t("detail.failed")
-    : running
-      ? t("detail.working")
-      : null;
+  const liveLabels: Record<LivePhase, string> = {
+    thinking: t("detail.thinking"),
+    usingTools: t("detail.usingTools"),
+    responding: t("detail.responding"),
+  };
+  const runningStatus = running ? liveLabels[livePhase(items)] : null;
+  const status = failed ? t("detail.failed") : runningStatus;
 
   return (
     <>
@@ -173,7 +206,7 @@ export function SessionDetailScreen({
       />
       <KeyboardAvoidingView
         style={[styles.fill, { backgroundColor: colors.background }]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         keyboardVerticalOffset={headerHeight - bottomInset}
       >
         {detail.loaded && detail.missing ? (
@@ -186,6 +219,8 @@ export function SessionDetailScreen({
           <TranscriptView
             items={items}
             actions={{
+              hostId: host.hostId,
+              fileRoot: canReadFiles ? workspacePath : undefined,
               imageSource: (attachment) =>
                 imageAttachmentSource(host, attachment),
               onOpenImage: (attachment) =>
@@ -197,6 +232,7 @@ export function SessionDetailScreen({
                     name: attachment.name,
                   },
                 }),
+              onFork: canFork ? fork : null,
               onOpenTool: (toolCallId) =>
                 router.push({
                   pathname: "/tool-call/[hostId]/[sessionId]/[toolCallId]",
@@ -243,7 +279,6 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   statusLine: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  ring: { width: 12, height: 12, borderRadius: 6, borderWidth: 1.75 },
   statusText: { fontSize: 14 },
   error: {
     fontSize: 13,

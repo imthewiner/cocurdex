@@ -1,0 +1,73 @@
+import {
+  collectFileLinkTargets,
+  fileLinkHref,
+  linkFilePaths,
+  parseFileLinkHref,
+} from "@cocurdex/mobile/internal/markdown/file-links";
+import { describe, expect, it } from "vitest";
+
+const ROOT = "/repo";
+
+describe("collectFileLinkTargets", () => {
+  it("finds path-like inline code and local file links outside fences", () => {
+    const markdown = [
+      "Edit `src/cart.ts:42` and see [the spec](docs/spec.md#L3).",
+      "Ignore `exec.LookPath`, [site](https://example.invalid), and [issue](cocurdex://issue/1).",
+      "```",
+      "`src/ignored.ts`",
+      "```",
+    ].join("\n");
+    expect(collectFileLinkTargets(markdown, ROOT)).toEqual([
+      { path: "/repo/src/cart.ts", line: 42 },
+      { path: "/repo/docs/spec.md", line: 3 },
+    ]);
+  });
+
+  it("keeps absolute paths and skips relative ones without a root", () => {
+    expect(
+      collectFileLinkTargets("`/etc/app.toml` and `src/a.ts`", null),
+    ).toEqual([{ path: "/etc/app.toml", line: null }]);
+  });
+});
+
+describe("linkFilePaths", () => {
+  it("links only the paths that exist and keeps the visible text", () => {
+    const markdown = "Open `src/cart.ts:42`, not `src/gone.ts`.";
+    const linked = linkFilePaths(
+      markdown,
+      ROOT,
+      new Set(["/repo/src/cart.ts"]),
+    );
+    expect(linked).toBe(
+      `Open [\`src/cart.ts:42\`](${fileLinkHref({ path: "/repo/src/cart.ts", line: 42 })}), not \`src/gone.ts\`.`,
+    );
+  });
+
+  it("rewrites a local link's target and keeps its label", () => {
+    const linked = linkFilePaths(
+      "[`spec.md`](docs/spec.md)",
+      ROOT,
+      new Set(["/repo/docs/spec.md"]),
+    );
+    expect(parseFileLinkHref(/\]\((.+)\)$/.exec(linked)?.[1] ?? "")).toEqual({
+      path: "/repo/docs/spec.md",
+      line: null,
+    });
+    expect(linked.startsWith("[`spec.md`](")).toBe(true);
+  });
+});
+
+describe("file link hrefs", () => {
+  it("round-trips paths with spaces and Windows separators", () => {
+    for (const target of [
+      { path: "/repo/a b/c.ts", line: 7 },
+      { path: "C:\\repo\\c.ts", line: null },
+    ]) {
+      expect(parseFileLinkHref(fileLinkHref(target))).toEqual(target);
+    }
+  });
+
+  it("ignores other links", () => {
+    expect(parseFileLinkHref("https://example.invalid")).toBeNull();
+  });
+});

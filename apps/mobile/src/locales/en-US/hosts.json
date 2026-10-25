@@ -6,6 +6,9 @@
     "scan": "Scan to Pair",
     "title": "No Computers"
   },
+  "list": {
+    "current": "Current"
+  },
   "pair": {
     "action": "Pair",
     "failure": {

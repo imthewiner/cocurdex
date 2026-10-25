@@ -1,5 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { FieldGroup, Text, TextInput, type TextInputRef } from "@expo/ui";
+import { Text, TextInput, type TextInputRef } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,17 +10,18 @@ import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
 import {
   BrandHost,
+  FieldSection,
   Form,
   FormRow,
   FormSection,
   keyboardHidden,
+  RowValue,
   SheetAction,
 } from "@/ui";
 import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
 import { useAgents, useNewSessionDefaults } from "./new-session-queries";
 import { useNewSessionState } from "./new-session-store";
 import { usePermissionModeLabels } from "./permission-mode-labels";
-import { RowValue } from "./row-accessory";
 import { createSessionStarter, shownSessionPayload } from "./start-session";
 
 function Sheet({ host }: { host: SavedHost }) {
@@ -95,7 +96,7 @@ function Sheet({ host }: { host: SavedHost }) {
       />
       <BrandHost style={styles.fill}>
         <Form>
-          <FieldGroup.Section>
+          <FieldSection>
             <TextInput
               ref={promptInput}
               testID="new-session-prompt"
@@ -104,7 +105,7 @@ function Sheet({ host }: { host: SavedHost }) {
               autoFocus
               onChangeText={setPrompt}
             />
-          </FieldGroup.Section>
+          </FieldSection>
           <FormSection
             title={t("newSession.where")}
             footer={

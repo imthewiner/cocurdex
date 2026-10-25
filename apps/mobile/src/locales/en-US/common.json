@@ -12,15 +12,38 @@
     "years_one": "{{count}}y",
     "years_other": "{{count}}y"
   },
+  "links": {
+    "relation": {
+      "blocked-by": "Blocked by",
+      "blocks": "Blocks",
+      "child": "Sub-issue",
+      "duplicate-of": "Duplicate of",
+      "duplicated-by": "Duplicated by",
+      "mentioned-by": "Mentioned by",
+      "mentions": "Mentions",
+      "parent": "Parent",
+      "related": "Related",
+      "worked-on-by": "Session",
+      "works-on": "Works on"
+    },
+    "title": "Linked",
+    "untitled": "Untitled"
+  },
   "markdown": {
-    "diagram": "Diagram"
+    "closeDiagram": "Close",
+    "diagram": "Diagram",
+    "openDiagram": "Open full screen"
   },
   "screens": {
+    "archived": "Archived Sessions",
     "computers": "Computers",
     "issues": "Issues",
+    "newIssue": "New Issue",
+    "newNote": "New Note",
     "notes": "Notes",
     "pair": "Pair a Computer",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "settings": "Settings"
   },
   "tabs": {
     "computers": "Computers",

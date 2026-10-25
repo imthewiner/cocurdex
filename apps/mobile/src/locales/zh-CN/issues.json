@@ -1,5 +1,14 @@
 {
   "allWorkspaces": "全部工作区",
+  "create": {
+    "creating": "正在创建…",
+    "descriptionPlaceholder": "添加描述",
+    "failed": "无法创建 issue，请检查连接后重试。",
+    "hint": "创建后可以直接交给 Agent。",
+    "open": "新建 issue",
+    "submit": "创建",
+    "titlePlaceholder": "Issue 标题"
+  },
   "empty": {
     "description": "在 {{host}} 上跟踪的 issue 会显示在这里。",
     "title": "没有 issue"
@@ -8,7 +17,8 @@
     "labels": "标签",
     "none": "无",
     "priority": "优先级",
-    "status": "状态"
+    "status": "状态",
+    "workspace": "工作区"
   },
   "missing": "这个 issue 已在电脑上删除。",
   "noResults": "没有与“{{query}}”匹配的 issue",

@@ -2,6 +2,7 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinkedEntitiesList } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { useHostSessions } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
@@ -49,24 +50,34 @@ export function NoteScreen({
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
-        <Text
-          accessibilityRole="header"
-          selectable
-          style={[styles.title, { color: colors.foreground }]}
-        >
-          {note.data.icon ? `${note.data.icon} ` : ""}
-          {note.data.title}
-        </Text>
-        <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-          {meta}
-        </Text>
-        {body ? (
-          <MarkdownText markdown={body} testID="note-body" />
-        ) : (
-          <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-            {t("emptyBody")}
+        <View style={styles.body}>
+          <Text
+            accessibilityRole="header"
+            selectable
+            style={[styles.title, { color: colors.foreground }]}
+          >
+            {note.data.icon ? `${note.data.icon} ` : ""}
+            {note.data.title}
           </Text>
-        )}
+          <Text style={[styles.meta, { color: colors.mutedForeground }]}>
+            {meta}
+          </Text>
+          {body ? (
+            <MarkdownText
+              markdown={body}
+              hostId={host.hostId}
+              testID="note-body"
+            />
+          ) : (
+            <Text style={[styles.meta, { color: colors.mutedForeground }]}>
+              {t("emptyBody")}
+            </Text>
+          )}
+        </View>
+        <LinkedEntitiesList
+          hostId={host.hostId}
+          entity={{ kind: "note", id: note.data.id }}
+        />
       </ScrollView>
     </>
   );
@@ -74,11 +85,8 @@ export function NoteScreen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  content: {
-    paddingHorizontal: layout.sideMargin,
-    paddingBottom: space.xxl,
-    gap: space.sm,
-  },
+  content: { paddingBottom: space.xxl },
+  body: { paddingHorizontal: layout.sideMargin, gap: space.sm },
   title: { fontSize: 28, lineHeight: 34, fontWeight: "700" },
   meta: { fontSize: 13, marginBottom: space.sm },
 });

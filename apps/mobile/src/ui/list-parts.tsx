@@ -46,7 +46,7 @@ export function ListSectionHeader({ title }: { title: string }) {
   return (
     <Text
       accessibilityRole="header"
-      style={[styles.sectionTitle, { color: colors.foreground }]}
+      style={[styles.sectionTitle, { color: colors.mutedForeground }]}
     >
       {title}
     </Text>
@@ -65,10 +65,11 @@ const styles = StyleSheet.create({
     marginLeft: layout.sideMargin,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     paddingHorizontal: layout.sideMargin,
-    paddingTop: space.lg,
-    paddingBottom: space.xs,
+    paddingTop: space.xl,
+    paddingBottom: space.sm,
   },
 });

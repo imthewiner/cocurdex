@@ -3,6 +3,7 @@ import {
   chooseModel,
   choosePermissionMode,
   chooseWorkspace,
+  displayedChoices,
   draftWorkspaceId,
   EMPTY_DRAFT,
   workspaceChoices,
@@ -123,5 +124,44 @@ describe("draft choices", () => {
       agentType: "claude-agent",
       model: { providerId: "anthropic", modelId: "haiku" },
     });
+  });
+});
+
+describe("displayedChoices", () => {
+  const resolved = {
+    agentType: "claude" as const,
+    model: { providerId: "anthropic", modelId: "opus" },
+    permissionMode: "claude-default" as const,
+    permissionModes: ["claude-default" as const, "claude-plan" as const],
+  };
+
+  it("marks a newly picked agent before the computer confirms it", () => {
+    const shown = displayedChoices(
+      { workspaceId: "w", agentType: "codex" },
+      resolved,
+    );
+    expect(shown.agentType).toBe("codex");
+    expect(shown.model).toBeNull();
+    expect(shown.permissionMode).toBeNull();
+    expect(shown.permissionModes).toEqual([]);
+  });
+
+  it("shows what the computer resolved once it matches the pick", () => {
+    expect(displayedChoices({ workspaceId: "w" }, resolved)).toEqual({
+      agentType: "claude",
+      model: resolved.model,
+      permissionMode: "claude-default",
+      permissionModes: resolved.permissionModes,
+    });
+    expect(
+      displayedChoices(
+        {
+          workspaceId: "w",
+          agentType: "claude",
+          permissionMode: "claude-plan",
+        },
+        resolved,
+      ).permissionMode,
+    ).toBe("claude-plan");
   });
 });

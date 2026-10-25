@@ -1,4 +1,13 @@
 {
+  "create": {
+    "bodyPlaceholder": "Write in Markdown",
+    "creating": "Creating…",
+    "failed": "Couldn't create the note. Check the connection and try again.",
+    "hint": "Agents can read and edit this note too.",
+    "open": "New Note",
+    "submit": "Create",
+    "titlePlaceholder": "Title"
+  },
   "empty": {
     "description": "Notes you write on {{host}} appear here.",
     "title": "No Notes"
@@ -11,5 +20,6 @@
   "unavailable": {
     "retry": "Try Again",
     "title": "Couldn’t load notes from {{host}}"
-  }
+  },
+  "workspace": "Workspace"
 }

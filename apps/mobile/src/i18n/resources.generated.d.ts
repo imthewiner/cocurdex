@@ -14,15 +14,38 @@ export default interface Resources {
       years_one: "{{count}}y";
       years_other: "{{count}}y";
     };
+    links: {
+      relation: {
+        "blocked-by": "Blocked by";
+        blocks: "Blocks";
+        child: "Sub-issue";
+        "duplicate-of": "Duplicate of";
+        "duplicated-by": "Duplicated by";
+        "mentioned-by": "Mentioned by";
+        mentions: "Mentions";
+        parent: "Parent";
+        related: "Related";
+        "worked-on-by": "Session";
+        "works-on": "Works on";
+      };
+      title: "Linked";
+      untitled: "Untitled";
+    };
     markdown: {
+      closeDiagram: "Close";
       diagram: "Diagram";
+      openDiagram: "Open full screen";
     };
     screens: {
+      archived: "Archived Sessions";
       computers: "Computers";
       issues: "Issues";
+      newIssue: "New Issue";
+      newNote: "New Note";
       notes: "Notes";
       pair: "Pair a Computer";
       sessions: "Sessions";
+      settings: "Settings";
     };
     tabs: {
       computers: "Computers";
@@ -31,6 +54,17 @@ export default interface Resources {
       sessions: "Sessions";
     };
   };
+  files: {
+    binary: "This file can't be previewed.";
+    copy: "Copy Contents";
+    failed: "Couldn't load the file. Check the connection and try again.";
+    missing: "This file no longer exists on the computer.";
+    outside: "This file is outside the computer's workspaces.";
+    retry: "Try Again";
+    showPreview: "Show Preview";
+    showSource: "Show Source";
+    truncated: "Showing the first 512 KB of this file.";
+  };
   hosts: {
     empty: {
       description: "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.";
@@ -38,6 +72,9 @@ export default interface Resources {
       paste: "Paste Pairing Link";
       scan: "Scan to Pair";
       title: "No Computers";
+    };
+    list: {
+      current: "Current";
     };
     pair: {
       action: "Pair";
@@ -73,6 +110,15 @@ export default interface Resources {
   };
   issues: {
     allWorkspaces: "All Workspaces";
+    create: {
+      creating: "Creating…";
+      descriptionPlaceholder: "Add a description";
+      failed: "Couldn't create the issue. Check the connection and try again.";
+      hint: "You can hand it to an agent once it's created.";
+      open: "New Issue";
+      submit: "Create";
+      titlePlaceholder: "Issue title";
+    };
     empty: {
       description: "Issues you track on {{host}} appear here.";
       title: "No Issues";
@@ -82,6 +128,7 @@ export default interface Resources {
       none: "None";
       priority: "Priority";
       status: "Status";
+      workspace: "Workspace";
     };
     missing: "This issue was deleted on the computer.";
     noResults: "No issues match “{{query}}”";
@@ -98,6 +145,15 @@ export default interface Resources {
     workspaceFilter: "Workspace: {{workspace}}";
   };
   notes: {
+    create: {
+      bodyPlaceholder: "Write in Markdown";
+      creating: "Creating…";
+      failed: "Couldn't create the note. Check the connection and try again.";
+      hint: "Agents can read and edit this note too.";
+      open: "New Note";
+      submit: "Create";
+      titlePlaceholder: "Title";
+    };
     empty: {
       description: "Notes you write on {{host}} appear here.";
       title: "No Notes";
@@ -111,11 +167,52 @@ export default interface Resources {
       retry: "Try Again";
       title: "Couldn’t load notes from {{host}}";
     };
+    workspace: "Workspace";
   };
   sessions: {
+    actions: {
+      archive: "Archive";
+      cancel: "Cancel";
+      delete: "Delete";
+      deleteMessage: "The session and its history are removed from the computer. This can't be undone.";
+      deleteTitle: "Delete “{{title}}”?";
+      fork: "Fork Session";
+      markUnread: "Mark as Unread";
+    };
+    activity: {
+      command_one: "Ran {{count}} command";
+      command_other: "Ran {{count}} commands";
+      edit_one: "Edited {{count}} file";
+      edit_other: "Edited {{count}} files";
+      fetch_one: "Fetched {{count}} page";
+      fetch_other: "Fetched {{count}} pages";
+      other_one: "Used {{count}} tool";
+      other_other: "Used {{count}} tools";
+      others_one: "{{count}} other action";
+      others_other: "{{count}} other actions";
+      read_one: "Read {{count}} file";
+      read_other: "Read {{count}} files";
+      replies_one: "{{count}} interim reply";
+      replies_other: "{{count}} interim replies";
+      search_one: "Searched {{count}} time";
+      search_other: "Searched {{count}} times";
+      separator: ", ";
+      skill_one: "Used {{count}} skill";
+      skill_other: "Used {{count}} skills";
+      subagent_one: "Ran {{count}} subagent";
+      subagent_other: "Ran {{count}} subagents";
+    };
     approvalsUnavailable: {
       description: "This phone was paired without approval access.";
       title: "Approve this on your computer";
+    };
+    archived: {
+      archivedAge: "Archived {{age}}";
+      count_one: "{{count}} session";
+      count_other: "{{count}} sessions";
+      empty: "No Archived Sessions";
+      restore: "Restore";
+      restoreSession: "Restore {{title}}";
     };
     composer: {
       attach: "Attach Photo";
@@ -137,6 +234,9 @@ export default interface Resources {
       monitoring: "Working in the background";
       pendingApproval: "Waiting for your approval";
       planReady: "Plan ready for review";
+      responding: "Replying";
+      thinking: "Thinking";
+      usingTools: "Using tools";
       working: "Working…";
     };
     empty: {
@@ -145,6 +245,12 @@ export default interface Resources {
     };
     image: {
       close: "Close";
+    };
+    message: {
+      copied: "Copied";
+      copy: "Copy";
+      fork: "Fork From Here";
+      forkTitle: "{{title}} (fork)";
     };
     newSession: {
       addOnComputer: "Add new workspaces on the computer.";
@@ -246,6 +352,7 @@ export default interface Resources {
       copyOutput: "Copy Output";
       duration: "{{seconds}} s";
       failed: "Failed";
+      files: "Files";
       input: "Input";
       noOutput: "No output";
       output: "Output";
@@ -257,6 +364,27 @@ export default interface Resources {
       description: "Check that the computer is awake and on the same network.";
       retry: "Try Again";
       title: "Can't reach {{host}}";
+    };
+  };
+  settings: {
+    about: {
+      pairedComputers: "Paired Computers";
+      title: "About";
+      version: "Version";
+    };
+    appearance: {
+      dark: "Dark";
+      light: "Light";
+      system: "Match System";
+      title: "Appearance";
+    };
+    language: {
+      system: "Match System";
+      title: "Language";
+    };
+    sessions: {
+      archived: "Archived Sessions";
+      title: "Sessions";
     };
   };
 }

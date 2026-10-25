@@ -1,7 +1,47 @@
 {
+  "actions": {
+    "archive": "Archive",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleteMessage": "The session and its history are removed from the computer. This can't be undone.",
+    "deleteTitle": "Delete “{{title}}”?",
+    "fork": "Fork Session",
+    "markUnread": "Mark as Unread"
+  },
+  "activity": {
+    "command_one": "Ran {{count}} command",
+    "command_other": "Ran {{count}} commands",
+    "edit_one": "Edited {{count}} file",
+    "edit_other": "Edited {{count}} files",
+    "fetch_one": "Fetched {{count}} page",
+    "fetch_other": "Fetched {{count}} pages",
+    "other_one": "Used {{count}} tool",
+    "other_other": "Used {{count}} tools",
+    "others_one": "{{count}} other action",
+    "others_other": "{{count}} other actions",
+    "read_one": "Read {{count}} file",
+    "read_other": "Read {{count}} files",
+    "replies_one": "{{count}} interim reply",
+    "replies_other": "{{count}} interim replies",
+    "search_one": "Searched {{count}} time",
+    "search_other": "Searched {{count}} times",
+    "separator": ", ",
+    "skill_one": "Used {{count}} skill",
+    "skill_other": "Used {{count}} skills",
+    "subagent_one": "Ran {{count}} subagent",
+    "subagent_other": "Ran {{count}} subagents"
+  },
   "approvalsUnavailable": {
     "description": "This phone was paired without approval access.",
     "title": "Approve this on your computer"
+  },
+  "archived": {
+    "archivedAge": "Archived {{age}}",
+    "count_one": "{{count}} session",
+    "count_other": "{{count}} sessions",
+    "empty": "No Archived Sessions",
+    "restore": "Restore",
+    "restoreSession": "Restore {{title}}"
   },
   "composer": {
     "attach": "Attach Photo",
@@ -23,6 +63,9 @@
     "monitoring": "Working in the background",
     "pendingApproval": "Waiting for your approval",
     "planReady": "Plan ready for review",
+    "responding": "Replying",
+    "thinking": "Thinking",
+    "usingTools": "Using tools",
     "working": "Working…"
   },
   "empty": {
@@ -31,6 +74,12 @@
   },
   "image": {
     "close": "Close"
+  },
+  "message": {
+    "copied": "Copied",
+    "copy": "Copy",
+    "fork": "Fork From Here",
+    "forkTitle": "{{title}} (fork)"
   },
   "newSession": {
     "addOnComputer": "Add new workspaces on the computer.",
@@ -132,6 +181,7 @@
     "copyOutput": "Copy Output",
     "duration": "{{seconds}} s",
     "failed": "Failed",
+    "files": "Files",
     "input": "Input",
     "noOutput": "No output",
     "output": "Output",

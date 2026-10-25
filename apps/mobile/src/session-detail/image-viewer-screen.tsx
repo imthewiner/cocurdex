@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
-  View,
 } from "react-native";
 import { useSavedHosts } from "@/hosts";
 import { themeColors } from "@/theme";

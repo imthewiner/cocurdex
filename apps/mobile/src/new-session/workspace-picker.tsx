@@ -7,14 +7,20 @@ import { StyleSheet } from "react-native";
 import { useSavedHosts } from "@/hosts";
 import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
-import { BrandHost, Form, FormRow, FormSection } from "@/ui";
+import {
+  BrandHost,
+  FolderIcon,
+  Form,
+  FormRow,
+  FormSection,
+  SelectedMark,
+} from "@/ui";
 import {
   chooseWorkspace,
   draftWorkspaceId,
   workspaceChoices,
 } from "./new-session-draft";
 import { updateNewSessionDraft, useNewSessionState } from "./new-session-store";
-import { FolderIcon, SelectedMark } from "./row-accessory";
 
 function Picker({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
@@ -59,6 +65,7 @@ function Picker({ host }: { host: SavedHost }) {
             {shown.map(({ workspace, sessionCount }) => (
               <FormRow
                 key={workspace.id}
+                testID={`workspace-choice-${workspace.id}`}
                 onPress={() => pick(workspace.id)}
                 leading={<FolderIcon />}
                 supportingText={

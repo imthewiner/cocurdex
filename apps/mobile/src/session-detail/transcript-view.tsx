@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
 import type { TFunction } from "i18next";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -16,14 +16,21 @@ import {
 import { MarkdownText } from "@/markdown";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
 import type { TranscriptItem } from "./transcript";
+import type { ActivityChild, CondensedItem } from "./transcript-activity";
+import { TurnActions } from "./turn-actions";
+import { useActivityLabel } from "./use-activity-label";
 
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
+type ActivityItem = Extract<CondensedItem, { kind: "activity" }>;
 export type ImageSource = (attachment: ImageAttachment) => ImageURISource;
 
 export interface TranscriptActions {
+  hostId: string;
+  fileRoot: string | null | undefined;
   imageSource: ImageSource;
   onOpenImage(attachment: ImageAttachment): void;
   onOpenTool(toolCallId: string): void;
+  onFork: ((messageId: string) => void) | null;
 }
 
 const IMAGE_ASPECT = { min: 0.5, max: 2 } as const;
@@ -135,14 +142,102 @@ function ToolRow({
   );
 }
 
-function TranscriptRow({
+function ActivityRow({
+  item,
+  colors,
+  actions,
+  expanded,
+  onToggle,
+}: {
+  item: ActivityItem;
+  colors: ThemeColors;
+  actions: TranscriptActions;
+  expanded: boolean;
+  onToggle(): void;
+}) {
+  const label = useActivityLabel(item);
+  return (
+    <View style={styles.activity}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ expanded }}
+        onPress={onToggle}
+        style={styles.tool}
+        testID={`transcript-activity-${item.id}`}
+      >
+        <Text
+          numberOfLines={1}
+          style={[styles.activityText, { color: colors.mutedForeground }]}
+        >
+          {label}
+        </Text>
+        <SymbolView
+          name={
+            expanded
+              ? { ios: "chevron.down", android: "keyboard_arrow_down" }
+              : { ios: "chevron.right", android: "chevron_right" }
+          }
+          size={12}
+          tintColor={colors.mutedForeground}
+        />
+      </Pressable>
+      {expanded ? (
+        <View style={styles.activityItems}>
+          {item.items.map((child) => (
+            <ActivityChildRow
+              key={`${child.kind}:${child.id}`}
+              item={child}
+              colors={colors}
+              actions={actions}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ActivityChildRow({
   item,
   colors,
   actions,
 }: {
-  item: TranscriptItem;
+  item: ActivityChild;
   colors: ThemeColors;
   actions: TranscriptActions;
+}) {
+  if (item.kind === "assistant") {
+    return (
+      <MarkdownText
+        markdown={item.text}
+        hostId={actions.hostId}
+        fileRoot={actions.fileRoot}
+        testID={`transcript-assistant-${item.id}`}
+      />
+    );
+  }
+  return (
+    <ToolRow
+      item={item}
+      colors={colors}
+      onOpen={() => actions.onOpenTool(item.id)}
+    />
+  );
+}
+
+function TranscriptRow({
+  item,
+  colors,
+  actions,
+  expanded,
+  onToggle,
+}: {
+  item: CondensedItem;
+  colors: ThemeColors;
+  actions: TranscriptActions;
+  expanded: boolean;
+  onToggle(): void;
 }) {
   if (item.kind === "user") {
     return (
@@ -163,9 +258,30 @@ function TranscriptRow({
   }
   if (item.kind === "assistant") {
     return (
-      <MarkdownText
-        markdown={item.text}
-        testID={`transcript-assistant-${item.id}`}
+      <View>
+        <MarkdownText
+          markdown={item.text}
+          hostId={actions.hostId}
+          fileRoot={actions.fileRoot}
+          testID={`transcript-assistant-${item.id}`}
+        />
+        {item.turnEnd ? (
+          <TurnActions
+            text={item.text}
+            onFork={actions.onFork ? () => actions.onFork?.(item.id) : null}
+          />
+        ) : null}
+      </View>
+    );
+  }
+  if (item.kind === "activity") {
+    return (
+      <ActivityRow
+        item={item}
+        colors={colors}
+        actions={actions}
+        expanded={expanded}
+        onToggle={onToggle}
       />
     );
   }
@@ -183,22 +299,36 @@ export function TranscriptView({
   footer,
   actions,
 }: {
-  items: readonly TranscriptItem[];
+  items: readonly CondensedItem[];
   footer?: React.ReactElement;
   actions: TranscriptActions;
 }) {
   const colors = useThemeColors();
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const newestFirst = useMemo(() => [...items].reverse(), [items]);
+  const toggle = (id: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   return (
     <FlatList
       inverted
       data={newestFirst}
+      extraData={expanded}
       keyExtractor={(item) => `${item.kind}:${item.id}`}
       keyboardDismissMode="interactive"
       contentContainerStyle={styles.content}
       ListHeaderComponent={footer}
       renderItem={({ item }) => (
-        <TranscriptRow item={item} colors={colors} actions={actions} />
+        <TranscriptRow
+          item={item}
+          colors={colors}
+          actions={actions}
+          expanded={expanded.has(item.id)}
+          onToggle={() => toggle(item.id)}
+        />
       )}
     />
   );
@@ -227,6 +357,9 @@ const styles = StyleSheet.create({
     minHeight: 32,
   },
   toolText: { flex: 1, fontSize: 14 },
+  activity: { gap: space.xs },
+  activityText: { flex: 1, fontSize: 14 },
+  activityItems: { gap: space.sm, paddingLeft: space.md },
   toolDetail: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
   },

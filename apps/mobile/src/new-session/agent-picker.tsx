@@ -6,11 +6,12 @@ import { StyleSheet } from "react-native";
 import { useSavedHosts } from "@/hosts";
 import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
-import { BrandHost, Form, FormRow, FormSection } from "@/ui";
+import { BrandHost, Form, FormRow, FormSection, SelectedMark } from "@/ui";
 import {
   chooseAgent,
   chooseModel,
   choosePermissionMode,
+  displayedChoices,
   draftWorkspaceId,
   workspaceChoices,
 } from "./new-session-draft";
@@ -21,7 +22,6 @@ import {
 } from "./new-session-queries";
 import { updateNewSessionDraft, useNewSessionState } from "./new-session-store";
 import { usePermissionModeLabels } from "./permission-mode-labels";
-import { SelectedMark } from "./row-accessory";
 
 function useAvailabilityLabels(): Record<AgentAvailability, string> {
   const { t } = useTranslation("sessions");
@@ -77,10 +77,11 @@ function Picker({ host }: { host: SavedHost }) {
     workspaceChoices(workspaces, sessions),
   );
   const defaults = useNewSessionDefaults(host.hostId, workspaceId, draft).data;
-  const agentType = defaults?.agentType ?? null;
+  const shown = displayedChoices(draft, defaults);
+  const agentType = shown.agentType;
   const agents = useAgents(host.hostId).data ?? [];
   const models = useCompatibleModels(host.hostId, agentType).data ?? [];
-  const selectedMode = defaults?.permissionMode ?? null;
+  const selectedMode = shown.permissionMode;
 
   return (
     <BrandHost style={styles.fill}>
@@ -124,8 +125,8 @@ function Picker({ host }: { host: SavedHost }) {
               trailing={
                 <SelectedMark
                   selected={
-                    defaults?.model?.providerId === provider.id &&
-                    defaults.model.modelId === model.modelId
+                    shown.model?.providerId === provider.id &&
+                    shown.model.modelId === model.modelId
                   }
                 />
               }
@@ -144,7 +145,7 @@ function Picker({ host }: { host: SavedHost }) {
             </Text>
           }
         >
-          {(defaults?.permissionModes ?? []).map((mode) => (
+          {shown.permissionModes.map((mode) => (
             <FormRow
               key={mode}
               onPress={() => {

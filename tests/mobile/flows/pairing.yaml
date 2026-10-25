@@ -73,8 +73,14 @@ appId: dev.cocurdex.mobile
       - tapOn: ${TOOL_SESSION_TITLE}
       - extendedWaitUntil:
           visible:
-            id: "transcript-tool-.*"
+            id: "transcript-activity-.*"
           timeout: 10000
+- tapOn:
+    id: "transcript-activity-.*"
+- extendedWaitUntil:
+    visible:
+      id: "transcript-tool-.*"
+    timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -87,6 +93,32 @@ appId: dev.cocurdex.mobile
 - assertVisible: ${TOOL_INPUT_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: tool-call
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 5%, 9%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "transcript-tool-.*"
+    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          text: ${FILE_LINK_TEXT}
+          point: 8%, 90%
+      - extendedWaitUntil:
+          visible: ${FILE_SOURCE_TEXT}
+          timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: file-source
 - runFlow:
     when:
       platform: iOS
@@ -140,6 +172,56 @@ appId: dev.cocurdex.mobile
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-mermaid
+- tapOn:
+    id: "mermaid-diagram"
+- extendedWaitUntil:
+    visible:
+      id: "mermaid-viewer"
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: mermaid-viewer
+- tapOn: ${DIAGRAM_CLOSE}
+- extendedWaitUntil:
+    visible: ${DIAGRAM_HEADING}
+    timeout: 5000
+- assertVisible:
+    id: "mermaid-diagram"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- scrollUntilVisible:
+    element: ${IMAGE_SESSION_TITLE}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${IMAGE_SESSION_TITLE}
+      - extendedWaitUntil:
+          visible: ${IMAGE_NAME}
+          timeout: 10000
+- tapOn: ${IMAGE_NAME}
+- extendedWaitUntil:
+    visible:
+      id: "image-viewer"
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: image-viewer
+- tapOn: ${IMAGE_CLOSE}
+- extendedWaitUntil:
+    visible: ${IMAGE_NAME}
+    timeout: 5000
 - runFlow:
     when:
       platform: iOS
@@ -213,6 +295,20 @@ appId: dev.cocurdex.mobile
           timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: new-session
+- tapOn:
+    text: ${WORKSPACE_NAME}
+    childOf:
+      id: "new-session-workspace"
+- extendedWaitUntil:
+    visible:
+      id: "workspace-choice-.*"
+    timeout: 5000
+- tapOn:
+    id: "workspace-choice-.*"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-prompt"
+    timeout: 5000
 - tapOn:
     id: "new-session-agent"
 - extendedWaitUntil:
@@ -327,6 +423,29 @@ appId: dev.cocurdex.mobile
           timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: issues
+- tapOn: ${NEW_ISSUE_ACTION}
+- tapOn:
+    id: new-issue-title
+- inputText: ${NEW_ISSUE_TITLE}
+- waitForAnimationToEnd
+- takeScreenshot: new-issue
+- tapOn: ${NEW_ISSUE_SUBMIT}
+- extendedWaitUntil:
+    visible: ${NEW_ISSUE_TITLE}
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_ISSUES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${NEW_ISSUE_TITLE}
+    timeout: 10000
 - tapOn: ${ISSUE_TITLE}
 - extendedWaitUntil:
     visible: ${ISSUE_DESCRIPTION}
@@ -356,12 +475,68 @@ appId: dev.cocurdex.mobile
           timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: notes
+- tapOn: ${NEW_NOTE_ACTION}
+- tapOn:
+    id: new-note-title
+- inputText: ${NEW_NOTE_TITLE}
+- tapOn:
+    id: new-note-body
+- inputText: ${NEW_NOTE_BODY}
+- waitForAnimationToEnd
+- takeScreenshot: new-note
+- tapOn: ${NEW_NOTE_SUBMIT}
+- extendedWaitUntil:
+    visible: ${NEW_NOTE_BODY}
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_NOTES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${NEW_NOTE_TITLE}
+    timeout: 10000
 - tapOn: ${NOTE_TITLE}
 - extendedWaitUntil:
     visible: ${NOTE_BODY_TEXT}
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: note-detail
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_NOTES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- tapOn: ${LINK_NOTE_TITLE}
+- tapOn: ${ISSUE_LINK_TEXT}
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 10000
+- takeScreenshot: note-issue-link
+- scrollUntilVisible:
+    element: ${LINK_NOTE_TITLE}
+    direction: DOWN
+    timeout: 10000
+- tapOn: ${LINK_NOTE_TITLE}
+- extendedWaitUntil:
+    visible: ${ISSUE_LINK_TEXT}
+    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+      - back
 - runFlow:
     when:
       platform: iOS
@@ -380,6 +555,38 @@ appId: dev.cocurdex.mobile
     commands:
       - tapOn: ${TAB_COMPUTERS}
       - extendedWaitUntil:
-          visible: ${HOST_ADDRESS}
+          visible: ".*${HOST_ADDRESS}.*"
           timeout: 5000
 - takeScreenshot: paired
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${TAB_SESSIONS}
+      - extendedWaitUntil:
+          visible: ${SEND_SESSION_TITLE}
+          timeout: 5000
+- longPressOn: ${SEND_SESSION_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: session-action-archive
+    timeout: 5000
+- takeScreenshot: session-actions
+- tapOn:
+    id: session-action-archive
+- extendedWaitUntil:
+    notVisible: ${SEND_SESSION_TITLE}
+    timeout: 10000
+- tapOn: ${TAB_COMPUTERS}
+- tapOn: ${SETTINGS_ACTION}
+- waitForAnimationToEnd
+- takeScreenshot: settings
+- tapOn:
+    id: settings-archived
+- extendedWaitUntil:
+    visible: ${SEND_SESSION_TITLE}
+    timeout: 10000
+- takeScreenshot: archived
+- tapOn: ${RESTORE_ACTION}
+- extendedWaitUntil:
+    notVisible: ${SEND_SESSION_TITLE}
+    timeout: 10000

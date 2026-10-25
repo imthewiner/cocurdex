@@ -61,6 +61,15 @@ function fixtureNote(key: string) {
   return note;
 }
 
+const IMAGE_SESSION = {
+  title: "Checkout screenshot review",
+  prompt: "What is wrong on this checkout screen?",
+  reply: "The order total overlaps the pay button.",
+  imageName: "checkout-screenshot.png",
+};
+
+const LINK_NOTE_TITLE = "Discount rollout";
+
 const OPENED_ISSUE = fixtureIssue("Support percentage discount codes");
 const OPENED_NOTE = fixtureNote("checkout-spec");
 
@@ -68,6 +77,8 @@ function flowLabels(locale: SupportedLocale) {
   const hosts = readMessages(locale, "hosts");
   const common = readMessages(locale, "common");
   const sessions = readMessages(locale, "sessions");
+  const issues = readMessages(locale, "issues");
+  const notes = readMessages(locale, "notes");
   return {
     TAB_COMPUTERS: common.tabs.computers,
     TAB_SESSIONS: common.tabs.sessions,
@@ -96,7 +107,13 @@ function flowLabels(locale: SupportedLocale) {
     DIAGRAM_SESSION_TITLE: fixtureSession(DIAGRAM_SESSION).title,
     DIAGRAM_PROMPT: "Draw each checkout stage as a flowchart.",
     DIAGRAM_HEADING: "1. Cart boundary",
+    DIAGRAM_CLOSE: common.markdown.closeDiagram,
+    IMAGE_SESSION_TITLE: IMAGE_SESSION.title,
+    IMAGE_NAME: IMAGE_SESSION.imageName,
+    IMAGE_CLOSE: sessions.image.close,
     TOOL_INPUT_TITLE: sessions.tool.input,
+    FILE_LINK_TEXT: "(?s)(.*\\n)?src/cart\\.ts",
+    FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
     SCAN_TITLE: hosts.scan.title,
@@ -108,6 +125,12 @@ function flowLabels(locale: SupportedLocale) {
     NEW_SESSION_AGENT_ROW: sessions.newSession.agent,
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_SESSION_START: sessions.newSession.start,
+    NEW_ISSUE_ACTION: issues.create.open,
+    NEW_ISSUE_SUBMIT: issues.create.submit,
+    NEW_NOTE_ACTION: notes.create.open,
+    NEW_NOTE_SUBMIT: notes.create.submit,
+    SETTINGS_ACTION: common.screens.settings,
+    ARCHIVE_ACTION: sessions.actions.archive,
   };
 }
 
@@ -117,6 +140,9 @@ function sendLabels(locale: SupportedLocale) {
     SEND_PROMPT: `Summarize the cart module ${locale}`,
     SEND_REPLY: `The cart module totals line items ${locale}`,
     NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
+    NEW_ISSUE_TITLE: `Export last week's orders ${locale}`,
+    NEW_NOTE_TITLE: `Release checklist ${locale}`,
+    NEW_NOTE_BODY: `Ship the order export ${locale}`,
   };
 }
 
@@ -227,6 +253,15 @@ async function main() {
       platform === "ios"
         ? await startIosTarget(mobileDir)
         : await startAndroidTarget(mobileDir, values.avd);
+    await daemon.createImageSession(
+      IMAGE_SESSION.title,
+      IMAGE_SESSION.prompt,
+      IMAGE_SESSION.reply,
+    );
+    const issueLinkText = await daemon.createNoteLinkingIssue(
+      LINK_NOTE_TITLE,
+      OPENED_ISSUE.title,
+    );
     try {
       for (const { appearance, locale } of RUNS) {
         const send = sendLabels(locale);
@@ -247,6 +282,15 @@ async function main() {
             NEW_SESSION_MODEL: daemon.agentModelName,
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
+            LINK_NOTE_TITLE,
+            ISSUE_LINK_TEXT: issueLinkText,
+            RESTORE_ACTION: readMessages(
+              locale,
+              "sessions",
+            ).archived.restoreSession.replace(
+              "{{title}}",
+              send.SEND_SESSION_TITLE,
+            ),
           },
           path.join(outputRoot, `${appearance}-${locale}`),
           daemon.diagnostics,

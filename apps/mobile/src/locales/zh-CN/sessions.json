@@ -1,7 +1,36 @@
 {
+  "actions": {
+    "archive": "归档",
+    "cancel": "取消",
+    "delete": "删除",
+    "deleteMessage": "会话及其记录会从电脑上删除，无法恢复。",
+    "deleteTitle": "删除「{{title}}」？",
+    "fork": "分叉会话",
+    "markUnread": "标为未读"
+  },
+  "activity": {
+    "command_other": "执行了 {{count}} 条命令",
+    "edit_other": "修改了 {{count}} 个文件",
+    "fetch_other": "获取了 {{count}} 个网页",
+    "other_other": "调用了 {{count}} 个工具",
+    "others_other": "其他 {{count}} 项操作",
+    "read_other": "读取了 {{count}} 个文件",
+    "replies_other": "{{count}} 条中间回复",
+    "search_other": "搜索了 {{count}} 次",
+    "separator": "，",
+    "skill_other": "调用了 {{count}} 个技能",
+    "subagent_other": "运行了 {{count}} 个子代理"
+  },
   "approvalsUnavailable": {
     "description": "这台手机配对时没有授予审批权限。",
     "title": "请在电脑上批准"
+  },
+  "archived": {
+    "archivedAge": "归档于 {{age}}",
+    "count_other": "{{count}} 个会话",
+    "empty": "没有已归档的会话",
+    "restore": "恢复",
+    "restoreSession": "恢复 {{title}}"
   },
   "composer": {
     "attach": "添加照片",
@@ -23,6 +52,9 @@
     "monitoring": "正在后台运行",
     "pendingApproval": "等你批准",
     "planReady": "计划已写好，等你决定",
+    "responding": "回复中",
+    "thinking": "思考中",
+    "usingTools": "工具调用中",
     "working": "正在运行…"
   },
   "empty": {
@@ -31,6 +63,12 @@
   },
   "image": {
     "close": "关闭"
+  },
+  "message": {
+    "copied": "已复制",
+    "copy": "复制",
+    "fork": "从这里分叉",
+    "forkTitle": "{{title}}（分叉）"
   },
   "newSession": {
     "addOnComputer": "新工作区只能在电脑上添加。",
@@ -131,6 +169,7 @@
     "copyOutput": "复制输出",
     "duration": "{{seconds}} 秒",
     "failed": "失败",
+    "files": "文件",
     "input": "输入",
     "noOutput": "没有输出",
     "output": "输出",
