@@ -24,7 +24,7 @@ export function useCompatibleModels(hostId: string, agentId: AgentId | null) {
   );
 }
 
-export function newSessionPayload(
+function newSessionPayload(
   workspaceId: string,
   draft: NewSessionDraft,
 ): CreateSessionPayload {

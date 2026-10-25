@@ -360,6 +360,7 @@ describe("remote host access", () => {
         title: "Phone task",
         providerSnapshot: { providerId: "e2e-stub", headersJson: null },
       });
+      expect(JSON.stringify(session)).not.toContain("e2e-key");
 
       stub.plan = { kind: "stream", chunks: ["On it"] };
       const sent = stub.nextRequest();

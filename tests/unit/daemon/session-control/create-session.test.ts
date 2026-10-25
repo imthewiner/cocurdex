@@ -160,6 +160,24 @@ describe("resolveNewSession", () => {
     expect(session.permissionMode).toBe("claude-default");
   });
 
+  it("falls back to the first compatible model when nothing was used or set as default", async () => {
+    const session = await resolveNewSession(
+      { workspaceId: "workspace-1", agentType: "claude-agent" },
+      "new-1",
+      context({
+        defaultModel: async () => ({
+          providerId: "anthropic",
+          modelId: "retired-model",
+        }),
+      }),
+    );
+
+    expect(session.providerSnapshot).toMatchObject({
+      providerId: "anthropic",
+      modelId: "claude-sonnet",
+    });
+  });
+
   it("refuses a model, agent, or permission mode the computer does not offer", async () => {
     const resolve = (input: Parameters<typeof resolveNewSession>[0]) =>
       resolveNewSession(

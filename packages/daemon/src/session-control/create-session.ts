@@ -80,6 +80,7 @@ async function resolveModel(
         ? { providerId: recent.providerId, modelId: recent.modelId }
         : null,
     ) ??
+    models[0] ??
     null
   );
 }

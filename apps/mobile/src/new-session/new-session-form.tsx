@@ -17,15 +17,11 @@ import {
   SheetAction,
 } from "@/ui";
 import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
-import {
-  newSessionPayload,
-  useAgents,
-  useNewSessionDefaults,
-} from "./new-session-queries";
+import { useAgents, useNewSessionDefaults } from "./new-session-queries";
 import { useNewSessionState } from "./new-session-store";
 import { usePermissionModeLabels } from "./permission-mode-labels";
 import { RowValue } from "./row-accessory";
-import { startSession } from "./start-session";
+import { createSessionStarter, shownSessionPayload } from "./start-session";
 
 function Sheet({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
@@ -45,6 +41,9 @@ function Sheet({ host }: { host: SavedHost }) {
   );
   const modeLabels = usePermissionModeLabels();
   const [prompt, setPrompt] = useState("");
+  const [startSession] = useState(() =>
+    createSessionStarter(hostConnection(host.hostId)),
+  );
   const [starting, setStarting] = useState(false);
   const [failed, setFailed] = useState(false);
   const canStart =
@@ -61,17 +60,16 @@ function Sheet({ host }: { host: SavedHost }) {
     .join(" · ");
 
   const start = async () => {
-    if (!canStart || !workspaceId) return;
+    if (!canStart || !workspaceId || !defaults) return;
     promptInput.current?.blur();
     setStarting(true);
     setFailed(false);
     try {
-      const session = await startSession(
-        hostConnection(host.hostId),
-        newSessionPayload(workspaceId, draft),
-        prompt.trim(),
-        agent?.label ?? t("newSession.title"),
-      );
+      const session = await startSession({
+        payload: shownSessionPayload(workspaceId, defaults),
+        prompt: prompt.trim(),
+        fallbackTitle: agent?.label ?? t("newSession.title"),
+      });
       await keyboardHidden();
       router.replace(`/session/${host.hostId}/${session.id}`);
     } catch {
