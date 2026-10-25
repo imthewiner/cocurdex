@@ -74,6 +74,30 @@ describe("pairHost", () => {
       expect(save).not.toHaveBeenCalled();
     },
   );
+
+  it("gives up on a host that never answers and reports it unreachable", async () => {
+    vi.useFakeTimers();
+    try {
+      const hanging: FetchLike = (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        });
+      const pairing = pairHost({
+        baseUrl: "http://192.168.1.20:47820",
+        code: "abc",
+        store: createSavedHostStore(null),
+        fetch: hanging,
+      }).catch((caught: unknown) => caught);
+
+      await vi.advanceTimersByTimeAsync(15_000);
+
+      await expect(pairing).resolves.toMatchObject({ reason: "unreachable" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("verifyHostCredential", () => {
