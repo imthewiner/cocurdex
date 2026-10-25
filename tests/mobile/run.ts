@@ -2,6 +2,8 @@ import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import {
+  FIXTURE_ISSUES,
+  FIXTURE_NOTES,
   FIXTURE_SESSIONS,
   FIXTURE_WORKSPACE_NAME,
 } from "@cocurdex/e2e/fixture-db/recipe";
@@ -45,6 +47,21 @@ function lastPrompt(id: string) {
   return prompt;
 }
 
+function fixtureIssue(title: string) {
+  const issue = FIXTURE_ISSUES.find((candidate) => candidate.title === title);
+  if (!issue) throw new Error(`Fixture issue ${title} is missing`);
+  return issue;
+}
+
+function fixtureNote(key: string) {
+  const note = FIXTURE_NOTES.find((candidate) => candidate.key === key);
+  if (!note) throw new Error(`Fixture note ${key} is missing`);
+  return note;
+}
+
+const OPENED_ISSUE = fixtureIssue("Support percentage discount codes");
+const OPENED_NOTE = fixtureNote("checkout-spec");
+
 function flowLabels(locale: SupportedLocale) {
   const hosts = readMessages(locale, "hosts");
   const common = readMessages(locale, "common");
@@ -52,6 +69,17 @@ function flowLabels(locale: SupportedLocale) {
   return {
     TAB_COMPUTERS: common.tabs.computers,
     TAB_SESSIONS: common.tabs.sessions,
+    TAB_ISSUES: common.tabs.issues,
+    TAB_NOTES: common.tabs.notes,
+    IN_PROGRESS_ISSUE_TITLE: fixtureIssue("Checkout fails for some carts")
+      .title,
+    ISSUE_TITLE: OPENED_ISSUE.title,
+    ISSUE_DESCRIPTION: OPENED_ISSUE.description,
+    ISSUE_SESSION_TITLE: fixtureSession(OPENED_ISSUE.linkedSessionId ?? "")
+      .title,
+    NOTE_PARENT_TITLE: fixtureNote(OPENED_NOTE.parentKey ?? "").title,
+    NOTE_TITLE: OPENED_NOTE.title,
+    NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
@@ -69,6 +97,10 @@ function flowLabels(locale: SupportedLocale) {
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
+    NEW_SESSION_ACTION: sessions.newSession.open,
+    NEW_SESSION_AGENT_ROW: sessions.newSession.agent,
+    NEW_SESSION_TITLE: sessions.newSession.title,
+    NEW_SESSION_START: sessions.newSession.start,
   };
 }
 
@@ -77,6 +109,7 @@ function sendLabels(locale: SupportedLocale) {
     SEND_SESSION_TITLE: `Mobile reply check ${locale}`,
     SEND_PROMPT: `Summarize the cart module ${locale}`,
     SEND_REPLY: `The cart module totals line items ${locale}`,
+    NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
   };
 }
 
@@ -198,6 +231,8 @@ async function main() {
           {
             ...flowLabels(locale),
             ...send,
+            NEW_SESSION_AGENT: await daemon.agentLabel("pi"),
+            NEW_SESSION_MODEL: daemon.agentModelName,
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
           },
@@ -213,6 +248,22 @@ async function main() {
         const { SEND_PROMPT } = sendLabels(locale);
         if (!prompts.includes(SEND_PROMPT)) {
           throw new Error(`The agent never received "${SEND_PROMPT}"`);
+        }
+      }
+      const started = (await daemon.sessions()).filter(
+        (session) =>
+          session.agentType === "pi" &&
+          session.providerSnapshot?.modelName === daemon.agentModelName,
+      );
+      if (started.length !== RUNS.length) {
+        throw new Error(
+          `Expected ${RUNS.length} sessions started on Pi with ${daemon.agentModelName}, found ${started.length}`,
+        );
+      }
+      for (const { locale } of RUNS) {
+        const { NEW_SESSION_PROMPT } = sendLabels(locale);
+        if (!prompts.includes(NEW_SESSION_PROMPT)) {
+          throw new Error(`The agent never received "${NEW_SESSION_PROMPT}"`);
         }
       }
       const devices = await daemon.pairedDevices();

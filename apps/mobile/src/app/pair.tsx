@@ -10,15 +10,9 @@ import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
-import {
-  hosts,
-  type PairFailure,
-  PairToolbar,
-  selectHost,
-  usePairingRoutes,
-} from "@/hosts";
+import { hosts, type PairFailure, selectHost, usePairingRoutes } from "@/hosts";
 import { useThemeColors } from "@/theme";
-import { BrandHost, keyboardHidden } from "@/ui";
+import { BrandHost, keyboardHidden, SheetAction } from "@/ui";
 
 function useFailureMessages(): Record<PairFailure, string> {
   const { t } = useTranslation("hosts");
@@ -69,10 +63,10 @@ export default function PairScreen() {
 
   return (
     <>
-      <PairToolbar
+      <SheetAction
         label={pairing ? t("pair.pairing") : t("pair.action")}
         disabled={!canPair}
-        onPair={() => void pair()}
+        onPress={() => void pair()}
       />
       <BrandHost style={styles.fill}>
         <FieldGroup>

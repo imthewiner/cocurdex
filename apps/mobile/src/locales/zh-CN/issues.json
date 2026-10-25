@@ -1,0 +1,25 @@
+{
+  "allWorkspaces": "全部工作区",
+  "empty": {
+    "description": "在 {{host}} 上跟踪的 issue 会显示在这里。",
+    "title": "没有 issue"
+  },
+  "field": {
+    "labels": "标签",
+    "none": "无",
+    "priority": "优先级",
+    "status": "状态"
+  },
+  "missing": "这个 issue 已在电脑上删除。",
+  "noResults": "没有与“{{query}}”匹配的 issue",
+  "search": "搜索 issue",
+  "sectionTitle_other": "{{status}} {{count}}",
+  "sessions": "Agent 会话",
+  "subIssues": "子 issue {{done}}/{{total}}",
+  "unavailable": {
+    "retry": "重试",
+    "title": "无法从 {{host}} 加载 issue"
+  },
+  "untitledSession": "未命名会话",
+  "workspaceFilter": "工作区：{{workspace}}"
+}

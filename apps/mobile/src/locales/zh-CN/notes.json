@@ -1,0 +1,15 @@
+{
+  "empty": {
+    "description": "在 {{host}} 上写的笔记会显示在这里。",
+    "title": "没有笔记"
+  },
+  "emptyBody": "这篇笔记是空的。",
+  "missing": "这篇笔记已在电脑上删除。",
+  "noResults": "没有与“{{query}}”匹配的笔记",
+  "noWorkspace": "未归属工作区",
+  "search": "搜索笔记",
+  "unavailable": {
+    "retry": "重试",
+    "title": "无法从 {{host}} 加载笔记"
+  }
+}

@@ -44,7 +44,8 @@
     "react-native": "0.88.0",
     "react-native-enriched-markdown": "^1.1.1",
     "react-native-safe-area-context": "~5.10.1",
-    "react-native-screens": "~4.30.0"
+    "react-native-screens": "~4.30.0",
+    "swr": "^2.5.1"
   },
   "devDependencies": {
     "@types/culori": "4.0.1",

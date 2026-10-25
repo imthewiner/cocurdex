@@ -107,6 +107,75 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${WORKSPACE_NAME}
           timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${NEW_SESSION_ACTION}
+      - extendedWaitUntil:
+          visible:
+            id: "new-session-prompt"
+          timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: new-session
+- tapOn:
+    id: "new-session-agent"
+- extendedWaitUntil:
+    visible: ${NEW_SESSION_AGENT}
+    timeout: 10000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${NEW_SESSION_AGENT}
+      - extendedWaitUntil:
+          visible: ${NEW_SESSION_MODEL}
+          timeout: 5000
+- tapOn: ${NEW_SESSION_MODEL}
+- waitForAnimationToEnd
+- takeScreenshot: new-session-agent
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${NEW_SESSION_TITLE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "new-session-prompt"
+    timeout: 5000
+- tapOn:
+    id: "new-session-prompt"
+- inputText: ${NEW_SESSION_PROMPT}
+- takeScreenshot: new-session-filled
+- tapOn: ${NEW_SESSION_START}
+- extendedWaitUntil:
+    visible: ${SEND_REPLY}
+    timeout: 20000
+- assertVisible: ${NEW_SESSION_PROMPT}
+- waitForAnimationToEnd
+- takeScreenshot: new-session-reply
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - tapOn: ${TAB_SESSIONS}
+            - extendedWaitUntil:
+                visible: ${WORKSPACE_NAME}
+                timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+      - extendedWaitUntil:
+          visible: ${WORKSPACE_NAME}
+          timeout: 5000
 - runFlow:
     when:
       platform: iOS
@@ -153,6 +222,63 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - back
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${TAB_ISSUES}
+      - extendedWaitUntil:
+          visible: ${IN_PROGRESS_ISSUE_TITLE}
+          timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: issues
+- tapOn: ${ISSUE_TITLE}
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 10000
+- assertVisible: ${ISSUE_SESSION_TITLE}
+- waitForAnimationToEnd
+- takeScreenshot: issue-detail
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_ISSUES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${TAB_NOTES}
+      - extendedWaitUntil:
+          visible: ${NOTE_PARENT_TITLE}
+          timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: notes
+- tapOn: ${NOTE_TITLE}
+- extendedWaitUntil:
+    visible: ${NOTE_BODY_TEXT}
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: note-detail
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_NOTES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${NOTE_PARENT_TITLE}
+    timeout: 5000
 - retry:
     maxRetries: 2
     commands:

@@ -1,11 +1,23 @@
 {
+  "age": {
+    "days_other": "{{count}}天",
+    "hours_other": "{{count}}小时",
+    "minutes_other": "{{count}}分钟",
+    "months_other": "{{count}}个月",
+    "now": "刚刚",
+    "years_other": "{{count}}年"
+  },
   "screens": {
     "computers": "电脑",
+    "issues": "Issues",
+    "notes": "笔记",
     "pair": "配对电脑",
     "sessions": "会话"
   },
   "tabs": {
     "computers": "电脑",
+    "issues": "Issues",
+    "notes": "笔记",
     "sessions": "会话"
   }
 }

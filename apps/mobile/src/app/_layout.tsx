@@ -28,6 +28,26 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="note/[hostId]/[noteId]"
+          options={{
+            title: "",
+            headerBackButtonDisplayMode: "minimal",
+            headerBackTitle: t("tabs.notes"),
+            animation: PUSH_ANIMATION,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="issue/[hostId]/[issueId]"
+          options={{
+            title: "",
+            headerBackButtonDisplayMode: "minimal",
+            headerBackTitle: t("tabs.issues"),
+            animation: PUSH_ANIMATION,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
           name="pair"
           options={{
             title: t("screens.pair"),
@@ -35,6 +55,10 @@ export default function RootLayout() {
             sheetAllowedDetents: [0.6, 1],
             sheetGrabberVisible: true,
           }}
+        />
+        <Stack.Screen
+          name="new-session"
+          options={{ headerShown: false, presentation: "modal" }}
         />
         <Stack.Screen
           name="scan"

@@ -2,9 +2,9 @@ import type { SessionPrimaryState } from "@cocurdex/shared";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
+import { useAgeLabel } from "@/ui";
 import { type SessionRow, sessionRowStatus } from "./session-sections";
 import { SessionStatusMark } from "./session-status-mark";
-import { useAgeLabel } from "./use-age-label";
 
 function useStateDetails(): Record<SessionPrimaryState, string | null> {
   const { t } = useTranslation("sessions");

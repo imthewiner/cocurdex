@@ -1,4 +1,4 @@
-import { externalLinkUrl } from "@cocurdex/mobile/internal/session-detail/external-link";
+import { externalLinkUrl } from "@cocurdex/mobile/internal/markdown/external-link";
 import { describe, expect, it } from "vitest";
 
 describe("externalLinkUrl", () => {

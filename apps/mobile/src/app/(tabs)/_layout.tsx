@@ -30,6 +30,20 @@ export default function TabsLayout() {
           {t("tabs.sessions")}
         </NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="issues">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "circle.circle", selected: "circle.circle.fill" }}
+          md="adjust"
+        />
+        <NativeTabs.Trigger.Label>{t("tabs.issues")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="notes">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "doc.text", selected: "doc.text.fill" }}
+          md="description"
+        />
+        <NativeTabs.Trigger.Label>{t("tabs.notes")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="computers">
         <NativeTabs.Trigger.Icon sf="laptopcomputer" md="computer" />
         <NativeTabs.Trigger.Label>

@@ -10,10 +10,13 @@ import {
   spawnDaemon,
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
-import { buildHostPairingLink } from "@cocurdex/shared";
+import { type AgentId, buildHostPairingLink } from "@cocurdex/shared";
 import type { createTempDirs } from "@cocurdex/shared/testing";
 import { EMULATOR_HOST_ALIAS } from "./android";
 import type { MobilePlatform } from "./target";
+
+const AGENT_MODEL_ID = "e2e-agent-model";
+const AGENT_MODEL_NAME = "E2E Agent Model";
 
 function freePort() {
   return new Promise<number>((resolve, reject) => {
@@ -47,6 +50,24 @@ export async function startPairingDaemon(
   const stub = await startStubLlmServer();
   try {
     const providerSnapshot = await saveStubProvider(daemon, stub);
+    const now = new Date().toISOString();
+    await requestDaemon(
+      "provider.model.save",
+      {
+        model: {
+          providerId: providerSnapshot.providerId,
+          modelId: AGENT_MODEL_ID,
+          name: AGENT_MODEL_NAME,
+          api: "openai-completions",
+          enabled: true,
+          source: "manual",
+          capabilities: ["chat", "agent"],
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      daemon.options,
+    );
     const port = await freePort();
     const status = await requestDaemon(
       "host.remoteAccess.set",
@@ -67,11 +88,22 @@ export async function startPairingDaemon(
       async createPairingLink() {
         const { code } = await requestDaemon(
           "host.pairing.create",
-          { label: "Mobile e2e", scopes: ["read", "files.read", "interact"] },
+          {
+            label: "Mobile e2e",
+            scopes: ["read", "files.read", "interact", "execute"],
+          },
           daemon.options,
         );
         return buildHostPairingLink(baseUrl.origin, code);
       },
+      agentModelName: AGENT_MODEL_NAME,
+      async agentLabel(agentId: AgentId) {
+        const agents = await requestDaemon("agent.list", daemon.options);
+        const agent = agents.find((candidate) => candidate.id === agentId);
+        if (!agent) throw new Error(`The daemon offers no ${agentId} agent`);
+        return agent.label;
+      },
+      sessions: () => requestDaemon("session.list", daemon.options),
       pairedDevices: () => requestDaemon("host.devices.list", daemon.options),
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
       async createReplyingSession(title: string, reply: string) {
