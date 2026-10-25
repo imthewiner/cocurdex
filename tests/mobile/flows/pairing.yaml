@@ -27,6 +27,11 @@ appId: dev.cocurdex.mobile
     id: "pairing-link"
 - inputText: ${PAIRING_LINK}
 - takeScreenshot: pairing-sheet
+- extendedWaitUntil:
+    visible:
+      text: ${PAIR_ACTION}
+      enabled: true
+    timeout: 5000
 - tapOn: ${PAIR_ACTION}
 - extendedWaitUntil:
     visible: ${WORKSPACE_NAME}
@@ -86,9 +91,8 @@ appId: dev.cocurdex.mobile
     when:
       platform: iOS
     commands:
-      - swipe:
-          start: 1%, 50%
-          end: 80%, 50%
+      - tapOn:
+          point: 5%, 9%
 - runFlow:
     when:
       platform: Android
