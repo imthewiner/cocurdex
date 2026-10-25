@@ -53,6 +53,105 @@ describe("cocurdex CLI against a running daemon", () => {
     });
   });
 
+  it("creates a session the daemon configures from CLI flags", async () => {
+    const options = { userDataPath: daemon.userDataPath };
+    const workspacePath = tempDirs.createSync("cli-session-");
+    const now = new Date().toISOString();
+    await requestDaemon(
+      "provider.config.save",
+      {
+        config: {
+          id: "cli-stub",
+          name: "CLI Stub",
+          baseUrl: "http://127.0.0.1:9/v1",
+          enabled: true,
+          apiKeySecretId: null,
+          headersJson: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      daemon.options,
+    );
+    await requestDaemon(
+      "provider.model.save",
+      {
+        model: {
+          providerId: "cli-stub",
+          modelId: "cli-agent-model",
+          name: "CLI Agent Model",
+          api: "openai-completions",
+          enabled: true,
+          source: "manual",
+          capabilities: ["agent"],
+          createdAt: now,
+          updatedAt: now,
+        },
+      },
+      daemon.options,
+    );
+
+    const created = await runCli(
+      [
+        "session",
+        "create",
+        "--workspace",
+        workspacePath,
+        "--agent",
+        "pi",
+        "--provider",
+        "cli-stub",
+        "--model",
+        "cli-agent-model",
+        "--title",
+        "CLI task",
+        "--json",
+      ],
+      options,
+    );
+    expect(created.code).toBe(0);
+    expect(JSON.parse(created.stdout)).toMatchObject({
+      title: "CLI task",
+      agentType: "pi",
+      sessionKind: "main",
+      providerSnapshot: { providerId: "cli-stub", modelId: "cli-agent-model" },
+    });
+
+    const halfModel = await runCli(
+      [
+        "session",
+        "create",
+        "--workspace",
+        workspacePath,
+        "--provider",
+        "cli-stub",
+      ],
+      options,
+    );
+    expect(halfModel.code).not.toBe(0);
+    expect(halfModel.stderr).toContain("--provider and --model");
+
+    const unknownModel = await runCli(
+      [
+        "session",
+        "create",
+        "--workspace",
+        workspacePath,
+        "--agent",
+        "pi",
+        "--provider",
+        "cli-stub",
+        "--model",
+        "missing",
+      ],
+      options,
+    );
+    expect(unknownModel.code).not.toBe(0);
+    expect(unknownModel.stderr).toContain(
+      "cli-stub/missing is not available for pi",
+    );
+  });
+
   it("runs the note lifecycle through CLI commands", async () => {
     const options = { userDataPath: daemon.userDataPath };
 

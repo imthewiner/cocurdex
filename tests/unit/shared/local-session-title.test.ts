@@ -1,5 +1,5 @@
+import { generateLocalSessionTitle } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
-import { generateLocalSessionTitle } from "@/features/sessions/session-title";
 
 describe("generateLocalSessionTitle", () => {
   it("falls back for empty messages", () => {

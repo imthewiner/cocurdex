@@ -29,6 +29,7 @@ export * from "./git";
 export * from "./git-worktree";
 export * from "./host-access";
 export * from "./issues";
+export * from "./local-session-title";
 export * from "./locales";
 export * from "./logging";
 export * from "./mcp";

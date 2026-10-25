@@ -28,6 +28,7 @@ import type {
   CocurdexDaemonEvent,
   CommitMessageModelSelection,
   ContextTransferRecord,
+  CreateSessionPayload,
   CreateWorkflowPayload,
   ForkSessionPayload,
   GetToolCallResultInput,
@@ -158,6 +159,11 @@ import {
   type SessionTurnOutcome,
   selectArchivableRoots,
 } from "./session-control";
+import {
+  type NewSessionContext,
+  resolveNewSession,
+  resolveNewSessionDefaults,
+} from "./session-control/create-session";
 import { DaemonSkillLibraryService } from "./skills";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
@@ -1611,6 +1617,38 @@ export class CocurdexDaemonService {
           : await this.withServerProviderConnection(input),
       ),
     );
+  }
+
+  private async newSessionContext(
+    workspaceId: string,
+  ): Promise<NewSessionContext> {
+    const sessions = await this.state.listSessions();
+    return {
+      agents: await this.listAgents(),
+      workspaceSessions: sessions
+        .filter((session) => session.workspaceId === workspaceId)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+      compatibleModels: (agentId) =>
+        this.providerService.listCompatibleProviderModels(agentId),
+      defaultModel: (agentId) =>
+        this.providerService.getAgentProviderDefault(agentId),
+    };
+  }
+
+  async resolveNewSessionDefaults(input: CreateSessionPayload) {
+    return resolveNewSessionDefaults(
+      input,
+      await this.newSessionContext(input.workspaceId),
+    );
+  }
+
+  async createSession(input: CreateSessionPayload) {
+    const configuration = await resolveNewSession(
+      input,
+      crypto.randomUUID(),
+      await this.newSessionContext(input.workspaceId),
+    );
+    return this.saveSessionConfiguration(configuration);
   }
 
   private async withServerProviderConnection(

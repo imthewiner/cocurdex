@@ -4,12 +4,10 @@ import path from "node:path";
 import { requestDaemon, subscribeDaemonEvents } from "@cocurdex/daemon/client";
 import {
   type AgentId,
-  createProviderSnapshotForModel,
+  type AgentPermissionMode,
   isChatWorkspaceId,
   primaryWorkspaceRootPath,
   projectAgentRoleToExecutorBinding,
-  type SessionRecord,
-  sessionConfiguration,
   type WorkflowAggregate,
   type WorkflowExecutorBinding,
   type WorkflowExecutorBindings,
@@ -554,7 +552,7 @@ function printUsage() {
       ...worktreeUsageLines(),
       "  cocurdex workspace list",
       "  cocurdex session list",
-      "  cocurdex session create --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
+      "  cocurdex session create --workspace <id|path> [--agent <agent>] [--provider <provider> --model <model>] [--permission <mode>] [--title <title>]",
       "  cocurdex session tui [session-id]",
       "  cocurdex session tui --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
       "  cocurdex session send <session-id> <prompt>",
@@ -582,18 +580,19 @@ function printUsage() {
   );
 }
 
+function requestedModel(parsed: ParsedArgs) {
+  const providerId = stringFlag(parsed, "provider");
+  const modelId = stringFlag(parsed, "model");
+  if (!providerId && !modelId) return undefined;
+  if (!providerId || !modelId) {
+    throw new Error("--provider and --model must be given together");
+  }
+  return { providerId, modelId };
+}
+
 async function createSession(parsed: ParsedArgs) {
   const workspaceValue = getRequiredFlag(parsed, "workspace");
-  const agentType = getRequiredFlag(parsed, "agent") as AgentId;
-  const providerId = getRequiredFlag(parsed, "provider");
-  const modelId = getRequiredFlag(parsed, "model");
-  const [workspaces, providers, models] = await withDaemon(async () =>
-    Promise.all([
-      requestDaemon("workspace.list"),
-      requestDaemon("provider.listConfigs"),
-      requestDaemon("provider.listModels", { providerId }),
-    ]),
-  );
+  const workspaces = await withDaemon(() => requestDaemon("workspace.list"));
   const workspace = workspaces.find(
     (item) =>
       item.id === workspaceValue || item.rootPaths.includes(workspaceValue),
@@ -603,40 +602,27 @@ async function createSession(parsed: ParsedArgs) {
     await access(workspaceValue);
   }
 
-  const provider = providers.find((item) => item.id === providerId);
-  const model = models.models.find((item) => item.modelId === modelId);
-
-  if (!provider || !model) {
-    throw new Error("Provider or model not found");
-  }
-
-  const now = new Date().toISOString();
   const targetWorkspace =
     workspace ??
     createWorkspaceFromPath(
       path.resolve(workspaceValue),
-      now,
+      new Date().toISOString(),
       workspaces.reduce((max, item) => Math.max(max, item.sortOrder), 0) + 1000,
     );
-  const session: SessionRecord = {
-    id: crypto.randomUUID(),
-    workspaceId: targetWorkspace.id,
-    title: `New ${agentType} session`,
-    agentType,
-    status: "idle",
-    writeMode: "native-write",
-    sessionModeId: null,
-    createdAt: now,
-    updatedAt: now,
-    lastMessageAt: null,
-    providerSnapshot: createProviderSnapshotForModel({ provider, model }),
-  };
 
   return withDaemon(async () => {
     if (!workspace) {
       await requestDaemon("workspace.save", { workspace: targetWorkspace });
     }
-    return taskApi.saveSessionConfiguration(sessionConfiguration(session));
+    return requestDaemon("session.create", {
+      workspaceId: targetWorkspace.id,
+      agentType: stringFlag(parsed, "agent") as AgentId | undefined,
+      model: requestedModel(parsed),
+      permissionMode: stringFlag(parsed, "permission") as
+        | AgentPermissionMode
+        | undefined,
+      title: stringFlag(parsed, "title"),
+    });
   });
 }
 
