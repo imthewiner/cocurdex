@@ -4,11 +4,20 @@ export function isAbsoluteFilePath(path: string) {
   return path.startsWith("/") || WINDOWS_ABSOLUTE_PATH.test(path);
 }
 
+function trailingRunLength(text: string, chars: string) {
+  let end = text.length;
+  while (end > 0 && chars.includes(text[end - 1] ?? "")) end -= 1;
+  return text.length - end;
+}
+
 export function resolveCandidatePath(path: string, rootPath: string | null) {
   if (isAbsoluteFilePath(path)) return path;
   if (!rootPath) return null;
   const separator = WINDOWS_ABSOLUTE_PATH.test(rootPath) ? "\\" : "/";
-  const base = rootPath.replace(/[\\/]+$/, "");
+  const base = rootPath.slice(
+    0,
+    rootPath.length - trailingRunLength(rootPath, "\\/"),
+  );
   return `${base}${separator}${path.replace(/^\.\//, "")}`;
 }
 
@@ -136,7 +145,6 @@ export interface FilePathMatch {
 
 const PATH_TOKEN = /[\w./\\@~:#-]+/g;
 const LEADING_NOISE = /^[#:]+/;
-const TRAILING_NOISE = /[.,:;#]+$/;
 
 export function scanFilePathCandidates(text: string): FilePathMatch[] {
   const matches: FilePathMatch[] = [];
@@ -144,7 +152,7 @@ export function scanFilePathCandidates(text: string): FilePathMatch[] {
     const raw = match[0];
     const leadTrim = raw.match(LEADING_NOISE)?.[0].length ?? 0;
     const afterLead = raw.slice(leadTrim);
-    const trailTrim = afterLead.match(TRAILING_NOISE)?.[0].length ?? 0;
+    const trailTrim = trailingRunLength(afterLead, ".,:;#");
     const token = afterLead.slice(0, afterLead.length - trailTrim);
     if (token.length < 2) {
       continue;

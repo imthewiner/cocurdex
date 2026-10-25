@@ -37,6 +37,7 @@ function record(
     kind,
     status: "completed",
     locations: [],
+    content: undefined,
     startedAt: "2026-10-25T00:00:00.000Z",
     updatedAt: "2026-10-25T00:00:00.000Z",
   };

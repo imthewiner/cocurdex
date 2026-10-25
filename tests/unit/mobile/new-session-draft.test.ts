@@ -129,7 +129,7 @@ describe("draft choices", () => {
 
 describe("displayedChoices", () => {
   const resolved = {
-    agentType: "claude" as const,
+    agentType: "claude-agent" as const,
     model: { providerId: "anthropic", modelId: "opus" },
     permissionMode: "claude-default" as const,
     permissionModes: ["claude-default" as const, "claude-plan" as const],
@@ -148,7 +148,7 @@ describe("displayedChoices", () => {
 
   it("shows what the computer resolved once it matches the pick", () => {
     expect(displayedChoices({ workspaceId: "w" }, resolved)).toEqual({
-      agentType: "claude",
+      agentType: "claude-agent",
       model: resolved.model,
       permissionMode: "claude-default",
       permissionModes: resolved.permissionModes,
@@ -157,7 +157,7 @@ describe("displayedChoices", () => {
       displayedChoices(
         {
           workspaceId: "w",
-          agentType: "claude",
+          agentType: "claude-agent",
           permissionMode: "claude-plan",
         },
         resolved,
