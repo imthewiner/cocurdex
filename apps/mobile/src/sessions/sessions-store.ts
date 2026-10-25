@@ -35,9 +35,14 @@ const ATTENTION_EVENTS = new Set<CocurdexDaemonEvent["type"]>([
 
 export const ATTENTION_REFRESH_DELAY_MS = 250;
 
+type SessionsChange = (
+  sessions: readonly SessionRecord[],
+) => readonly SessionRecord[];
+
 function upsert(sessions: readonly SessionRecord[], next: SessionRecord) {
   const index = sessions.findIndex((session) => session.id === next.id);
   if (index < 0) return [...sessions, next];
+  if (sessions[index].updatedAt > next.updatedAt) return sessions;
   return sessions.map((session, at) => (at === index ? next : session));
 }
 
@@ -88,6 +93,7 @@ export function createSessionsStore(connection: SessionsConnection) {
 
   const viewed = new Map<string, number>();
   const visiting = new Set<string>();
+  let liveChanges: SessionsChange[] = [];
 
   const publish = (next: Partial<HostSessionsSnapshot>) => {
     snapshot = { ...snapshot, ...next };
@@ -97,6 +103,7 @@ export function createSessionsStore(connection: SessionsConnection) {
 
   async function load() {
     const current = ++generation;
+    liveChanges = [];
     try {
       const [workspaces, sessions, attention] = await Promise.all([
         connection.request("workspace.list"),
@@ -104,7 +111,17 @@ export function createSessionsStore(connection: SessionsConnection) {
         connection.request("attention.list"),
       ]);
       if (current !== generation) return;
-      publish({ loaded: true, failed: false, workspaces, sessions, attention });
+      publish({
+        loaded: true,
+        failed: false,
+        workspaces,
+        sessions: liveChanges.reduce<readonly SessionRecord[]>(
+          (list, change) => change(list),
+          sessions,
+        ),
+        attention,
+      });
+      liveChanges = [];
     } catch {
       if (current === generation) publish({ failed: !snapshot.loaded });
     }
@@ -161,13 +178,18 @@ export function createSessionsStore(connection: SessionsConnection) {
     attentionTimer = setTimeout(refreshAttention, ATTENTION_REFRESH_DELAY_MS);
   }
 
+  function applySessionChange(change: SessionsChange) {
+    liveChanges.push(change);
+    publish({ sessions: change(snapshot.sessions) });
+  }
+
   function handleEvent(event: CocurdexDaemonEvent) {
     if (event.type === "session.upserted") {
-      publish({ sessions: upsert(snapshot.sessions, event.session) });
+      const session = event.session;
+      applySessionChange((sessions) => upsert(sessions, session));
     } else if (event.type === "session.title.updated") {
-      publish({
-        sessions: retitle(snapshot.sessions, event.sessionId, event.title),
-      });
+      const { sessionId, title } = event;
+      applySessionChange((sessions) => retitle(sessions, sessionId, title));
     } else if (event.type === "data.changed") {
       if (event.areas.includes("agent")) void load();
       else if (event.areas.includes("workspace")) void refreshWorkspaces();

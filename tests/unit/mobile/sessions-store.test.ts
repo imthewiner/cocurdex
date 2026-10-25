@@ -104,6 +104,54 @@ describe("createSessionsStore", () => {
     expect(calls(fake.request, "attention.list") - before).toBe(1);
   });
 
+  it("keeps sessions that arrive while the list is loading", async () => {
+    const fake = fakeConnection({
+      "workspace.list": [[]],
+      "session.list": [[SESSION]],
+      "attention.list": [[]],
+    });
+    const store = createSessionsStore(fake.connection);
+    store.subscribe(() => {});
+    const created = { ...SESSION, id: "s2", title: "From the phone" };
+    fake.emit({ type: "session.upserted", sessionId: "s2", session: created });
+    fake.emit({
+      type: "session.title.updated",
+      sessionId: "s1",
+      title: "Renamed",
+      expectedTitle: SESSION.title,
+      updatedAt: "2026-10-02T00:00:00.000Z",
+    });
+    await vi.runAllTimersAsync();
+
+    expect(store.getSnapshot().sessions).toEqual(
+      expect.arrayContaining([created, { ...SESSION, title: "Renamed" }]),
+    );
+    expect(store.getSnapshot().sessions).toHaveLength(2);
+  });
+
+  it("keeps a listed session over an older update that raced the load", async () => {
+    const listed = {
+      ...SESSION,
+      status: "idle" as const,
+      updatedAt: "2026-10-03T00:00:00.000Z",
+    };
+    const fake = fakeConnection({
+      "workspace.list": [[]],
+      "session.list": [[listed]],
+      "attention.list": [[]],
+    });
+    const store = createSessionsStore(fake.connection);
+    store.subscribe(() => {});
+    fake.emit({
+      type: "session.upserted",
+      sessionId: "s1",
+      session: { ...SESSION, status: "running" },
+    });
+    await vi.runAllTimersAsync();
+
+    expect(store.getSnapshot().sessions).toEqual([listed]);
+  });
+
   it("reloads everything after reconnecting and on an agent resync", async () => {
     const fake = fakeConnection({
       "workspace.list": [[]],
