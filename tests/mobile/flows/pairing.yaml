@@ -180,7 +180,16 @@ appId: dev.cocurdex.mobile
     timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: mermaid-viewer
-- tapOn: ${DIAGRAM_CLOSE}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${DIAGRAM_CLOSE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
 - extendedWaitUntil:
     visible: ${DIAGRAM_HEADING}
     timeout: 5000
@@ -218,7 +227,16 @@ appId: dev.cocurdex.mobile
     timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: image-viewer
-- tapOn: ${IMAGE_CLOSE}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${IMAGE_CLOSE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
 - extendedWaitUntil:
     visible: ${IMAGE_NAME}
     timeout: 5000
@@ -414,6 +432,19 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${SYSTEM_CANCEL}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${OTHER_SESSION_TITLE}
+    timeout: 5000
 - retry:
     maxRetries: 2
     commands:

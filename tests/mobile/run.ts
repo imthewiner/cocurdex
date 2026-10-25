@@ -26,6 +26,10 @@ const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
   "zh-CN": "继续",
 };
+const SYSTEM_CANCEL: Record<SupportedLocale, string> = {
+  "en-US": "Cancel",
+  "zh-CN": "取消",
+};
 
 function readMessages(locale: SupportedLocale, namespace: string) {
   const file = path.join(mobileDir, "src/locales", locale, `${namespace}.json`);
@@ -121,6 +125,7 @@ function flowLabels(locale: SupportedLocale) {
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
+    SYSTEM_CANCEL: SYSTEM_CANCEL[locale],
     NEW_SESSION_ACTION: sessions.newSession.open,
     NEW_SESSION_AGENT_ROW: sessions.newSession.agent,
     NEW_SESSION_TITLE: sessions.newSession.title,

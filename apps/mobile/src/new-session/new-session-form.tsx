@@ -12,11 +12,10 @@ import {
   BrandHost,
   FieldSection,
   Form,
-  FormRow,
   FormSection,
   keyboardHidden,
-  RowValue,
   SheetAction,
+  ValueFormRow,
 } from "@/ui";
 import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
 import { useAgents, useNewSessionDefaults } from "./new-session-queries";
@@ -120,29 +119,19 @@ function Sheet({ host }: { host: SavedHost }) {
               )
             }
           >
-            <FormRow
+            <ValueFormRow
               testID="new-session-workspace"
+              label={t("newSession.workspace")}
+              value={workspace?.workspace.name ?? t("newSession.none")}
               onPress={() => void open("/new-session/workspace")}
-              trailing={
-                <RowValue
-                  value={workspace?.workspace.name ?? t("newSession.none")}
-                />
-              }
-            >
-              <Text>{t("newSession.workspace")}</Text>
-            </FormRow>
-            <FormRow
+            />
+            <ValueFormRow
               testID="new-session-agent"
+              label={t("newSession.agent")}
+              value={agent?.label ?? t("newSession.none")}
+              detail={agentDetail}
               onPress={() => void open("/new-session/agent")}
-              trailing={
-                <RowValue
-                  value={agent?.label ?? t("newSession.none")}
-                  detail={agentDetail}
-                />
-              }
-            >
-              <Text>{t("newSession.agent")}</Text>
-            </FormRow>
+            />
           </FormSection>
         </Form>
       </BrandHost>

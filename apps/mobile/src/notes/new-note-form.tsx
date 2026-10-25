@@ -12,11 +12,10 @@ import {
   ChoiceSheet,
   FieldSection,
   Form,
-  FormRow,
   FormSection,
   keyboardHidden,
-  RowValue,
   SheetAction,
+  ValueFormRow,
 } from "@/ui";
 import { useNotes } from "./note-queries";
 
@@ -113,17 +112,16 @@ export function NewNoteForm({ host }: { host: SavedHost }) {
               )
             }
           >
-            <FormRow
+            <ValueFormRow
               testID="new-note-workspace"
+              label={t("workspace")}
+              value={workspaceLabel}
               onPress={() => {
                 titleInput.current?.blur();
                 bodyInput.current?.blur();
                 void keyboardHidden().then(() => setPicking(true));
               }}
-              trailing={<RowValue value={workspaceLabel} />}
-            >
-              <Text>{t("workspace")}</Text>
-            </FormRow>
+            />
           </FormSection>
         </Form>
       </BrandHost>

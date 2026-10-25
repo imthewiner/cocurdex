@@ -23,8 +23,8 @@ import {
   Form,
   FormRow,
   FormSection,
-  RowValue,
   SelectedMark,
+  ValueFormRow,
 } from "@/ui";
 
 const LOCALE_NAMES: Record<SupportedLocale, string> = {
@@ -47,15 +47,14 @@ function ArchivedRow({ hostId }: { hostId: string }) {
   const { data } = useArchivedSessions(hostId);
   const count = data ? archivedSessionRows(data, workspaces).length : null;
   return (
-    <FormRow
+    <ValueFormRow
       testID="settings-archived"
+      label={t("sessions.archived")}
+      value={count === null ? "" : String(count)}
       onPress={() =>
         router.push({ pathname: "/archived/[hostId]", params: { hostId } })
       }
-      trailing={<RowValue value={count === null ? "" : String(count)} />}
-    >
-      <Text>{t("sessions.archived")}</Text>
-    </FormRow>
+    />
   );
 }
 

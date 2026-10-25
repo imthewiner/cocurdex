@@ -13,11 +13,10 @@ import {
   ChoiceSheet,
   FieldSection,
   Form,
-  FormRow,
   FormSection,
   keyboardHidden,
-  RowValue,
   SheetAction,
+  ValueFormRow,
 } from "@/ui";
 import { useIssueView } from "./issue-queries";
 import { defaultIssuePriority, defaultIssueStatus } from "./new-issue-defaults";
@@ -168,27 +167,24 @@ export function NewIssueForm({
               )
             }
           >
-            <FormRow
+            <ValueFormRow
               testID="new-issue-workspace"
+              label={t("field.workspace")}
+              value={labelOf("workspace")}
               onPress={() => void pick("workspace")}
-              trailing={<RowValue value={labelOf("workspace")} />}
-            >
-              <Text>{t("field.workspace")}</Text>
-            </FormRow>
-            <FormRow
+            />
+            <ValueFormRow
               testID="new-issue-status"
+              label={t("field.status")}
+              value={labelOf("status")}
               onPress={() => void pick("status")}
-              trailing={<RowValue value={labelOf("status")} />}
-            >
-              <Text>{t("field.status")}</Text>
-            </FormRow>
-            <FormRow
+            />
+            <ValueFormRow
               testID="new-issue-priority"
+              label={t("field.priority")}
+              value={labelOf("priority")}
               onPress={() => void pick("priority")}
-              trailing={<RowValue value={labelOf("priority")} />}
-            >
-              <Text>{t("field.priority")}</Text>
-            </FormRow>
+            />
           </FormSection>
         </Form>
       </BrandHost>
