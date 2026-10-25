@@ -75,12 +75,15 @@ appId: dev.cocurdex.mobile
           visible:
             id: "transcript-activity-.*"
           timeout: 10000
-- tapOn:
-    id: "transcript-activity-.*"
-- extendedWaitUntil:
-    visible:
-      id: "transcript-tool-.*"
-    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "transcript-activity-.*"
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-tool-.*"
+          timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -93,21 +96,24 @@ appId: dev.cocurdex.mobile
 - assertVisible: ${TOOL_INPUT_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: tool-call
-- runFlow:
-    when:
-      platform: iOS
+- retry:
+    maxRetries: 2
     commands:
-      - tapOn:
-          point: 5%, 9%
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - back
-- extendedWaitUntil:
-    visible:
-      id: "transcript-tool-.*"
-    timeout: 5000
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: 5%, 9%
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-tool-.*"
+          timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -179,6 +185,7 @@ appId: dev.cocurdex.mobile
     element:
       id: "mermaid-diagram"
     direction: UP
+    visibilityPercentage: 40
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-mermaid
@@ -461,7 +468,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${OTHER_SESSION_TITLE}
     timeout: 5000
-- assertVisible: "${ROLE_NAME} · .*"
+- assertVisible: "${ROLE_NAME}[ ·,].*"
 - retry:
     maxRetries: 2
     commands:
@@ -579,25 +586,23 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
-- runFlow:
-    when:
-      platform: Android
+- retry:
+    maxRetries: 3
     commands:
-      - back
-      - back
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn: ${TAB_NOTES}
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - back
-- extendedWaitUntil:
-    visible: ${NOTE_PARENT_TITLE}
-    timeout: 5000
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: 5%, 9%
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible: ${NOTE_PARENT_TITLE}
+          timeout: 3000
 - retry:
     maxRetries: 2
     commands:

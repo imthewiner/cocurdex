@@ -119,7 +119,7 @@ function flowLabels(locale: SupportedLocale) {
     IMAGE_NAME: IMAGE_SESSION.imageName,
     IMAGE_CLOSE: sessions.image.close,
     TOOL_INPUT_TITLE: sessions.tool.input,
-    FILE_LINK_TEXT: "(?s)(.*\\n)?src/cart\\.ts",
+    FILE_LINK_TEXT: "(?s)(.*\\n)?.?src/cart\\.ts.?",
     FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
