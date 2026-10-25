@@ -2,10 +2,9 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import type { ImageAttachment } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { useRouter } from "expo-router";
-import { useHeaderHeight } from "expo-router/react-navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from "react-native";
+import { Keyboard, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAgentRoles } from "@/agents";
 import { hostConnection } from "@/connection";
@@ -18,6 +17,7 @@ import {
   Form,
   FormSection,
   keyboardHidden,
+  useBottomKeyboardOverlap,
   ValueFormRow,
 } from "@/ui";
 import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
@@ -31,8 +31,8 @@ function Sheet({ host }: { host: SavedHost }) {
   const router = useRouter();
   const colors = useThemeColors();
   const grouped = useGroupedColors();
-  const headerHeight = useHeaderHeight();
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
+  const keyboardOverlap = useBottomKeyboardOverlap();
   const { draft } = useNewSessionState();
   const { workspaces, sessions } = useHostSessions(host.hostId);
   const choices = workspaceChoices(workspaces, sessions);
@@ -97,11 +97,7 @@ function Sheet({ host }: { host: SavedHost }) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.fill, { backgroundColor: grouped.page }]}
-      behavior="padding"
-      keyboardVerticalOffset={headerHeight - bottomInset}
-    >
+    <View style={[styles.fill, { backgroundColor: grouped.page }]}>
       <BrandHost style={styles.fill}>
         <Form>
           <FormSection
@@ -134,7 +130,7 @@ function Sheet({ host }: { host: SavedHost }) {
           </FormSection>
         </Form>
       </BrandHost>
-      <View style={{ paddingBottom: bottomInset }}>
+      <View style={{ paddingBottom: keyboardOverlap || bottomInset }}>
         <Composer
           running={false}
           canSend={canStart}
@@ -148,7 +144,7 @@ function Sheet({ host }: { host: SavedHost }) {
           autoFocus
         />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
