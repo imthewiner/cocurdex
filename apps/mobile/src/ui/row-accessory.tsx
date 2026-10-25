@@ -1,18 +1,19 @@
-import CheckIcon from "@expo/material-symbols/check.xml";
-import ChevronRightIcon from "@expo/material-symbols/chevron_right.xml";
-import FolderSymbol from "@expo/material-symbols/folder.xml";
-import { Column, Icon, Row, Text } from "@expo/ui";
+import { SymbolView } from "expo-symbols";
+import { StyleSheet, Text, View } from "react-native";
 import { space, useThemeColors } from "@/theme";
+import { HostedAccessory } from "./hosted-accessory";
 
 export function SelectedMark({ selected }: { selected: boolean }) {
   const colors = useThemeColors();
   if (!selected) return null;
   return (
-    <Icon
-      name={{ ios: "checkmark", android: CheckIcon }}
-      size={18}
-      color={colors.tint}
-    />
+    <HostedAccessory>
+      <SymbolView
+        name={{ ios: "checkmark", android: "check" }}
+        size={18}
+        tintColor={colors.tint}
+      />
+    </HostedAccessory>
   );
 }
 
@@ -25,39 +26,50 @@ export function RowValue({
 }) {
   const colors = useThemeColors();
   return (
-    <Row alignment="center" spacing={space.sm}>
-      <Column alignment="end">
-        <Text
-          numberOfLines={1}
-          textStyle={{ color: colors.mutedForeground, fontSize: 17 }}
-        >
-          {value}
-        </Text>
-        {detail ? (
+    <HostedAccessory>
+      <View style={styles.row}>
+        <View style={styles.values}>
           <Text
             numberOfLines={1}
-            textStyle={{ color: colors.mutedForeground, fontSize: 13 }}
+            style={[styles.value, { color: colors.mutedForeground }]}
           >
-            {detail}
+            {value}
           </Text>
-        ) : null}
-      </Column>
-      <Icon
-        name={{ ios: "chevron.right", android: ChevronRightIcon }}
-        size={13}
-        color={colors.mutedForeground}
-      />
-    </Row>
+          {detail ? (
+            <Text
+              numberOfLines={1}
+              style={[styles.detail, { color: colors.mutedForeground }]}
+            >
+              {detail}
+            </Text>
+          ) : null}
+        </View>
+        <SymbolView
+          name={{ ios: "chevron.right", android: "chevron_right" }}
+          size={13}
+          tintColor={colors.mutedForeground}
+        />
+      </View>
+    </HostedAccessory>
   );
 }
 
 export function FolderIcon() {
   const colors = useThemeColors();
   return (
-    <Icon
-      name={{ ios: "folder", android: FolderSymbol }}
-      size={20}
-      color={colors.mutedForeground}
-    />
+    <HostedAccessory>
+      <SymbolView
+        name={{ ios: "folder", android: "folder" }}
+        size={20}
+        tintColor={colors.mutedForeground}
+      />
+    </HostedAccessory>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  values: { alignItems: "flex-end" },
+  value: { fontSize: 17 },
+  detail: { fontSize: 13 },
+});
