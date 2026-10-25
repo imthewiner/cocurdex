@@ -68,6 +68,7 @@ import {
   isChatWorkspaceId,
   isHandoffVisibleMessage,
   isToolCallId,
+  type MessageAttachment,
   messageAgentLookup,
   newAssistantSessionId,
   normalizeAgentRoleAvatar,
@@ -862,6 +863,27 @@ export class CocurdexDaemonService {
     throw new Error(
       `Path is outside every registered workspace (path=${filePath})`,
     );
+  }
+
+  async assertClientAttachmentsAccess(
+    principal: HostPrincipal,
+    attachments: readonly MessageAttachment[] | undefined,
+  ) {
+    if (principal.kind === "local") return;
+    for (const attachment of attachments ?? []) {
+      if (attachment.kind === "context-item") continue;
+      if (attachment.kind === "image" || attachment.kind === "document") {
+        if (this.attachments.isStoredFile(attachment)) continue;
+        throw new Error(
+          `Attachment is not a stored upload (path=${attachment.filePath})`,
+        );
+      }
+      const filePath =
+        attachment.kind === "context-folder"
+          ? attachment.folderPath
+          : attachment.filePath;
+      await this.assertClientPathAccess(principal, filePath, "file");
+    }
   }
 
   async workspaceFileExists(filePath: string) {

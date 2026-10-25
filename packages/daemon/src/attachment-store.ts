@@ -17,6 +17,7 @@ const PDF_SIGNATURE = Buffer.from("%PDF-");
 const IMAGE_HEADER_BYTES = 256 * 1024;
 const MAX_NAME_LENGTH = 255;
 const STORED_IMAGE_FILE = /^[A-Za-z0-9-]+\.(gif|jpg|png|webp)$/;
+const STORED_DOCUMENT_FILE = /^[A-Za-z0-9-]+\.pdf$/;
 
 export const MAX_IMAGE_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_DOCUMENT_ATTACHMENT_BYTES = 32 * 1024 * 1024;
@@ -174,6 +175,18 @@ export class DaemonAttachmentStore {
       name: attachmentName(name, "document.pdf"),
       sizeBytes: size,
     };
+  }
+
+  isStoredFile(attachment: ImageAttachment | DocumentAttachment) {
+    const filePath = path.resolve(attachment.filePath);
+    const [rootPath, pattern] =
+      attachment.kind === "image"
+        ? [this.imageRootPath, STORED_IMAGE_FILE]
+        : [this.documentRootPath, STORED_DOCUMENT_FILE];
+    return (
+      path.dirname(filePath) === rootPath &&
+      pattern.test(path.basename(filePath))
+    );
   }
 
   async locateImage(fileName: string) {

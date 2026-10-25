@@ -604,6 +604,10 @@ export async function handleDaemonRequest(
         request.params.workspaceRootPath,
       );
     case "session.send":
+      await service.assertClientAttachmentsAccess(
+        context.principal,
+        request.params.attachments,
+      );
       return service.sendSessionMessage(request.params);
     case "session.resumeQueued":
       return service.resumeQueuedSession(request.params.sessionId);
