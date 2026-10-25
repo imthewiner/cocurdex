@@ -21,7 +21,13 @@ export function allowsMermaidNavigation(url: string) {
 }
 
 export type MermaidMessage =
-  | { type: "rendered"; svg: string; width: number; height: number }
+  | {
+      type: "rendered";
+      svg: string;
+      width: number;
+      height: number;
+      png: string | null;
+    }
   | { type: "error" };
 
 const FONT_FAMILY = "-apple-system, Roboto, 'Segoe UI', sans-serif";
@@ -69,13 +75,45 @@ export function mermaidDocument(source: string, appearance: MermaidAppearance) {
     .then(function (result) {
       var container = document.getElementById("diagram");
       container.innerHTML = result.svg;
-      var box = container.querySelector("svg").viewBox.baseVal;
-      post({
-        type: "rendered",
-        svg: container.innerHTML,
-        width: box.width,
-        height: box.height,
-      });
+      var svg = container.querySelector("svg");
+      var box = svg.viewBox.baseVal;
+      var markup = container.innerHTML;
+      var done = function (png) {
+        post({
+          type: "rendered",
+          svg: markup,
+          width: box.width,
+          height: box.height,
+          png: png,
+        });
+      };
+      var sized = svg.cloneNode(true);
+      sized.setAttribute("width", String(box.width));
+      sized.setAttribute("height", String(box.height));
+      sized.removeAttribute("style");
+      var scale =
+        Math.min(1, window.innerWidth / box.width) *
+        (window.devicePixelRatio || 1);
+      var image = new Image();
+      image.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.ceil(box.width * scale);
+        canvas.height = Math.ceil(box.height * scale);
+        var context = canvas.getContext("2d");
+        context.scale(scale, scale);
+        context.drawImage(image, 0, 0, box.width, box.height);
+        try {
+          done(canvas.toDataURL("image/png").split(",")[1] || null);
+        } catch (error) {
+          done(null);
+        }
+      };
+      image.onerror = function () {
+        done(null);
+      };
+      image.src =
+        "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(new XMLSerializer().serializeToString(sized));
     })
     .catch(function () {
       post({ type: "error" });
@@ -130,6 +168,7 @@ export function parseMermaidMessage(data: string): MermaidMessage | null {
         svg: message.svg,
         width: message.width,
         height: message.height,
+        png: typeof message.png === "string" ? message.png : null,
       };
     }
   } catch {

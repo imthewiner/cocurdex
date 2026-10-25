@@ -19,10 +19,14 @@ interface Draft extends DraftImage {
 export interface ComposerProps {
   running: boolean;
   canSend: boolean;
+  canEdit?: boolean;
   onSend(text: string, images: ImageAttachment[]): Promise<boolean>;
   onStop(): void;
   onPickImages(limit: number): Promise<PickedImage[]>;
   onUploadImage(image: PickedImage): Promise<ImageAttachment>;
+  placeholder?: string;
+  inputTestID?: string;
+  autoFocus?: boolean;
 }
 
 function uploadFailure(error: unknown): ImageUploadFailure {
@@ -41,10 +45,14 @@ function useUploadFailureMessages(): Record<ImageUploadFailure, string> {
 export function Composer({
   running,
   canSend,
+  canEdit = canSend,
   onSend,
   onStop,
   onPickImages,
   onUploadImage,
+  placeholder,
+  inputTestID = "composer-input",
+  autoFocus = false,
 }: ComposerProps) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
@@ -135,12 +143,13 @@ export function Composer({
           }
         />
         <TextInput
-          testID="composer-input"
+          testID={inputTestID}
           value={text}
           onChangeText={setText}
-          editable={canSend}
+          editable={canEdit}
           multiline
-          placeholder={t("composer.placeholder")}
+          autoFocus={autoFocus}
+          placeholder={placeholder ?? t("composer.placeholder")}
           placeholderTextColor={colors.mutedForeground}
           style={[styles.input, { color: colors.foreground }]}
         />

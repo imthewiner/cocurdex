@@ -115,3 +115,20 @@ export function linkFilePaths(
     return `[${label}](${fileLinkHref(target)}${title ?? ""})`;
   });
 }
+
+const CODE_PAD = " ";
+const LABEL_CODE = /^`([^`\n]+)`$/;
+
+function paddedCode(code: string) {
+  return `\`${CODE_PAD}${code}${CODE_PAD}\``;
+}
+
+export function padInlineCode(markdown: string) {
+  return mapProse(markdown, (match) => {
+    const [whole, label, href, , code] = match;
+    if (code !== undefined) return paddedCode(code);
+    const labelCode = label?.match(LABEL_CODE)?.[1];
+    if (labelCode === undefined || href === undefined) return null;
+    return `[${paddedCode(labelCode)}]${whole.slice(label.length + 2)}`;
+  });
+}

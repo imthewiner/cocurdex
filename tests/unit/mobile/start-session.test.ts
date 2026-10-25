@@ -3,7 +3,7 @@ import {
   type StartConnection,
   shownSessionPayload,
 } from "@cocurdex/mobile/internal/new-session/start-session";
-import type { SessionRecord } from "@cocurdex/shared";
+import type { ImageAttachment, SessionRecord } from "@cocurdex/shared";
 import { describe, expect, it, vi } from "vitest";
 
 const now = "2026-10-25T00:00:00.000Z";
@@ -50,7 +50,19 @@ function fakeConnection(sendFailures: number) {
 const request = {
   payload: { workspaceId: "workspace-1", agentType: "pi" as const },
   prompt: "Review the checkout totals",
+  attachments: [],
   fallbackTitle: "Pi",
+};
+
+const screenshot: ImageAttachment = {
+  kind: "image",
+  id: "image-1",
+  name: "cart.png",
+  mimeType: "image/png",
+  sizeBytes: 1024,
+  filePath: "/attachments/cart.png",
+  width: 640,
+  height: 480,
 };
 
 describe("createSessionStarter", () => {
@@ -88,6 +100,19 @@ describe("createSessionStarter", () => {
 
     expect(started.id).toBe("session-2");
   });
+
+  it("sends the picked images with the first message", async () => {
+    const fake = fakeConnection(0);
+    const start = createSessionStarter(fake.connection);
+
+    await start({ ...request, attachments: [screenshot] });
+
+    expect(fake.command.mock.calls[0]).toEqual([
+      "session.send",
+      expect.objectContaining({ attachments: [screenshot] }),
+      expect.anything(),
+    ]);
+  });
 });
 
 describe("shownSessionPayload", () => {
@@ -108,6 +133,25 @@ describe("shownSessionPayload", () => {
       agentType: "claude-agent",
       model: { providerId: "anthropic", modelId: "claude-sonnet" },
       permissionMode: "claude-default",
+      agentRoleId: null,
+    });
+  });
+
+  it("records the role the session starts as", () => {
+    expect(
+      shownSessionPayload(
+        "workspace-2",
+        {
+          agentType: "claude-agent",
+          model: null,
+          permissionMode: null,
+          permissionModes: [],
+        },
+        "role-reviewer",
+      ),
+    ).toMatchObject({
+      agentType: "claude-agent",
+      agentRoleId: "role-reviewer",
     });
   });
 });

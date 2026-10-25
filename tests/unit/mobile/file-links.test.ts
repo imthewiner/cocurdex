@@ -2,6 +2,7 @@ import {
   collectFileLinkTargets,
   fileLinkHref,
   linkFilePaths,
+  padInlineCode,
   parseFileLinkHref,
 } from "@cocurdex/mobile/internal/markdown/file-links";
 import { describe, expect, it } from "vitest";
@@ -69,5 +70,32 @@ describe("file link hrefs", () => {
 
   it("ignores other links", () => {
     expect(parseFileLinkHref("https://example.invalid")).toBeNull();
+  });
+});
+
+describe("padInlineCode", () => {
+  const pad = " ";
+
+  it("pads inline code and linked inline code but leaves fences alone", () => {
+    const markdown = [
+      "Run `pnpm test` in [`src/a.ts`](cocurdex-file:?path=a).",
+      "```",
+      "`kept`",
+      "```",
+    ].join("\n");
+    expect(padInlineCode(markdown)).toBe(
+      [
+        `Run \`${pad}pnpm test${pad}\` in [\`${pad}src/a.ts${pad}\`](cocurdex-file:?path=a).`,
+        "```",
+        "`kept`",
+        "```",
+      ].join("\n"),
+    );
+  });
+
+  it("leaves link labels without code untouched", () => {
+    expect(padInlineCode("[docs](https://example.invalid)")).toBe(
+      "[docs](https://example.invalid)",
+    );
   });
 });

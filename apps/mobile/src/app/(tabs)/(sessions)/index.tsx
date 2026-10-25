@@ -11,6 +11,7 @@ import {
 } from "@/hosts";
 import { beginNewSession } from "@/new-session";
 import { SessionList, sessionsStore } from "@/sessions";
+import { useSearchBarOptions } from "@/ui";
 
 export default function SessionsScreen() {
   const { t } = useTranslation("sessions");
@@ -18,6 +19,7 @@ export default function SessionsScreen() {
   const router = useRouter();
   const host = useCurrentHost();
   const [query, setQuery] = useState("");
+  const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
   if (!host) {
     return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
   }
@@ -26,12 +28,7 @@ export default function SessionsScreen() {
     <>
       <Stack.Screen
         options={{
-          headerSearchBarOptions: {
-            placeholder: t("search"),
-            hideWhenScrolling: false,
-            onChangeText: (event) => setQuery(event.nativeEvent.text),
-            onCancelButtonPress: () => setQuery(""),
-          },
+          headerSearchBarOptions: searchBarOptions,
         }}
       />
       <HostSwitcher current={host} onPair={openPaste} />

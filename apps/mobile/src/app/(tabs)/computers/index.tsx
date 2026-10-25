@@ -9,6 +9,7 @@ import {
   usePairingRoutes,
   useSavedHosts,
 } from "@/hosts";
+import { headerLeading } from "@/ui";
 
 export default function ComputersScreen() {
   const { t } = useTranslation();
@@ -18,11 +19,13 @@ export default function ComputersScreen() {
   return (
     <>
       <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "gearshape" : SettingsIcon}
-          accessibilityLabel={t("screens.settings")}
-          onPress={() => router.push("/settings")}
-        />
+        {headerLeading(
+          <Stack.Toolbar.Button
+            icon={Platform.OS === "ios" ? "gearshape" : SettingsIcon}
+            accessibilityLabel={t("screens.settings")}
+            onPress={() => router.push("/settings")}
+          />,
+        )}
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button

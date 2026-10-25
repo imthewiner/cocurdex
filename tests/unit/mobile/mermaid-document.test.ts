@@ -65,7 +65,18 @@ describe("parseMermaidMessage", () => {
       parseMermaidMessage(
         '{"type":"rendered","svg":"<svg/>","width":320,"height":120}',
       ),
-    ).toEqual({ type: "rendered", svg: "<svg/>", width: 320, height: 120 });
+    ).toEqual({
+      type: "rendered",
+      svg: "<svg/>",
+      width: 320,
+      height: 120,
+      png: null,
+    });
+    expect(
+      parseMermaidMessage(
+        '{"type":"rendered","svg":"<svg/>","width":320,"height":120,"png":"iVBORw0KGgo="}',
+      ),
+    ).toMatchObject({ png: "iVBORw0KGgo=" });
     expect(parseMermaidMessage('{"type":"error"}')).toEqual({ type: "error" });
     expect(
       parseMermaidMessage(

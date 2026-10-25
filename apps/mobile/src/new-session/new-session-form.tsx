@@ -1,20 +1,23 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { Text, TextInput, type TextInputRef } from "@expo/ui";
+import type { ImageAttachment } from "@cocurdex/shared";
+import { Text } from "@expo/ui";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useHeaderHeight } from "expo-router/react-navigation";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import { Keyboard, KeyboardAvoidingView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAgentRoles } from "@/agents";
 import { hostConnection } from "@/connection";
 import { useSavedHosts } from "@/hosts";
+import { Composer, pickImages, uploadImage } from "@/session-detail";
 import { useHostSessions } from "@/sessions";
-import { useThemeColors } from "@/theme";
+import { space, useGroupedColors, useThemeColors } from "@/theme";
 import {
   BrandHost,
-  FieldSection,
   Form,
   FormSection,
   keyboardHidden,
-  SheetAction,
   ValueFormRow,
 } from "@/ui";
 import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
@@ -27,7 +30,9 @@ function Sheet({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
   const router = useRouter();
   const colors = useThemeColors();
-  const promptInput = useRef<TextInputRef>(null);
+  const grouped = useGroupedColors();
+  const headerHeight = useHeaderHeight();
+  const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const { draft } = useNewSessionState();
   const { workspaces, sessions } = useHostSessions(host.hostId);
   const choices = workspaceChoices(workspaces, sessions);
@@ -39,8 +44,10 @@ function Sheet({ host }: { host: SavedHost }) {
   const agent = useAgents(host.hostId).data?.find(
     (entry) => entry.id === defaults?.agentType,
   );
+  const role = useAgentRoles(host.hostId).data?.find(
+    (entry) => entry.id === draft.roleId,
+  );
   const modeLabels = usePermissionModeLabels();
-  const [prompt, setPrompt] = useState("");
   const [startSession] = useState(() =>
     createSessionStarter(hostConnection(host.hostId)),
   );
@@ -48,63 +55,55 @@ function Sheet({ host }: { host: SavedHost }) {
   const [failed, setFailed] = useState(false);
   const canStart =
     !starting &&
-    prompt.trim() !== "" &&
     workspaceId !== null &&
     defaults !== undefined &&
     host.scopes.includes("execute");
   const agentDetail = [
+    role ? agent?.label : null,
     defaults?.model?.name,
     defaults?.permissionMode ? modeLabels[defaults.permissionMode].label : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
-  const start = async () => {
-    if (!canStart || !workspaceId || !defaults) return;
-    promptInput.current?.blur();
+  const start = async (prompt: string, attachments: ImageAttachment[]) => {
+    if (!canStart || !workspaceId || !defaults) return false;
     setStarting(true);
     setFailed(false);
     try {
       const session = await startSession({
-        payload: shownSessionPayload(workspaceId, defaults),
-        prompt: prompt.trim(),
-        fallbackTitle: agent?.label ?? t("newSession.title"),
+        payload: shownSessionPayload(workspaceId, defaults, role?.id ?? null),
+        prompt,
+        attachments,
+        fallbackTitle: role?.name ?? agent?.label ?? t("newSession.title"),
       });
+      Keyboard.dismiss();
       await keyboardHidden();
       router.replace(`/session/${host.hostId}/${session.id}`);
+      return true;
     } catch {
       setStarting(false);
       setFailed(true);
+      return false;
     }
   };
 
   const open = async (
     route: "/new-session/workspace" | "/new-session/agent",
   ) => {
-    promptInput.current?.blur();
+    Keyboard.dismiss();
     await keyboardHidden();
     router.push(route);
   };
 
   return (
-    <>
-      <SheetAction
-        label={starting ? t("newSession.starting") : t("newSession.start")}
-        disabled={!canStart}
-        onPress={() => void start()}
-      />
+    <KeyboardAvoidingView
+      style={[styles.fill, { backgroundColor: grouped.page }]}
+      behavior="padding"
+      keyboardVerticalOffset={headerHeight - bottomInset}
+    >
       <BrandHost style={styles.fill}>
         <Form>
-          <FieldSection>
-            <TextInput
-              ref={promptInput}
-              testID="new-session-prompt"
-              placeholder={t("newSession.promptPlaceholder")}
-              multiline
-              autoFocus
-              onChangeText={setPrompt}
-            />
-          </FieldSection>
           <FormSection
             title={t("newSession.where")}
             footer={
@@ -128,14 +127,28 @@ function Sheet({ host }: { host: SavedHost }) {
             <ValueFormRow
               testID="new-session-agent"
               label={t("newSession.agent")}
-              value={agent?.label ?? t("newSession.none")}
+              value={role?.name ?? agent?.label ?? t("newSession.none")}
               detail={agentDetail}
               onPress={() => void open("/new-session/agent")}
             />
           </FormSection>
         </Form>
       </BrandHost>
-    </>
+      <View style={{ paddingBottom: bottomInset }}>
+        <Composer
+          running={false}
+          canSend={canStart}
+          canEdit={!starting}
+          onSend={start}
+          onStop={() => undefined}
+          onPickImages={pickImages}
+          onUploadImage={(image) => uploadImage(host, image)}
+          placeholder={t("newSession.promptPlaceholder")}
+          inputTestID="new-session-prompt"
+          autoFocus
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

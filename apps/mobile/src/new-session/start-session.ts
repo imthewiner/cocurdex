@@ -2,6 +2,7 @@ import type { HostConnection } from "@cocurdex/client-runtime";
 import {
   type CreateSessionPayload,
   generateLocalSessionTitle,
+  type ImageAttachment,
   type NewSessionDefaults,
   type SessionRecord,
 } from "@cocurdex/shared";
@@ -11,6 +12,7 @@ export type StartConnection = Pick<HostConnection, "request" | "command">;
 export interface StartRequest {
   payload: CreateSessionPayload;
   prompt: string;
+  attachments: ImageAttachment[];
   fallbackTitle: string;
 }
 
@@ -23,6 +25,7 @@ interface UnsentStart {
 export function shownSessionPayload(
   workspaceId: string,
   defaults: NewSessionDefaults,
+  agentRoleId: string | null = null,
 ): CreateSessionPayload {
   return {
     workspaceId,
@@ -34,6 +37,7 @@ export function shownSessionPayload(
         }
       : null,
     permissionMode: defaults.permissionMode,
+    agentRoleId,
   };
 }
 
@@ -53,7 +57,11 @@ export function createSessionStarter(connection: StartConnection) {
   };
 
   return async (request: StartRequest) => {
-    const key = JSON.stringify([request.payload, request.prompt]);
+    const key = JSON.stringify([
+      request.payload,
+      request.prompt,
+      request.attachments.map((attachment) => attachment.id),
+    ]);
     const pending = unsent?.key === key ? unsent : await create(key, request);
     unsent = pending;
     const { session, messageId } = pending;
@@ -63,7 +71,7 @@ export function createSessionStarter(connection: StartConnection) {
         sessionId: session.id,
         messageId,
         content: request.prompt,
-        attachments: [],
+        attachments: request.attachments,
       },
       { idempotencyKey: messageId },
     );

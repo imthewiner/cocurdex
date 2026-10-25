@@ -1,6 +1,7 @@
 import type { SessionPrimaryState } from "@cocurdex/shared";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AgentIcon, RoleAvatar, type RoleAvatarSource } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
 import { useAgeLabel } from "@/ui";
 import { type SessionRow, sessionRowStatus } from "./session-sections";
@@ -21,12 +22,32 @@ function useStateDetails(): Record<SessionPrimaryState, string | null> {
   };
 }
 
+function MetaIcon({
+  row,
+  role,
+}: {
+  row: SessionRow;
+  role: RoleAvatarSource | null;
+}) {
+  return (
+    <View style={styles.metaIcon}>
+      {role ? (
+        <RoleAvatar role={role} agentId={row.agentType} size={18} />
+      ) : (
+        <AgentIcon agentId={row.agentType} size={14} />
+      )}
+    </View>
+  );
+}
+
 export function SessionRowView({
   row,
+  role,
   onPress,
   onLongPress,
 }: {
   row: SessionRow;
+  role: RoleAvatarSource | null;
   onPress(): void;
   onLongPress(): void;
 }) {
@@ -36,8 +57,10 @@ export function SessionRowView({
   const status = sessionRowStatus(row.state);
   const detailColor =
     status === "failed" ? colors.destructive : colors.mutedForeground;
-  const secondary = detail ?? row.model;
-  const summary = [detail, age].filter(Boolean).join(", ");
+  const secondary = [role?.name, detail ?? row.model]
+    .filter(Boolean)
+    .join(" · ");
+  const summary = [role?.name, detail, age].filter(Boolean).join(", ");
   return (
     <Pressable
       accessibilityLabel={row.title}
@@ -62,17 +85,18 @@ export function SessionRowView({
           {age}
         </Text>
       </View>
-      {secondary ? (
-        <View style={styles.line}>
+      <View style={styles.line}>
+        <View style={styles.meta}>
+          <MetaIcon row={row} role={role} />
           <Text
             numberOfLines={1}
             style={[styles.detail, { color: detailColor }]}
           >
             {secondary}
           </Text>
-          <SessionStatusMark status={status} />
         </View>
-      ) : null}
+        <SessionStatusMark status={status} />
+      </View>
     </Pressable>
   );
 }
@@ -88,5 +112,7 @@ const styles = StyleSheet.create({
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
   title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
+  meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  metaIcon: { width: 18, alignItems: "center" },
   detail: { flex: 1, fontSize: 15, lineHeight: 20 },
 });

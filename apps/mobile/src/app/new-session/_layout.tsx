@@ -13,6 +13,7 @@ export default function NewSessionLayout() {
     <Stack
       screenOptions={{
         headerBackButtonDisplayMode: "minimal",
+        headerTitleAlign: "center",
         animation: PUSH_ANIMATION,
         headerStyle: { backgroundColor: grouped.page },
         contentStyle: { backgroundColor: grouped.page },

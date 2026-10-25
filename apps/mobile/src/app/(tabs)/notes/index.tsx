@@ -10,6 +10,7 @@ import {
   usePairingRoutes,
 } from "@/hosts";
 import { NoteList } from "@/notes";
+import { useSearchBarOptions } from "@/ui";
 
 export default function NotesScreen() {
   const { t } = useTranslation("notes");
@@ -17,6 +18,7 @@ export default function NotesScreen() {
   const host = useCurrentHost();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
   if (!host) {
     return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
   }
@@ -25,12 +27,7 @@ export default function NotesScreen() {
     <>
       <Stack.Screen
         options={{
-          headerSearchBarOptions: {
-            placeholder: t("search"),
-            hideWhenScrolling: false,
-            onChangeText: (event) => setQuery(event.nativeEvent.text),
-            onCancelButtonPress: () => setQuery(""),
-          },
+          headerSearchBarOptions: searchBarOptions,
         }}
       />
       <HostSwitcher current={host} onPair={openPaste} />

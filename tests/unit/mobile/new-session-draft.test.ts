@@ -2,6 +2,7 @@ import {
   chooseAgent,
   chooseModel,
   choosePermissionMode,
+  chooseRole,
   chooseWorkspace,
   displayedChoices,
   draftWorkspaceId,
@@ -123,6 +124,46 @@ describe("draft choices", () => {
       workspaceId: "shop",
       agentType: "claude-agent",
       model: { providerId: "anthropic", modelId: "haiku" },
+    });
+  });
+});
+
+describe("role choices", () => {
+  const reviewer = { id: "role-reviewer", agentId: "claude-agent" as const };
+
+  it("lets the computer apply the role's agent, model, and mode", () => {
+    const draft = chooseModel(chooseWorkspace(EMPTY_DRAFT, "shop"), "codex", {
+      providerId: "openai",
+      modelId: "gpt",
+    });
+
+    expect(chooseRole(draft, reviewer)).toEqual({
+      workspaceId: "shop",
+      agentType: "claude-agent",
+      roleId: "role-reviewer",
+    });
+  });
+
+  it("keeps the role while its model or mode is adjusted", () => {
+    const draft = chooseRole(chooseWorkspace(EMPTY_DRAFT, "shop"), reviewer);
+    const adjusted = choosePermissionMode(
+      chooseModel(draft, "claude-agent", {
+        providerId: "anthropic",
+        modelId: "haiku",
+      }),
+      "claude-agent",
+      "claude-plan",
+    );
+
+    expect(adjusted).toMatchObject({ roleId: "role-reviewer" });
+  });
+
+  it("drops the role when an agent is picked directly", () => {
+    const draft = chooseRole(chooseWorkspace(EMPTY_DRAFT, "shop"), reviewer);
+
+    expect(chooseAgent(draft, "claude-agent")).toEqual({
+      workspaceId: "shop",
+      agentType: "claude-agent",
     });
   });
 });

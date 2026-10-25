@@ -3,28 +3,18 @@ import ArchiveIcon from "@expo/material-symbols/archive.xml";
 import ForkIcon from "@expo/material-symbols/call_split.xml";
 import DeleteIcon from "@expo/material-symbols/delete.xml";
 import MarkUnreadIcon from "@expo/material-symbols/mark_chat_unread.xml";
-import {
-  BottomSheet,
-  Column,
-  Icon,
-  type IconName,
-  ListItem,
-  Text,
-} from "@expo/ui";
+import { BottomSheet, Column, Icon, type IconName, Text } from "@expo/ui";
 import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert } from "react-native";
 import { hostConnection } from "@/connection";
 import { space, useThemeColors } from "@/theme";
-import { SHEET_TITLE_INSET } from "@/ui";
+import { SHEET_TITLE_INSET, SheetRow, useConfirm } from "@/ui";
 import { reloadArchivedSessions } from "./archived-sessions-queries";
 import type { SessionRow } from "./session-sections";
 import { sessionsStore } from "./sessions";
 
 type SessionAction = "markUnread" | "fork" | "archive" | "delete";
-
-const TRANSPARENT = "#00000000";
 
 const ACTION_ICONS: Record<SessionAction, IconName> = {
   markUnread: { ios: "message.badge", android: MarkUnreadIcon },
@@ -45,14 +35,13 @@ function ActionRow({
   const colors = useThemeColors();
   const color = action === "delete" ? colors.destructive : colors.foreground;
   return (
-    <ListItem
+    <SheetRow
       testID={`session-action-${action}`}
-      colors={{ containerColor: TRANSPARENT }}
+      label={label}
+      color={color}
       onPress={onPress}
       leading={<Icon name={ACTION_ICONS[action]} size={22} color={color} />}
-    >
-      <Text textStyle={{ color }}>{label}</Text>
-    </ListItem>
+    />
   );
 }
 
@@ -70,6 +59,7 @@ export function SessionActionsSheet({
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const [failed, setFailed] = useState(false);
+  const { confirm, dialog } = useConfirm();
   const canExecute = host.scopes.includes("execute");
   const canInteract = host.scopes.includes("interact");
   const connection = hostConnection(host.hostId);
@@ -119,21 +109,17 @@ export function SessionActionsSheet({
         connection.request("session.archive", { sessionId }),
       ),
     delete: () =>
-      Alert.alert(
-        t("actions.deleteTitle", { title: row?.title ?? "" }),
-        t("actions.deleteMessage"),
-        [
-          { text: t("actions.cancel"), style: "cancel" },
-          {
-            text: t("actions.delete"),
-            style: "destructive",
-            onPress: () =>
-              void run((sessionId) =>
-                connection.request("session.delete", { sessionId }),
-              ),
-          },
-        ],
-      ),
+      confirm({
+        title: t("actions.deleteTitle", { title: row?.title ?? "" }),
+        message: t("actions.deleteMessage"),
+        cancelLabel: t("actions.cancel"),
+        confirmLabel: t("actions.delete"),
+        destructive: true,
+        onConfirm: () =>
+          void run((sessionId) =>
+            connection.request("session.delete", { sessionId }),
+          ),
+      }),
   };
 
   const actions: SessionAction[] = [
@@ -187,6 +173,7 @@ export function SessionActionsSheet({
               {t("detail.actionFailed")}
             </Text>
           ) : null}
+          {dialog}
         </Column>
       ) : null}
     </BottomSheet>

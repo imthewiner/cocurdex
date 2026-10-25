@@ -3,11 +3,11 @@ import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useThemeColors } from "@/theme";
 import { CloseButton } from "@/ui";
-import { useDiagramById } from "./mermaid-cache";
 import {
   allowsMermaidNavigation,
   mermaidViewerDocument,
 } from "./mermaid-document";
+import { useDiagramById } from "./mermaid-store";
 
 export function MermaidViewerScreen({
   diagramId,

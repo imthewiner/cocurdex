@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionList, StyleSheet, Text, View } from "react-native";
+import { useAgentRoles } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
 import { ListNotice, ListSectionHeader, ListSeparator } from "@/ui";
 import { SessionActionsSheet } from "./session-actions-sheet";
@@ -29,6 +30,8 @@ export function SessionList({
   const colors = useThemeColors();
   const router = useRouter();
   const snapshot = useHostSessions(host.hostId);
+  const roles = useAgentRoles(host.hostId).data;
+  const roleById = new Map(roles?.map((role) => [role.id, role]));
   const [actionTarget, setActionTarget] = useState<{
     row: SessionRow;
     workspace: string;
@@ -91,6 +94,7 @@ export function SessionList({
         renderItem={({ item, section }) => (
           <SessionRowView
             row={item}
+            role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
             onLongPress={() =>
               setActionTarget({ row: item, workspace: section.title })
             }

@@ -1,4 +1,5 @@
 import {
+  type AgentId,
   isChatSession,
   SESSION_PRIMARY_STATE_PRIORITY,
   type SessionAttentionSnapshot,
@@ -20,6 +21,8 @@ export interface SessionRow {
   activityAt: string;
   state: SessionPrimaryState;
   model: string | null;
+  agentType: AgentId;
+  roleId: string | null;
 }
 
 export interface SessionSection {
@@ -136,6 +139,8 @@ export function buildSessionSections(
       activityAt: session.lastMessageAt ?? session.updatedAt,
       state: states.get(session.id) ?? "ready",
       model: session.providerSnapshot?.modelName ?? null,
+      agentType: session.agentType,
+      roleId: session.agentRoleId ?? null,
     });
     rowsByWorkspace.set(workspace.id, rows);
   }

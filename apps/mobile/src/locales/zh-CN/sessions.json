@@ -88,11 +88,11 @@
     "none": "无",
     "open": "新建会话",
     "promptPlaceholder": "要让 Agent 做什么？",
+    "role": "角色",
+    "roleFooter": "角色在电脑上设置，选择后会套用它的 agent、模型和权限。",
     "runsOn": "在 {{host}} 上运行。",
     "searchWorkspaces": "搜索工作区",
     "sessionCount_other": "{{count}} 个会话",
-    "start": "开始",
-    "starting": "正在开始…",
     "title": "新会话",
     "where": "运行位置",
     "workspace": "工作区"

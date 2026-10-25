@@ -111,9 +111,19 @@ appId: dev.cocurdex.mobile
 - retry:
     maxRetries: 2
     commands:
-      - tapOn:
-          text: ${FILE_LINK_TEXT}
-          point: 8%, 90%
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: ${FILE_LINK_TEXT}
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                text: ${FILE_LINK_TEXT}
+                point: 8%, 90%
       - extendedWaitUntil:
           visible: ${FILE_SOURCE_TEXT}
           timeout: 10000
@@ -340,6 +350,8 @@ appId: dev.cocurdex.mobile
           visible: ${NEW_SESSION_MODEL}
           timeout: 5000
 - tapOn: ${NEW_SESSION_MODEL}
+- tapOn:
+    id: "new-session-role-${ROLE_ID}"
 - waitForAnimationToEnd
 - takeScreenshot: new-session-agent
 - runFlow:
@@ -356,11 +368,15 @@ appId: dev.cocurdex.mobile
     visible:
       id: "new-session-prompt"
     timeout: 5000
+- assertVisible:
+    text: ${ROLE_NAME}
+    childOf:
+      id: "new-session-agent"
 - tapOn:
     id: "new-session-prompt"
 - inputText: ${NEW_SESSION_PROMPT}
 - takeScreenshot: new-session-filled
-- tapOn: ${NEW_SESSION_START}
+- tapOn: ${SEND_ACTION}
 - extendedWaitUntil:
     visible: ${SEND_REPLY}
     timeout: 20000
@@ -445,6 +461,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${OTHER_SESSION_TITLE}
     timeout: 5000
+- assertVisible: "${ROLE_NAME} · .*"
 - retry:
     maxRetries: 2
     commands:

@@ -18,6 +18,7 @@ import { useExistingFiles } from "./file-link-queries";
 import {
   collectFileLinkTargets,
   linkFilePaths,
+  padInlineCode,
   parseFileLinkHref,
 } from "./file-links";
 import { splitMermaidBlocks } from "./markdown-segments";
@@ -186,7 +187,10 @@ export function MarkdownText({
     () => markdownStyle(colors, syntaxColors),
     [colors, syntaxColors],
   );
-  const segments = useMemo(() => splitMermaidBlocks(linked), [linked]);
+  const segments = useMemo(
+    () => splitMermaidBlocks(padInlineCode(linked)),
+    [linked],
+  );
   return (
     <View testID={testID}>
       {segments.map((segment) =>

@@ -14,6 +14,7 @@ export interface ModelChoice {
 export interface NewSessionDraft {
   workspaceId: string | null;
   agentType?: AgentId;
+  roleId?: string;
   model?: ModelChoice;
   permissionMode?: AgentPermissionMode;
 }
@@ -36,8 +37,19 @@ export function chooseAgent(
   draft: NewSessionDraft,
   agentType: AgentId,
 ): NewSessionDraft {
-  if (draft.agentType === agentType) return draft;
+  if (draft.agentType === agentType && !draft.roleId) return draft;
   return { workspaceId: draft.workspaceId, agentType };
+}
+
+export function chooseRole(
+  draft: NewSessionDraft,
+  role: { id: string; agentId: AgentId },
+): NewSessionDraft {
+  return {
+    workspaceId: draft.workspaceId,
+    agentType: role.agentId,
+    roleId: role.id,
+  };
 }
 
 export function chooseModel(
@@ -45,7 +57,10 @@ export function chooseModel(
   agentType: AgentId,
   model: ModelChoice,
 ): NewSessionDraft {
-  return { workspaceId: draft.workspaceId, agentType, model };
+  const { workspaceId, roleId } = draft;
+  return roleId
+    ? { workspaceId, agentType, roleId, model }
+    : { workspaceId, agentType, model };
 }
 
 export function choosePermissionMode(

@@ -1,7 +1,11 @@
 import type { MermaidAppearance } from "@cocurdex/shared";
-import { useSyncExternalStore } from "react";
 
-export type RenderedDiagram = { svg: string; width: number; height: number };
+export type RenderedDiagram = {
+  svg: string;
+  width: number;
+  height: number;
+  image: string | null;
+};
 
 export type DiagramEntry =
   | { kind: "rendered"; id: string; diagram: RenderedDiagram }
@@ -9,7 +13,10 @@ export type DiagramEntry =
 
 const DEFAULT_CAPACITY = 64;
 
-export function createDiagramCache(capacity = DEFAULT_CAPACITY) {
+export function createDiagramCache(
+  capacity = DEFAULT_CAPACITY,
+  release: (diagram: RenderedDiagram) => void = () => undefined,
+) {
   const entries = new Map<string, DiagramEntry>();
   const ids = new Map<string, string>();
   const listeners = new Set<() => void>();
@@ -18,14 +25,21 @@ export function createDiagramCache(capacity = DEFAULT_CAPACITY) {
   const keyOf = (source: string, appearance: MermaidAppearance) =>
     `${appearance}\n${source}`;
 
-  function store(key: string, entry: DiagramEntry) {
+  function forget(key: string) {
+    const previous = entries.get(key);
+    if (!previous) return;
     entries.delete(key);
+    ids.delete(previous.id);
+    if (previous.kind === "rendered") release(previous.diagram);
+  }
+
+  function store(key: string, entry: DiagramEntry) {
+    forget(key);
     entries.set(key, entry);
     ids.set(entry.id, key);
-    for (const [oldest, evicted] of entries) {
+    for (const oldest of entries.keys()) {
       if (entries.size <= capacity) break;
-      entries.delete(oldest);
-      ids.delete(evicted.id);
+      forget(oldest);
     }
     for (const listener of [...listeners]) listener();
   }
@@ -61,16 +75,4 @@ export function createDiagramCache(capacity = DEFAULT_CAPACITY) {
       store(keyOf(source, appearance), { kind: "failed", id: String(nextId) });
     },
   };
-}
-
-export const diagrams = createDiagramCache();
-
-export function useDiagram(source: string, appearance: MermaidAppearance) {
-  return useSyncExternalStore(diagrams.subscribe, () =>
-    diagrams.get(source, appearance),
-  );
-}
-
-export function useDiagramById(id: string) {
-  return useSyncExternalStore(diagrams.subscribe, () => diagrams.byId(id));
 }

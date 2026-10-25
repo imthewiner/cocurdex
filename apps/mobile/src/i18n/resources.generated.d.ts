@@ -270,12 +270,12 @@ export default interface Resources {
       none: "None";
       open: "New session";
       promptPlaceholder: "What should the agent do?";
+      role: "Role";
+      roleFooter: "Roles are set up on the computer. Picking one applies its agent, model, and permissions.";
       runsOn: "Runs on {{host}}.";
       searchWorkspaces: "Search workspaces";
       sessionCount_one: "{{count}} session";
       sessionCount_other: "{{count}} sessions";
-      start: "Start";
-      starting: "Starting…";
       title: "New session";
       where: "Run on";
       workspace: "Workspace";

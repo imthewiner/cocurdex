@@ -23,7 +23,7 @@ export const themeColors: Record<ThemeName, ThemeColors> = {
 
 export type SyntaxColors = (typeof syntax)[ThemeName];
 
-function useThemeName(): ThemeName {
+export function useThemeName(): ThemeName {
   return useColorScheme() === "dark" ? "dark" : "light";
 }
 

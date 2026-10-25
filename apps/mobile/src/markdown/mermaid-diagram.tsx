@@ -2,16 +2,23 @@ import type { MermaidAppearance } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
 import { SvgCss } from "react-native-svg/css";
 import { WebView } from "react-native-webview";
 import { space } from "@/theme";
-import { diagrams, useDiagram } from "./mermaid-cache";
 import {
   allowsMermaidNavigation,
   mermaidDocument,
   parseMermaidMessage,
 } from "./mermaid-document";
+import { saveImage } from "./mermaid-images";
+import { diagrams, useDiagram } from "./mermaid-store";
 
 function DiagramRenderer({
   source,
@@ -35,8 +42,15 @@ function DiagramRenderer({
           const message = parseMermaidMessage(nativeEvent.data);
           if (message?.type === "error") diagrams.failed(source, appearance);
           if (message?.type === "rendered") {
-            const { svg, width, height } = message;
-            diagrams.rendered(source, appearance, { svg, width, height });
+            const { svg, width, height, png } = message;
+            void (png ? saveImage(png) : Promise.resolve(null)).then((image) =>
+              diagrams.rendered(source, appearance, {
+                svg,
+                width,
+                height,
+                image,
+              }),
+            );
           }
         }}
       />
@@ -58,7 +72,7 @@ export function MermaidDiagram({
   if (entry?.kind === "failed") return fallback;
   if (!entry)
     return <DiagramRenderer source={source} appearance={appearance} />;
-  const { svg, width, height } = entry.diagram;
+  const { svg, width, height, image } = entry.diagram;
   return (
     <Pressable
       accessibilityRole="imagebutton"
@@ -73,7 +87,11 @@ export function MermaidDiagram({
       }
       style={[styles.frame, { maxWidth: width, aspectRatio: width / height }]}
     >
-      <SvgCss xml={svg} width="100%" height="100%" />
+      {image ? (
+        <Image source={{ uri: image }} style={styles.image} />
+      ) : (
+        <SvgCss xml={svg} width="100%" height="100%" />
+      )}
     </Pressable>
   );
 }
@@ -81,4 +99,5 @@ export function MermaidDiagram({
 const styles = StyleSheet.create({
   renderer: { width: "100%", height: 1, opacity: 0 },
   frame: { width: "100%", alignSelf: "center", marginBottom: space.sm },
+  image: { width: "100%", height: "100%" },
 });
