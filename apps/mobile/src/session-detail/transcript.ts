@@ -4,12 +4,14 @@ import {
   type AgentQuestionRequestRecord,
   type AgentToolCallRecord,
   getToolCallInputSummary,
+  type ImageAttachment,
+  isImageAttachment,
   type MessageRecord,
   type SessionInteractionSnapshot,
 } from "@cocurdex/shared";
 
 export type TranscriptItem =
-  | { kind: "user"; id: string; text: string }
+  | { kind: "user"; id: string; text: string; images: ImageAttachment[] }
   | { kind: "assistant"; id: string; text: string; streaming: boolean }
   | {
       kind: "tool";
@@ -48,12 +50,13 @@ function messageItem(
   message: MessageRecord,
   streaming: boolean,
 ): TranscriptItem | null {
-  if (message.kind === "reasoning" || message.content.trim() === "") {
-    return null;
+  if (message.kind === "reasoning") return null;
+  const images = message.attachments.filter(isImageAttachment);
+  const text = message.content.trim() === "" ? "" : message.content;
+  if (message.role === "user" && (text !== "" || images.length > 0)) {
+    return { kind: "user", id: message.id, text, images };
   }
-  if (message.role === "user") {
-    return { kind: "user", id: message.id, text: message.content };
-  }
+  if (text === "") return null;
   if (message.role === "assistant") {
     return {
       kind: "assistant",

@@ -1,109 +1,225 @@
+import type { ImageAttachment } from "@cocurdex/shared";
+import { randomUUID } from "expo-crypto";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
+import { AttachmentStrip, type DraftImage } from "./attachment-strip";
+import { MAX_IMAGES_PER_MESSAGE, type PickedImage } from "./image-attachments";
+import {
+  ImageUploadError,
+  type ImageUploadFailure,
+} from "./image-upload-response";
+
+interface Draft extends DraftImage {
+  attachment: ImageAttachment | null;
+}
+
+export interface ComposerProps {
+  running: boolean;
+  canSend: boolean;
+  onSend(text: string, images: ImageAttachment[]): Promise<boolean>;
+  onStop(): void;
+  onPickImages(limit: number): Promise<PickedImage[]>;
+  onUploadImage(image: PickedImage): Promise<ImageAttachment>;
+}
+
+function uploadFailure(error: unknown): ImageUploadFailure {
+  return error instanceof ImageUploadError ? error.reason : "failed";
+}
+
+function useUploadFailureMessages(): Record<ImageUploadFailure, string> {
+  const { t } = useTranslation("sessions");
+  return {
+    tooLarge: t("composer.imageTooLarge"),
+    unsupported: t("composer.imageUnsupported"),
+    failed: t("composer.imageFailed"),
+  };
+}
 
 export function Composer({
   running,
   canSend,
   onSend,
   onStop,
-}: {
-  running: boolean;
-  canSend: boolean;
-  onSend(text: string): Promise<boolean>;
-  onStop(): void;
-}) {
+  onPickImages,
+  onUploadImage,
+}: ComposerProps) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const failureMessages = useUploadFailureMessages();
   const [text, setText] = useState("");
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [failure, setFailure] = useState<ImageUploadFailure | null>(null);
   const [sending, setSending] = useState(false);
-  const hasText = text.trim() !== "";
-  const stopping = running && !hasText;
+  const ready = drafts.flatMap((draft) =>
+    draft.attachment ? [draft.attachment] : [],
+  );
+  const uploading = drafts.some((draft) => draft.uploading);
+  const hasContent = text.trim() !== "" || ready.length > 0;
+  const stopping = running && !hasContent && !uploading;
+  const submitDisabled =
+    !canSend || sending || uploading || (!stopping && !hasContent);
+  const roomForImages = MAX_IMAGES_PER_MESSAGE - drafts.length;
+
+  const upload = async (draft: Draft, image: PickedImage) => {
+    try {
+      const attachment = await onUploadImage(image);
+      setDrafts((current) =>
+        current.map((entry) =>
+          entry.key === draft.key
+            ? { ...entry, attachment, uploading: false }
+            : entry,
+        ),
+      );
+    } catch (error) {
+      setFailure(uploadFailure(error));
+      setDrafts((current) =>
+        current.filter((entry) => entry.key !== draft.key),
+      );
+    }
+  };
+
+  const attach = async () => {
+    setFailure(null);
+    const picked = await onPickImages(roomForImages);
+    const added = picked.map((image) => ({
+      image,
+      draft: {
+        key: randomUUID(),
+        uri: image.uri,
+        name: image.name,
+        uploading: true,
+        attachment: null,
+      },
+    }));
+    setDrafts((current) => [...current, ...added.map(({ draft }) => draft)]);
+    await Promise.all(added.map(({ draft, image }) => upload(draft, image)));
+  };
 
   const submit = async () => {
     if (stopping) {
       onStop();
       return;
     }
-    if (!hasText || sending) return;
+    if (submitDisabled) return;
     setSending(true);
-    const sent = await onSend(text.trim());
+    const sent = await onSend(text.trim(), ready);
     setSending(false);
-    if (sent) setText("");
+    if (!sent) return;
+    setText("");
+    setDrafts([]);
   };
 
   return (
-    <View
-      style={[
-        styles.bar,
-        { borderColor: colors.border, backgroundColor: colors.card },
-      ]}
-    >
-      <TextInput
-        testID="composer-input"
-        value={text}
-        onChangeText={setText}
-        editable={canSend}
-        multiline
-        placeholder={t("composer.placeholder")}
-        placeholderTextColor={colors.mutedForeground}
-        style={[styles.input, { color: colors.foreground }]}
-      />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={stopping ? t("composer.stop") : t("composer.send")}
-        accessibilityState={{ disabled: !canSend || (!stopping && !hasText) }}
-        disabled={!canSend || sending || (!stopping && !hasText)}
-        onPress={() => void submit()}
-        style={({ pressed }) => [
-          styles.send,
-          { backgroundColor: colors.foreground },
-          (pressed || sending || (!stopping && !hasText)) && styles.dimmed,
+    <View style={styles.wrap}>
+      {failure ? (
+        <Text
+          accessibilityRole="alert"
+          style={[styles.failure, { color: colors.destructive }]}
+        >
+          {failureMessages[failure]}
+        </Text>
+      ) : null}
+      <View
+        style={[
+          styles.bar,
+          { borderColor: colors.border, backgroundColor: colors.card },
         ]}
       >
-        <SymbolView
-          name={
-            stopping
-              ? { ios: "stop.fill", android: "stop" }
-              : { ios: "arrow.up", android: "arrow_upward" }
+        <AttachmentStrip
+          drafts={drafts}
+          onRemove={(key) =>
+            setDrafts((current) => current.filter((entry) => entry.key !== key))
           }
-          size={18}
-          tintColor={colors.background}
         />
-      </Pressable>
+        <TextInput
+          testID="composer-input"
+          value={text}
+          onChangeText={setText}
+          editable={canSend}
+          multiline
+          placeholder={t("composer.placeholder")}
+          placeholderTextColor={colors.mutedForeground}
+          style={[styles.input, { color: colors.foreground }]}
+        />
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("composer.attach")}
+            accessibilityState={{ disabled: !canSend || roomForImages <= 0 }}
+            disabled={!canSend || roomForImages <= 0}
+            onPress={() => void attach()}
+            style={({ pressed }) => [
+              styles.round,
+              (pressed || !canSend || roomForImages <= 0) && styles.dimmed,
+            ]}
+          >
+            <SymbolView
+              name={{ ios: "paperclip", android: "attach_file" }}
+              size={20}
+              tintColor={colors.mutedForeground}
+            />
+          </Pressable>
+          <View style={styles.spacer} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              stopping ? t("composer.stop") : t("composer.send")
+            }
+            accessibilityState={{ disabled: submitDisabled }}
+            disabled={submitDisabled}
+            onPress={() => void submit()}
+            style={({ pressed }) => [
+              styles.round,
+              { backgroundColor: colors.foreground },
+              (pressed || submitDisabled) && styles.dimmed,
+            ]}
+          >
+            <SymbolView
+              name={
+                stopping
+                  ? { ios: "stop.fill", android: "stop" }
+                  : { ios: "arrow.up", android: "arrow_upward" }
+              }
+              size={18}
+              tintColor={colors.background}
+            />
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
 
 const COMPOSER_RADIUS = 26;
-const SEND_SIZE = 36;
+const ROUND_SIZE = 36;
 
 const styles = StyleSheet.create({
+  wrap: { marginHorizontal: space.md, marginBottom: space.xs, gap: space.xs },
+  failure: { fontSize: 13, paddingHorizontal: layout.sideMargin },
   bar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
     gap: space.sm,
-    marginHorizontal: space.md,
-    marginBottom: space.xs,
     paddingLeft: layout.sideMargin,
     paddingRight: space.sm,
-    paddingVertical: space.sm,
+    paddingTop: space.md,
+    paddingBottom: space.sm,
     borderRadius: COMPOSER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
   },
   input: {
-    flex: 1,
-    minHeight: SEND_SIZE,
+    minHeight: 26,
     maxHeight: 132,
-    paddingVertical: space.sm,
+    padding: 0,
     fontSize: 17,
   },
-  send: {
-    width: SEND_SIZE,
-    height: SEND_SIZE,
-    borderRadius: SEND_SIZE / 2,
+  actions: { flexDirection: "row", alignItems: "center", gap: space.xs },
+  spacer: { flex: 1 },
+  round: {
+    width: ROUND_SIZE,
+    height: ROUND_SIZE,
+    borderRadius: ROUND_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
   },

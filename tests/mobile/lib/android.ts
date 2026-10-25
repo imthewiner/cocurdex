@@ -193,6 +193,7 @@ export async function startAndroidTarget(
       },
       resetState: async () => {
         await shell("pm", "clear", APP_ID);
+        await shell("pm", "grant", APP_ID, "android.permission.CAMERA");
       },
       launchApp: async () => {
         const resolved = await shell(

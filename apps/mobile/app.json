@@ -45,6 +45,14 @@
           "recordAudioAndroid": false
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cocurdex lets you attach photos to messages you send to agents.",
+          "cameraPermission": "Cocurdex uses the camera to scan the pairing QR code on your computer.",
+          "microphonePermission": false
+        }
+      ],
       "expo-secure-store",
       "expo-router",
       [

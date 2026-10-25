@@ -1,13 +1,53 @@
+import type { ImageAttachment } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Image,
+  type ImageURISource,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
 import { MessageMarkdown } from "./message-markdown";
 import type { TranscriptItem } from "./transcript";
 
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
+export type ImageSource = (attachment: ImageAttachment) => ImageURISource;
+
+const IMAGE_ASPECT = { min: 0.5, max: 2 } as const;
+
+function imageAspect(attachment: ImageAttachment) {
+  if (attachment.width <= 0 || attachment.height <= 0) return 1;
+  const ratio = attachment.width / attachment.height;
+  return Math.min(IMAGE_ASPECT.max, Math.max(IMAGE_ASPECT.min, ratio));
+}
+
+function UserImages({
+  images,
+  imageSource,
+  colors,
+}: {
+  images: readonly ImageAttachment[];
+  imageSource: ImageSource;
+  colors: ThemeColors;
+}) {
+  return images.map((image) => (
+    <Image
+      key={image.id}
+      accessibilityLabel={image.name}
+      source={imageSource(image)}
+      style={[
+        styles.image,
+        { aspectRatio: imageAspect(image), backgroundColor: colors.muted },
+      ]}
+    />
+  ));
+}
 
 function ToolStatusIcon({
   status,
@@ -79,19 +119,30 @@ function ToolRow({
 function TranscriptRow({
   item,
   colors,
+  imageSource,
 }: {
   item: TranscriptItem;
   colors: ThemeColors;
+  imageSource: ImageSource;
 }) {
   if (item.kind === "user") {
     return (
-      <View
-        style={[styles.bubble, { backgroundColor: colors.muted }]}
-        testID={`transcript-user-${item.id}`}
-      >
-        <Text selectable style={[styles.body, { color: colors.foreground }]}>
-          {item.text}
-        </Text>
+      <View style={styles.userTurn} testID={`transcript-user-${item.id}`}>
+        <UserImages
+          images={item.images}
+          imageSource={imageSource}
+          colors={colors}
+        />
+        {item.text ? (
+          <View style={[styles.bubble, { backgroundColor: colors.muted }]}>
+            <Text
+              selectable
+              style={[styles.body, { color: colors.foreground }]}
+            >
+              {item.text}
+            </Text>
+          </View>
+        ) : null}
       </View>
     );
   }
@@ -109,9 +160,11 @@ function TranscriptRow({
 export function TranscriptView({
   items,
   footer,
+  imageSource,
 }: {
   items: readonly TranscriptItem[];
   footer?: React.ReactElement;
+  imageSource: ImageSource;
 }) {
   const colors = useThemeColors();
   const newestFirst = useMemo(() => [...items].reverse(), [items]);
@@ -123,7 +176,9 @@ export function TranscriptView({
       keyboardDismissMode="interactive"
       contentContainerStyle={styles.content}
       ListHeaderComponent={footer}
-      renderItem={({ item }) => <TranscriptRow item={item} colors={colors} />}
+      renderItem={({ item }) => (
+        <TranscriptRow item={item} colors={colors} imageSource={imageSource} />
+      )}
     />
   );
 }
@@ -134,8 +189,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     gap: space.md,
   },
+  userTurn: { alignItems: "flex-end", gap: space.xs },
+  image: { width: "60%", borderRadius: 16 },
   bubble: {
-    alignSelf: "flex-end",
     maxWidth: `${layout.bubbleMaxWidthRatio * 100}%`,
     paddingHorizontal: 14,
     paddingVertical: 9,

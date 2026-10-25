@@ -70,7 +70,12 @@ export default interface Resources {
       title: "Approve this on your computer";
     };
     composer: {
+      attach: "Attach Photo";
+      imageFailed: "The image couldn't be uploaded. Check the connection and try again.";
+      imageTooLarge: "That image is larger than 10 MB.";
+      imageUnsupported: "Only PNG, JPEG, GIF, and WebP images can be attached.";
       placeholder: "Reply to the agent";
+      removeImage: "Remove {{name}}";
       send: "Send";
       stop: "Stop";
     };
