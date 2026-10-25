@@ -28,7 +28,6 @@ export {
 // and re-exporting it here would drag that into every `@/components` import —
 // i.e. the startup path. Import it from "@/components/markdown-body-editor".
 export type {
-  FilePathCandidate,
   MarkdownFilePathHandlers,
   ResolvedFilePath,
 } from "./markdown-file-path";
