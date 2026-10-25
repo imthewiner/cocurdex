@@ -1,5 +1,6 @@
 export * from "./acp-agent-profiles";
 export * from "./acp-registry";
+export * from "./agent-brand-icons";
 export * from "./agent-permission-modes";
 export * from "./agent-role";
 export * from "./agent-runtime-capabilities";
