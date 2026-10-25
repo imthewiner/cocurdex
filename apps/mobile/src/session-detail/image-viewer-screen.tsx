@@ -1,12 +1,20 @@
 import CloseIcon from "@expo/material-symbols/close.xml";
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Image, Platform, StyleSheet, View } from "react-native";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSavedHosts } from "@/hosts";
 import { themeColors } from "@/theme";
 import { imageAttachmentSource } from "./image-attachments";
 
 const viewerColors = themeColors.dark;
+const MAX_ZOOM = 4;
 
 export function ImageViewerScreen({
   hostId,
@@ -21,6 +29,7 @@ export function ImageViewerScreen({
 }) {
   const { t } = useTranslation("sessions");
   const host = useSavedHosts().find((saved) => saved.hostId === hostId);
+  const { width, height } = useWindowDimensions();
   return (
     <>
       <Stack.Toolbar placement="left">
@@ -30,21 +39,30 @@ export function ImageViewerScreen({
           onPress={onClose}
         />
       </Stack.Toolbar>
-      <View style={styles.fill}>
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={styles.center}
+        maximumZoomScale={MAX_ZOOM}
+        minimumZoomScale={1}
+        centerContent
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+      >
         {host ? (
           <Image
             accessibilityLabel={name}
             testID="image-viewer"
             resizeMode="contain"
             source={imageAttachmentSource(host, { filePath })}
-            style={styles.fill}
+            style={{ width, height }}
           />
         ) : null}
-      </View>
+      </ScrollView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: viewerColors.background },
+  center: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
 });

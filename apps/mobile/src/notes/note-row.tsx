@@ -3,7 +3,7 @@ import { layout, space, useThemeColors } from "@/theme";
 import { useAgeLabel } from "@/ui";
 import type { NoteRow } from "./note-sections";
 
-const INDENT = 16;
+const INDENT = 20;
 
 export function NoteRowView({
   row,
@@ -19,7 +19,9 @@ export function NoteRowView({
     <Pressable
       accessibilityLabel={row.note.title}
       accessibilityRole="button"
-      accessibilityValue={{ text: age }}
+      accessibilityValue={{
+        text: [row.note.excerpt, age].filter(Boolean).join(", "),
+      }}
       disabled={folder}
       onPress={onPress}
       style={({ pressed }) => [
@@ -46,6 +48,14 @@ export function NoteRowView({
           </Text>
         )}
       </View>
+      {row.note.excerpt ? (
+        <Text
+          numberOfLines={1}
+          style={[styles.excerpt, { color: colors.mutedForeground }]}
+        >
+          {row.note.excerpt}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -54,10 +64,12 @@ const styles = StyleSheet.create({
   row: {
     minHeight: 44,
     justifyContent: "center",
+    gap: 2,
     paddingVertical: space.sm,
     paddingRight: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
   title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
+  excerpt: { fontSize: 15, lineHeight: 20 },
 });

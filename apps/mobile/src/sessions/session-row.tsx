@@ -85,5 +85,5 @@ const styles = StyleSheet.create({
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
   title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
-  detail: { flex: 1, fontSize: 14, lineHeight: 20 },
+  detail: { flex: 1, fontSize: 15, lineHeight: 20 },
 });

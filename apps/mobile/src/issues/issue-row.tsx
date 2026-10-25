@@ -33,7 +33,7 @@ export function IssueRowView({
       </View>
       <View style={styles.text}>
         <Text
-          numberOfLines={2}
+          numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
         >
           {issue.title}
