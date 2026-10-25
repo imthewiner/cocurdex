@@ -42,6 +42,7 @@ export {
 } from "./mermaid-theme";
 export * from "./network-proxy";
 export * from "./network-proxy-runtime";
+export * from "./note-excerpt";
 export * from "./note-markdown";
 export * from "./notes";
 export * from "./orchestration";

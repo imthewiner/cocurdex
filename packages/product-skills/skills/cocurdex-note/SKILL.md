@@ -18,6 +18,9 @@ cocurdex note backlinks <id> --json
 cocurdex note tags [<id>] --json
 ```
 
+`note list` returns summaries without bodies; each note with prose carries an
+`excerpt` of its first lines, so skim it before deciding which note to `show`.
+
 Any note can hold child pages. A child page always belongs to its top-level
 page's workspace: `--workspace` applies only to top-level notes, and moving a
 note under another page moves its whole subtree into that page's workspace.
