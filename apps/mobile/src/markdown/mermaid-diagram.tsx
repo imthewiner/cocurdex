@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { space } from "@/theme";
-import { mermaidDocument, parseMermaidMessage } from "./mermaid-document";
+import {
+  allowsMermaidNavigation,
+  mermaidDocument,
+  parseMermaidMessage,
+} from "./mermaid-document";
 
 type DiagramState = { kind: "rendering" } | { kind: "ready"; height: number };
 
@@ -34,6 +38,8 @@ export function MermaidDiagram({
         scrollEnabled={false}
         javaScriptEnabled
         setSupportMultipleWindows={false}
+        allowsLinkPreview={false}
+        onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
         style={styles.web}
         onError={() => setFailed(true)}
         onMessage={({ nativeEvent }) => {

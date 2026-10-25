@@ -7,6 +7,19 @@ import {
 export const MERMAID_SCRIPT_URL =
   "https://cdn.jsdelivr.net/npm/mermaid@11.16.1/dist/mermaid.min.js";
 
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  `script-src ${MERMAID_SCRIPT_URL} 'unsafe-inline'`,
+  "style-src 'unsafe-inline'",
+  "img-src data: blob:",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join("; ");
+
+export function allowsMermaidNavigation(url: string) {
+  return url === "about:blank";
+}
+
 export type MermaidMessage =
   | { type: "size"; height: number }
   | { type: "error" };
@@ -33,6 +46,7 @@ export function mermaidDocument(source: string, appearance: MermaidAppearance) {
 <html>
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <style>
 html,body{margin:0;padding:0;background:transparent}
