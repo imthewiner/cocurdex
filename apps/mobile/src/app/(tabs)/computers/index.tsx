@@ -1,14 +1,18 @@
 import AddIcon from "@expo/material-symbols/add.xml";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { EmptyHosts, HostsList, useSavedHosts } from "@/hosts";
+import {
+  EmptyHosts,
+  HostsList,
+  usePairingRoutes,
+  useSavedHosts,
+} from "@/hosts";
 
 export default function ComputersScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const { openPaste, openScan } = usePairingRoutes();
   const hasHosts = useSavedHosts().length > 0;
-  const openPairing = () => router.push("/pair");
 
   return (
     <>
@@ -16,10 +20,14 @@ export default function ComputersScreen() {
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "plus" : AddIcon}
           accessibilityLabel={t("screens.pair")}
-          onPress={openPairing}
+          onPress={openPaste}
         />
       </Stack.Toolbar>
-      {hasHosts ? <HostsList /> : <EmptyHosts onPair={openPairing} />}
+      {hasHosts ? (
+        <HostsList />
+      ) : (
+        <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
+      )}
     </>
   );
 }

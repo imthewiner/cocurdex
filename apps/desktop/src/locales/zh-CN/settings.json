@@ -332,7 +332,7 @@
     },
     "pair": {
       "create": "生成配对码",
-      "createdDescription": "在另一台设备上打开链接，或输入配对码。配对码只能使用一次。",
+      "createdDescription": "用手机上的 Cocurdex 扫描二维码，或在另一台设备上打开链接。配对码只能使用一次。",
       "description": "选择新设备可以做什么，之后随时可以吊销。",
       "done": "完成",
       "enableRemoteFirst": "开启远程访问后，才能得到另一台设备可以打开的链接。",
@@ -341,6 +341,7 @@
       "label": "设备名称",
       "labelPlaceholder": "例如：我的手机",
       "open": "配对设备",
+      "qrLabel": "{{address}} 的配对二维码",
       "title": "配对设备",
       "ttl": "配对码有效期",
       "ttlMinutes_other": "{{count}} 分钟"

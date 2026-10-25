@@ -1,17 +1,22 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EmptyHosts, HostSwitcher, useCurrentHost } from "@/hosts";
+import {
+  EmptyHosts,
+  HostSwitcher,
+  useCurrentHost,
+  usePairingRoutes,
+} from "@/hosts";
 import { SessionList, sessionsStore } from "@/sessions";
 
 export default function SessionsScreen() {
   const { t } = useTranslation("sessions");
-  const router = useRouter();
+  const { openPaste, openScan } = usePairingRoutes();
   const host = useCurrentHost();
   const [query, setQuery] = useState("");
-  const openPairing = () => router.push("/pair");
-
-  if (!host) return <EmptyHosts onPair={openPairing} />;
+  if (!host) {
+    return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
+  }
 
   return (
     <>
@@ -25,7 +30,7 @@ export default function SessionsScreen() {
           },
         }}
       />
-      <HostSwitcher current={host} onPair={openPairing} />
+      <HostSwitcher current={host} onPair={openPaste} />
       <SessionList
         host={host}
         query={query}

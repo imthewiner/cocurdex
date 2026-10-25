@@ -3,7 +3,7 @@ import "@/i18n";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, useColorScheme } from "react-native";
-import { navigationThemes, useThemeColors } from "@/theme";
+import { navigationThemes, themeColors, useThemeColors } from "@/theme";
 
 const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
@@ -34,6 +34,16 @@ export default function RootLayout() {
             presentation: PAIR_PRESENTATION,
             sheetAllowedDetents: [0.6, 1],
             sheetGrabberVisible: true,
+          }}
+        />
+        <Stack.Screen
+          name="scan"
+          options={{
+            title: "",
+            presentation: "fullScreenModal",
+            headerTransparent: true,
+            headerTintColor: themeColors.dark.foreground,
+            statusBarStyle: "light",
           }}
         />
       </Stack>

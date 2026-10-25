@@ -2105,7 +2105,7 @@ export default interface Resources {
       };
       pair: {
         create: "Create pairing code";
-        createdDescription: "Open a link on the other device, or enter the code there. The code works once.";
+        createdDescription: "Scan the QR code with the Cocurdex app on your phone, or open a link on the other device. The code works once.";
         description: "Choose what the new device may do. You can revoke it at any time.";
         done: "Done";
         enableRemoteFirst: "Turn on remote access to get a link the other device can open.";
@@ -2114,6 +2114,7 @@ export default interface Resources {
         label: "Device name";
         labelPlaceholder: "e.g. My phone";
         open: "Pair device";
+        qrLabel: "Pairing QR code for {{address}}";
         title: "Pair a device";
         ttl: "Code valid for";
         ttlMinutes_one: "{{count}} minute";
