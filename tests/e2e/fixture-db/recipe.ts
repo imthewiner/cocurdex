@@ -52,7 +52,18 @@ export interface FixtureSession {
   pinned?: boolean;
   archived?: boolean;
   interruptedTurn?: FixtureInterruptedTurn;
+  roleId?: string;
 }
+
+export interface FixtureRole {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+export const FIXTURE_ROLES: FixtureRole[] = [
+  { id: "fixture-role-reviewer", name: "Checkout reviewer", emoji: "🕵️" },
+];
 
 export interface FixtureNote {
   key: string;
@@ -336,6 +347,7 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
     id: "fixture-session-checkout-bug",
     title: "Investigate failing checkout",
     kind: "main",
+    roleId: "fixture-role-reviewer",
     turns: [
       {
         messageId: "fixture-message-checkout-1",

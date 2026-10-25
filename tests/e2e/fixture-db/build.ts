@@ -23,6 +23,7 @@ import {
   FIXTURE_ISSUES,
   FIXTURE_LABELS,
   FIXTURE_NOTES,
+  FIXTURE_ROLES,
   FIXTURE_SESSIONS,
   FIXTURE_WORKSPACE_ID,
   FIXTURE_WORKSPACE_NAME,
@@ -75,6 +76,32 @@ function finishedRuns(events: CocurdexDaemonEvent[], sessionId: string) {
   ).length;
 }
 
+async function seedRoles(daemon: DaemonProcess) {
+  for (const role of FIXTURE_ROLES) {
+    await requestDaemon(
+      "agentRole.save",
+      {
+        id: role.id,
+        name: role.name,
+        avatar: { kind: "emoji", emoji: role.emoji, color: "violet" },
+        agentId: "pi",
+        providerId: null,
+        modelId: null,
+        modelName: null,
+        permissionMode: null,
+        sessionModeId: null,
+        reasoningEffort: null,
+        serviceTier: null,
+        fastMode: null,
+        thinkingLevel: null,
+        openCodeAgent: null,
+        openCodeVariant: null,
+      },
+      daemon.options,
+    );
+  }
+}
+
 async function seedSession(
   daemon: DaemonProcess,
   stub: StubLlmServer,
@@ -93,6 +120,7 @@ async function seedSession(
       agentType: "pi",
       writeMode: fixture.kind === "chat" ? "read-only" : "native-write",
       sessionModeId: null,
+      agentRoleId: fixture.roleId ?? null,
       providerSnapshot,
     },
     daemon.options,
@@ -397,6 +425,7 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
         daemon.options,
       );
     }
+    await seedRoles(daemon);
     const teammateIds: string[] = [];
     for (const session of FIXTURE_SESSIONS) {
       teammateIds.push(...(await seedSession(daemon, stub, events, session)));
