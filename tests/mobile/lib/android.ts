@@ -13,6 +13,10 @@ const LAST_CONSOLE_PORT = 5682;
 const EMULATOR_OUTPUT_LIMIT = 16_384;
 const IME_DISABLE_TIMEOUT_MS = 15_000;
 
+export function emulatorAbi(arch: NodeJS.Architecture) {
+  return arch === "arm64" ? "arm64-v8a" : "x86_64";
+}
+
 function emulatorGpuMode(platform: NodeJS.Platform) {
   return platform === "linux" ? "swiftshader_indirect" : "auto";
 }
@@ -75,11 +79,16 @@ export async function buildAndroidApp(mobileDir: string) {
     { cwd: mobileDir, env, inherit: true },
   );
   const gradlew = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
-  await runCommand(gradlew, ["assembleRelease", "--console=plain"], {
-    cwd: path.join(mobileDir, "android"),
-    env,
-    inherit: true,
-  });
+  const architectures = `-PreactNativeArchitectures=${emulatorAbi(process.arch)}`;
+  await runCommand(
+    gradlew,
+    ["assembleRelease", architectures, "--console=plain"],
+    {
+      cwd: path.join(mobileDir, "android"),
+      env,
+      inherit: true,
+    },
+  );
 }
 
 export function androidApkPath(mobileDir: string) {
