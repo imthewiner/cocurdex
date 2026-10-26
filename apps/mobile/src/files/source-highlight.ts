@@ -15,7 +15,7 @@ const THEMES: Record<SourceScheme, string> = {
   light: "github-light-default",
   dark: "github-dark-default",
 };
-const CHUNK_LINES = 200;
+const CHUNK_LINES = 40;
 const MAX_HIGHLIGHTED_LINES = 20_000;
 const MAX_TOKENIZED_LINE_LENGTH = 1_000;
 const CACHED_FILES = 8;
@@ -55,16 +55,23 @@ function createHighlightStore(
 ): HighlightStore {
   const listeners = new Set<() => void>();
   let tokens: SourceTokens = EMPTY;
-  let started = false;
+  let grammarState: GrammarState | undefined;
+  let running = false;
+  let finished = false;
 
   async function run() {
     const loader = loadSourceLanguage(language);
-    if (!loader) return;
+    if (!loader) {
+      finished = true;
+      return;
+    }
     const shiki = await loadHighlighter();
     await shiki.loadLanguage(loader);
-    let grammarState: GrammarState | undefined;
     const limit = Math.min(lines.length, MAX_HIGHLIGHTED_LINES);
-    for (let start = 0; start < limit; start += CHUNK_LINES) {
+    while (tokens.length < limit && listeners.size > 0) {
+      await nextFrame();
+      if (listeners.size === 0) return;
+      const start = tokens.length;
       const chunk = lines.slice(start, start + CHUNK_LINES).join("\n");
       const result = shiki.codeToTokens(chunk, {
         lang: language,
@@ -75,17 +82,26 @@ function createHighlightStore(
       grammarState = result.grammarState;
       tokens = [...tokens, ...result.tokens];
       for (const listener of [...listeners]) listener();
-      await nextFrame();
     }
+    finished = tokens.length >= limit;
+  }
+
+  function resume() {
+    if (running || finished) return;
+    running = true;
+    void run()
+      .catch(() => {
+        finished = true;
+      })
+      .finally(() => {
+        running = false;
+      });
   }
 
   return {
     subscribe(listener) {
       listeners.add(listener);
-      if (!started) {
-        started = true;
-        void run().catch(() => {});
-      }
+      resume();
       return () => listeners.delete(listener);
     },
     getSnapshot: () => tokens,

@@ -161,6 +161,7 @@ function DockBody({
       <DockTitle>{t("plan.title")}</DockTitle>
       {record.planContent ? (
         <ScrollView
+          scrollsChildToFocus={false}
           style={[styles.plan, { backgroundColor: colors.muted }]}
           contentContainerStyle={styles.planContent}
         >

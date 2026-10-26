@@ -58,6 +58,48 @@ function useFailureText(): Record<FileLoadFailure, string> {
   };
 }
 
+function FileToolbar({
+  markdown,
+  preview,
+  text,
+  onTogglePreview,
+}: {
+  markdown: boolean;
+  preview: boolean;
+  text: string | null;
+  onTogglePreview(): void;
+}) {
+  const { t } = useTranslation("files");
+  return (
+    <Stack.Toolbar placement="right">
+      {markdown ? (
+        <Stack.Toolbar.Button
+          icon={
+            Platform.OS === "ios"
+              ? preview
+                ? "chevron.left.forwardslash.chevron.right"
+                : "eye"
+              : preview
+                ? CodeIcon
+                : VisibilityIcon
+          }
+          accessibilityLabel={preview ? t("showSource") : t("showPreview")}
+          disabled={text === null}
+          onPress={onTogglePreview}
+        />
+      ) : null}
+      <Stack.Toolbar.Button
+        icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
+        accessibilityLabel={t("copy")}
+        disabled={text === null}
+        onPress={() => {
+          if (text !== null) void Clipboard.setStringAsync(text);
+        }}
+      />
+    </Stack.Toolbar>
+  );
+}
+
 function TextFile({
   host,
   filePath,
@@ -74,26 +116,50 @@ function TextFile({
   const failures = useFailureText();
   const markdown = isMarkdownFile(pathBaseName(filePath));
   const [preview, setPreview] = useState(markdown && line === null);
+  const loaded = content.data?.kind === "text" ? content.data : null;
+  const toolbar = (
+    <FileToolbar
+      markdown={markdown}
+      preview={preview}
+      text={loaded?.text ?? null}
+      onTogglePreview={() => setPreview((current) => !current)}
+    />
+  );
 
   if (content.data === undefined) {
-    if (!content.error) return <View style={styles.fill} />;
+    if (!content.error) {
+      return (
+        <>
+          {toolbar}
+          <View style={styles.fill} />
+        </>
+      );
+    }
     const reason =
       content.error instanceof FileLoadError ? content.error.reason : "failed";
     return (
-      <ListNotice
-        title={failures[reason]}
-        action={
-          reason === "failed"
-            ? { label: t("retry"), onPress: () => void content.mutate() }
-            : undefined
-        }
-      />
+      <>
+        {toolbar}
+        <ListNotice
+          title={failures[reason]}
+          action={
+            reason === "failed"
+              ? { label: t("retry"), onPress: () => void content.mutate() }
+              : undefined
+          }
+        />
+      </>
     );
   }
-  if (content.data.kind === "binary") {
-    return <ListNotice title={t("binary")} />;
+  if (!loaded) {
+    return (
+      <>
+        {toolbar}
+        <ListNotice title={t("binary")} />
+      </>
+    );
   }
-  const { text, lines, truncated } = content.data;
+  const { text, lines, truncated } = loaded;
   const footer = truncated ? (
     <Text style={[styles.notice, { color: colors.mutedForeground }]}>
       {t("truncated")}
@@ -102,33 +168,13 @@ function TextFile({
 
   return (
     <>
-      <Stack.Toolbar placement="right">
-        {markdown ? (
-          <Stack.Toolbar.Button
-            icon={
-              Platform.OS === "ios"
-                ? preview
-                  ? "chevron.left.forwardslash.chevron.right"
-                  : "eye"
-                : preview
-                  ? CodeIcon
-                  : VisibilityIcon
-            }
-            accessibilityLabel={preview ? t("showSource") : t("showPreview")}
-            onPress={() => setPreview((current) => !current)}
-          />
-        ) : null}
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
-          accessibilityLabel={t("copy")}
-          onPress={() => void Clipboard.setStringAsync(text)}
-        />
-      </Stack.Toolbar>
+      {toolbar}
       {preview ? (
         <ScrollView
           style={styles.fill}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.markdown}
+          scrollsChildToFocus={false}
         >
           <MarkdownText
             markdown={text}
@@ -160,16 +206,10 @@ export function FileScreen({
   filePath: string;
   line: number | null;
 }) {
-  const name = pathBaseName(filePath);
-  return (
-    <>
-      <Stack.Screen options={{ title: name }} />
-      {workspaceImageMimeType(filePath) ? (
-        <ImageFile host={host} filePath={filePath} />
-      ) : (
-        <TextFile host={host} filePath={filePath} line={line} />
-      )}
-    </>
+  return workspaceImageMimeType(filePath) ? (
+    <ImageFile host={host} filePath={filePath} />
+  ) : (
+    <TextFile host={host} filePath={filePath} line={line} />
   );
 }
 

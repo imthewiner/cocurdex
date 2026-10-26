@@ -1,4 +1,4 @@
-import { type ReactElement, useRef } from "react";
+import { memo, type ReactElement, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   type ListRenderItemInfo,
@@ -16,8 +16,12 @@ import {
 
 const FONT_STYLE_ITALIC = 1;
 const FONT_STYLE_BOLD = 2;
+const LINES_ABOVE_FOCUS = 40;
+const LINES_PER_PREPEND = 200;
+const LINES_BELOW_FIRST_SCREEN = 40;
+const FOCUS_VIEW_POSITION = 0.3;
 
-function SourceLine({
+const SourceLine = memo(function SourceLine({
   index,
   line,
   tokens,
@@ -67,6 +71,10 @@ function SourceLine({
       </Text>
     </View>
   );
+});
+
+function firstRenderedLine(focusIndex: number | null) {
+  return focusIndex === null ? 0 : Math.max(0, focusIndex - LINES_ABOVE_FOCUS);
 }
 
 export function SourceView({
@@ -93,51 +101,68 @@ export function SourceView({
       ? focusLine - 1
       : null;
 
-  const reveal = () => {
-    if (revealed.current || focusIndex === null) return;
-    revealed.current = true;
+  const [firstLine, setFirstLine] = useState(() =>
+    firstRenderedLine(focusIndex),
+  );
+  const rendered = useMemo(
+    () => (firstLine === 0 ? lines : lines.slice(firstLine)),
+    [lines, firstLine],
+  );
+  const focusRow = focusIndex === null ? null : focusIndex - firstLine;
+
+  const scrollToFocus = (row: number) =>
     list.current?.scrollToIndex({
-      index: focusIndex,
-      viewPosition: 0.3,
+      index: row,
+      viewPosition: FOCUS_VIEW_POSITION,
       animated: false,
     });
+
+  const reveal = () => {
+    if (revealed.current || focusRow === null) return;
+    revealed.current = true;
+    scrollToFocus(focusRow);
+  };
+
+  const prependEarlierLines = () => {
+    if (!revealed.current || firstLine === 0) return;
+    setFirstLine(Math.max(0, firstLine - LINES_PER_PREPEND));
   };
 
   return (
     <FlatList
       ref={list}
-      data={lines as string[]}
+      data={rendered as string[]}
       extraData={tokens}
-      keyExtractor={(_line, index) => String(index)}
+      keyExtractor={(_line, row) => String(firstLine + row)}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.content}
-      initialNumToRender={focusIndex === null ? 40 : focusIndex + 20}
+      scrollsChildToFocus={false}
+      initialNumToRender={(focusRow ?? 0) + LINES_BELOW_FIRST_SCREEN}
+      maintainVisibleContentPosition={
+        firstLine > 0 ? { minIndexForVisible: 0 } : undefined
+      }
+      onStartReached={prependEarlierLines}
       onContentSizeChange={reveal}
       onScrollToIndexFailed={({ index, averageItemLength }) => {
         list.current?.scrollToOffset({
           offset: index * averageItemLength,
           animated: false,
         });
-        setTimeout(
-          () =>
-            list.current?.scrollToIndex({
-              index,
-              viewPosition: 0.3,
-              animated: false,
-            }),
-          50,
-        );
+        requestAnimationFrame(() => scrollToFocus(index));
       }}
       ListFooterComponent={footer ?? undefined}
-      renderItem={({ item, index }: ListRenderItemInfo<string>) => (
-        <SourceLine
-          index={index}
-          line={item}
-          tokens={tokens[index]}
-          digits={digits}
-          focused={index === focusIndex}
-        />
-      )}
+      renderItem={({ item, index: row }: ListRenderItemInfo<string>) => {
+        const index = firstLine + row;
+        return (
+          <SourceLine
+            index={index}
+            line={item}
+            tokens={tokens[index]}
+            digits={digits}
+            focused={index === focusIndex}
+          />
+        );
+      }}
     />
   );
 }

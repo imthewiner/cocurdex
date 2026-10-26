@@ -229,6 +229,7 @@ export function ToolCallScreen({
         </Stack.Toolbar>
       ) : null}
       <ScrollView
+        scrollsChildToFocus={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >

@@ -346,6 +346,7 @@ export function TranscriptView({
     <FlatList
       ref={list}
       inverted
+      scrollsChildToFocus={false}
       onScroll={({ nativeEvent }) => {
         offset.current = nativeEvent.contentOffset.y;
       }}
