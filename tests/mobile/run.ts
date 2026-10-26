@@ -126,6 +126,7 @@ function flowLabels(locale: SupportedLocale) {
     EMPTY_SCAN: hosts.empty.scan,
     SCAN_TITLE: hosts.scan.title,
     SCAN_PASTE: hosts.scan.paste,
+    SCAN_UNREACHABLE: hosts.pair.failure.unreachable,
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],

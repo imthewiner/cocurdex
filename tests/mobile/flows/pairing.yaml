@@ -12,6 +12,14 @@ appId: dev.cocurdex.mobile
           timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: scan
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: ${SCAN_UNREACHABLE}
+          timeout: 15000
+      - takeScreenshot: scan-unreachable
 - retry:
     maxRetries: 2
     commands:

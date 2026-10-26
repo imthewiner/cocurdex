@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { killProcessTree, spawnCommand } from "@cocurdex/agent-adapters";
@@ -12,6 +13,9 @@ const FIRST_CONSOLE_PORT = 5554;
 const LAST_CONSOLE_PORT = 5682;
 const EMULATOR_OUTPUT_LIMIT = 16_384;
 const IME_DISABLE_TIMEOUT_MS = 15_000;
+const PAIRING_QR_FIXTURE = createRequire(import.meta.url).resolve(
+  "../fixtures/pairing-qr.png",
+);
 
 export function emulatorAbi(arch: NodeJS.Architecture) {
   return arch === "arm64" ? "arm64-v8a" : "x86_64";
@@ -142,7 +146,9 @@ export async function startAndroidTarget(
       ...(options.visible ? [] : ["-no-window"]),
       "-no-audio",
       "-no-boot-anim",
-      "-no-snapshot-save",
+      "-no-snapshot",
+      "-camera-back",
+      `imagefile:${PAIRING_QR_FIXTURE}`,
       "-gpu",
       emulatorGpuMode(process.platform),
     ],
