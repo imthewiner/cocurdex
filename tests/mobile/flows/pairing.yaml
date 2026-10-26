@@ -182,6 +182,8 @@ appId: dev.cocurdex.mobile
           visible: ${FILE_SOURCE_TEXT}
           timeout: 10000
 - waitForAnimationToEnd
+- assertVisible:
+    id: source-horizontal-scroll
 - takeScreenshot: file-source
 - runFlow:
     when:

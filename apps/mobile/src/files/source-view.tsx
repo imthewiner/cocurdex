@@ -2,12 +2,15 @@ import { memo, type ReactElement, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   type ListRenderItemInfo,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { MONO_FONT } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
+import { expandTabs, sourceColumns } from "./source-columns";
 import {
   type SourceScheme,
   type SourceTokens,
@@ -23,6 +26,14 @@ const FOCUS_VIEW_POSITION = 0.3;
 const LINE_HEIGHT = 20;
 const LINES_HIGHLIGHTED_AHEAD = 80;
 const WINDOW_SCREENS = 5;
+const CODE_FONT_SIZE = 13;
+const CHAR_WIDTH = CODE_FONT_SIZE * 0.61;
+const MAX_COLUMNS = 400;
+const GUTTER_DIGIT_WIDTH = 8;
+
+function gutterWidth(digits: number) {
+  return digits * GUTTER_DIGIT_WIDTH + space.sm;
+}
 
 const SourceLine = memo(function SourceLine({
   index,
@@ -46,7 +57,7 @@ const SourceLine = memo(function SourceLine({
       <Text
         style={[
           styles.number,
-          { width: digits * 8 + space.sm, color: colors.mutedForeground },
+          { width: gutterWidth(digits), color: colors.mutedForeground },
         ]}
       >
         {index + 1}
@@ -67,10 +78,10 @@ const SourceLine = memo(function SourceLine({
                     (token.fontStyle ?? 0) & FONT_STYLE_BOLD ? "600" : "400",
                 }}
               >
-                {token.content}
+                {expandTabs(token.content)}
               </Text>
             ))
-          : line || " "}
+          : expandTabs(line) || " "}
       </Text>
     </View>
   );
@@ -99,6 +110,21 @@ export function SourceView({
   const list = useRef<FlatList<string>>(null);
   const revealed = useRef(false);
   const digits = String(lines.length).length;
+  const { width: windowWidth } = useWindowDimensions();
+  const columns = useMemo(
+    () => Math.min(sourceColumns(lines), MAX_COLUMNS),
+    [lines],
+  );
+  const contentWidth = Math.max(
+    windowWidth,
+    Math.ceil(
+      space.sm +
+        gutterWidth(digits) +
+        space.md +
+        columns * CHAR_WIDTH +
+        layout.sideMargin,
+    ),
+  );
   const focusIndex =
     focusLine !== null && focusLine >= 1 && focusLine <= lines.length
       ? focusLine - 1
@@ -139,56 +165,65 @@ export function SourceView({
   };
 
   return (
-    <FlatList
-      ref={list}
-      data={rendered as string[]}
-      extraData={tokens}
-      keyExtractor={(_line, row) => String(firstLine + row)}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={styles.content}
-      scrollsChildToFocus={false}
-      initialNumToRender={(focusRow ?? 0) + LINES_BELOW_FIRST_SCREEN}
-      windowSize={WINDOW_SCREENS}
-      maintainVisibleContentPosition={
-        firstLine > 0 ? { minIndexForVisible: 0 } : undefined
-      }
-      onStartReached={prependEarlierLines}
-      onContentSizeChange={() => {
-        reveal();
-        request(
-          (focusIndex ?? 0) +
-            LINES_BELOW_FIRST_SCREEN +
-            LINES_HIGHLIGHTED_AHEAD,
-        );
-      }}
-      onScroll={({ nativeEvent }) =>
-        highlightThrough(
-          nativeEvent.contentOffset.y,
-          nativeEvent.layoutMeasurement.height,
-        )
-      }
-      scrollEventThrottle={100}
-      onScrollToIndexFailed={({ index, averageItemLength }) => {
-        list.current?.scrollToOffset({
-          offset: index * averageItemLength,
-          animated: false,
-        });
-        requestAnimationFrame(() => scrollToFocus(index));
-      }}
-      ListFooterComponent={footer ?? undefined}
-      renderItem={({ item, index: row }: ListRenderItemInfo<string>) => {
-        const index = firstLine + row;
-        return (
-          <SourceLine
-            index={index}
-            line={item}
-            tokens={tokens[index]}
-            digits={digits}
-            focused={index === focusIndex}
-          />
-        );
-      }}
-    />
+    <ScrollView
+      horizontal
+      directionalLockEnabled
+      showsHorizontalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="never"
+      testID="source-horizontal-scroll"
+    >
+      <FlatList
+        ref={list}
+        style={{ width: contentWidth }}
+        data={rendered as string[]}
+        extraData={tokens}
+        keyExtractor={(_line, row) => String(firstLine + row)}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}
+        scrollsChildToFocus={false}
+        initialNumToRender={(focusRow ?? 0) + LINES_BELOW_FIRST_SCREEN}
+        windowSize={WINDOW_SCREENS}
+        maintainVisibleContentPosition={
+          firstLine > 0 ? { minIndexForVisible: 0 } : undefined
+        }
+        onStartReached={prependEarlierLines}
+        onContentSizeChange={() => {
+          reveal();
+          request(
+            (focusIndex ?? 0) +
+              LINES_BELOW_FIRST_SCREEN +
+              LINES_HIGHLIGHTED_AHEAD,
+          );
+        }}
+        onScroll={({ nativeEvent }) =>
+          highlightThrough(
+            nativeEvent.contentOffset.y,
+            nativeEvent.layoutMeasurement.height,
+          )
+        }
+        scrollEventThrottle={100}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          list.current?.scrollToOffset({
+            offset: index * averageItemLength,
+            animated: false,
+          });
+          requestAnimationFrame(() => scrollToFocus(index));
+        }}
+        ListFooterComponent={footer ?? undefined}
+        renderItem={({ item, index: row }: ListRenderItemInfo<string>) => {
+          const index = firstLine + row;
+          return (
+            <SourceLine
+              index={index}
+              line={item}
+              tokens={tokens[index]}
+              digits={digits}
+              focused={index === focusIndex}
+            />
+          );
+        }}
+      />
+    </ScrollView>
   );
 }
 
@@ -209,7 +244,7 @@ const styles = StyleSheet.create({
   code: {
     flex: 1,
     fontFamily: MONO_FONT,
-    fontSize: 13,
+    fontSize: CODE_FONT_SIZE,
     lineHeight: LINE_HEIGHT,
   },
 });
