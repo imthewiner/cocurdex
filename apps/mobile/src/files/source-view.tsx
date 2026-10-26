@@ -20,6 +20,8 @@ const LINES_ABOVE_FOCUS = 40;
 const LINES_PER_PREPEND = 200;
 const LINES_BELOW_FIRST_SCREEN = 40;
 const FOCUS_VIEW_POSITION = 0.3;
+const LINE_HEIGHT = 20;
+const LINES_HIGHLIGHTED_AHEAD = 80;
 
 const SourceLine = memo(function SourceLine({
   index,
@@ -92,7 +94,7 @@ export function SourceView({
   focusLine: number | null;
   footer?: ReactElement | null;
 }) {
-  const tokens = useSourceTokens(fileKey, lines, language, scheme);
+  const { tokens, request } = useSourceTokens(fileKey, lines, language, scheme);
   const list = useRef<FlatList<string>>(null);
   const revealed = useRef(false);
   const digits = String(lines.length).length;
@@ -123,6 +125,13 @@ export function SourceView({
     scrollToFocus(focusRow);
   };
 
+  const highlightThrough = (offset: number, viewport: number) =>
+    request(
+      firstLine +
+        Math.ceil((offset + viewport) / LINE_HEIGHT) +
+        LINES_HIGHLIGHTED_AHEAD,
+    );
+
   const prependEarlierLines = () => {
     if (!revealed.current || firstLine === 0) return;
     setFirstLine(Math.max(0, firstLine - LINES_PER_PREPEND));
@@ -142,7 +151,21 @@ export function SourceView({
         firstLine > 0 ? { minIndexForVisible: 0 } : undefined
       }
       onStartReached={prependEarlierLines}
-      onContentSizeChange={reveal}
+      onContentSizeChange={() => {
+        reveal();
+        request(
+          (focusIndex ?? 0) +
+            LINES_BELOW_FIRST_SCREEN +
+            LINES_HIGHLIGHTED_AHEAD,
+        );
+      }}
+      onScroll={({ nativeEvent }) =>
+        highlightThrough(
+          nativeEvent.contentOffset.y,
+          nativeEvent.layoutMeasurement.height,
+        )
+      }
+      scrollEventThrottle={100}
       onScrollToIndexFailed={({ index, averageItemLength }) => {
         list.current?.scrollToOffset({
           offset: index * averageItemLength,
@@ -177,9 +200,14 @@ const styles = StyleSheet.create({
   number: {
     fontFamily: MONO_FONT,
     fontSize: 12,
-    lineHeight: 20,
+    lineHeight: LINE_HEIGHT,
     textAlign: "right",
     marginRight: space.md,
   },
-  code: { flex: 1, fontFamily: MONO_FONT, fontSize: 13, lineHeight: 20 },
+  code: {
+    flex: 1,
+    fontFamily: MONO_FONT,
+    fontSize: 13,
+    lineHeight: LINE_HEIGHT,
+  },
 });

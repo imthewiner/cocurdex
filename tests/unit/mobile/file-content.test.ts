@@ -1,9 +1,9 @@
+import { sourceLanguage } from "@cocurdex/mobile/internal/files/source-language";
 import {
   FileLoadError,
   MAX_PREVIEW_BYTES,
   readFileContent,
-} from "@cocurdex/mobile/internal/files/file-content";
-import { sourceLanguage } from "@cocurdex/mobile/internal/files/source-language";
+} from "@cocurdex/mobile/internal/workspace-files/file-content";
 import { describe, expect, it } from "vitest";
 
 describe("readFileContent", () => {

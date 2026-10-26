@@ -6,7 +6,7 @@ import { LinkedEntitiesList } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { useHostSessions } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, useAgeLabel } from "@/ui";
+import { ListNotice, PendingIndicator, useAgeLabel } from "@/ui";
 import { useNote, useNotes } from "./note-queries";
 
 export function NoteScreen({
@@ -28,7 +28,7 @@ export function NoteScreen({
 
   if (note.data === null) return <ListNotice title={t("missing")} />;
   if (!shown) {
-    if (!note.error) return <View style={styles.fill} />;
+    if (!note.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}

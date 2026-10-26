@@ -19,9 +19,13 @@ import {
 } from "react-native";
 import { MarkdownText } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice } from "@/ui";
-import { FileLoadError, type FileLoadFailure } from "./file-content";
-import { useFileContent, workspaceFileSource } from "./file-queries";
+import { ListNotice, PendingIndicator } from "@/ui";
+import {
+  FileLoadError,
+  type FileLoadFailure,
+  useFileContent,
+  workspaceFileSource,
+} from "@/workspace-files";
 import { isMarkdownFile, sourceLanguage } from "./source-language";
 import { SourceView } from "./source-view";
 
@@ -29,6 +33,7 @@ const MAX_ZOOM = 4;
 
 function ImageFile({ host, filePath }: { host: SavedHost; filePath: string }) {
   const { width, height } = useWindowDimensions();
+  const [loaded, setLoaded] = useState(false);
   return (
     <ScrollView
       style={styles.fill}
@@ -44,7 +49,13 @@ function ImageFile({ host, filePath }: { host: SavedHost; filePath: string }) {
         resizeMode="contain"
         source={workspaceFileSource(host, filePath)}
         style={{ width, height: height * 0.75 }}
+        onLoadEnd={() => setLoaded(true)}
       />
+      {loaded ? null : (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <PendingIndicator />
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -131,7 +142,7 @@ function TextFile({
       return (
         <>
           {toolbar}
-          <View style={styles.fill} />
+          <PendingIndicator />
         </>
       );
     }

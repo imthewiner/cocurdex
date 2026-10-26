@@ -19,6 +19,7 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
+import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
@@ -122,7 +123,8 @@ function FilesSection({
             accessibilityRole="link"
             accessibilityLabel={label}
             testID={`tool-call-file-${label}`}
-            onPress={() =>
+            onPress={() => {
+              preloadFileContent(hostId, path);
               router.push({
                 pathname: "/file/[hostId]",
                 params: {
@@ -130,8 +132,8 @@ function FilesSection({
                   path,
                   ...(location.line ? { line: String(location.line) } : {}),
                 },
-              })
-            }
+              });
+            }}
             style={({ pressed }) => [
               styles.fileRow,
               pressed ? { opacity: 0.6 } : null,

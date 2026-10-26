@@ -13,6 +13,7 @@ import {
   useSyntaxColors,
   useThemeColors,
 } from "@/theme";
+import { preloadFileContent } from "@/workspace-files";
 import { DocImage } from "./doc-image";
 import { splitDocImages } from "./doc-image-segments";
 import { entityLinkHref, entityLinkRef } from "./entity-link";
@@ -116,6 +117,7 @@ function useOpenLink(hostId: string | undefined) {
       }
       const file = hostId ? parseFileLinkHref(url) : null;
       if (file && hostId) {
+        preloadFileContent(hostId, file.path);
         router.push({
           pathname: "/file/[hostId]",
           params: {

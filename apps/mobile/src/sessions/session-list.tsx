@@ -2,10 +2,15 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, Text, View } from "react-native";
+import { SectionList, StyleSheet, Text } from "react-native";
 import { useAgentRoles } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, ListSectionHeader, ListSeparator } from "@/ui";
+import {
+  ListNotice,
+  ListSectionHeader,
+  ListSeparator,
+  PendingIndicator,
+} from "@/ui";
 import { SessionActionsSheet } from "./session-actions-sheet";
 import { SessionRowView } from "./session-row";
 import { buildSessionSections, type SessionRow } from "./session-sections";
@@ -48,7 +53,7 @@ export function SessionList({
   );
 
   if (!snapshot.loaded) {
-    if (!snapshot.failed) return <View style={styles.fill} />;
+    if (!snapshot.failed) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}

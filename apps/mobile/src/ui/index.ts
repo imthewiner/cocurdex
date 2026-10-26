@@ -16,6 +16,7 @@ export { HostedAccessory } from "./hosted-accessory";
 export { keyboardHidden } from "./keyboard";
 export { useBottomKeyboardOverlap } from "./keyboard-overlap";
 export { ListNotice, ListSectionHeader, ListSeparator } from "./list-parts";
+export { PendingIndicator } from "./pending-indicator";
 export {
   FolderIcon,
   RowValue,

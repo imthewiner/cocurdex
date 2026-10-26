@@ -2,11 +2,12 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, View } from "react-native";
+import { SectionList, StyleSheet } from "react-native";
 import {
   ListNotice,
   ListSectionHeader,
   ListSeparator,
+  PendingIndicator,
   usePullToRefresh,
 } from "@/ui";
 import { useIssueView } from "./issue-queries";
@@ -49,7 +50,7 @@ export function IssueList({
   );
 
   if (!data) {
-    if (data === undefined && !view.error) return <View style={styles.fill} />;
+    if (data === undefined && !view.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}

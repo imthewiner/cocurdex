@@ -2,12 +2,13 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, View } from "react-native";
+import { SectionList, StyleSheet } from "react-native";
 import { useHostSessions } from "@/sessions";
 import {
   ListNotice,
   ListSectionHeader,
   ListSeparator,
+  PendingIndicator,
   usePullToRefresh,
 } from "@/ui";
 import { useNotes } from "./note-queries";
@@ -31,7 +32,7 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   );
 
   if (!notes.data) {
-    if (!notes.error) return <View style={styles.fill} />;
+    if (!notes.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}

@@ -31,6 +31,7 @@ export default interface Resources {
       title: "Linked";
       untitled: "Untitled";
     };
+    loading: "Loading";
     markdown: {
       closeDiagram: "Close";
       diagram: "Diagram";

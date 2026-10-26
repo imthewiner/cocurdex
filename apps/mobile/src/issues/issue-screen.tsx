@@ -7,7 +7,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { LinkedEntitiesSection } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { space, useThemeColors } from "@/theme";
-import { BrandHost, Form, FormRow, FormSection, ListNotice } from "@/ui";
+import {
+  BrandHost,
+  Form,
+  FormRow,
+  FormSection,
+  ListNotice,
+  PendingIndicator,
+} from "@/ui";
 import { useIssueDetail, useIssueView } from "./issue-queries";
 import { IssueStatusIcon } from "./issue-status-mark";
 
@@ -54,7 +61,7 @@ export function IssueScreen({
 
   if (detail.data === null) return <ListNotice title={t("missing")} />;
   if (!issue) {
-    if (!detail.error) return <View style={styles.fill} />;
+    if (!detail.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}
