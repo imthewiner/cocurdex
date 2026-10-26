@@ -10,6 +10,7 @@ import {
   HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
+  useScopeGate,
 } from "@/hosts";
 import { beginNewSession, useAgents } from "@/new-session";
 import {
@@ -75,6 +76,7 @@ function HostSessionsScreen({
     .filter((item) => item.primaryState === "completed-unread")
     .map((item) => item.sessionId);
   const canInteract = host.scopes.includes("interact");
+  const gate = useScopeGate(host);
   const markAllRead = async () => {
     const at = new Date().toISOString();
     const connection = hostConnection(host.hostId);
@@ -105,13 +107,11 @@ function HostSessionsScreen({
           unreadCount={unreadIds.length}
           onMarkAllRead={canInteract ? () => void markAllRead() : undefined}
         />
-        {host.scopes.includes("execute") ? (
-          <Stack.Toolbar.Button
-            icon={Platform.OS === "ios" ? "square.and.pencil" : EditSquareIcon}
-            accessibilityLabel={t("newSession.open")}
-            onPress={onNewSession}
-          />
-        ) : null}
+        <Stack.Toolbar.Button
+          icon={Platform.OS === "ios" ? "square.and.pencil" : EditSquareIcon}
+          accessibilityLabel={t("newSession.open")}
+          onPress={gate("execute", onNewSession)}
+        />
       </Stack.Toolbar>
       <SessionList
         host={host}

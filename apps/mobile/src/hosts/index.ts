@@ -5,3 +5,4 @@ export { HostsList } from "./hosts-list";
 export type { PairFailure } from "./hosts-store";
 export { usePairingRoutes } from "./pairing-routes";
 export { ScanPairing } from "./scan-pairing";
+export { type GatedScope, useScopeGate } from "./scope-gate";

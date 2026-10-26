@@ -10,6 +10,7 @@ import {
   HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
+  useScopeGate,
 } from "@/hosts";
 import {
   IssueList,
@@ -30,6 +31,7 @@ export default function IssuesScreen() {
 function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
   const { t } = useTranslation("issues");
   const router = useRouter();
+  const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
   const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
@@ -53,20 +55,18 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
           accessibilityLabel={workspaceFilterLabel}
           onPress={() => setPickingWorkspace(true)}
         />
-        {host.scopes.includes("interact") ? (
-          <Stack.Toolbar.Button
-            icon={Platform.OS === "ios" ? "plus" : AddIcon}
-            accessibilityLabel={t("create.open")}
-            onPress={() =>
-              router.push({
-                pathname: "/new-issue/[hostId]",
-                params: workspaceId
-                  ? { hostId: host.hostId, workspaceId }
-                  : { hostId: host.hostId },
-              })
-            }
-          />
-        ) : null}
+        <Stack.Toolbar.Button
+          icon={Platform.OS === "ios" ? "plus" : AddIcon}
+          accessibilityLabel={t("create.open")}
+          onPress={gate("interact", () =>
+            router.push({
+              pathname: "/new-issue/[hostId]",
+              params: workspaceId
+                ? { hostId: host.hostId, workspaceId }
+                : { hostId: host.hostId },
+            }),
+          )}
+        />
       </Stack.Toolbar>
       <IssueList host={host} workspaceId={workspaceId} query={query} />
       <WorkspaceFilterSheet

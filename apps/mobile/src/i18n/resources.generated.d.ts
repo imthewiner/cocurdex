@@ -106,6 +106,13 @@ export default interface Resources {
       title: "Scan the pairing QR code on your computer";
       viewfinder: "Viewfinder";
     };
+    scope: {
+      execute: "Start tasks";
+      interact: "Interact";
+      missingMessage: "To do this here, open Cocurdex on {{host}}, go to Settings › Devices, and turn on “{{scope}}” for this device.";
+      missingTitle: "Not Allowed on This Device";
+      ok: "OK";
+    };
     switcher: {
       label: "Computer: {{host}}";
     };
