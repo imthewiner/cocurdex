@@ -35,6 +35,7 @@ import { useStreamingReveal } from "./use-streaming-reveal";
 
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
+const INLINE_CODE_TINT_ALPHA = "1f";
 
 function markdownStyle(
   colors: ThemeColors,
@@ -63,9 +64,9 @@ function markdownStyle(
     code: {
       fontFamily: MONO_FONT,
       fontSize: 14,
-      color: colors.foreground,
-      backgroundColor: colors.chatCodeInline,
-      borderColor: colors.chatCodeInline,
+      color: syntaxColors.function,
+      backgroundColor: `${syntaxColors.function}${INLINE_CODE_TINT_ALPHA}`,
+      borderColor: `${syntaxColors.function}00`,
     },
     codeBlock: {
       fontFamily: MONO_FONT,

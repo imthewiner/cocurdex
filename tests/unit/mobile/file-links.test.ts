@@ -97,7 +97,7 @@ describe("localFileLinkTarget", () => {
 });
 
 describe("padInlineCode", () => {
-  const pad = " ";
+  const pad = "\u202f\u202f";
 
   it("pads inline code and linked inline code but leaves fences alone", () => {
     const markdown = [
