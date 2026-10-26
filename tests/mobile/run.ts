@@ -99,6 +99,7 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_TITLE: OPENED_NOTE.title,
     NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
+    SHOW_MORE: sessions.list.showMore_other.replace("{{count}}", "\\d+"),
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
     WORKSPACE_NAME: FIXTURE_WORKSPACE_NAME,

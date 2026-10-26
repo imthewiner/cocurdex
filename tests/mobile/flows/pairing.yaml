@@ -39,8 +39,17 @@ appId: dev.cocurdex.mobile
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
 - scrollUntilVisible:
+    element:
+      text: ${SHOW_MORE}
+    optional: true
+- tapOn:
+    text: ${SHOW_MORE}
+    optional: true
+- scrollUntilVisible:
+    element: ${WORKSPACE_NAME}
+    direction: UP
+- scrollUntilVisible:
     element: ${CODE_SESSION_TITLE}
-    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -68,7 +77,6 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${TOOL_SESSION_TITLE}
-    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -170,7 +178,6 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${DIAGRAM_SESSION_TITLE}
-    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -233,7 +240,6 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${IMAGE_SESSION_TITLE}
-    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -279,7 +285,6 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${SEND_SESSION_TITLE}
-    centerElement: true
 - retry:
     maxRetries: 2
     commands:
