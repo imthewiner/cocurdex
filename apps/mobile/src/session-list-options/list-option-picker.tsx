@@ -11,22 +11,31 @@ import {
 } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
+import { AgentIcon } from "@/agents";
 import { useCurrentHost } from "@/hosts";
 import {
   updateSessionListView,
   useSessionListLabels,
   useSessionListUi,
 } from "@/sessions";
-import { BrandHost, Form, FormRow, FormSection, SelectedMark } from "@/ui";
+import {
+  BrandHost,
+  Form,
+  FormRow,
+  FormSection,
+  HostedAccessory,
+  SelectedMark,
+} from "@/ui";
 import { type ListOptionField, toggledValue } from "./list-option-fields";
 import { useSessionAgentChoices } from "./session-agents";
 
 interface Option {
   key: string;
   label: string;
+  leading?: ReactElement;
   selected: boolean;
   onPress(): void;
 }
@@ -45,6 +54,11 @@ function OptionSection({
           key={option.key}
           testID={`list-choice-${option.key}`}
           onPress={option.onPress}
+          leading={
+            option.leading ? (
+              <HostedAccessory>{option.leading}</HostedAccessory>
+            ) : undefined
+          }
           trailing={<SelectedMark selected={option.selected} />}
         >
           <Text>{option.label}</Text>
@@ -145,6 +159,7 @@ function useFieldSections(
             options={agents.map((agent) => ({
               key: agent.id,
               label: agent.label,
+              leading: <AgentIcon agentId={agent.id} size={20} />,
               selected: view.agents.includes(agent.id),
               onPress: () =>
                 updateSessionListView({

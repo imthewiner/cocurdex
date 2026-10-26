@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Keyboard, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAgentRoles } from "@/agents";
+import { AgentIcon, RoleAvatar, useAgentRoles } from "@/agents";
 import { hostConnection } from "@/connection";
 import { useSavedHosts } from "@/hosts";
 import { Composer, pickImages, uploadImage } from "@/session-detail";
@@ -125,6 +125,13 @@ function Sheet({ host }: { host: SavedHost }) {
               label={t("newSession.agent")}
               value={role?.name ?? agent?.label ?? t("newSession.none")}
               detail={agentDetail}
+              icon={
+                role ? (
+                  <RoleAvatar role={role} agentId={role.agentId} size={20} />
+                ) : agent ? (
+                  <AgentIcon agentId={agent.id} size={16} />
+                ) : undefined
+              }
               onPress={() => void open("/new-session/agent")}
             />
           </FormSection>
