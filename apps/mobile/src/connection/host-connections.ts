@@ -59,17 +59,38 @@ function pairedHost(hostId: string) {
   return host;
 }
 
+function adoptReportedScopes(connection: HostConnection) {
+  let wasLive = false;
+  connection.subscribeState((state) => {
+    const live = state.status === "live";
+    const becameLive = live && !wasLive;
+    wasLive = live;
+    if (!becameLive) return;
+    void connection
+      .request("host.session", undefined)
+      .then(({ principal }) => {
+        if (principal.kind === "device") {
+          hosts.adoptScopes(connection.hostId, principal.scopes);
+        }
+      })
+      .catch(() => undefined);
+  });
+  return connection;
+}
+
 export function hostConnection(hostId: string): HostConnection {
   return (
     registry.get(hostId) ??
-    registry.register({
-      hostId,
-      platform: {
-        lifecycle,
-        network,
-        resolveEndpoint: async () => savedHostEndpoint(pairedHost(hostId)),
-      },
-    })
+    adoptReportedScopes(
+      registry.register({
+        hostId,
+        platform: {
+          lifecycle,
+          network,
+          resolveEndpoint: async () => savedHostEndpoint(pairedHost(hostId)),
+        },
+      }),
+    )
   );
 }
 

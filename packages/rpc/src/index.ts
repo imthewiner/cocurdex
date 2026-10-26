@@ -77,6 +77,7 @@ import type {
   GitPushResult,
   GitWorktreeInfo,
   HostAccessAuditEntry,
+  HostAccessScope,
   HostAccessSession,
   HostDirectoryListing,
   HostIdentity,
@@ -678,6 +679,7 @@ export type DaemonRequestPayloadByMethod = {
   "host.pairing.cancel": { pairingId: string };
   "host.devices.list": undefined;
   "host.devices.revoke": { deviceId: string };
+  "host.devices.updateScopes": { deviceId: string; scopes: HostAccessScope[] };
   "host.audit.list": { limit?: number };
 };
 
@@ -959,6 +961,7 @@ export type DaemonResultByMethod = {
   "host.pairing.cancel": HostPairingRecord | null;
   "host.devices.list": PairedDeviceRecord[];
   "host.devices.revoke": PairedDeviceRecord | null;
+  "host.devices.updateScopes": PairedDeviceRecord | null;
   "host.audit.list": HostAccessAuditEntry[];
 };
 

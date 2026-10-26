@@ -389,6 +389,50 @@ describe("remote host access", () => {
     ).rejects.toMatchObject({ code: "TRANSPORT_ERROR" });
   });
 
+  it("reconnects a device with its changed scopes", async () => {
+    const daemon = await spawnDaemon();
+    daemons.push(daemon);
+    const port = await enableRemoteAccess(daemon);
+    const { paired } = await pairDevice(daemon, port);
+    const socket = new WebSocket(
+      `ws://127.0.0.1:${port}`,
+      daemonWebSocketProtocols(paired.token),
+    );
+    await new Promise<void>((resolve, reject) => {
+      socket.addEventListener("open", () => resolve());
+      socket.addEventListener("error", () => reject(new Error("open failed")));
+    });
+    const closed = new Promise<void>((resolve) =>
+      socket.addEventListener("close", () => resolve()),
+    );
+    socket.send(
+      JSON.stringify({
+        id: "1",
+        method: "daemon.subscribe",
+        params: {},
+        token: paired.token,
+      }),
+    );
+
+    const updated = await requestDaemon(
+      "host.devices.updateScopes",
+      { deviceId: paired.deviceId, scopes: ["read", "files.read"] },
+      daemon.options,
+    );
+
+    await closed;
+    expect(updated?.scopes).toEqual(["read", "files.read"]);
+    const session = await remoteClient(port, paired.token).request(
+      "host.session",
+      undefined,
+    );
+    expect(session.principal).toEqual({
+      kind: "device",
+      deviceId: paired.deviceId,
+      scopes: ["read", "files.read"],
+    });
+  });
+
   it("disconnects a device as soon as it is revoked", async () => {
     const daemon = await spawnDaemon();
     daemons.push(daemon);

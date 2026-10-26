@@ -296,9 +296,17 @@
     }
   },
   "devices": {
+    "access": {
+      "cancel": "取消",
+      "description": "设备会立即重新连接并使用新权限。",
+      "failed": "无法修改设备权限",
+      "save": "保存",
+      "title": "{{name}} 的权限"
+    },
     "audit": {
       "action": {
         "deviceRevoked": "已吊销设备",
+        "deviceScopesChanged": "设备权限已修改",
         "pairingCancelled": "已取消配对",
         "pairingCreated": "已创建配对",
         "pairingExchanged": "设备已配对",
@@ -311,6 +319,7 @@
     "copy": "复制",
     "list": {
       "detail": "{{scopes}} · 最近活动 {{time}}",
+      "editAccess": "修改权限",
       "empty": "还没有设备与这台电脑配对。",
       "groupTitle": "已配对设备",
       "revoke": "吊销",

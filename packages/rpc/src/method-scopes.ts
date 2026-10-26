@@ -279,5 +279,6 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "host.pairing.cancel": "host.admin",
   "host.devices.list": "host.admin",
   "host.devices.revoke": "host.admin",
+  "host.devices.updateScopes": "host.admin",
   "host.audit.list": "host.admin",
 };

@@ -124,13 +124,68 @@ describe("HostAccessService", () => {
     const exchanged = service.exchangePairing({ code }, null);
     if (!exchanged.ok) throw new Error("pairing failed");
     const revoked: string[] = [];
-    service.onDeviceRevoked((deviceId) => revoked.push(deviceId));
+    service.onDeviceAccessChanged((deviceId) => revoked.push(deviceId));
     expect(service.resolve(exchanged.result.token)).not.toBeNull();
 
     service.revokeDevice(exchanged.result.deviceId, local);
 
     expect(service.resolve(exchanged.result.token)).toBeNull();
     expect(revoked).toEqual([exchanged.result.deviceId]);
+  });
+
+  it("applies changed device scopes to the next request and notifies listeners", async () => {
+    const { service } = await setup();
+    const { code } = service.createPairing(
+      { label: "Tablet", scopes: ["read"] },
+      local,
+    );
+    const exchanged = service.exchangePairing({ code }, null);
+    if (!exchanged.ok) throw new Error("pairing failed");
+    const changed: string[] = [];
+    service.onDeviceAccessChanged((deviceId) => changed.push(deviceId));
+    expect(service.resolve(exchanged.result.token)).toMatchObject({
+      scopes: ["read"],
+    });
+
+    const updated = service.updateDeviceScopes(
+      exchanged.result.deviceId,
+      ["read", "files.read", "read"],
+      local,
+    );
+
+    expect(updated?.scopes).toEqual(["read", "files.read"]);
+    expect(service.resolve(exchanged.result.token)).toMatchObject({
+      scopes: ["read", "files.read"],
+    });
+    expect(changed).toEqual([exchanged.result.deviceId]);
+    expect(service.listAudit(1)[0]).toMatchObject({
+      action: "device.scopesChanged",
+      subject: exchanged.result.deviceId,
+    });
+  });
+
+  it("refuses to grant host administration or an empty scope set to a device", async () => {
+    const { service } = await setup();
+    const { code } = service.createPairing(
+      { label: "Tablet", scopes: ["read"] },
+      local,
+    );
+    const exchanged = service.exchangePairing({ code }, null);
+    if (!exchanged.ok) throw new Error("pairing failed");
+
+    expect(() =>
+      service.updateDeviceScopes(
+        exchanged.result.deviceId,
+        ["read", "host.admin"],
+        local,
+      ),
+    ).toThrow();
+    expect(() =>
+      service.updateDeviceScopes(exchanged.result.deviceId, [], local),
+    ).toThrow();
+    expect(service.resolve(exchanged.result.token)).toMatchObject({
+      scopes: ["read"],
+    });
   });
 
   it("defaults remote access to off and audits only enable/disable transitions", async () => {
