@@ -21,7 +21,7 @@ import {
   toggleSessionChildren,
   useSessionListUi,
 } from "./session-list-view-store";
-import { SessionRowView } from "./session-row";
+import { ChildrenToggle, SessionRowView } from "./session-row";
 import {
   buildSessionSections,
   type SessionRow,
@@ -188,24 +188,31 @@ export function SessionList({
           <SectionFooter section={section} />
         )}
         renderItem={({ item }) => (
-          <SessionSwipeActions
-            sessionId={item.id}
-            onMore={() => setActionTarget(item)}
-            onArchive={canInteract ? () => archive(item) : null}
-          >
-            <SessionRowView
-              row={item}
-              role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
-              onLongPress={() => setActionTarget(item)}
-              onToggleChildren={() => toggleSessionChildren(item.id)}
-              onPress={() =>
-                router.push({
-                  pathname: "/session/[hostId]/[sessionId]",
-                  params: { hostId: host.hostId, sessionId: item.id },
-                })
-              }
-            />
-          </SessionSwipeActions>
+          <>
+            <SessionSwipeActions
+              sessionId={item.id}
+              onMore={() => setActionTarget(item)}
+              onArchive={canInteract ? () => archive(item) : null}
+            >
+              <SessionRowView
+                row={item}
+                role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
+                onLongPress={() => setActionTarget(item)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/session/[hostId]/[sessionId]",
+                    params: { hostId: host.hostId, sessionId: item.id },
+                  })
+                }
+              />
+            </SessionSwipeActions>
+            {item.hasChildren ? (
+              <ChildrenToggle
+                row={item}
+                onPress={() => toggleSessionChildren(item.id)}
+              />
+            ) : null}
+          </>
         )}
         ItemSeparatorComponent={ListSeparator}
       />

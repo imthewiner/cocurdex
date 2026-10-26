@@ -302,6 +302,8 @@ export default interface Resources {
     };
     list: {
       agentFilter: "Agent";
+      childSessions_one: "{{count}} child session";
+      childSessions_other: "{{count}} child sessions";
       clearFilters: "Clear Filters";
       collapseChildren: "Collapse child sessions";
       direction: {

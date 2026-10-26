@@ -129,20 +129,30 @@ describe("buildSessionSections", () => {
     expect(ids(result)).toEqual([["workspace:shop", ["main"]]]);
   });
 
-  it("shows child sessions under their parent with depth", () => {
+  it("shows child sessions under their parent with depth and count", () => {
     const result = sections([
       session("main", "shop", "2026-10-20T10:00:00.000Z"),
       session("child", "shop", "2026-10-21T10:00:00.000Z", {
         parentSessionId: "main",
         sessionKind: "subagent",
       }),
+      session("sibling", "shop", "2026-10-21T09:00:00.000Z", {
+        parentSessionId: "main",
+        sessionKind: "subagent",
+      }),
     ]);
 
     expect(
-      result[0]?.rows.map((row) => [row.id, row.depth, row.hasChildren]),
+      result[0]?.rows.map((row) => [
+        row.id,
+        row.depth,
+        row.hasChildren,
+        row.childCount,
+      ]),
     ).toEqual([
-      ["main", 0, true],
-      ["child", 1, false],
+      ["main", 0, true, 2],
+      ["child", 1, false, 0],
+      ["sibling", 1, false, 0],
     ]);
   });
 

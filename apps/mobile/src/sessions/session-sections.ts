@@ -37,6 +37,7 @@ export interface SessionRow {
   workspaceName: string;
   depth: number;
   hasChildren: boolean;
+  childCount: number;
   expanded: boolean;
   pinned: boolean;
 }
@@ -217,6 +218,12 @@ export function buildSessionSections(
       rootLimit,
       keepVisible,
     );
+    const childCounts = new Map<string, number>();
+    for (const session of sessions) {
+      const parentId = session.parentSessionId;
+      if (parentId)
+        childCounts.set(parentId, (childCounts.get(parentId) ?? 0) + 1);
+    }
     const rows = shown.nodes.map(({ session, depth, hasChildren }) => {
       const expanded = !input.collapsedIds.has(session.id);
       const stateMap = hasChildren && !expanded ? rolledStates : states;
@@ -231,6 +238,7 @@ export function buildSessionSections(
         workspaceName: workspaceName(session),
         depth,
         hasChildren,
+        childCount: childCounts.get(session.id) ?? 0,
         expanded,
         pinned: Boolean(session.pinnedAt),
       };

@@ -70,6 +70,7 @@
   },
   "list": {
     "agentFilter": "Agent",
+    "childSessions_other": "{{count}} 个子会话",
     "clearFilters": "清除筛选",
     "collapseChildren": "折叠子会话",
     "direction": {
