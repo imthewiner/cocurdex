@@ -590,7 +590,6 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: note-issue-link
 - scrollUntilVisible:
     element: ${LINK_NOTE_TITLE}
-    centerElement: true
     direction: DOWN
     timeout: 10000
 - tapOn: ${LINK_NOTE_TITLE}

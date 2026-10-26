@@ -19,6 +19,26 @@ describe("hidePendingTableStart", () => {
     expect(hidePendingTableStart(content)).toBe(content);
   });
 
+  it("accepts aligned and unbordered delimiter rows", () => {
+    for (const delimiter of ["| :-- | :-: | --: |", "--- | ---", " |-|-| "]) {
+      const content = `| A | B |\n${delimiter}\n`;
+      expect(hidePendingTableStart(content)).toBe(content);
+    }
+  });
+
+  it("rejects delimiter rows with text or empty cells", () => {
+    for (const delimiter of ["| -- | x |", "| -- || -- |", "|"]) {
+      expect(hidePendingTableStart(`| A | B |\n${delimiter}\n`)).toBe("");
+    }
+  });
+
+  it("checks a hostile delimiter row in linear time", () => {
+    const hostile = `| A |\n|-${" ".repeat(200_000)}x\n`;
+    const started = performance.now();
+    expect(hidePendingTableStart(hostile)).toBe("");
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
   it("leaves content without a trailing table untouched", () => {
     expect(hidePendingTableStart("Plain text")).toBe("Plain text");
   });
