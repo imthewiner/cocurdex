@@ -517,11 +517,17 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${WORKSPACE_NAME}
           timeout: 5000
-- scrollUntilVisible:
-    element: ${SEARCH_PLACEHOLDER}
-    direction: UP
-    visibilityPercentage: 100
-    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          times: 3
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 85%
+      - waitForAnimationToEnd
 - tapOn: ${SEARCH_PLACEHOLDER}
 - inputText: ${SEARCH_QUERY}
 - extendedWaitUntil:
