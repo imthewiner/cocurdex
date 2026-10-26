@@ -5,6 +5,10 @@ export {
   resolveOpenCodeRuntimeValue,
 } from "./opencode-runtime-options";
 export {
+  applySessionRuntime,
+  type SessionRuntimeSelection,
+} from "./runtime-selection";
+export {
   findSessionConfigOption,
   getComposerSessionConfigOptions,
   getConfigOptionSpeedTiers,

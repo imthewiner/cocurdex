@@ -1,4 +1,5 @@
 import { pathBaseName } from "./files";
+import type { SessionRuntimeSelection } from "./session-runtime/runtime-selection";
 import type {
   AgentNativeWorkspaceEvidenceEvent,
   AgentTurnChangesUpdatedEvent,
@@ -1346,6 +1347,7 @@ export interface CreateSessionPayload {
   permissionMode?: AgentPermissionMode | null;
   agentRoleId?: string | null;
   title?: string;
+  runtime?: SessionRuntimeSelection;
 }
 
 export interface NewSessionDefaults {

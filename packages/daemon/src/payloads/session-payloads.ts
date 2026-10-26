@@ -1,6 +1,7 @@
 import {
   AGENT_ROLE_AVATAR_COLORS,
   type AgentPermissionMode,
+  reasoningEfforts,
   SCRIPT_RUN_HARD_MAX_AGENTS,
   SCRIPT_RUN_MAX_SCHEMA_ATTEMPTS,
   TEAM_MAX_MEMBERS,
@@ -61,6 +62,16 @@ const createSessionPayload = z.object({
     .optional(),
   agentRoleId: idSchema.nullable().optional(),
   title: z.string().max(200).optional(),
+  runtime: z
+    .object({
+      reasoningEffort: z.enum(reasoningEfforts).nullish(),
+      serviceTier: z.string().max(256).nullish(),
+      fastMode: z.boolean().nullish(),
+      thinkingLevel: z.enum(["default", "off", ...reasoningEfforts]).nullish(),
+      openCodeAgent: z.string().max(256).nullish(),
+      openCodeVariant: z.string().max(256).nullish(),
+    })
+    .optional(),
 });
 
 export const sessionPayloadSchemas = {
