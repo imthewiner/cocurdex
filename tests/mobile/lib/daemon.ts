@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
+import { createRequire } from "node:module";
 import net from "node:net";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
@@ -29,9 +30,8 @@ const AGENT_MODEL_ID = "e2e-agent-model";
 const AGENT_MODEL_NAME = "E2E Agent Model";
 const STUB_REQUEST_TAIL = 6;
 const DAEMON_LOG_TAIL = 150;
-const IMAGE_FIXTURE = path.join(
-  import.meta.dirname,
-  "../fixtures/checkout-screenshot.png",
+const IMAGE_FIXTURE = createRequire(import.meta.url).resolve(
+  "../../e2e/fixtures/doc-images/checkout-screenshot.png",
 );
 
 function freePort() {

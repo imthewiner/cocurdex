@@ -1,5 +1,6 @@
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -29,6 +30,7 @@ import {
   FIXTURE_WORKSPACE_NAME,
   FIXTURE_WORKSPACES,
   type FixtureInterruptedTurn,
+  type FixtureIssue,
   type FixtureSession,
   type FixtureTeammate,
   type FixtureTurn,
@@ -36,6 +38,7 @@ import {
 } from "./recipe";
 import { materializeFixtureWorkspace } from "./workspace";
 
+const resolveFixture = createRequire(import.meta.url).resolve;
 const FIXTURE_CREATED_AT = "2026-01-01T09:00:00.000Z";
 const RUN_TIMEOUT_MS = 30_000;
 
@@ -277,6 +280,19 @@ async function seedDecks(daemon: DaemonProcess) {
   }
 }
 
+async function withFixtureImage(daemon: DaemonProcess, issue: FixtureIssue) {
+  if (!issue.image) return issue.description;
+  const image = await requestDaemon(
+    "image.import",
+    {
+      path: resolveFixture(`../fixtures/${issue.image.fixture}`),
+      name: issue.image.name,
+    },
+    daemon.options,
+  );
+  return `${issue.description}\n\n${image.markdown}`;
+}
+
 async function seedIssues(daemon: DaemonProcess) {
   const labelIds = new Map<string, string>();
   for (const label of FIXTURE_LABELS) {
@@ -290,12 +306,13 @@ async function seedIssues(daemon: DaemonProcess) {
   const [view] = await requestDaemon("issue.listViews", daemon.options);
   if (!view) throw new Error("Fixture daemon has no issue view");
   for (const issue of FIXTURE_ISSUES) {
+    const description = await withFixtureImage(daemon, issue);
     const created = await requestDaemon(
       "issue.create",
       {
         viewId: view.id,
         title: issue.title,
-        description: issue.description || null,
+        description: description || null,
         status: issue.status,
         priority: issue.priority,
         workspaceId: FIXTURE_WORKSPACE_ID,

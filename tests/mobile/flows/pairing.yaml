@@ -516,8 +516,31 @@ appId: dev.cocurdex.mobile
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000
 - assertVisible: ${ISSUE_SESSION_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: "doc-image"
+    timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: issue-detail
+- tapOn:
+    id: "doc-image"
+- extendedWaitUntil:
+    visible:
+      id: "image-viewer"
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${IMAGE_CLOSE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 5000
 - runFlow:
     when:
       platform: iOS
