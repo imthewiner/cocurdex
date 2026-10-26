@@ -1,10 +1,19 @@
 import { renderMermaidSVG } from "beautiful-mermaid";
 import type { RenderedOutput } from "./mermaid-renderer";
 
-export type DiagramPalette = { background: string; foreground: string };
+export type DiagramPalette = {
+  background: string;
+  foreground: string;
+  text?: string;
+  line?: string;
+  nodeFill?: string;
+  nodeStroke?: string;
+  groupFill?: string;
+  groupHeader?: string;
+};
 
 const NATIVE_HEADER =
-  /^(?:graph|flowchart|sequenceDiagram|stateDiagram(?:-v2)?|classDiagram|erDiagram)\b/;
+  /^(?:graph|flowchart|stateDiagram(?:-v2)?|classDiagram|erDiagram)\b/;
 
 const DERIVED_SHARES: Record<string, number> = {
   "--_text-sec": 60,
@@ -46,15 +55,27 @@ function mixColors(foreground: string, background: string, percent: number) {
     .join("")}`;
 }
 
-export function diagramColors({ background, foreground }: DiagramPalette) {
+export function diagramColors(palette: DiagramPalette) {
+  const { background, foreground } = palette;
   const colors: Record<string, string> = {
     "--bg": background,
     "--fg": foreground,
-    "--_text": foreground,
-    "--_group-fill": background,
   };
   for (const [name, share] of Object.entries(DERIVED_SHARES)) {
     colors[name] = mixColors(foreground, background, share);
+  }
+  const overrides: Record<string, string | undefined> = {
+    "--_text": palette.text ?? foreground,
+    "--_line": palette.line,
+    "--_arrow": palette.line,
+    "--_node-fill": palette.nodeFill,
+    "--_node-stroke": palette.nodeStroke,
+    "--_inner-stroke": palette.nodeStroke,
+    "--_group-fill": palette.groupFill ?? background,
+    "--_group-hdr": palette.groupHeader,
+  };
+  for (const [name, color] of Object.entries(overrides)) {
+    if (color) colors[name] = color;
   }
   return colors;
 }

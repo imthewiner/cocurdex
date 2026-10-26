@@ -12,7 +12,6 @@ describe("rendersNatively", () => {
   it("accepts the diagram types drawn without a web view", () => {
     expect(rendersNatively("graph TD\n  A --> B")).toBe(true);
     expect(rendersNatively("\n  flowchart LR\n  A --> B")).toBe(true);
-    expect(rendersNatively("sequenceDiagram\n  A->>B: hi")).toBe(true);
     expect(rendersNatively("stateDiagram-v2\n  [*] --> A")).toBe(true);
     expect(rendersNatively("classDiagram\n  A <|-- B")).toBe(true);
     expect(rendersNatively("erDiagram\n  A ||--o{ B : has")).toBe(true);
@@ -20,6 +19,7 @@ describe("rendersNatively", () => {
 
   it("leaves other diagrams and configured diagrams to the web renderer", () => {
     expect(rendersNatively('pie\n  "a": 1')).toBe(false);
+    expect(rendersNatively("sequenceDiagram\n  A->>B: hi")).toBe(false);
     expect(rendersNatively("xychart-beta\n  bar [1, 2]")).toBe(false);
     expect(rendersNatively("%%{init: {}}%%\ngraph TD\n  A --> B")).toBe(false);
     expect(rendersNatively("---\ntitle: x\n---\ngraph TD")).toBe(false);
@@ -32,6 +32,23 @@ describe("diagramColors", () => {
     expect(colors["--_line"]).toBe("#808080");
     expect(colors["--_text"]).toBe("#000000");
     expect(colors["--_group-fill"]).toBe("#ffffff");
+  });
+
+  it("lets a themed palette color nodes, lines, and groups", () => {
+    const colors = diagramColors({
+      ...PALETTE,
+      text: "#0b4f9c",
+      line: "#8c959f",
+      nodeFill: "#e7f1fd",
+      nodeStroke: "#b6d4fb",
+      groupFill: "#f6f8fa",
+    });
+    expect(colors["--_text"]).toBe("#0b4f9c");
+    expect(colors["--_arrow"]).toBe("#8c959f");
+    expect(colors["--_node-fill"]).toBe("#e7f1fd");
+    expect(colors["--_node-stroke"]).toBe("#b6d4fb");
+    expect(colors["--_group-fill"]).toBe("#f6f8fa");
+    expect(colors["--_text-sec"]).toBe("#666666");
   });
 });
 
