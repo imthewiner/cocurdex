@@ -6,6 +6,7 @@ import {
   isAgentPermissionModeSupportedForModel,
   type SessionConfiguration,
   type SessionRecord,
+  sessionConfigurationOf,
   snapshotRuntimeSelection,
   type UpdateSessionRuntimePayload,
 } from "@cocurdex/shared";
@@ -71,21 +72,12 @@ export function resolveRuntimeUpdate(
     { ...snapshotRuntimeSelection(current), ...input.runtime },
   );
   return {
-    id: session.id,
-    workspaceId: session.workspaceId,
-    title: session.title,
-    agentType: session.agentType,
-    writeMode: session.writeMode,
-    sessionModeId: session.sessionModeId,
+    ...sessionConfigurationOf(session),
     permissionMode: permissionModeFor(
       session,
       model.model,
       context.permissionModes,
     ),
-    agentRoleId: session.agentRoleId,
     providerSnapshot,
-    worktreePath: session.worktreePath,
-    peerInbound: session.peerInbound,
-    sessionKind: session.sessionKind,
   };
 }

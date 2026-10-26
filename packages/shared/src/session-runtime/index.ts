@@ -22,6 +22,7 @@ export {
   isBaselineSpeedOptionValue,
   type OccupiedSessionConfigAxis,
 } from "./session-config-options";
+export { sessionConfigurationOf } from "./session-configuration";
 export {
   getConfigOptionThinkingLevels,
   getEffectiveThinkingLevel,
