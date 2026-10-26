@@ -148,4 +148,19 @@ describe("forgetHostsFromPreviousInstall", () => {
       "files.read",
     ]);
   });
+  it("renames a computer only on this phone and keeps the name across launches", async () => {
+    const storage = memoryStorage();
+    const hosts = createHostsStore(storage);
+    await hosts.pair(LINK, "Pocket", hostAnswering(200, PAIRED));
+    const listener = vi.fn();
+    hosts.subscribe(listener);
+
+    hosts.rename("host-1", "  Desk Mac  ");
+    hosts.rename("host-1", "   ");
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(createHostsStore(storage).getSnapshot()).toEqual([
+      expect.objectContaining({ hostId: "host-1", name: "Desk Mac" }),
+    ]);
+  });
 });

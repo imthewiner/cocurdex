@@ -138,6 +138,7 @@ function flowLabels(locale: SupportedLocale) {
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_ISSUE_ACTION: issues.create.open,
     NEW_ISSUE_SUBMIT: issues.create.submit,
+    RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,
     NEW_NOTE_SUBMIT: notes.create.submit,
     SETTINGS_ACTION: common.screens.settings,
@@ -154,6 +155,7 @@ function sendLabels(locale: SupportedLocale) {
     SEND_REPLY_END: `Totals are stored in cents ${locale}`,
     NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
     NEW_ISSUE_TITLE: `Export last week's orders ${locale}`,
+    RENAMED_COMPUTER: `Studio Mac ${locale}`,
     NEW_NOTE_TITLE: `Release checklist ${locale}`,
     NEW_NOTE_BODY: `Ship the order export ${locale}`,
   };

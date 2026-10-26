@@ -77,6 +77,16 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="computer/[hostId]"
+          options={{
+            title: "",
+            headerBackButtonDisplayMode: "minimal",
+            animation: PUSH_ANIMATION,
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
+        />
+        <Stack.Screen
           name="archived/[hostId]"
           options={{
             title: t("screens.archived"),
@@ -167,6 +177,15 @@ export default function RootLayout() {
           name="rename-session/[hostId]/[sessionId]"
           options={{
             title: t("screens.renameSession"),
+            presentation: "modal",
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
+        />
+        <Stack.Screen
+          name="rename-computer/[hostId]"
+          options={{
+            title: t("screens.renameComputer"),
             presentation: "modal",
             headerStyle: { backgroundColor: grouped.page },
             contentStyle: { backgroundColor: grouped.page },

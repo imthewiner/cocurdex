@@ -11,27 +11,31 @@ import {
   useScopeGate,
 } from "@/hosts";
 import { NoteList } from "@/notes";
-import { useSearchBarOptions } from "@/ui";
+import { emptyListOptions, useListHeader } from "@/ui";
 
 export default function NotesScreen() {
-  const { t } = useTranslation("notes");
+  const { t } = useTranslation(["notes", "common"]);
   const { openPaste, openScan } = usePairingRoutes();
   const host = useCurrentHost();
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
+  const listHeader = useListHeader(t("common:screens.notes"), {
+    placeholder: t("search"),
+    onQuery: setQuery,
+  });
   if (!host) {
-    return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
+    return (
+      <>
+        <Stack.Screen options={emptyListOptions(t("common:screens.notes"))} />
+        <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
+      </>
+    );
   }
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerSearchBarOptions: searchBarOptions,
-        }}
-      />
+      <Stack.Screen options={listHeader.options} />
       <HostSwitcher current={host} onPair={openPaste} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
@@ -45,7 +49,7 @@ export default function NotesScreen() {
           )}
         />
       </Stack.Toolbar>
-      <NoteList host={host} query={query} />
+      <NoteList host={host} query={query} header={listHeader.header} />
     </>
   );
 }

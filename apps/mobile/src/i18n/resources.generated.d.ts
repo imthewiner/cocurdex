@@ -45,6 +45,7 @@ export default interface Resources {
       newNote: "New Note";
       notes: "Notes";
       pair: "Pair a Computer";
+      renameComputer: "Rename Computer";
       renameSession: "Rename Session";
       sessions: "Sessions";
       settings: "Settings";
@@ -68,6 +69,20 @@ export default interface Resources {
     truncated: "Showing the first 512 KB of this file.";
   };
   hosts: {
+    actions: {
+      details: "Permissions and Connection";
+      more: "More for {{host}}";
+      remove: "Remove This Computer";
+      rename: "Rename";
+      switch: "Switch to This Computer";
+    };
+    detail: {
+      address: "Address";
+      name: "Name";
+      pairedAt: "Paired";
+      scopes: "This Phone Can";
+      scopesFooter: "The computer grants these permissions. To change them, open Settings › Devices on the computer.";
+    };
     empty: {
       description: "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.";
       pair: "Pair a Computer";
@@ -91,6 +106,17 @@ export default interface Resources {
       pairing: "Pairing…";
       scanInstead: "Scan Instead";
     };
+    remove: {
+      cancel: "Cancel";
+      confirm: "Remove";
+      message: "This phone loses access and the computer revokes its pairing. If the computer is offline, revoke it later in Settings › Devices.";
+      title: "Remove {{host}}?";
+    };
+    rename: {
+      footer: "Only changes the name on this phone.";
+      placeholder: "Computer name";
+      save: "Save";
+    };
     scan: {
       blocked: {
         description: "Allow camera access in Settings to scan a pairing code, or paste the pairing link instead.";
@@ -107,11 +133,25 @@ export default interface Resources {
       viewfinder: "Viewfinder";
     };
     scope: {
+      approvals: "Approvals";
       execute: "Start tasks";
+      filesRead: "Read Files";
+      filesWrite: "Write Files";
+      gitDestructive: "Destructive Git";
       interact: "Interact";
       missingMessage: "To do this here, open Cocurdex on {{host}}, go to Settings › Devices, and turn on “{{scope}}” for this device.";
       missingTitle: "Not Allowed on This Device";
       ok: "OK";
+      read: "Read";
+    };
+    scopeDetail: {
+      approvals: "Answer permission requests, questions, and plan approvals.";
+      execute: "Start sessions, teams, script runs, and workflows.";
+      filesRead: "Read workspace files, diffs, and Git status.";
+      filesWrite: "Edit workspace files, stage, and commit.";
+      gitDestructive: "Discard changes, switch branches, and push.";
+      interact: "Send messages, stop sessions, and edit notes and issues.";
+      read: "View sessions, messages, notes, and issues.";
     };
     switcher: {
       label: "Computer: {{host}}";

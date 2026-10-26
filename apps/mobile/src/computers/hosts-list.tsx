@@ -1,23 +1,46 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { SymbolView } from "expo-symbols";
+import { type ReactElement, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  hostAddress,
+  selectHost,
+  useCurrentHost,
+  useSavedHosts,
+} from "@/hosts";
 import { layout, space, useThemeColors } from "@/theme";
 import { ListSeparator } from "@/ui";
-import { useCurrentHost, useSavedHosts } from "./hosts";
+import { ComputerActionsSheet } from "./computer-actions-sheet";
 
-function HostRow({ host, current }: { host: SavedHost; current: boolean }) {
+const MORE_HIT_SIZE = 48;
+
+function HostRow({
+  host,
+  current,
+  onMore,
+}: {
+  host: SavedHost;
+  current: boolean;
+  onMore(): void;
+}) {
   const { t } = useTranslation("hosts");
   const colors = useThemeColors();
-  const address = new URL(host.baseUrl).host;
+  const address = hostAddress(host);
   return (
-    <View
-      accessible
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={host.name}
       accessibilityValue={{
         text: current ? `${address}, ${t("list.current")}` : address,
       }}
-      style={styles.row}
+      accessibilityState={{ selected: current }}
+      onPress={() => selectHost(host.hostId)}
+      onLongPress={onMore}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { backgroundColor: colors.muted },
+      ]}
       testID={`host-row-${host.hostId}`}
     >
       <View style={[styles.tile, { backgroundColor: colors.muted }]}>
@@ -38,27 +61,63 @@ function HostRow({ host, current }: { host: SavedHost; current: boolean }) {
           numberOfLines={1}
           style={[styles.detail, { color: colors.mutedForeground }]}
         >
-          {current ? `${address} · ${t("list.current")}` : address}
+          {address}
         </Text>
       </View>
-    </View>
+      {current ? (
+        <SymbolView
+          name={{ ios: "checkmark", android: "check" }}
+          size={18}
+          tintColor={colors.tint}
+        />
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("actions.more", { host: host.name })}
+        hitSlop={space.xs}
+        onPress={onMore}
+        style={styles.more}
+        testID={`host-more-${host.hostId}`}
+      >
+        <SymbolView
+          name={{ ios: "ellipsis", android: "more_horiz" }}
+          size={20}
+          tintColor={colors.mutedForeground}
+        />
+      </Pressable>
+    </Pressable>
   );
 }
 
-export function HostsList() {
+export function HostsList({ header }: { header?: ReactElement }) {
   const saved = useSavedHosts();
   const current = useCurrentHost();
+  const [actionsHostId, setActionsHostId] = useState<string | null>(null);
+  const actionsHost =
+    saved.find((host) => host.hostId === actionsHostId) ?? null;
   return (
-    <FlatList
-      style={styles.fill}
-      contentInsetAdjustmentBehavior="automatic"
-      data={saved}
-      keyExtractor={(host) => host.hostId}
-      renderItem={({ item }) => (
-        <HostRow host={item} current={item.hostId === current?.hostId} />
-      )}
-      ItemSeparatorComponent={ListSeparator}
-    />
+    <>
+      <FlatList
+        style={styles.fill}
+        contentInsetAdjustmentBehavior="automatic"
+        data={saved}
+        keyExtractor={(host) => host.hostId}
+        renderItem={({ item }) => (
+          <HostRow
+            host={item}
+            current={item.hostId === current?.hostId}
+            onMore={() => setActionsHostId(item.hostId)}
+          />
+        )}
+        ItemSeparatorComponent={ListSeparator}
+        ListHeaderComponent={header}
+      />
+      <ComputerActionsSheet
+        host={actionsHost}
+        current={actionsHost?.hostId === current?.hostId}
+        onDismiss={() => setActionsHostId(null)}
+      />
+    </>
   );
 }
 
@@ -70,7 +129,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: space.md,
     paddingVertical: space.sm,
-    paddingHorizontal: layout.sideMargin,
+    paddingLeft: layout.sideMargin,
+    paddingRight: layout.sideMargin - space.md,
   },
   tile: {
     width: 36,
@@ -82,4 +142,10 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 2 },
   title: { fontSize: 16, lineHeight: 22 },
   detail: { fontSize: 14, lineHeight: 19 },
+  more: {
+    width: MORE_HIT_SIZE,
+    height: MORE_HIT_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

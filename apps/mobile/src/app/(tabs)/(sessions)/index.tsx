@@ -14,7 +14,7 @@ import {
 } from "@/hosts";
 import { beginNewSession, useAgents } from "@/new-session";
 import { SessionList, sessionsStore, useSessionListUi } from "@/sessions";
-import { useSearchBarOptions } from "@/ui";
+import { emptyListOptions, type ListHeader, useListHeader } from "@/ui";
 
 function filterIcon(filtered: boolean) {
   if (Platform.OS !== "ios") return FilterIcon;
@@ -24,21 +24,31 @@ function filterIcon(filtered: boolean) {
 }
 
 export default function SessionsScreen() {
-  const { t } = useTranslation("sessions");
+  const { t } = useTranslation(["sessions", "common"]);
   const { openPaste, openScan } = usePairingRoutes();
   const router = useRouter();
   const host = useCurrentHost();
   const [query, setQuery] = useState("");
-  const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
+  const listHeader = useListHeader(t("common:screens.sessions"), {
+    placeholder: t("search"),
+    onQuery: setQuery,
+  });
   if (!host) {
-    return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
+    return (
+      <>
+        <Stack.Screen
+          options={emptyListOptions(t("common:screens.sessions"))}
+        />
+        <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
+      </>
+    );
   }
   return (
     <HostSessionsScreen
       key={host.hostId}
       host={host}
       query={query}
-      searchBarOptions={searchBarOptions}
+      listHeader={listHeader}
       onPair={openPaste}
       onNewSession={() => {
         beginNewSession(host.hostId);
@@ -51,13 +61,13 @@ export default function SessionsScreen() {
 function HostSessionsScreen({
   host,
   query,
-  searchBarOptions,
+  listHeader,
   onPair,
   onNewSession,
 }: {
   host: NonNullable<ReturnType<typeof useCurrentHost>>;
   query: string;
-  searchBarOptions: ReturnType<typeof useSearchBarOptions>;
+  listHeader: ListHeader;
   onPair(): void;
   onNewSession(): void;
 }) {
@@ -73,11 +83,7 @@ function HostSessionsScreen({
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerSearchBarOptions: searchBarOptions,
-        }}
-      />
+      <Stack.Screen options={listHeader.options} />
       <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
@@ -98,6 +104,7 @@ function HostSessionsScreen({
         query={query}
         agentLabels={agentLabels}
         onReload={() => void sessionsStore(host.hostId).reload()}
+        header={listHeader.header}
       />
     </>
   );

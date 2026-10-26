@@ -1,7 +1,7 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { AgentId } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { type ReactElement, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, SectionList, StyleSheet, Text } from "react-native";
 import { useAgentRoles } from "@/agents";
@@ -85,11 +85,13 @@ export function SessionList({
   query,
   agentLabels,
   onReload,
+  header,
 }: {
   host: SavedHost;
   query: string;
   agentLabels: ReadonlyMap<AgentId, string>;
   onReload(): void;
+  header?: ReactElement;
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
@@ -145,11 +147,14 @@ export function SessionList({
         keyExtractor={(row) => row.id}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
-          offline ? (
-            <Text style={[styles.offline, { color: colors.mutedForeground }]}>
-              {t("offline", { host: host.name })}
-            </Text>
-          ) : undefined
+          <>
+            {header}
+            {offline ? (
+              <Text style={[styles.offline, { color: colors.mutedForeground }]}>
+                {t("offline", { host: host.name })}
+              </Text>
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           searching ? (
