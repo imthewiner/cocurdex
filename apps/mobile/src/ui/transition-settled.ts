@@ -6,9 +6,7 @@ const SETTLE_FALLBACK_MS = 600;
 export function useTransitionSettled() {
   const navigation = useNavigation();
   const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    if (settled) return;
-    const settle = () => setSettled(true);
+  const [subscribe] = useState(() => (settle: () => void) => {
     const fallback = setTimeout(settle, SETTLE_FALLBACK_MS);
     const unsubscribe = navigation.addListener(
       "transitionEnd" as never,
@@ -18,6 +16,7 @@ export function useTransitionSettled() {
       clearTimeout(fallback);
       unsubscribe();
     };
-  }, [navigation, settled]);
+  });
+  useEffect(() => subscribe(() => setSettled(true)), [subscribe]);
   return settled;
 }
