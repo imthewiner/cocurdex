@@ -1,7 +1,5 @@
 import type { SessionPrimaryState } from "@cocurdex/shared";
-import ExpandedIcon from "@expo/material-symbols/keyboard_arrow_down.xml";
-import CollapsedIcon from "@expo/material-symbols/keyboard_arrow_right.xml";
-import { Icon } from "@expo/ui";
+import { SymbolView } from "expo-symbols";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AgentIcon, RoleAvatar, type RoleAvatarSource } from "@/agents";
@@ -66,14 +64,14 @@ function ChildrenDisclosure({
       onPress={onPress}
       style={styles.disclosure}
     >
-      <Icon
+      <SymbolView
         name={
           expanded
-            ? { ios: "chevron.down", android: ExpandedIcon }
-            : { ios: "chevron.right", android: CollapsedIcon }
+            ? { ios: "chevron.down", android: "keyboard_arrow_down" }
+            : { ios: "chevron.right", android: "keyboard_arrow_right" }
         }
         size={14}
-        color={colors.mutedForeground}
+        tintColor={colors.mutedForeground}
       />
     </Pressable>
   );
