@@ -48,9 +48,12 @@ export function IssueScreen({
   const router = useRouter();
   const colors = useThemeColors();
   const detail = useIssueDetail(host.hostId, issueId);
-  const view = useIssueView(host.hostId).data;
+  const view = useIssueView(host.hostId, { cached: true }).data;
+  const issue =
+    detail.data?.issue ?? view?.issues.find((entry) => entry.id === issueId);
 
-  if (detail.data === undefined) {
+  if (detail.data === null) return <ListNotice title={t("missing")} />;
+  if (!issue) {
     if (!detail.error) return <View style={styles.fill} />;
     return (
       <ListNotice
@@ -62,9 +65,9 @@ export function IssueScreen({
       />
     );
   }
-  if (detail.data === null) return <ListNotice title={t("missing")} />;
 
-  const { issue, children, sessions } = detail.data;
+  const children = detail.data?.children ?? [];
+  const sessions = detail.data?.sessions ?? [];
   const status = view?.statusOptions.find((entry) => entry.id === issue.status);
   const priority = view?.priorityOptions.find(
     (entry) => entry.id === issue.priority,
@@ -195,5 +198,5 @@ export function IssueScreen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   header: { paddingBottom: space.sm, gap: space.sm },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: "700" },
+  title: { fontSize: 28, lineHeight: 34, fontWeight: "600" },
 });

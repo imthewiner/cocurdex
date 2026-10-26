@@ -146,11 +146,22 @@ function sendLabels(locale: SupportedLocale) {
     SEND_SESSION_TITLE: `Mobile reply check ${locale}`,
     SEND_PROMPT: `Summarize the cart module ${locale}`,
     SEND_REPLY: `The cart module totals line items ${locale}`,
+    SEND_REPLY_CODE: "let totalCents = 0",
+    SEND_REPLY_END: `Totals are stored in cents ${locale}`,
     NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
     NEW_ISSUE_TITLE: `Export last week's orders ${locale}`,
     NEW_NOTE_TITLE: `Release checklist ${locale}`,
     NEW_NOTE_BODY: `Ship the order export ${locale}`,
   };
+}
+
+function streamedReply(send: ReturnType<typeof sendLabels>) {
+  return [
+    send.SEND_REPLY,
+    "- Adds each **line total**\n- Applies the `discount` last",
+    `\`\`\`ts\n${send.SEND_REPLY_CODE}\n\`\`\``,
+    send.SEND_REPLY_END,
+  ].join("\n\n");
 }
 
 const { values } = parseArgs({
@@ -274,7 +285,7 @@ async function main() {
         const send = sendLabels(locale);
         await daemon.createReplyingSession(
           send.SEND_SESSION_TITLE,
-          send.SEND_REPLY,
+          streamedReply(send),
         );
         await target.resetState();
         await target.setAppearance(appearance);

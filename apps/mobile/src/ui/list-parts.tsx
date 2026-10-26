@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: "600",
     paddingHorizontal: layout.sideMargin,
     paddingTop: space.xl,
     paddingBottom: space.sm,

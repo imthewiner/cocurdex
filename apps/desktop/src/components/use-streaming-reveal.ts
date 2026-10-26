@@ -1,5 +1,5 @@
+import { getNextRevealLength } from "@cocurdex/shared";
 import { useEffect, useState } from "react";
-import { getNextRevealLength } from "./streaming-reveal";
 
 const REVEAL_FRAME_MS = 50;
 

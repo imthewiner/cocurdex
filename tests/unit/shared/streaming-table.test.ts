@@ -1,5 +1,5 @@
+import { hidePendingTableStart } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
-import { hidePendingTableStart } from "@/components/streaming-table";
 
 describe("hidePendingTableStart", () => {
   it("holds back a table header until its delimiter row is complete", () => {

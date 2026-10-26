@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     paddingRight: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  title: { flex: 1, fontSize: 16, lineHeight: 22 },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
-  excerpt: { fontSize: 15, lineHeight: 20 },
+  excerpt: { fontSize: 14, lineHeight: 19 },
 });

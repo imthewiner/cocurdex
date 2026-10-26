@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   mark: { height: 22, justifyContent: "center" },
   text: { flex: 1, gap: 2 },
-  title: { fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  title: { fontSize: 16, lineHeight: 22 },
   detail: { fontSize: 13, lineHeight: 18 },
   identifier: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),

@@ -93,7 +93,9 @@ export function SessionDetailScreen({
   const detail = useSessionDetail(host.hostId, sessionId);
   const [actionFailed, setActionFailed] = useState(false);
   const observation = detail.observation;
-  const workspaces = useViewedSession(host.hostId, sessionId).workspaces;
+  const viewed = useViewedSession(host.hostId, sessionId);
+  const workspaces = viewed.workspaces;
+  const listed = viewed.sessions.find((entry) => entry.id === sessionId);
   const workspace = sessionWorkspace(observation, workspaces);
   const workspacePath = sessionWorkspacePath(observation, workspace);
   const running =
@@ -181,7 +183,7 @@ export function SessionDetailScreen({
     void attempt(() => connection.request("session.stop", { sessionId }));
   };
 
-  const title = observation?.session.title ?? "";
+  const title = observation?.session.title ?? listed?.title ?? "";
   const liveLabels: Record<LivePhase, string> = {
     thinking: t("detail.thinking"),
     usingTools: t("detail.usingTools"),

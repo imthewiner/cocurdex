@@ -40,6 +40,7 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: sessions
 - scrollUntilVisible:
     element: ${CODE_SESSION_TITLE}
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -67,6 +68,7 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${TOOL_SESSION_TITLE}
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -168,6 +170,7 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${DIAGRAM_SESSION_TITLE}
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -230,6 +233,7 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${IMAGE_SESSION_TITLE}
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -275,6 +279,7 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${SEND_SESSION_TITLE}
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -291,6 +296,11 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${SEND_REPLY}
     timeout: 20000
+- takeScreenshot: session-streaming
+- extendedWaitUntil:
+    visible: ${SEND_REPLY_END}
+    timeout: 20000
+- assertVisible: ${SEND_REPLY_CODE}
 - assertVisible: ${SEND_PROMPT}
 - tapOn: ${SEND_REPLY}
 - waitForAnimationToEnd
@@ -580,6 +590,7 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: note-issue-link
 - scrollUntilVisible:
     element: ${LINK_NOTE_TITLE}
+    centerElement: true
     direction: DOWN
     timeout: 10000
 - tapOn: ${LINK_NOTE_TITLE}

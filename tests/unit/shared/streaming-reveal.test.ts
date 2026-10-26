@@ -1,5 +1,5 @@
+import { getNextRevealLength } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
-import { getNextRevealLength } from "@/components/streaming-reveal";
 
 describe("getNextRevealLength", () => {
   it("reveals a small backlog at the minimum pace", () => {

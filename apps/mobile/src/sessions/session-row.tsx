@@ -110,9 +110,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  title: { flex: 1, fontSize: 16, lineHeight: 22 },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
   meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
   metaIcon: { width: 18, alignItems: "center" },
-  detail: { flex: 1, fontSize: 15, lineHeight: 20 },
+  detail: { flex: 1, fontSize: 14, lineHeight: 19 },
 });

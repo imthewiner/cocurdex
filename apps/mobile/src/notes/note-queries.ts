@@ -2,12 +2,13 @@ import useSWR from "swr";
 import { hostConnection } from "@/connection";
 
 const DAEMON_READ = { dedupingInterval: 0 };
+const CACHED_READ = { ...DAEMON_READ, revalidateIfStale: false };
 
-export function useNotes(hostId: string) {
+export function useNotes(hostId: string, { cached = false } = {}) {
   return useSWR(
     ["note.list", hostId] as const,
     ([method, host]) => hostConnection(host).request(method),
-    DAEMON_READ,
+    cached ? CACHED_READ : DAEMON_READ,
   );
 }
 

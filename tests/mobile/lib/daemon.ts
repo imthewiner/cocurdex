@@ -114,6 +114,17 @@ async function pointWorkspacesAtFixtures(
   }
 }
 
+const STREAM_CHUNK_CHARS = 6;
+const STREAM_CHUNK_INTERVAL_MS = 60;
+
+function streamedChunks(reply: string) {
+  const chunks: string[] = [];
+  for (let at = 0; at < reply.length; at += STREAM_CHUNK_CHARS) {
+    chunks.push(reply.slice(at, at + STREAM_CHUNK_CHARS));
+  }
+  return chunks;
+}
+
 export async function startPairingDaemon(
   platform: MobilePlatform,
   tempDirs: ReturnType<typeof createTempDirs>,
@@ -196,7 +207,11 @@ export async function startPairingDaemon(
       },
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
       async createReplyingSession(title: string, reply: string) {
-        stub.plan = { kind: "stream", chunks: [reply] };
+        stub.plan = {
+          kind: "stream",
+          chunks: streamedChunks(reply),
+          intervalMs: STREAM_CHUNK_INTERVAL_MS,
+        };
         return requestDaemon(
           "session.configure",
           {

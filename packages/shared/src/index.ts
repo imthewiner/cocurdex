@@ -68,6 +68,7 @@ export * from "./session-observation";
 export * from "./settings-changes";
 export * from "./skill-library";
 export * from "./skills";
+export * from "./streaming-markdown";
 export * from "./subagent-session";
 export type {
   SendSessionCommand,

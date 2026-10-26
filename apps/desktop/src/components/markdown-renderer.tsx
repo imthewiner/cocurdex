@@ -1,3 +1,4 @@
+import { hidePendingTableStart } from "@cocurdex/shared";
 import type { ReactNode } from "react";
 import {
   memo,
@@ -26,7 +27,6 @@ import { createStreamFadeBlockPlugins } from "./markdown-stream-fade";
 import { useRenderReadinessHold } from "./render-readiness";
 import { StreamFadeBlock } from "./stream-fade-block";
 import { StreamFadeContext } from "./stream-fade-context";
-import { hidePendingTableStart } from "./streaming-table";
 import {
   useStreamFadeActive,
   useStreamFadeAnimations,
