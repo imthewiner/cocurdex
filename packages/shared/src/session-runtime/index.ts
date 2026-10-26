@@ -6,6 +6,11 @@ export {
   resolveOpenCodeRuntimeValue,
 } from "./opencode-runtime-options";
 export {
+  buildAgentRoleDraft,
+  type RoleDraftSource,
+  roleDraftFromSession,
+} from "./role-draft";
+export {
   getSessionRuntimeAxes,
   type ReasoningEffortChoice,
   type SessionRuntimeAxes,
