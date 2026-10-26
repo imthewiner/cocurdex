@@ -3,4 +3,8 @@ export {
   runtimeSummary,
   useRuntimeLabels,
 } from "./runtime-labels";
-export { RuntimeSections } from "./runtime-sections";
+export {
+  ChoiceSection,
+  type RuntimeChoice,
+  RuntimeSections,
+} from "./runtime-sections";

@@ -11,7 +11,7 @@ import {
   useRuntimeLabels,
 } from "./runtime-labels";
 
-interface Choice {
+export interface RuntimeChoice {
   key: string;
   label: string;
   supporting?: string | null;
@@ -19,14 +19,14 @@ interface Choice {
   onPress(): void;
 }
 
-function ChoiceSection({
+export function ChoiceSection({
   title,
   testIDPrefix,
   choices,
 }: {
   title: string;
   testIDPrefix: string;
-  choices: readonly Choice[];
+  choices: readonly RuntimeChoice[];
 }) {
   const colors = useThemeColors();
   return (

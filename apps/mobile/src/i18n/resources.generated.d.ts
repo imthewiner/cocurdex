@@ -496,6 +496,14 @@ export default interface Resources {
     sessionConfig: {
       close: "Close";
       done: "Done";
+      mcp: "MCP servers";
+      mcpNone: "This session reports no MCP servers.";
+      mcpStatus: {
+        connected: "Connected";
+        connecting: "Connecting";
+        disabled: "Disabled";
+        failed: "Failed";
+      };
       modeNeedsExecute: "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.";
       open: "Agent settings: {{summary}}";
       openMode: "Permission mode: {{mode}}";

@@ -1,3 +1,4 @@
+export { getMcpStatusKind, type McpStatusKind } from "./mcp-status";
 export {
   getDefaultOpenCodeAgent,
   getOpenCodeRuntimeOptions,

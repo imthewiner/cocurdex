@@ -23,6 +23,8 @@ import {
   SelectedMark,
   SheetAction,
 } from "@/ui";
+import { ConfigOptionSections } from "./config-option-sections";
+import { McpSection } from "./mcp-section";
 import { useSessionConfigState } from "./session-config-state";
 
 export function SessionConfigScreen({
@@ -37,10 +39,8 @@ export function SessionConfigScreen({
   const router = useRouter();
   const done = () => router.dismiss();
   const modeLabels = usePermissionModeLabels();
-  const { session, agent, models, snapshot, axes } = useSessionConfigState(
-    host,
-    sessionId,
-  );
+  const { session, agent, models, snapshot, axes, configOptions, mcpServers } =
+    useSessionConfigState(host, sessionId);
   const [failed, setFailed] = useState(false);
   const canInteract = host.scopes.includes("interact");
   const canConfigure = host.scopes.includes("execute");
@@ -61,6 +61,11 @@ export function SessionConfigScreen({
   }) =>
     attempt(() =>
       connection.request("session.updateRuntime", { sessionId, ...patch }),
+    );
+
+  const setConfigOption = (configId: string, value: boolean | string) =>
+    void attempt(() =>
+      connection.request("session.setConfig", { sessionId, configId, value }),
     );
 
   const choosePermissionMode = (permissionMode: AgentPermissionMode) => {
@@ -162,6 +167,12 @@ export function SessionConfigScreen({
               onChange={(runtime) => void updateRuntime({ runtime })}
             />
           ) : null}
+          {canInteract && configOptions.length > 0 ? (
+            <ConfigOptionSections
+              options={configOptions}
+              onChange={setConfigOption}
+            />
+          ) : null}
           {permissionModes.length > 0 ? (
             <FormSection
               title={t("newSession.mode")}
@@ -204,6 +215,7 @@ export function SessionConfigScreen({
               ))}
             </FormSection>
           ) : null}
+          {mcpServers ? <McpSection servers={mcpServers} /> : null}
         </Form>
       </BrandHost>
     </>
