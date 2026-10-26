@@ -33,6 +33,10 @@ function hrefTarget(href: string, root: string | null) {
   return targetFor(parseLocalFileHref(href), root);
 }
 
+export function localFileLinkTarget(href: string, root: string | null) {
+  return parseFileLinkHref(href) ?? hrefTarget(href, root);
+}
+
 export function fileLinkHref(target: FileLinkTarget) {
   const params = [`path=${encodeURIComponent(target.path)}`];
   if (target.line !== null) params.push(`line=${target.line}`);

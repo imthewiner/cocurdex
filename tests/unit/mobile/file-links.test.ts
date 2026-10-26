@@ -2,6 +2,7 @@ import {
   collectFileLinkTargets,
   fileLinkHref,
   linkFilePaths,
+  localFileLinkTarget,
   padInlineCode,
   parseFileLinkHref,
 } from "@cocurdex/mobile/internal/markdown/file-links";
@@ -70,6 +71,28 @@ describe("file link hrefs", () => {
 
   it("ignores other links", () => {
     expect(parseFileLinkHref("https://example.invalid")).toBeNull();
+  });
+});
+
+describe("localFileLinkTarget", () => {
+  it("opens an agent's local path link before its existence is known", () => {
+    expect(localFileLinkTarget("/repo/src/agent-loop.ts:172", ROOT)).toEqual({
+      path: "/repo/src/agent-loop.ts",
+      line: 172,
+    });
+    expect(localFileLinkTarget("src/cart.ts", ROOT)).toEqual({
+      path: "/repo/src/cart.ts",
+      line: null,
+    });
+  });
+
+  it("keeps resolved file links and ignores web links", () => {
+    const target = { path: "/repo/a.ts", line: 3 };
+    expect(localFileLinkTarget(fileLinkHref(target), ROOT)).toEqual(target);
+    expect(
+      localFileLinkTarget("https://example.invalid/a.ts", ROOT),
+    ).toBeNull();
+    expect(localFileLinkTarget("#heading", ROOT)).toBeNull();
   });
 });
 

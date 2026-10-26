@@ -23,6 +23,7 @@ import { useExistingFiles } from "./file-link-queries";
 import {
   collectFileLinkTargets,
   linkFilePaths,
+  localFileLinkTarget,
   padInlineCode,
   parseFileLinkHref,
 } from "./file-links";
@@ -106,7 +107,16 @@ function markdownStyle(
   };
 }
 
-function useOpenLink(hostId: string | undefined) {
+function fileTargetOf(url: string, fileRoot: string | null | undefined) {
+  return fileRoot === undefined
+    ? parseFileLinkHref(url)
+    : localFileLinkTarget(url, fileRoot);
+}
+
+function useOpenLink(
+  hostId: string | undefined,
+  fileRoot: string | null | undefined,
+) {
   const router = useRouter();
   return useCallback(
     (url: string) => {
@@ -115,7 +125,7 @@ function useOpenLink(hostId: string | undefined) {
         void Linking.openURL(external);
         return;
       }
-      const file = hostId ? parseFileLinkHref(url) : null;
+      const file = hostId ? fileTargetOf(url, fileRoot) : null;
       if (file && hostId) {
         preloadFileContent(hostId, file.path);
         router.push({
@@ -132,7 +142,7 @@ function useOpenLink(hostId: string | undefined) {
       const href = ref && hostId ? entityLinkHref(hostId, ref) : null;
       if (href) router.push(href);
     },
-    [router, hostId],
+    [router, hostId, fileRoot],
   );
 }
 
@@ -235,7 +245,7 @@ export function MarkdownText({
   const [split] = useState(streaming);
   const settled = live ? hidePendingTableStart(content) : content;
   const linked = useFileLinkedMarkdown(settled, hostId, fileRoot);
-  const openLink = useOpenLink(hostId);
+  const openLink = useOpenLink(hostId, fileRoot);
   const colors = useThemeColors();
   const syntaxColors = useSyntaxColors();
   const style = useMemo(
