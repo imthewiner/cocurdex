@@ -1,4 +1,3 @@
-import type { MermaidAppearance } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,50 +9,23 @@ import {
   View,
 } from "react-native";
 import { SvgCss } from "react-native-svg/css";
-import { WebView } from "react-native-webview";
-import { space } from "@/theme";
-import {
-  allowsMermaidNavigation,
-  mermaidDocument,
-  parseMermaidMessage,
-} from "./mermaid-document";
-import { saveImage } from "./mermaid-images";
-import { diagrams, useDiagram } from "./mermaid-store";
+import { space, useThemeColors } from "@/theme";
+import { PendingIndicator } from "@/ui";
+import { useDiagram } from "./mermaid-store";
 
-function DiagramRenderer({
-  source,
-  appearance,
-}: {
-  source: string;
-  appearance: MermaidAppearance;
-}) {
+const PLACEHOLDER_HEIGHT = 160;
+
+function DiagramPlaceholder() {
+  const { t } = useTranslation();
+  const colors = useThemeColors();
   return (
-    <View style={styles.renderer} pointerEvents="none">
-      <WebView
-        source={{ html: mermaidDocument(source, appearance) }}
-        originWhitelist={["about:blank"]}
-        scrollEnabled={false}
-        javaScriptEnabled
-        setSupportMultipleWindows={false}
-        allowsLinkPreview={false}
-        onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
-        onError={() => diagrams.failed(source, appearance)}
-        onMessage={({ nativeEvent }) => {
-          const message = parseMermaidMessage(nativeEvent.data);
-          if (message?.type === "error") diagrams.failed(source, appearance);
-          if (message?.type === "rendered") {
-            const { svg, width, height, png } = message;
-            void (png ? saveImage(png) : Promise.resolve(null)).then((image) =>
-              diagrams.rendered(source, appearance, {
-                svg,
-                width,
-                height,
-                image,
-              }),
-            );
-          }
-        }}
-      />
+    <View
+      accessible
+      accessibilityLabel={t("markdown.diagram")}
+      testID="mermaid-pending"
+      style={[styles.pending, { backgroundColor: colors.muted }]}
+    >
+      <PendingIndicator />
     </View>
   );
 }
@@ -70,34 +42,44 @@ export function MermaidDiagram({
   const appearance = useColorScheme() === "dark" ? "dark" : "light";
   const entry = useDiagram(source, appearance);
   if (entry?.kind === "failed") return fallback;
-  if (!entry)
-    return <DiagramRenderer source={source} appearance={appearance} />;
+  if (!entry) return <DiagramPlaceholder />;
   const { svg, width, height, image } = entry.diagram;
   return (
-    <Pressable
-      accessibilityRole="imagebutton"
-      accessibilityLabel={t("markdown.diagram")}
-      accessibilityHint={t("markdown.openDiagram")}
-      testID="mermaid-diagram"
-      onPress={() =>
-        router.push({
-          pathname: "/diagram/[diagramId]",
-          params: { diagramId: entry.id },
-        })
-      }
-      style={[styles.frame, { maxWidth: width, aspectRatio: width / height }]}
-    >
-      {image ? (
-        <Image source={{ uri: image }} style={styles.image} />
-      ) : (
-        <SvgCss xml={svg} width="100%" height="100%" />
-      )}
-    </Pressable>
+    <View style={[styles.frame, { maxWidth: width }]}>
+      <Pressable
+        accessibilityRole="imagebutton"
+        accessibilityLabel={t("markdown.diagram")}
+        accessibilityHint={t("markdown.openDiagram")}
+        testID="mermaid-diagram"
+        onPress={() =>
+          router.push({
+            pathname: "/diagram/[diagramId]",
+            params: { diagramId: entry.id },
+          })
+        }
+        style={[styles.fill, { aspectRatio: width / height }]}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        ) : (
+          <SvgCss xml={svg} width="100%" height="100%" />
+        )}
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  renderer: { width: "100%", height: 1, opacity: 0 },
+  pending: {
+    height: PLACEHOLDER_HEIGHT,
+    borderRadius: 8,
+    marginBottom: space.sm,
+  },
   frame: { width: "100%", alignSelf: "center", marginBottom: space.sm },
+  fill: { width: "100%" },
   image: { width: "100%", height: "100%" },
 });

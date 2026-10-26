@@ -693,9 +693,15 @@ importers:
       culori:
         specifier: 4.0.2
         version: 4.0.2
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.2
       i18next-cli:
         specifier: ^1.77.0
         version: 1.77.0(react-dom@19.3.1(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(typescript@6.0.3)
+      mermaid:
+        specifier: 11.16.1
+        version: 11.16.1
       typescript:
         specifier: 6.0.3
         version: 6.0.3

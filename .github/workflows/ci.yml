@@ -127,6 +127,8 @@ jobs:
         run: pnpm lint:theme-parity
       - name: Check mobile theme colors are up to date
         run: pnpm --filter @cocurdex/mobile check:theme-colors
+      - name: Check mobile mermaid runtime is up to date
+        run: pnpm --filter @cocurdex/mobile check:mermaid-runtime
       - name: Bundle mobile app
         working-directory: apps/mobile
         run: |

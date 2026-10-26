@@ -4,6 +4,7 @@ import { pathBaseName } from "@cocurdex/shared";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, useColorScheme } from "react-native";
+import { MermaidRendererHost } from "@/markdown";
 import {
   navigationThemes,
   themeColors,
@@ -164,6 +165,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      <MermaidRendererHost />
     </ThemeProvider>
   );
 }

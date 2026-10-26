@@ -15,7 +15,9 @@
     "check:theme-colors": "node scripts/generate-theme-colors.mjs --check",
     "i18n:extract": "i18next-cli extract --config ./i18next.config.ts",
     "i18n:lint": "i18next-cli lint --config ./i18next.config.ts",
-    "i18n:types": "i18next-cli types --config ./i18next.config.ts"
+    "i18n:types": "i18next-cli types --config ./i18next.config.ts",
+    "generate:mermaid-runtime": "node scripts/build-mermaid-runtime.mjs",
+    "check:mermaid-runtime": "node scripts/build-mermaid-runtime.mjs --check"
   },
   "dependencies": {
     "@cocurdex/client-runtime": "workspace:*",
@@ -59,7 +61,9 @@
     "@types/culori": "4.0.1",
     "@types/react": "~19.3.0",
     "culori": "4.0.2",
+    "esbuild": "^0.28.2",
     "i18next-cli": "^1.77.0",
+    "mermaid": "11.16.1",
     "typescript": "6.0.3"
   },
   "enriched-markdown": {
