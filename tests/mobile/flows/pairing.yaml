@@ -362,6 +362,25 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: session-config
 - tapOn:
     id: "session-config-model-${AGENT_MODEL_ID}"
+- scrollUntilVisible:
+    element:
+      id: "session-config-save-role"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "session-config-save-role"
+- extendedWaitUntil:
+    visible:
+      id: "save-role-name"
+    timeout: 10000
+- inputText: "E2E Reviewer"
+- waitForAnimationToEnd
+- takeScreenshot: save-role
+- tapOn: ${SAVE_ROLE_SAVE}
+- extendedWaitUntil:
+    visible:
+      id: "session-config-save-role"
+    timeout: 10000
 - tapOn: ${SESSION_CONFIG_DONE}
 - extendedWaitUntil:
     visible:

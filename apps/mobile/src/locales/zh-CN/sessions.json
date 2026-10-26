@@ -255,6 +255,17 @@
     "standard": "标准",
     "thinking": "推理强度"
   },
+  "saveRole": {
+    "description": "描述",
+    "descriptionPlaceholder": "可选",
+    "failed": "无法保存角色，请重试。",
+    "name": "名称",
+    "namePlaceholder": "角色名称",
+    "open": "另存为角色…",
+    "save": "保存",
+    "saving": "正在保存…",
+    "title": "另存为角色"
+  },
   "search": "搜索会话",
   "sessionConfig": {
     "close": "关闭",

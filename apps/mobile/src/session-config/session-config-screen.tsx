@@ -22,6 +22,7 @@ import {
   FormSection,
   SelectedMark,
   SheetAction,
+  ValueFormRow,
 } from "@/ui";
 import { ConfigOptionSections } from "./config-option-sections";
 import { McpSection } from "./mcp-section";
@@ -216,6 +217,21 @@ export function SessionConfigScreen({
             </FormSection>
           ) : null}
           {mcpServers ? <McpSection servers={mcpServers} /> : null}
+          {canInteract && session ? (
+            <FormSection>
+              <ValueFormRow
+                testID="session-config-save-role"
+                label={t("saveRole.open")}
+                value=""
+                onPress={() =>
+                  router.push({
+                    pathname: "/session-config/[hostId]/[sessionId]/save-role",
+                    params: { hostId: host.hostId, sessionId },
+                  })
+                }
+              />
+            </FormSection>
+          ) : null}
         </Form>
       </BrandHost>
     </>

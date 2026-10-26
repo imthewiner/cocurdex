@@ -1,24 +1,15 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { getSessionRuntimeAxes, type ImageAttachment } from "@cocurdex/shared";
+import type { ImageAttachment } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Keyboard, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  AgentIcon,
-  RoleAvatar,
-  useAgentRoles,
-  useAgents,
-  useCompatibleModels,
-  usePermissionModeLabels,
-} from "@/agents";
+import { AgentIcon, RoleAvatar } from "@/agents";
 import { hostConnection } from "@/connection";
 import { useSavedHosts } from "@/hosts";
 import { Composer, pickImages, uploadImage } from "@/session-detail";
-import { runtimeSummary, useRuntimeLabels } from "@/session-runtime";
-import { useHostSessions } from "@/sessions";
 import { space, useGroupedColors, useThemeColors } from "@/theme";
 import {
   BrandHost,
@@ -28,12 +19,7 @@ import {
   useBottomKeyboardOverlap,
   ValueFormRow,
 } from "@/ui";
-import {
-  displayedRuntime,
-  draftWorkspaceId,
-  workspaceChoices,
-} from "./new-session-draft";
-import { useNewSessionDefaults } from "./new-session-queries";
+import { useNewSessionSelection } from "./new-session-selection";
 import { useNewSessionState } from "./new-session-store";
 import { createSessionStarter, shownSessionPayload } from "./start-session";
 
@@ -44,35 +30,8 @@ function Sheet({ host }: { host: SavedHost }) {
   const grouped = useGroupedColors();
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const keyboardOverlap = useBottomKeyboardOverlap();
-  const { draft } = useNewSessionState();
-  const { workspaces, sessions } = useHostSessions(host.hostId);
-  const choices = workspaceChoices(workspaces, sessions);
-  const workspaceId = draftWorkspaceId(draft, choices);
-  const workspace = choices.find(
-    (choice) => choice.workspace.id === workspaceId,
-  );
-  const defaults = useNewSessionDefaults(host.hostId, workspaceId, draft).data;
-  const agent = useAgents(host.hostId).data?.find(
-    (entry) => entry.id === defaults?.agentType,
-  );
-  const role = useAgentRoles(host.hostId).data?.find(
-    (entry) => entry.id === draft.roleId,
-  );
-  const modeLabels = usePermissionModeLabels();
-  const runtimeLabels = useRuntimeLabels();
-  const agentType = defaults?.agentType ?? null;
-  const selectedModel = useCompatibleModels(host.hostId, agentType).data?.find(
-    ({ provider, model }) =>
-      defaults?.model?.providerId === provider.id &&
-      defaults.model.modelId === model.modelId,
-  )?.model;
-  const runtime = displayedRuntime(draft, agentType, role);
-  const runtimeParts = agentType
-    ? runtimeSummary(
-        getSessionRuntimeAxes(agentType, selectedModel, runtime),
-        runtimeLabels,
-      )
-    : [];
+  const { draft, workspaceId, workspace, defaults, agent, role, agentDetail } =
+    useNewSessionSelection(host);
   const [startSession] = useState(() =>
     createSessionStarter(hostConnection(host.hostId)),
   );
@@ -83,14 +42,6 @@ function Sheet({ host }: { host: SavedHost }) {
     workspaceId !== null &&
     defaults !== undefined &&
     host.scopes.includes("execute");
-  const agentDetail = [
-    role ? agent?.label : null,
-    defaults?.model?.name,
-    ...runtimeParts,
-    defaults?.permissionMode ? modeLabels[defaults.permissionMode].label : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 
   const start = async (prompt: string, attachments: ImageAttachment[]) => {
     if (!canStart || !workspaceId || !defaults) return false;

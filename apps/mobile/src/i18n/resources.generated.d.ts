@@ -492,6 +492,17 @@ export default interface Resources {
       standard: "Standard";
       thinking: "Reasoning effort";
     };
+    saveRole: {
+      description: "Description";
+      descriptionPlaceholder: "Optional";
+      failed: "Couldn't save the role. Try again.";
+      name: "Name";
+      namePlaceholder: "Role name";
+      open: "Save as Role…";
+      save: "Save";
+      saving: "Saving…";
+      title: "Save as Role";
+    };
     search: "Search sessions";
     sessionConfig: {
       close: "Close";

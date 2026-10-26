@@ -6,6 +6,7 @@ import {
   getSessionRuntimeAxes,
 } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import {
@@ -27,6 +28,7 @@ import {
   FormSection,
   HostedAccessory,
   SelectedMark,
+  ValueFormRow,
 } from "@/ui";
 import {
   chooseAgent,
@@ -135,6 +137,7 @@ function RoleRow({
 
 function Picker({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
+  const router = useRouter();
   const colors = useThemeColors();
   const modeLabels = usePermissionModeLabels();
   const { draft } = useNewSessionState();
@@ -272,6 +275,16 @@ function Picker({ host }: { host: SavedHost }) {
               )
             }
           />
+        ) : null}
+        {defaults && host.scopes.includes("interact") ? (
+          <FormSection>
+            <ValueFormRow
+              testID="new-session-save-role"
+              label={t("saveRole.open")}
+              value=""
+              onPress={() => router.push("/new-session/save-role")}
+            />
+          </FormSection>
         ) : null}
       </Form>
     </BrandHost>

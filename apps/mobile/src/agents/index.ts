@@ -9,3 +9,4 @@ export {
   usePermissionModeLabels,
 } from "./permission-mode-labels";
 export { RoleAvatar, type RoleAvatarSource } from "./role-avatar";
+export { SaveRoleForm } from "./save-role-form";

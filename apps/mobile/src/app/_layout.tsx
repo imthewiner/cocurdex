@@ -156,12 +156,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="session-config/[hostId]/[sessionId]"
             options={{
-              title: "",
+              headerShown: false,
               presentation: SHEET_PRESENTATION,
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
             }}
           />
           <Stack.Screen

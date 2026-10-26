@@ -25,6 +25,7 @@ export default function NewSessionLayout() {
         options={{ title: t("newSession.workspace") }}
       />
       <Stack.Screen name="agent" options={{ title: t("newSession.agent") }} />
+      <Stack.Screen name="save-role" options={{ title: t("saveRole.title") }} />
     </Stack>
   );
 }

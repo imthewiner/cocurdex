@@ -144,6 +144,7 @@ function flowLabels(locale: SupportedLocale) {
     SETTINGS_ACTION: common.screens.settings,
     ARCHIVE_ACTION: sessions.actions.archive,
     SESSION_CONFIG_DONE: sessions.sessionConfig.done,
+    SAVE_ROLE_SAVE: sessions.saveRole.save,
   };
 }
 
