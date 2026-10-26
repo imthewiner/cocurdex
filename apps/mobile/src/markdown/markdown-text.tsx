@@ -49,18 +49,44 @@ function markdownStyle(
   };
   return {
     paragraph: block,
-    list: { ...block, bulletColor: colors.mutedForeground },
+    list: {
+      ...block,
+      bulletColor: colors.mutedForeground,
+      markerColor: colors.mutedForeground,
+    },
     h1: { ...block, fontSize: 22, lineHeight: 28, fontWeight: "600" },
     h2: { ...block, fontSize: 19, lineHeight: 26, fontWeight: "600" },
     h3: { ...block, fontSize: 17, lineHeight: 24, fontWeight: "500" },
+    h4: { ...block, fontWeight: "600" },
+    h5: { ...block, fontSize: 15, lineHeight: 22, fontWeight: "600" },
+    h6: {
+      ...block,
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "600",
+      color: colors.mutedForeground,
+    },
     blockquote: {
       ...block,
       color: colors.mutedForeground,
       borderColor: colors.border,
       borderWidth: 3,
       gapWidth: space.md,
+      backgroundColor: "transparent",
     },
     link: { color: colors.chatLink, underline: false },
+    strikethrough: { color: colors.mutedForeground },
+    highlight: {
+      color: colors.foreground,
+      backgroundColor: `${syntaxColors.function}${INLINE_CODE_TINT_ALPHA}`,
+    },
+    spoiler: { color: colors.mutedForeground },
+    math: {
+      color: colors.foreground,
+      backgroundColor: colors.chatCodeBlock,
+      marginBottom: space.sm,
+    },
+    inlineMath: { color: colors.foreground },
     code: {
       fontFamily: MONO_FONT,
       fontSize: 14,

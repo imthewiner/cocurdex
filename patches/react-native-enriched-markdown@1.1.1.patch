@@ -55,18 +55,31 @@ index afbf68f737ebaf7d3b9ff876c76212728247217f..86a58fce4dfe5647c91b486061b697b2
        applyCheckedDecorations(builder, start, itemEnd, depth)
      }
 diff --git a/android/src/main/java/com/swmansion/enriched/markdown/spans/CodeBackgroundSpan.kt b/android/src/main/java/com/swmansion/enriched/markdown/spans/CodeBackgroundSpan.kt
-index 5060e8a9cce443d1a27c2e7efb04cbb4cfc85ce9..b490fd78b0ea42ff56d17b6fd64b0527e3a9bda9 100644
+index 5060e8a9cce443d1a27c2e7efb04cbb4cfc85ce9..a631eb8e92767b0898ddb990024c8a47725418ea 100644
 --- a/android/src/main/java/com/swmansion/enriched/markdown/spans/CodeBackgroundSpan.kt
 +++ b/android/src/main/java/com/swmansion/enriched/markdown/spans/CodeBackgroundSpan.kt
-@@ -15,7 +15,7 @@ class CodeBackgroundSpan(
+@@ -15,7 +15,8 @@ class CodeBackgroundSpan(
    private val styleConfig: StyleConfig,
  ) : LineBackgroundSpan {
    companion object {
 -    private const val CORNER_RADIUS = 6.0f
 +    private val CORNER_RADIUS = 5.0f * android.content.res.Resources.getSystem().displayMetrics.density
++    private val VERTICAL_PADDING = 1.0f * android.content.res.Resources.getSystem().displayMetrics.density
      private const val BORDER_WIDTH = 1.0f
  
      private val sharedBackgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+@@ -75,7 +76,10 @@ class CodeBackgroundSpan(
+         right.toFloat()
+       }
+ 
+-    rect.set(min(startX, endX), top.toFloat(), max(startX, endX), finalBottom.toFloat())
++    val metrics = p.fontMetrics
++    val glyphTop = max(top.toFloat(), baseline + metrics.ascent - VERTICAL_PADDING)
++    val glyphBottom = min(finalBottom.toFloat(), baseline + metrics.descent + VERTICAL_PADDING)
++    rect.set(min(startX, endX), glyphTop, max(startX, endX), glyphBottom)
+ 
+     // 3. Apply Style
+     val codeStyle = styleConfig.codeStyle
 diff --git a/android/src/main/java/com/swmansion/enriched/markdown/spans/LinkSpan.kt b/android/src/main/java/com/swmansion/enriched/markdown/spans/LinkSpan.kt
 index 392c5be90824d16a9a13cb72ca91793241219e94..e0d9b3fb1f31c1645922bc88072a7447f230f7b0 100644
 --- a/android/src/main/java/com/swmansion/enriched/markdown/spans/LinkSpan.kt
@@ -106,15 +119,40 @@ index 392c5be90824d16a9a13cb72ca91793241219e94..e0d9b3fb1f31c1645922bc88072a7447
  
      textPaint.color = variant?.color ?: styleCache.linkColor
 diff --git a/ios/utils/CodeBackground.m b/ios/utils/CodeBackground.m
-index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..d0ec6cc7f237584c35062ed099e7d7aff9ac8969 100644
+index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..443dd054b2b27375363c9979f818f57db20ef79f 100644
 --- a/ios/utils/CodeBackground.m
 +++ b/ios/utils/CodeBackground.m
-@@ -4,7 +4,7 @@
+@@ -4,8 +4,9 @@
  
  NSString *const CodeAttributeName = @"Code";
  
 -static const CGFloat kCodeBackgroundCornerRadius = 2.0;
 +static const CGFloat kCodeBackgroundCornerRadius = 5.0;
  static const CGFloat kCodeBackgroundBorderWidth = 0.5;
++static const CGFloat kCodeBackgroundVerticalPadding = 1.0;
  
  @implementation CodeBackground {
+   StyleConfig *_config;
+@@ -100,6 +101,22 @@ static const CGFloat kCodeBackgroundBorderWidth = 0.5;
+                                    finalRect.size.height = referenceHeight;
+                                  }
+ 
++                                 UIFont *font = [layoutManager.textStorage attribute:NSFontAttributeName
++                                                                             atIndex:range.location
++                                                                      effectiveRange:NULL];
++                                 if (font) {
++                                   CGPoint glyphLocation = [layoutManager locationForGlyphAtIndex:intersect.location];
++                                   CGFloat baseline = rect.origin.y + origin.y + glyphLocation.y;
++                                   CGFloat top = MAX(finalRect.origin.y,
++                                                     baseline - font.ascender - kCodeBackgroundVerticalPadding);
++                                   CGFloat bottom = MIN(CGRectGetMaxY(finalRect),
++                                                        baseline - font.descender + kCodeBackgroundVerticalPadding);
++                                   if (bottom > top) {
++                                     finalRect.origin.y = top;
++                                     finalRect.size.height = bottom - top;
++                                   }
++                                 }
++
+                                  [self drawBackgroundAndBorders:finalRect
+                                                 backgroundColor:backgroundColor
+                                                     borderColor:borderColor
