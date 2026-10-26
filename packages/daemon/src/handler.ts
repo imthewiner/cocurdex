@@ -6,6 +6,7 @@ import type {
 } from "@cocurdex/rpc";
 import type { ProviderAuthMethod } from "@cocurdex/shared";
 import { validateSessionId } from "@cocurdex/shared";
+import { importDocImage, locateDocImage } from "./doc-images";
 import {
   checkoutGitBranch,
   discardGitFiles,
@@ -176,6 +177,15 @@ export async function handleDaemonRequest(
         "file",
       );
       return service.decks.importImage(request.params);
+    case "image.import":
+      await service.assertClientPathAccess(
+        context.principal,
+        request.params.path,
+        "file",
+      );
+      return importDocImage(service.attachments, request.params);
+    case "image.locate":
+      return locateDocImage(service.attachments, request.params);
     case "deck.import":
       await service.assertClientPathAccess(
         context.principal,

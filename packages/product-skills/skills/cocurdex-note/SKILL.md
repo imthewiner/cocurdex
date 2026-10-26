@@ -43,6 +43,17 @@ returned by the command as the current text. Supported blocks: headings,
 lists, task lists, tables, images, quotes, and code. Unsupported syntax such
 as raw HTML is kept as plain text.
 
+To put a screenshot, diagram, or other image in a body, import the file and
+paste the returned `markdown` (`![name](cocurdex://image/<file>)`) where it
+belongs. Images live in the app, not the workspace, so they work on every
+device. To look at an image a body already contains, `image locate` prints
+the local `filePath`; read that file.
+
+```bash
+cocurdex image import <path.png|jpg|gif|webp> [--name <alt text>] --json
+cocurdex image locate cocurdex://image/<file> --json
+```
+
 People may edit a note in the app while you work on it. When you rewrite a
 body you read earlier, pass the `revision` from that `note show` as
 `note update <id> --expected-revision <n>`; without it, your Markdown

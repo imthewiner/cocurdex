@@ -218,6 +218,7 @@ function ActivityChildRow({
     return (
       <MarkdownText
         markdown={item.text}
+        streaming={item.streaming}
         hostId={actions.hostId}
         fileRoot={actions.fileRoot}
         testID={`transcript-assistant-${item.id}`}
@@ -270,6 +271,7 @@ function TranscriptRow({
       <View>
         <MarkdownText
           markdown={item.text}
+          streaming={item.streaming}
           hostId={actions.hostId}
           fileRoot={actions.fileRoot}
           testID={`transcript-assistant-${item.id}`}

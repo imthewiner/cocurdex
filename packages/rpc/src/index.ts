@@ -54,6 +54,8 @@ import type {
   DeleteNotePayload,
   DeleteViewPayload,
   DiagnosticsExportResult,
+  DocImage,
+  DocImageFile,
   EditDeckPayload,
   EditorViewRecord,
   EntityLink,
@@ -82,6 +84,7 @@ import type {
   HostRemoteAccessStatus,
   ImportDeckImagePayload,
   ImportDeckPayload,
+  ImportDocImagePayload,
   InstalledSkillDetail,
   IssueDetail,
   IssueLabel,
@@ -90,6 +93,7 @@ import type {
   LinkIssueSessionPayload,
   ListEntityLinksPayload,
   LoadViewPayload,
+  LocateDocImagePayload,
   LogLevel,
   ManagedWorktree,
   McpConfigFile,
@@ -580,6 +584,8 @@ export type DaemonRequestPayloadByMethod = {
   "deck.exportFile": ExportDeckFilePayload;
   "deck.importImage": ImportDeckImagePayload;
   "deck.import": ImportDeckPayload;
+  "image.import": ImportDocImagePayload;
+  "image.locate": LocateDocImagePayload;
   "deck.readPptx": ReadPptxPayload;
   "issue.listViews": undefined;
   "issue.loadView": LoadViewPayload;
@@ -876,6 +882,8 @@ export type DaemonResultByMethod = {
   "deck.exportFile": ExportDeckFileResult;
   "deck.importImage": DeckImage;
   "deck.import": DeckWriteResult;
+  "image.import": DocImage;
+  "image.locate": DocImageFile | null;
   "deck.readPptx": PptxOutline;
   "issue.listViews": ViewSummary[];
   "issue.loadView": ViewFull | null;
