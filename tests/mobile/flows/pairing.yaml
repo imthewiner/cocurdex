@@ -775,20 +775,34 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${RENAMED_COMPUTER}
     timeout: 5000
+- extendedWaitUntil:
+    notVisible:
+      id: rename-computer-name
+    timeout: 5000
 - runFlow:
     when:
       platform: iOS
     commands:
-      - tapOn:
-          point: 5%, 9%
+      - retry:
+          maxRetries: 3
+          commands:
+            - waitForAnimationToEnd
+            - tapOn:
+                point: 5%, 9%
+            - extendedWaitUntil:
+                visible:
+                  id: "host-more-.*"
+                timeout: 3000
 - runFlow:
     when:
       platform: Android
     commands:
       - back
 - extendedWaitUntil:
-    visible: ${RENAMED_COMPUTER}
+    visible:
+      id: "host-more-.*"
     timeout: 5000
+- assertVisible: ${RENAMED_COMPUTER}
 - retry:
     maxRetries: 2
     commands:
