@@ -470,6 +470,28 @@ export default interface Resources {
       save: "Save";
       saving: "Saving";
     };
+    runtime: {
+      default: "Default";
+      fastMode: "Fast mode";
+      levels: {
+        default: "Default";
+        high: "High";
+        low: "Low";
+        max: "Max";
+        medium: "Medium";
+        minimal: "Minimal";
+        off: "Off";
+        ultra: "Ultra";
+        xhigh: "XHigh";
+      };
+      off: "Off";
+      on: "On";
+      openCodeAgent: "Collaboration mode";
+      openCodeVariant: "Variant";
+      speed: "Speed";
+      standard: "Standard";
+      thinking: "Reasoning effort";
+    };
     search: "Search sessions";
     status: {
       needsYou: "Needs you";

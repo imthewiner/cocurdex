@@ -3,8 +3,10 @@ import {
   chooseModel,
   choosePermissionMode,
   chooseRole,
+  chooseRuntime,
   chooseWorkspace,
   displayedChoices,
+  displayedRuntime,
   draftWorkspaceId,
   EMPTY_DRAFT,
   workspaceChoices,
@@ -204,5 +206,49 @@ describe("displayedChoices", () => {
         resolved,
       ).permissionMode,
     ).toBe("claude-plan");
+  });
+});
+
+describe("runtime options", () => {
+  const reviewer = {
+    id: "role-1",
+    agentId: "codex" as const,
+    reasoningEffort: "xhigh" as const,
+    serviceTier: null,
+    fastMode: null,
+    thinkingLevel: null,
+    openCodeAgent: null,
+    openCodeVariant: null,
+  };
+
+  it("keeps runtime choices across a model change but drops them with the agent", () => {
+    const draft = chooseRuntime(
+      { workspaceId: "w1", agentType: "codex" },
+      "codex",
+      { reasoningEffort: "high" },
+    );
+    const remodeled = chooseModel(draft, "codex", {
+      providerId: "openai",
+      modelId: "gpt",
+    });
+
+    expect(remodeled.runtime).toEqual({ reasoningEffort: "high" });
+    expect(chooseAgent(remodeled, "pi").runtime).toBeUndefined();
+  });
+
+  it("shows the role's runtime until the user overrides it", () => {
+    const draft = chooseRole({ workspaceId: "w1" }, reviewer);
+
+    expect(displayedRuntime(draft, "codex", reviewer).reasoningEffort).toBe(
+      "xhigh",
+    );
+    expect(
+      displayedRuntime(
+        chooseRuntime(draft, "codex", { reasoningEffort: "low" }),
+        "codex",
+        reviewer,
+      ).reasoningEffort,
+    ).toBe("low");
+    expect(displayedRuntime(draft, "pi", reviewer)).toEqual({});
   });
 });

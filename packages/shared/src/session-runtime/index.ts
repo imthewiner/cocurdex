@@ -5,6 +5,12 @@ export {
   resolveOpenCodeRuntimeValue,
 } from "./opencode-runtime-options";
 export {
+  getSessionRuntimeAxes,
+  type ReasoningEffortChoice,
+  type SessionRuntimeAxes,
+  snapshotRuntimeSelection,
+} from "./runtime-axes";
+export {
   applySessionRuntime,
   type SessionRuntimeSelection,
 } from "./runtime-selection";

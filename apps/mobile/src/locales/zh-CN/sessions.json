@@ -233,6 +233,28 @@
     "save": "保存",
     "saving": "正在保存"
   },
+  "runtime": {
+    "default": "默认",
+    "fastMode": "快速模式",
+    "levels": {
+      "default": "默认",
+      "high": "高",
+      "low": "低",
+      "max": "最高",
+      "medium": "中",
+      "minimal": "极低",
+      "off": "关闭",
+      "ultra": "极高",
+      "xhigh": "超高"
+    },
+    "off": "关闭",
+    "on": "开启",
+    "openCodeAgent": "协作模式",
+    "openCodeVariant": "变体",
+    "speed": "速度",
+    "standard": "标准",
+    "thinking": "推理强度"
+  },
   "search": "搜索会话",
   "status": {
     "needsYou": "需要处理",

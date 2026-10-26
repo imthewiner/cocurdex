@@ -1,14 +1,16 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import type {
-  AgentAvailability,
-  AgentDescriptor,
-  AgentRoleRecord,
+import {
+  type AgentAvailability,
+  type AgentDescriptor,
+  type AgentRoleRecord,
+  getSessionRuntimeAxes,
 } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { AgentIcon, RoleAvatar, useAgentRoles } from "@/agents";
 import { useSavedHosts } from "@/hosts";
+import { RuntimeSections } from "@/session-runtime";
 import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
 import {
@@ -24,7 +26,9 @@ import {
   chooseModel,
   choosePermissionMode,
   chooseRole,
+  chooseRuntime,
   displayedChoices,
+  displayedRuntime,
   draftWorkspaceId,
   workspaceChoices,
 } from "./new-session-draft";
@@ -147,6 +151,19 @@ function Picker({ host }: { host: SavedHost }) {
     : undefined;
   const models = useCompatibleModels(host.hostId, agentType).data ?? [];
   const selectedMode = shown.permissionMode;
+  const selectedModel = models.find(
+    ({ provider, model }) =>
+      shown.model?.providerId === provider.id &&
+      shown.model.modelId === model.modelId,
+  )?.model;
+  const role = roles.find((entry) => entry.id === roleId);
+  const axes = agentType
+    ? getSessionRuntimeAxes(
+        agentType,
+        selectedModel,
+        displayedRuntime(draft, agentType, role),
+      )
+    : null;
 
   return (
     <BrandHost style={styles.fill}>
@@ -244,6 +261,16 @@ function Picker({ host }: { host: SavedHost }) {
             </FormRow>
           ))}
         </FormSection>
+        {axes && agentType ? (
+          <RuntimeSections
+            axes={axes}
+            onChange={(patch) =>
+              updateNewSessionDraft((current) =>
+                chooseRuntime(current, agentType, patch),
+              )
+            }
+          />
+        ) : null}
       </Form>
     </BrandHost>
   );

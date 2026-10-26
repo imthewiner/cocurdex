@@ -160,7 +160,14 @@ export function SessionDetailScreen({
     return attempt(() =>
       connection.command(
         "session.send",
-        { sessionId, messageId, content, attachments },
+        {
+          sessionId,
+          messageId,
+          content,
+          attachments,
+          thinkingLevel:
+            observation?.session.providerSnapshot?.thinkingLevel ?? undefined,
+        },
         { idempotencyKey: messageId },
       ),
     );

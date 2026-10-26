@@ -5,6 +5,7 @@ import {
   type ImageAttachment,
   type NewSessionDefaults,
   type SessionRecord,
+  type SessionRuntimeSelection,
 } from "@cocurdex/shared";
 
 export type StartConnection = Pick<HostConnection, "request" | "command">;
@@ -26,6 +27,7 @@ export function shownSessionPayload(
   workspaceId: string,
   defaults: NewSessionDefaults,
   agentRoleId: string | null = null,
+  runtime?: SessionRuntimeSelection,
 ): CreateSessionPayload {
   return {
     workspaceId,
@@ -38,6 +40,7 @@ export function shownSessionPayload(
       : null,
     permissionMode: defaults.permissionMode,
     agentRoleId,
+    ...(runtime ? { runtime } : {}),
   };
 }
 
@@ -72,6 +75,7 @@ export function createSessionStarter(connection: StartConnection) {
         messageId,
         content: request.prompt,
         attachments: request.attachments,
+        thinkingLevel: session.providerSnapshot?.thinkingLevel ?? undefined,
       },
       { idempotencyKey: messageId },
     );
