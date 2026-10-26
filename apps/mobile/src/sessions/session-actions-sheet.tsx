@@ -2,6 +2,9 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import ArchiveIcon from "@expo/material-symbols/archive.xml";
 import ForkIcon from "@expo/material-symbols/call_split.xml";
 import DeleteIcon from "@expo/material-symbols/delete.xml";
+import RenameIcon from "@expo/material-symbols/edit.xml";
+import PinIcon from "@expo/material-symbols/keep.xml";
+import UnpinIcon from "@expo/material-symbols/keep_off.xml";
 import MarkUnreadIcon from "@expo/material-symbols/mark_chat_unread.xml";
 import { BottomSheet, Column, Icon, type IconName, Text } from "@expo/ui";
 import { router } from "expo-router";
@@ -14,9 +17,19 @@ import { reloadArchivedSessions } from "./archived-sessions-queries";
 import type { SessionRow } from "./session-sections";
 import { sessionsStore } from "./sessions";
 
-type SessionAction = "markUnread" | "fork" | "archive" | "delete";
+type SessionAction =
+  | "pin"
+  | "unpin"
+  | "rename"
+  | "markUnread"
+  | "fork"
+  | "archive"
+  | "delete";
 
 const ACTION_ICONS: Record<SessionAction, IconName> = {
+  pin: { ios: "pin", android: PinIcon },
+  unpin: { ios: "pin.slash", android: UnpinIcon },
+  rename: { ios: "pencil", android: RenameIcon },
   markUnread: { ios: "message.badge", android: MarkUnreadIcon },
   fork: { ios: "arrow.triangle.branch", android: ForkIcon },
   archive: { ios: "archivebox", android: ArchiveIcon },
@@ -78,6 +91,9 @@ export function SessionActionsSheet({
   };
 
   const labels: Record<SessionAction, string> = {
+    pin: t("actions.pin"),
+    unpin: t("actions.unpin"),
+    rename: t("actions.rename"),
     markUnread: t("actions.markUnread"),
     fork: t("actions.fork"),
     archive: t("actions.archive"),
@@ -85,6 +101,23 @@ export function SessionActionsSheet({
   };
 
   const handlers: Record<SessionAction, () => void> = {
+    pin: () =>
+      void run((sessionId) =>
+        connection.request("session.setPinned", { sessionId, pinned: true }),
+      ),
+    unpin: () =>
+      void run((sessionId) =>
+        connection.request("session.setPinned", { sessionId, pinned: false }),
+      ),
+    rename: () => {
+      if (!row) return;
+      const sessionId = row.id;
+      onDismiss();
+      router.push({
+        pathname: "/rename-session/[hostId]/[sessionId]",
+        params: { hostId: host.hostId, sessionId },
+      });
+    },
     markUnread: () =>
       void run((sessionId) =>
         connection.request("attention.update", {
@@ -122,8 +155,11 @@ export function SessionActionsSheet({
       }),
   };
 
+  const pinAction: SessionAction[] =
+    canInteract && row?.depth === 0 ? [row.pinned ? "unpin" : "pin"] : [];
   const actions: SessionAction[] = [
-    ...(canInteract ? (["markUnread"] as const) : []),
+    ...pinAction,
+    ...(canInteract ? (["rename", "markUnread"] as const) : []),
     ...(canExecute ? (["fork"] as const) : []),
     ...(canInteract ? (["archive", "delete"] as const) : []),
   ];

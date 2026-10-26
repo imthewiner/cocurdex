@@ -45,6 +45,7 @@ export default interface Resources {
       newNote: "New Note";
       notes: "Notes";
       pair: "Pair a Computer";
+      renameSession: "Rename Session";
       sessions: "Sessions";
       settings: "Settings";
     };
@@ -179,6 +180,9 @@ export default interface Resources {
       deleteTitle: "Delete “{{title}}”?";
       fork: "Fork Session";
       markUnread: "Mark as Unread";
+      pin: "Pin";
+      rename: "Rename";
+      unpin: "Unpin";
     };
     activity: {
       command_one: "Ran {{count}} command";
@@ -246,6 +250,65 @@ export default interface Resources {
     };
     image: {
       close: "Close";
+    };
+    list: {
+      agentFilter: "Agent";
+      clearFilters: "Clear Filters";
+      collapseChildren: "Collapse child sessions";
+      direction: {
+        asc: "Ascending";
+        desc: "Descending";
+      };
+      environment: {
+        local: "Local";
+        worktree: "Worktree";
+      };
+      environmentFilter: "Environment";
+      expandChildren: "Expand child sessions";
+      filtersCount_one: "Filters ({{count}})";
+      filtersCount_other: "Filters ({{count}})";
+      filtersLabel: "Filters";
+      grouping: {
+        agent: "Agent";
+        none: "None";
+        status: "Status";
+        updated: "Last Updated";
+        workspace: "Workspace";
+      };
+      groupingLabel: "Group By";
+      markAllRead: "Mark All as Read";
+      menu: "Group and filter sessions";
+      noMatches: "No sessions match the filters";
+      ordering: {
+        activity: "Recent Activity";
+        created: "Created";
+        title: "Title";
+      };
+      orderingLabel: "Sort By";
+      pinned: "Pinned";
+      rootLimit: {
+        all: "All";
+        count_one: "{{count}} session";
+        count_other: "{{count}} sessions";
+      };
+      rootLimitLabel: "Sessions per Group";
+      showLess: "Show less";
+      showMore_one: "Show {{count}} more";
+      showMore_other: "Show {{count}} more";
+      status: {
+        attention: "Needs You";
+        error: "Failed";
+        idle: "Idle";
+        running: "Running";
+        unread: "Unread";
+      };
+      statusFilter: "Status";
+      updated: {
+        older: "Older";
+        today: "Today";
+        week: "Last 7 Days";
+        yesterday: "Yesterday";
+      };
     };
     message: {
       copied: "Copied";
@@ -341,6 +404,12 @@ export default interface Resources {
       placeholder: "Your answer";
       reply: "Reply";
       title: "The agent has a question";
+    };
+    rename: {
+      failed: "Couldn’t rename the session. Try again.";
+      placeholder: "Session title";
+      save: "Save";
+      saving: "Saving";
     };
     search: "Search sessions";
     status: {

@@ -1,5 +1,4 @@
 import type { SessionRecord } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SESSION_LIST_VIEW,
   filterSessionsByView,
@@ -9,7 +8,8 @@ import {
   sessionUpdatedBucket,
   splitPinnedSessions,
   visibleSessionProperties,
-} from "@/features/sessions/session-list-view/session-list-view-model";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 function session(
   partial: Pick<SessionRecord, "id"> & Partial<SessionRecord>,

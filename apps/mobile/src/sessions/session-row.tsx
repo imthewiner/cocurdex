@@ -1,4 +1,7 @@
 import type { SessionPrimaryState } from "@cocurdex/shared";
+import ExpandedIcon from "@expo/material-symbols/keyboard_arrow_down.xml";
+import CollapsedIcon from "@expo/material-symbols/keyboard_arrow_right.xml";
+import { Icon } from "@expo/ui";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AgentIcon, RoleAvatar, type RoleAvatarSource } from "@/agents";
@@ -40,16 +43,54 @@ function MetaIcon({
   );
 }
 
+const CHILD_INDENT = 20;
+const DISCLOSURE_SLOP = { top: 12, bottom: 12, left: 12, right: 8 };
+
+function ChildrenDisclosure({
+  expanded,
+  onPress,
+}: {
+  expanded: boolean;
+  onPress(): void;
+}) {
+  const { t } = useTranslation("sessions");
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        expanded ? t("list.collapseChildren") : t("list.expandChildren")
+      }
+      accessibilityState={{ expanded }}
+      hitSlop={DISCLOSURE_SLOP}
+      onPress={onPress}
+      style={styles.disclosure}
+    >
+      <Icon
+        name={
+          expanded
+            ? { ios: "chevron.down", android: ExpandedIcon }
+            : { ios: "chevron.right", android: CollapsedIcon }
+        }
+        size={14}
+        color={colors.mutedForeground}
+      />
+    </Pressable>
+  );
+}
+
 export function SessionRowView({
   row,
   role,
   onPress,
   onLongPress,
+  onToggleChildren,
 }: {
   row: SessionRow;
   role: RoleAvatarSource | null;
   onPress(): void;
   onLongPress(): void;
+  onToggleChildren(): void;
 }) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
@@ -70,11 +111,18 @@ export function SessionRowView({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
+        { paddingStart: layout.sideMargin + row.depth * CHILD_INDENT },
         pressed && { backgroundColor: colors.muted },
       ]}
       testID={`session-row-${row.id}`}
     >
       <View style={styles.line}>
+        {row.hasChildren ? (
+          <ChildrenDisclosure
+            expanded={row.expanded}
+            onPress={onToggleChildren}
+          />
+        ) : null}
         <Text
           numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
@@ -107,9 +155,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
     paddingVertical: space.sm,
-    paddingHorizontal: layout.sideMargin,
+    paddingEnd: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  disclosure: { width: 16, alignItems: "center", marginEnd: -space.xs },
   title: { flex: 1, fontSize: 16, lineHeight: 22 },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
   meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },

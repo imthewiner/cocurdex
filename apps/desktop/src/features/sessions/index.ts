@@ -1,4 +1,10 @@
 export {
+  buildVisibleSessionTree,
+  collectSessionSubtreeIds,
+  isSubagentSession,
+  limitSessionTreeRoots,
+} from "@cocurdex/shared";
+export {
   type AdapterStatus,
   type AdapterStatusKind,
   getAdapterStatus,
@@ -133,12 +139,6 @@ export {
   updateSessionTitleAtom,
   upsertSessionAtom,
 } from "./session-store";
-export {
-  buildVisibleSessionTree,
-  collectSessionSubtreeIds,
-  isSubagentSession,
-  limitSessionTreeRoots,
-} from "./session-tree";
 export { TeamPanel } from "./team";
 export {
   getConfigOptionThinkingLevels,

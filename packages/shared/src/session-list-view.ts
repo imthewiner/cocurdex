@@ -1,9 +1,9 @@
-import type { AgentId, SessionRecord } from "@cocurdex/shared";
+import type { AgentId, SessionRecord } from "./contracts";
 import {
   groupChildren,
   rootSessionId,
   subtreeActivityAt,
-} from "../session-tree";
+} from "./session-tree";
 
 export const SESSION_GROUPINGS = [
   "workspace",
