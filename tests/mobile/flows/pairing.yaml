@@ -738,6 +738,18 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${SEND_SESSION_TITLE}
           timeout: 5000
+- tapOn: ".*${RENAMED_COMPUTER}.*"
+- extendedWaitUntil:
+    visible:
+      id: host-switcher-pair
+    timeout: 5000
+- takeScreenshot: host-switcher
+- tapOn:
+    id: "host-switcher-(?!pair).*"
+- extendedWaitUntil:
+    notVisible:
+      id: host-switcher-pair
+    timeout: 5000
 - longPressOn: ${SEND_SESSION_TITLE}
 - extendedWaitUntil:
     visible:

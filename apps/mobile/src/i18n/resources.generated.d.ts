@@ -155,6 +155,7 @@ export default interface Resources {
     };
     switcher: {
       label: "Computer: {{host}}";
+      title: "Switch Computer";
     };
   };
   issues: {

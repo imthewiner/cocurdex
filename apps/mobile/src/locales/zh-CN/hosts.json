@@ -84,6 +84,7 @@
     "read": "查看会话、消息、笔记和 issue。"
   },
   "switcher": {
-    "label": "电脑：{{host}}"
+    "label": "电脑：{{host}}",
+    "title": "切换电脑"
   }
 }

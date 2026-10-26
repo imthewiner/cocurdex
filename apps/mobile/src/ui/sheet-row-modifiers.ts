@@ -1,1 +1,3 @@
-export const SHEET_ROW_MODIFIERS = [];
+export function sheetRowModifiers(_twoLine: boolean) {
+  return [];
+}

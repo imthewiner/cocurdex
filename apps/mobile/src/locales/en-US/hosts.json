@@ -84,6 +84,7 @@
     "read": "View sessions, messages, notes, and issues."
   },
   "switcher": {
-    "label": "Computer: {{host}}"
+    "label": "Computer: {{host}}",
+    "title": "Switch Computer"
   }
 }
