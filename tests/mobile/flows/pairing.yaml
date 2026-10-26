@@ -471,7 +471,7 @@ appId: dev.cocurdex.mobile
           commands:
             - tapOn: ${TAB_SESSIONS}
             - extendedWaitUntil:
-                visible: ${WORKSPACE_NAME}
+                visible: ${SEARCHED_SESSION_TITLE}
                 timeout: 5000
 - runFlow:
     when:
@@ -489,9 +489,15 @@ appId: dev.cocurdex.mobile
     commands:
       - back
 - extendedWaitUntil:
-    visible: ${OTHER_SESSION_TITLE}
+    visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
-- assertVisible: "${ROLE_NAME}[ ·,].*"
+- scrollUntilVisible:
+    element: ${OTHER_SESSION_TITLE}
+    timeout: 10000
+- scrollUntilVisible:
+    element: ${SEARCHED_SESSION_TITLE}
+    direction: UP
+    timeout: 10000
 - retry:
     maxRetries: 2
     commands:
