@@ -1,10 +1,10 @@
-import type { AgentId } from "@cocurdex/shared";
+import { type AgentId, countActiveSessionFilters } from "@cocurdex/shared";
 import EditSquareIcon from "@expo/material-symbols/edit_square.xml";
+import FilterIcon from "@expo/material-symbols/filter_list.xml";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { hostConnection } from "@/connection";
 import {
   EmptyHosts,
   HostSwitcher,
@@ -13,14 +13,15 @@ import {
   useScopeGate,
 } from "@/hosts";
 import { beginNewSession, useAgents } from "@/new-session";
-import {
-  SessionList,
-  SessionListViewMenu,
-  sessionsStore,
-  useHostSessions,
-  useSessionListUi,
-} from "@/sessions";
+import { SessionList, sessionsStore, useSessionListUi } from "@/sessions";
 import { useSearchBarOptions } from "@/ui";
+
+function filterIcon(filtered: boolean) {
+  if (Platform.OS !== "ios") return FilterIcon;
+  return filtered
+    ? "line.3.horizontal.decrease.circle.fill"
+    : "line.3.horizontal.decrease.circle";
+}
 
 export default function SessionsScreen() {
   const { t } = useTranslation("sessions");
@@ -61,36 +62,14 @@ function HostSessionsScreen({
   onNewSession(): void;
 }) {
   const { t } = useTranslation("sessions");
+  const router = useRouter();
   const { view } = useSessionListUi();
-  const snapshot = useHostSessions(host.hostId);
+  const filtered = countActiveSessionFilters(view) > 0;
   const descriptors = useAgents(host.hostId).data;
-  const usedAgents = new Set(snapshot.sessions.map((s) => s.agentType));
   const agentLabels = new Map<AgentId, string>(
     descriptors?.map((agent) => [agent.id, agent.label]),
   );
-  const agents = [...usedAgents].map((id) => ({
-    id,
-    label: agentLabels.get(id) ?? id,
-  }));
-  const unreadIds = snapshot.attention
-    .filter((item) => item.primaryState === "completed-unread")
-    .map((item) => item.sessionId);
-  const canInteract = host.scopes.includes("interact");
   const gate = useScopeGate(host);
-  const markAllRead = async () => {
-    const at = new Date().toISOString();
-    const connection = hostConnection(host.hostId);
-    await Promise.allSettled(
-      unreadIds.map((sessionId) =>
-        connection.request("attention.update", {
-          sessionId,
-          action: "visited",
-          at,
-        }),
-      ),
-    );
-    void sessionsStore(host.hostId).reload();
-  };
 
   return (
     <>
@@ -101,12 +80,13 @@ function HostSessionsScreen({
       />
       <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
-        <SessionListViewMenu
-          view={view}
-          agents={agents}
-          unreadCount={unreadIds.length}
-          onMarkAllRead={canInteract ? () => void markAllRead() : undefined}
-        />
+        <Stack.Toolbar.Button
+          icon={filterIcon(filtered)}
+          accessibilityLabel={t("list.menu")}
+          onPress={() => router.push("/list-options")}
+        >
+          {filtered ? <Stack.Toolbar.Badge /> : null}
+        </Stack.Toolbar.Button>
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "square.and.pencil" : EditSquareIcon}
           accessibilityLabel={t("newSession.open")}

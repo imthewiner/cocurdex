@@ -284,8 +284,16 @@ export default interface Resources {
       };
       groupingLabel: "Group By";
       markAllRead: "Mark All as Read";
-      menu: "Group and filter sessions";
+      menu: "Display Options";
       noMatches: "No sessions match the filters";
+      options: {
+        any: "All";
+        archived: "Archived Sessions";
+        close: "Close";
+        done: "Done";
+        title: "Display Options";
+        view: "View";
+      };
       ordering: {
         activity: "Recent Activity";
         created: "Created";

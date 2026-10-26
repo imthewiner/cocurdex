@@ -46,6 +46,36 @@ appId: dev.cocurdex.mobile
     timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${LIST_OPTIONS_ACTION}
+      - extendedWaitUntil:
+          visible:
+            id: list-option-statuses
+          timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: list-options
+- tapOn:
+    id: list-option-grouping
+- tapOn:
+    id: list-choice-none
+- extendedWaitUntil:
+    visible:
+      id: list-option-grouping
+    timeout: 5000
+- tapOn:
+    id: list-option-grouping
+- tapOn:
+    id: list-choice-workspace
+- extendedWaitUntil:
+    visible:
+      id: list-option-grouping
+    timeout: 5000
+- tapOn: ${LIST_OPTIONS_DONE}
+- extendedWaitUntil:
+    visible: ${WORKSPACE_NAME}
+    timeout: 5000
 - scrollUntilVisible:
     element:
       text: ${SHOW_MORE}

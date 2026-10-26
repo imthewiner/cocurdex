@@ -1,0 +1,202 @@
+import type { SavedHost } from "@cocurdex/client-runtime";
+import {
+  defaultOrderDirection,
+  SESSION_ENVIRONMENTS,
+  SESSION_GROUPINGS,
+  SESSION_ORDER_DIRECTIONS,
+  SESSION_ORDERINGS,
+  SESSION_ROOT_LIMITS,
+  SESSION_STATUS_BUCKETS,
+  type SessionListView,
+} from "@cocurdex/shared";
+import { Text } from "@expo/ui";
+import { Stack, useRouter } from "expo-router";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { StyleSheet } from "react-native";
+import { useCurrentHost } from "@/hosts";
+import {
+  updateSessionListView,
+  useSessionListLabels,
+  useSessionListUi,
+} from "@/sessions";
+import { BrandHost, Form, FormRow, FormSection, SelectedMark } from "@/ui";
+import { type ListOptionField, toggledValue } from "./list-option-fields";
+import { useSessionAgentChoices } from "./session-agents";
+
+interface Option {
+  key: string;
+  label: string;
+  selected: boolean;
+  onPress(): void;
+}
+
+function OptionSection({
+  title,
+  options,
+}: {
+  title?: string;
+  options: readonly Option[];
+}) {
+  return (
+    <FormSection title={title}>
+      {options.map((option) => (
+        <FormRow
+          key={option.key}
+          testID={`list-choice-${option.key}`}
+          onPress={option.onPress}
+          trailing={<SelectedMark selected={option.selected} />}
+        >
+          <Text>{option.label}</Text>
+        </FormRow>
+      ))}
+    </FormSection>
+  );
+}
+
+function useFieldSections(
+  hostId: string,
+  field: ListOptionField,
+  view: SessionListView,
+  pick: (update: Partial<SessionListView>) => void,
+): { title: string; sections: ReactNode } {
+  const { t } = useTranslation("sessions");
+  const labels = useSessionListLabels();
+  const agents = useSessionAgentChoices(hostId);
+  switch (field) {
+    case "grouping":
+      return {
+        title: t("list.groupingLabel"),
+        sections: (
+          <OptionSection
+            options={SESSION_GROUPINGS.map((grouping) => ({
+              key: grouping,
+              label: labels.grouping[grouping],
+              selected: view.grouping === grouping,
+              onPress: () => pick({ grouping }),
+            }))}
+          />
+        ),
+      };
+    case "ordering":
+      return {
+        title: t("list.orderingLabel"),
+        sections: (
+          <>
+            <OptionSection
+              options={SESSION_ORDERINGS.map((ordering) => ({
+                key: ordering,
+                label: labels.ordering[ordering],
+                selected: view.ordering === ordering,
+                onPress: () =>
+                  updateSessionListView({
+                    ordering,
+                    direction: defaultOrderDirection(ordering),
+                  }),
+              }))}
+            />
+            <OptionSection
+              options={SESSION_ORDER_DIRECTIONS.map((direction) => ({
+                key: direction,
+                label: labels.direction[direction],
+                selected: view.direction === direction,
+                onPress: () => updateSessionListView({ direction }),
+              }))}
+            />
+          </>
+        ),
+      };
+    case "rootLimit":
+      return {
+        title: t("list.rootLimitLabel"),
+        sections: (
+          <OptionSection
+            options={SESSION_ROOT_LIMITS.map((rootLimit) => ({
+              key: `limit-${rootLimit}`,
+              label: labels.rootLimit(rootLimit),
+              selected: view.rootLimit === rootLimit,
+              onPress: () => pick({ rootLimit }),
+            }))}
+          />
+        ),
+      };
+    case "statuses":
+      return {
+        title: t("list.statusFilter"),
+        sections: (
+          <OptionSection
+            options={SESSION_STATUS_BUCKETS.map((status) => ({
+              key: status,
+              label: labels.status[status],
+              selected: view.statuses.includes(status),
+              onPress: () =>
+                updateSessionListView({
+                  statuses: toggledValue(view.statuses, status),
+                }),
+            }))}
+          />
+        ),
+      };
+    case "agents":
+      return {
+        title: t("list.agentFilter"),
+        sections: (
+          <OptionSection
+            options={agents.map((agent) => ({
+              key: agent.id,
+              label: agent.label,
+              selected: view.agents.includes(agent.id),
+              onPress: () =>
+                updateSessionListView({
+                  agents: toggledValue(view.agents, agent.id),
+                }),
+            }))}
+          />
+        ),
+      };
+    case "environments":
+      return {
+        title: t("list.environmentFilter"),
+        sections: (
+          <OptionSection
+            options={SESSION_ENVIRONMENTS.map((environment) => ({
+              key: environment,
+              label: labels.environment[environment],
+              selected: view.environments.includes(environment),
+              onPress: () =>
+                updateSessionListView({
+                  environments: toggledValue(view.environments, environment),
+                }),
+            }))}
+          />
+        ),
+      };
+  }
+}
+
+function Picker({ host, field }: { host: SavedHost; field: ListOptionField }) {
+  const router = useRouter();
+  const { view } = useSessionListUi();
+  const pick = (update: Partial<SessionListView>) => {
+    updateSessionListView(update);
+    router.back();
+  };
+  const { title, sections } = useFieldSections(host.hostId, field, view, pick);
+  return (
+    <>
+      <Stack.Screen options={{ title }} />
+      <BrandHost style={styles.fill}>
+        <Form>{sections}</Form>
+      </BrandHost>
+    </>
+  );
+}
+
+export function ListOptionPicker({ field }: { field: ListOptionField }) {
+  const host = useCurrentHost();
+  return host ? <Picker host={host} field={field} /> : null;
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});

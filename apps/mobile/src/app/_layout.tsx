@@ -12,7 +12,7 @@ import {
   useThemeColors,
 } from "@/theme";
 
-const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
+const SHEET_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
@@ -127,8 +127,17 @@ export default function RootLayout() {
           name="pair"
           options={{
             title: t("screens.pair"),
-            presentation: PAIR_PRESENTATION,
+            presentation: SHEET_PRESENTATION,
             sheetAllowedDetents: [0.6, 1],
+            sheetGrabberVisible: true,
+          }}
+        />
+        <Stack.Screen
+          name="list-options"
+          options={{
+            headerShown: false,
+            presentation: SHEET_PRESENTATION,
+            sheetAllowedDetents: [0.75, 1],
             sheetGrabberVisible: true,
           }}
         />
