@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import ReanimatedSwipeable, {
@@ -46,6 +46,7 @@ export function SessionSwipeActions({
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const [revealed, setRevealed] = useState(false);
   const renderActions = (
     _progress: unknown,
     _translation: unknown,
@@ -56,7 +57,11 @@ export function SessionSwipeActions({
       action();
     };
     return (
-      <View style={styles.actions}>
+      <View
+        style={styles.actions}
+        accessibilityElementsHidden={!revealed}
+        importantForAccessibility={revealed ? "auto" : "no-hide-descendants"}
+      >
         <SwipeAction
           label={t("actions.more")}
           background={colors.mutedForeground}
@@ -83,6 +88,9 @@ export function SessionSwipeActions({
       overshootRight={false}
       renderRightActions={renderActions}
       childrenContainerStyle={{ backgroundColor: colors.background }}
+      onSwipeableOpenStartDrag={() => setRevealed(true)}
+      onSwipeableWillOpen={() => setRevealed(true)}
+      onSwipeableClose={() => setRevealed(false)}
     >
       {children}
     </ReanimatedSwipeable>
