@@ -6,7 +6,12 @@ import { LinkedEntitiesList } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { useHostSessions } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, PendingIndicator, useAgeLabel } from "@/ui";
+import {
+  ListNotice,
+  PendingIndicator,
+  useAgeLabel,
+  useTransitionSettled,
+} from "@/ui";
 import { useNote, useNotes } from "./note-queries";
 
 export function NoteScreen({
@@ -25,6 +30,9 @@ export function NoteScreen({
   const shown = note.data ?? summary;
   const { workspaces } = useHostSessions(host.hostId);
   const age = useAgeLabel(shown?.updatedAt ?? new Date().toISOString());
+  const settled = useTransitionSettled();
+
+  if (!settled) return <PendingIndicator />;
 
   if (note.data === null) return <ListNotice title={t("missing")} />;
   if (!shown) {

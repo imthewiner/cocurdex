@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import { MarkdownText } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, PendingIndicator } from "@/ui";
+import { ListNotice, PendingIndicator, useTransitionSettled } from "@/ui";
 import {
   FileLoadError,
   type FileLoadFailure,
@@ -124,6 +124,7 @@ function TextFile({
   const colors = useThemeColors();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const content = useFileContent(host, filePath);
+  const settled = useTransitionSettled();
   const failures = useFailureText();
   const markdown = isMarkdownFile(pathBaseName(filePath));
   const [preview, setPreview] = useState(markdown && line === null);
@@ -137,8 +138,8 @@ function TextFile({
     />
   );
 
-  if (content.data === undefined) {
-    if (!content.error) {
+  if (content.data === undefined || !settled) {
+    if (!content.error || !settled) {
       return (
         <>
           {toolbar}
@@ -208,6 +209,11 @@ function TextFile({
   );
 }
 
+function SettledImageFile(props: { host: SavedHost; filePath: string }) {
+  const settled = useTransitionSettled();
+  return settled ? <ImageFile {...props} /> : <PendingIndicator />;
+}
+
 export function FileScreen({
   host,
   filePath,
@@ -218,7 +224,7 @@ export function FileScreen({
   line: number | null;
 }) {
   return workspaceImageMimeType(filePath) ? (
-    <ImageFile host={host} filePath={filePath} />
+    <SettledImageFile host={host} filePath={filePath} />
   ) : (
     <TextFile host={host} filePath={filePath} line={line} />
   );

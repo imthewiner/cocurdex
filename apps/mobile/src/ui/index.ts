@@ -26,6 +26,7 @@ export {
 export { SheetAction } from "./sheet-action";
 export { SheetRow } from "./sheet-row";
 export { ShimmerText } from "./shimmer-text";
+export { useTransitionSettled } from "./transition-settled";
 export { useAgeLabel } from "./use-age-label";
 export { useConfirm } from "./use-confirm";
 export { usePullToRefresh } from "./use-pull-to-refresh";

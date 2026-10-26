@@ -19,6 +19,7 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
+import { useTransitionSettled } from "@/ui";
 import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
@@ -196,6 +197,7 @@ export function ToolCallScreen({
     toolCallId,
     needsResult ? `${call.status}:${call.updatedAt}` : null,
   );
+  const settled = useTransitionSettled();
   if (!call) return null;
   const locations = host?.scopes.includes("files.read")
     ? uniqueLocations(call.locations)
@@ -235,38 +237,42 @@ export function ToolCallScreen({
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
-        {locations.length > 0 ? (
-          <FilesSection hostId={hostId} locations={locations} root={root} />
+        {settled ? (
+          <>
+            {locations.length > 0 ? (
+              <FilesSection hostId={hostId} locations={locations} root={root} />
+            ) : null}
+            {input ? (
+              <CodeSection
+                title={t("tool.input")}
+                text={input}
+                testID="tool-call-input"
+              />
+            ) : null}
+            {outputText ? (
+              <CodeSection
+                title={t("tool.output")}
+                note={output?.truncated ? t("tool.outputTail") : null}
+                text={outputText}
+                testID="tool-call-output"
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.empty,
+                  {
+                    color:
+                      placeholder === "failed"
+                        ? colors.destructive
+                        : colors.mutedForeground,
+                  },
+                ]}
+              >
+                {placeholderText}
+              </Text>
+            )}
+          </>
         ) : null}
-        {input ? (
-          <CodeSection
-            title={t("tool.input")}
-            text={input}
-            testID="tool-call-input"
-          />
-        ) : null}
-        {outputText ? (
-          <CodeSection
-            title={t("tool.output")}
-            note={output?.truncated ? t("tool.outputTail") : null}
-            text={outputText}
-            testID="tool-call-output"
-          />
-        ) : (
-          <Text
-            style={[
-              styles.empty,
-              {
-                color:
-                  placeholder === "failed"
-                    ? colors.destructive
-                    : colors.mutedForeground,
-              },
-            ]}
-          >
-            {placeholderText}
-          </Text>
-        )}
       </ScrollView>
     </>
   );

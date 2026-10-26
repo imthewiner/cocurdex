@@ -22,6 +22,7 @@ const LINES_BELOW_FIRST_SCREEN = 40;
 const FOCUS_VIEW_POSITION = 0.3;
 const LINE_HEIGHT = 20;
 const LINES_HIGHLIGHTED_AHEAD = 80;
+const WINDOW_SCREENS = 5;
 
 const SourceLine = memo(function SourceLine({
   index,
@@ -147,6 +148,7 @@ export function SourceView({
       contentContainerStyle={styles.content}
       scrollsChildToFocus={false}
       initialNumToRender={(focusRow ?? 0) + LINES_BELOW_FIRST_SCREEN}
+      windowSize={WINDOW_SCREENS}
       maintainVisibleContentPosition={
         firstLine > 0 ? { minIndexForVisible: 0 } : undefined
       }

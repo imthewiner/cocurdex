@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { ShimmerText } from "@/ui";
+import { ShimmerText, useTransitionSettled } from "@/ui";
 import { Composer } from "./composer";
 import {
   imageAttachmentSource,
@@ -92,6 +92,7 @@ export function SessionDetailScreen({
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const detail = useSessionDetail(host.hostId, sessionId);
   const [actionFailed, setActionFailed] = useState(false);
+  const settled = useTransitionSettled();
   const observation = detail.observation;
   const viewed = useViewedSession(host.hostId, sessionId);
   const workspaces = viewed.workspaces;
@@ -217,6 +218,8 @@ export function SessionDetailScreen({
               {t("detail.missing")}
             </Text>
           </View>
+        ) : !settled ? (
+          <View style={styles.fill} />
         ) : (
           <TranscriptView
             items={items}

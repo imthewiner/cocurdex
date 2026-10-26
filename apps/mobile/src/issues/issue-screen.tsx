@@ -14,6 +14,7 @@ import {
   FormSection,
   ListNotice,
   PendingIndicator,
+  useTransitionSettled,
 } from "@/ui";
 import { useIssueDetail, useIssueView } from "./issue-queries";
 import { IssueStatusIcon } from "./issue-status-mark";
@@ -58,6 +59,9 @@ export function IssueScreen({
   const view = useIssueView(host.hostId, { cached: true }).data;
   const issue =
     detail.data?.issue ?? view?.issues.find((entry) => entry.id === issueId);
+  const settled = useTransitionSettled();
+
+  if (!settled) return <PendingIndicator />;
 
   if (detail.data === null) return <ListNotice title={t("missing")} />;
   if (!issue) {
