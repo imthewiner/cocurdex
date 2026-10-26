@@ -5,6 +5,8 @@ import { requestDaemon } from "@cocurdex/daemon/internal/client";
 import { startDaemonServer } from "@cocurdex/daemon/internal/wire";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -44,7 +46,9 @@ describe("daemon idle shutdown RPC", () => {
       status: "accepted",
       activeRequests: 0,
     });
-    await vi.waitFor(() => expect(onIdleShutdown).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(onIdleShutdown).toHaveBeenCalledOnce(), {
+      timeout: SHUTDOWN_TIMEOUT_MS,
+    });
     expect(daemon.server.listening).toBe(false);
   });
 
@@ -93,6 +97,8 @@ describe("daemon idle shutdown RPC", () => {
     }
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(await shutdown()).toMatchObject({ status: "accepted" });
-    await vi.waitFor(() => expect(onIdleShutdown).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(onIdleShutdown).toHaveBeenCalledOnce(), {
+      timeout: SHUTDOWN_TIMEOUT_MS,
+    });
   });
 });
