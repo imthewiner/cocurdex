@@ -1,7 +1,11 @@
 import type { AgentRoleDraft } from "../agent-role";
-import type { AgentId, AgentPermissionMode, SessionRecord } from "../contracts";
+import type {
+  AgentId,
+  AgentPermissionMode,
+  SessionRecord,
+  SessionRuntimeSelection,
+} from "../contracts";
 import { snapshotRuntimeSelection } from "./runtime-axes";
-import type { SessionRuntimeSelection } from "./runtime-selection";
 
 export interface RoleDraftSource {
   agentId: AgentId;

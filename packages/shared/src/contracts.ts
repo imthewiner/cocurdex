@@ -1,5 +1,4 @@
 import { pathBaseName } from "./files";
-import type { SessionRuntimeSelection } from "./session-runtime/runtime-selection";
 import type {
   AgentNativeWorkspaceEvidenceEvent,
   AgentTurnChangesUpdatedEvent,
@@ -1338,6 +1337,15 @@ export interface ArchiveSessionPayload {
 
 export interface DeleteSessionPayload {
   sessionId: string;
+}
+
+export interface SessionRuntimeSelection {
+  reasoningEffort?: ReasoningEffort | null;
+  serviceTier?: string | null;
+  fastMode?: boolean | null;
+  thinkingLevel?: AgentThinkingLevel | null;
+  openCodeAgent?: string | null;
+  openCodeVariant?: string | null;
 }
 
 export interface CreateSessionPayload {

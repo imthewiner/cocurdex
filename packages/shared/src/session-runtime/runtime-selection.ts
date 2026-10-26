@@ -2,18 +2,8 @@ import { supportsInSessionRuntimeAxis } from "../agent-runtime-capabilities";
 import type {
   AgentId,
   AgentProviderSnapshot,
-  AgentThinkingLevel,
-  ReasoningEffort,
+  SessionRuntimeSelection,
 } from "../contracts";
-
-export interface SessionRuntimeSelection {
-  reasoningEffort?: ReasoningEffort | null;
-  serviceTier?: string | null;
-  fastMode?: boolean | null;
-  thinkingLevel?: AgentThinkingLevel | null;
-  openCodeAgent?: string | null;
-  openCodeVariant?: string | null;
-}
 
 export function applySessionRuntime(
   snapshot: AgentProviderSnapshot,

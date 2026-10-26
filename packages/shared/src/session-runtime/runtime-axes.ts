@@ -1,4 +1,5 @@
 import { supportsInSessionRuntimeAxis } from "../agent-runtime-capabilities";
+import type { SessionRuntimeSelection } from "../contracts";
 import {
   type AgentId,
   type AgentProviderSnapshot,
@@ -14,7 +15,6 @@ import {
   getOpenCodeRuntimeOptions,
   resolveOpenCodeRuntimeValue,
 } from "./opencode-runtime-options";
-import type { SessionRuntimeSelection } from "./runtime-selection";
 import {
   findSessionConfigOption,
   getConfigOptionSpeedTiers,

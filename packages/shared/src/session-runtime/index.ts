@@ -16,10 +16,7 @@ export {
   type SessionRuntimeAxes,
   snapshotRuntimeSelection,
 } from "./runtime-axes";
-export {
-  applySessionRuntime,
-  type SessionRuntimeSelection,
-} from "./runtime-selection";
+export { applySessionRuntime } from "./runtime-selection";
 export {
   findSessionConfigOption,
   getComposerSessionConfigOptions,
