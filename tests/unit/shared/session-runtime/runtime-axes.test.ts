@@ -1,4 +1,5 @@
 import {
+  type AgentSessionConfigOption,
   applySessionRuntime,
   getSessionRuntimeAxes,
   type ProviderModelRecord,
@@ -102,5 +103,69 @@ describe("applySessionRuntime", () => {
     expect(snapshot.thinkingLevel).toBeNull();
     expect(snapshot.reasoningEffort).toBeUndefined();
     expect(snapshot.fastMode).toBeUndefined();
+  });
+});
+
+describe("getSessionRuntimeAxes with live config options", () => {
+  const liveOptions: AgentSessionConfigOption[] = [
+    {
+      id: "thought_level",
+      name: "Thinking",
+      type: "select",
+      currentValue: "medium",
+      options: [
+        { value: "low", name: "Low" },
+        { value: "medium", name: "Medium" },
+      ],
+    },
+    {
+      id: "speed",
+      name: "Speed",
+      type: "select",
+      currentValue: "standard",
+      options: [
+        { value: "standard", name: "Standard" },
+        { value: "turbo", name: "Turbo" },
+      ],
+    },
+  ];
+
+  it("falls back to the session's live thinking and speed options", () => {
+    const axes = getSessionRuntimeAxes(
+      "acp:devin",
+      model(),
+      {},
+      null,
+      liveOptions,
+    );
+
+    expect(axes.thinking?.options.map((option) => option.level)).toEqual([
+      "low",
+      "medium",
+    ]);
+    expect(axes.thinking?.selected).toBe("medium");
+    expect(axes.speed?.tiers.map((tier) => tier.id)).toEqual(["turbo"]);
+  });
+
+  it("prefers the model catalog over live options", () => {
+    const axes = getSessionRuntimeAxes(
+      "claude-agent",
+      model({
+        supportedReasoningEfforts: [
+          { reasoningEffort: "high", description: "Deep" },
+          { reasoningEffort: "max", description: "Max" },
+        ],
+        serviceTiers: [{ id: "fast", name: "Fast", description: "" }],
+      }),
+      {},
+      null,
+      liveOptions,
+    );
+
+    expect(axes.thinking?.options.map((option) => option.level)).toEqual([
+      "high",
+      "max",
+    ]);
+    expect(axes.speed?.tiers.map((tier) => tier.id)).toEqual(["fast"]);
   });
 });

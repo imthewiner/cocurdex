@@ -451,6 +451,8 @@ export async function handleDaemonRequest(
       );
     case "session.get":
       return service.getSession(request.params.sessionId);
+    case "session.runtimeState":
+      return service.getSessionRuntimeState(request.params.sessionId);
     case "session.listPeers":
       return service.peerMessaging.listPeers(request.params.sessionId);
     case "session.sendPeerMessage":

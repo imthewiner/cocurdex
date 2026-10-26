@@ -18,6 +18,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "session.list": "read",
   "session.snapshot": "read",
   "session.get": "read",
+  "session.runtimeState": "read",
   "session.listPeers": "read",
   "team.get": "read",
   "teamTemplate.list": "read",

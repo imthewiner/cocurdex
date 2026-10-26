@@ -1,4 +1,5 @@
-import type { AgentSessionConfigOption } from "../contracts";
+import { supportsInSessionRuntimeAxis } from "../agent-runtime-capabilities";
+import type { AgentId, AgentSessionConfigOption } from "../contracts";
 
 export type OccupiedSessionConfigAxis =
   | "model"
@@ -111,4 +112,24 @@ export function getSessionConfigTriggerValues(
       return [selected.name];
     },
   );
+}
+
+const IN_SESSION_AXES = [
+  "thinking",
+  "permission",
+  "speed",
+  "agent",
+  "variant",
+] as const satisfies readonly OccupiedSessionConfigAxis[];
+
+export function getOccupiedSessionConfigAxes(
+  agentId: AgentId,
+): OccupiedSessionConfigAxis[] {
+  return [
+    "model",
+    "mode",
+    ...IN_SESSION_AXES.filter((axis) =>
+      supportsInSessionRuntimeAxis(agentId, axis),
+    ),
+  ];
 }

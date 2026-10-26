@@ -1,5 +1,6 @@
 import {
   getComposerSessionConfigOptions,
+  getOccupiedSessionConfigAxes,
   getSessionConfigTriggerValues,
 } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
@@ -57,5 +58,22 @@ describe("agent runtime config rows", () => {
     expect(
       getSessionConfigTriggerValues(options, grokOccupied, ["Medium"]),
     ).toEqual(["Standard"]);
+  });
+});
+
+describe("getOccupiedSessionConfigAxes", () => {
+  it("leaves axes the app does not control to the agent's own options", () => {
+    expect(getOccupiedSessionConfigAxes("pi")).toEqual([
+      "model",
+      "mode",
+      "thinking",
+    ]);
+    expect(getOccupiedSessionConfigAxes("opencode")).toEqual([
+      "model",
+      "mode",
+      "permission",
+      "agent",
+      "variant",
+    ]);
   });
 });

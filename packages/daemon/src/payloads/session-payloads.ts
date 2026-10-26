@@ -112,6 +112,8 @@ export const sessionPayloadSchemas = {
     }),
   ),
   "session.get": exact<Payload<"session.get">>()(sessionIdPayload),
+  "session.runtimeState":
+    exact<Payload<"session.runtimeState">>()(sessionIdPayload),
   "session.configure": loose<Payload<"session.configure">>()(
     z.looseObject({ id: idSchema, workspaceId: idSchema }),
   ),

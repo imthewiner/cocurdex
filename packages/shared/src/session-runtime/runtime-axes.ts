@@ -2,6 +2,7 @@ import { supportsInSessionRuntimeAxis } from "../agent-runtime-capabilities";
 import {
   type AgentId,
   type AgentProviderSnapshot,
+  type AgentSessionConfigOption,
   type AgentThinkingLevel,
   type CodexServiceTierOption,
   isReasoningEffort,
@@ -15,6 +16,11 @@ import {
 } from "./opencode-runtime-options";
 import type { SessionRuntimeSelection } from "./runtime-selection";
 import {
+  findSessionConfigOption,
+  getConfigOptionSpeedTiers,
+} from "./session-config-options";
+import {
+  getConfigOptionThinkingLevels,
   getThinkingLevelOptions,
   resolveThinkingLevel,
   type ThinkingLevelOption,
@@ -82,14 +88,20 @@ function thinkingAxis(
   agentId: AgentId,
   model: ProviderModelRecord,
   selection: SessionRuntimeSelection,
+  configOptions: readonly AgentSessionConfigOption[],
 ): SessionRuntimeAxes["thinking"] {
-  const options = getThinkingLevelOptions({
+  const modelOptions = getThinkingLevelOptions({
     agentType: agentId,
     supportsReasoning: model.reasoning,
     thinkingLevelMapJson: model.thinkingLevelMapJson,
     supportedReasoningEfforts: model.supportedReasoningEfforts,
     defaultReasoningEffort: model.defaultReasoningEffort ?? null,
   });
+  const options =
+    modelOptions.length === 0 &&
+    supportsInSessionRuntimeAxis(agentId, "thinking")
+      ? getConfigOptionThinkingLevels(configOptions)
+      : modelOptions;
   if (options.length < 2) return null;
   return {
     options,
@@ -104,11 +116,17 @@ function speedAxis(
   agentId: AgentId,
   model: ProviderModelRecord,
   selection: SessionRuntimeSelection,
+  configOptions: readonly AgentSessionConfigOption[],
 ): SessionRuntimeAxes["speed"] {
-  const tiers = model.serviceTiers ?? [];
-  if (!supportsInSessionRuntimeAxis(agentId, "speed") || tiers.length === 0) {
-    return null;
-  }
+  if (!supportsInSessionRuntimeAxis(agentId, "speed")) return null;
+  const catalogTiers = model.serviceTiers ?? [];
+  const tiers =
+    catalogTiers.length > 0
+      ? catalogTiers
+      : getConfigOptionSpeedTiers(
+          findSessionConfigOption(configOptions, "speed"),
+        );
+  if (tiers.length === 0) return null;
   const selected = tiers.some((tier) => tier.id === selection.serviceTier)
     ? (selection.serviceTier ?? null)
     : null;
@@ -142,6 +160,7 @@ export function getSessionRuntimeAxes(
   model: ProviderModelRecord | null | undefined,
   selection: SessionRuntimeSelection,
   snapshot: AgentProviderSnapshot | null = null,
+  configOptions: readonly AgentSessionConfigOption[] = [],
 ): SessionRuntimeAxes {
   if (!model) {
     return {
@@ -154,9 +173,11 @@ export function getSessionRuntimeAxes(
   }
   return {
     thinking:
-      agentId === "codex" ? null : thinkingAxis(agentId, model, selection),
+      agentId === "codex"
+        ? null
+        : thinkingAxis(agentId, model, selection, configOptions),
     effort: agentId === "codex" ? effortAxis(model, selection) : null,
-    speed: speedAxis(agentId, model, selection),
+    speed: speedAxis(agentId, model, selection, configOptions),
     fastMode:
       agentId === "claude-agent" && model.supportsFastMode
         ? (selection.fastMode ?? false)

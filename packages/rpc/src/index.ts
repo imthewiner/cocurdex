@@ -13,6 +13,7 @@ import type {
   AgentRunLimits,
   AgentSessionConfigOption,
   AgentSessionMode,
+  AgentSessionRuntimeState,
   AgentSlashCommand,
   AgentToolCallRecord,
   AgentToolCallResult,
@@ -396,6 +397,7 @@ export type DaemonRequestPayloadByMethod = {
   "session.create": CreateSessionPayload;
   "session.resolveNew": CreateSessionPayload;
   "session.get": { sessionId: string };
+  "session.runtimeState": { sessionId: string };
   "session.listPeers": { sessionId: string };
   "session.sendPeerMessage": SendPeerMessagePayload;
   "session.setPeerInbound": { sessionId: string; policy: PeerInboundPolicy };
@@ -752,6 +754,7 @@ export type DaemonResultByMethod = {
   "session.create": SessionRecord;
   "session.resolveNew": NewSessionDefaults;
   "session.get": SessionRecord | null;
+  "session.runtimeState": AgentSessionRuntimeState;
   "session.delete": null;
   "session.archive": SessionRecord | null;
   "session.restore": SessionRecord[];
