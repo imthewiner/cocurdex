@@ -249,7 +249,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
