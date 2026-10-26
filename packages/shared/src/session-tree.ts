@@ -2,7 +2,7 @@ import type { SessionRecord } from "./contracts";
 import type {
   SessionOrderDirection,
   SessionOrdering,
-} from "./session-list-view";
+} from "./session-ordering";
 
 const titleCollator = new Intl.Collator(undefined, {
   numeric: true,
