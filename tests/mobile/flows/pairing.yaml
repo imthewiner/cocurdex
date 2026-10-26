@@ -58,20 +58,36 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: list-options
 - tapOn:
     id: list-option-grouping
-- tapOn:
-    id: list-choice-none
 - extendedWaitUntil:
     visible:
-      id: list-option-grouping
+      id: list-choice-none
     timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: list-choice-none
+      - extendedWaitUntil:
+          visible:
+            id: list-option-grouping
+          timeout: 5000
 - tapOn:
     id: list-option-grouping
-- tapOn:
-    id: list-choice-workspace
 - extendedWaitUntil:
     visible:
-      id: list-option-grouping
+      id: list-choice-workspace
     timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: list-choice-workspace
+      - extendedWaitUntil:
+          visible:
+            id: list-option-grouping
+          timeout: 5000
 - tapOn: ${LIST_OPTIONS_DONE}
 - extendedWaitUntil:
     visible: ${WORKSPACE_NAME}
@@ -545,8 +561,10 @@ appId: dev.cocurdex.mobile
 - runFlow:
     when:
       platform: Android
+      visible: ${SEARCH_QUERY}
     commands:
-      - back
+      - tapOn: ${SEARCH_QUERY}
+      - eraseText: 40
 - extendedWaitUntil:
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
@@ -784,11 +802,11 @@ appId: dev.cocurdex.mobile
     direction: LEFT
 - extendedWaitUntil:
     visible:
-      id: "session-swipe-archive-.*"
+      id: "session-swipe-archive-${SEND_SESSION_ID}"
     timeout: 5000
 - takeScreenshot: session-swipe
 - tapOn:
-    id: "session-swipe-more-.*"
+    id: "session-swipe-more-${SEND_SESSION_ID}"
 - extendedWaitUntil:
     visible:
       id: session-action-archive

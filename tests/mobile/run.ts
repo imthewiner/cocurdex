@@ -291,7 +291,7 @@ async function main() {
     try {
       for (const { appearance, locale } of RUNS) {
         const send = sendLabels(locale);
-        await daemon.createReplyingSession(
+        const replySession = await daemon.createReplyingSession(
           send.SEND_SESSION_TITLE,
           streamedReply(send),
         );
@@ -304,6 +304,7 @@ async function main() {
           {
             ...flowLabels(locale),
             ...send,
+            SEND_SESSION_ID: replySession.id,
             NEW_SESSION_AGENT: await daemon.agentLabel("pi"),
             NEW_SESSION_MODEL: daemon.agentModelName,
             AGENT_MODEL_ID: daemon.agentModelId,
@@ -334,10 +335,14 @@ async function main() {
           throw new Error(`The agent never received "${SEND_PROMPT}"`);
         }
       }
+      const replySessionTitles = RUNS.map(
+        ({ locale }) => sendLabels(locale).SEND_SESSION_TITLE,
+      );
       const started = (await daemon.sessions()).filter(
         (session) =>
           session.agentType === "pi" &&
-          session.providerSnapshot?.modelName === daemon.agentModelName,
+          session.providerSnapshot?.modelName === daemon.agentModelName &&
+          !replySessionTitles.includes(session.title),
       );
       if (started.length !== RUNS.length) {
         throw new Error(
