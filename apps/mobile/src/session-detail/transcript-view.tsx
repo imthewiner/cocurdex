@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
 import type { TFunction } from "i18next";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
@@ -148,14 +148,12 @@ function ActivityRow({
   actions,
   expanded,
   onToggle,
-  onExpandedHeight,
 }: {
   item: ActivityItem;
   colors: ThemeColors;
   actions: TranscriptActions;
   expanded: boolean;
   onToggle(): void;
-  onExpandedHeight(height: number): void;
 }) {
   const label = useActivityLabel(item);
   return (
@@ -185,12 +183,7 @@ function ActivityRow({
         />
       </Pressable>
       {expanded ? (
-        <View
-          style={styles.activityItems}
-          onLayout={({ nativeEvent }) =>
-            onExpandedHeight(nativeEvent.layout.height + space.xs)
-          }
-        >
+        <View style={styles.activityItems}>
           {item.items.map((child) => (
             <ActivityChildRow
               key={`${child.kind}:${child.id}`}
@@ -240,14 +233,12 @@ function TranscriptRow({
   actions,
   expanded,
   onToggle,
-  onExpandedHeight,
 }: {
   item: CondensedItem;
   colors: ThemeColors;
   actions: TranscriptActions;
   expanded: boolean;
   onToggle(): void;
-  onExpandedHeight(height: number): void;
 }) {
   if (item.kind === "user") {
     return (
@@ -293,7 +284,6 @@ function TranscriptRow({
         actions={actions}
         expanded={expanded}
         onToggle={onToggle}
-        onExpandedHeight={onExpandedHeight}
       />
     );
   }
@@ -304,6 +294,18 @@ function TranscriptRow({
       onOpen={() => actions.onOpenTool(item.id)}
     />
   );
+}
+
+interface VisibleAnchor {
+  items: readonly CondensedItem[];
+  minIndexForVisible: number;
+}
+
+function toggledSet(current: ReadonlySet<string>, id: string) {
+  const next = new Set(current);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  return next;
 }
 
 export function TranscriptView({
@@ -317,40 +319,24 @@ export function TranscriptView({
 }) {
   const colors = useThemeColors();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
   const newestFirst = useMemo(() => [...items].reverse(), [items]);
-  const list = useRef<FlatList<CondensedItem>>(null);
-  const offset = useRef(0);
-  const expandedHeights = useRef(new Map<string, number>());
-  const shiftBy = (delta: number) => {
-    if (delta === 0) return;
-    offset.current = Math.max(0, offset.current + delta);
-    list.current?.scrollToOffset({ offset: offset.current, animated: false });
-  };
-  const keepHeaderInPlace = (id: string, height: number) => {
-    const previous = expandedHeights.current.get(id) ?? 0;
-    expandedHeights.current.set(id, height);
-    shiftBy(height - previous);
-  };
   const toggle = (id: string) => {
-    const collapsing = expanded.has(id);
-    const next = new Set(expanded);
-    if (collapsing) next.delete(id);
-    else next.add(id);
-    setExpanded(next);
-    if (!collapsing) return;
-    const height = expandedHeights.current.get(id) ?? 0;
-    expandedHeights.current.delete(id);
-    requestAnimationFrame(() => shiftBy(-height));
+    const index = newestFirst.findIndex((item) => item.id === id);
+    setAnchor({ items, minIndexForVisible: index + 1 });
+    requestAnimationFrame(() =>
+      setExpanded((current) => toggledSet(current, id)),
+    );
   };
   return (
     <FlatList
-      ref={list}
       inverted
       scrollsChildToFocus={false}
-      onScroll={({ nativeEvent }) => {
-        offset.current = nativeEvent.contentOffset.y;
-      }}
-      scrollEventThrottle={16}
+      maintainVisibleContentPosition={
+        anchor?.items === items
+          ? { minIndexForVisible: anchor.minIndexForVisible }
+          : undefined
+      }
       data={newestFirst}
       extraData={expanded}
       keyExtractor={(item) => `${item.kind}:${item.id}`}
@@ -364,7 +350,6 @@ export function TranscriptView({
           actions={actions}
           expanded={expanded.has(item.id)}
           onToggle={() => toggle(item.id)}
-          onExpandedHeight={(height) => keepHeaderInPlace(item.id, height)}
         />
       )}
     />

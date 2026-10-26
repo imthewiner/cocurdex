@@ -73,7 +73,7 @@ export function TurnActions({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: space.sm, marginLeft: -space.sm },
+  row: { flexDirection: "row", marginLeft: -space.sm },
   button: {
     width: control.compact.height,
     height: control.compact.height,

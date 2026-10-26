@@ -42,13 +42,17 @@ function MetaIcon({
 }
 
 const CHILD_INDENT = 20;
+const DISCLOSURE_WIDTH = 16;
+const TITLE_LINE_HEIGHT = 22;
 const DISCLOSURE_SLOP = { top: 12, bottom: 12, left: 12, right: 8 };
 
 function ChildrenDisclosure({
   expanded,
+  start,
   onPress,
 }: {
   expanded: boolean;
+  start: number;
   onPress(): void;
 }) {
   const { t } = useTranslation("sessions");
@@ -62,7 +66,7 @@ function ChildrenDisclosure({
       accessibilityState={{ expanded }}
       hitSlop={DISCLOSURE_SLOP}
       onPress={onPress}
-      style={styles.disclosure}
+      style={[styles.disclosure, { start }]}
     >
       <SymbolView
         name={
@@ -100,6 +104,7 @@ export function SessionRowView({
     .filter(Boolean)
     .join(" · ");
   const summary = [role?.name, detail, age].filter(Boolean).join(", ");
+  const contentStart = layout.sideMargin + row.depth * CHILD_INDENT;
   return (
     <Pressable
       accessibilityLabel={row.title}
@@ -109,18 +114,19 @@ export function SessionRowView({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
-        { paddingStart: layout.sideMargin + row.depth * CHILD_INDENT },
+        { paddingStart: contentStart },
         pressed && { backgroundColor: colors.muted },
       ]}
       testID={`session-row-${row.id}`}
     >
+      {row.hasChildren ? (
+        <ChildrenDisclosure
+          expanded={row.expanded}
+          start={contentStart - DISCLOSURE_WIDTH}
+          onPress={onToggleChildren}
+        />
+      ) : null}
       <View style={styles.line}>
-        {row.hasChildren ? (
-          <ChildrenDisclosure
-            expanded={row.expanded}
-            onPress={onToggleChildren}
-          />
-        ) : null}
         <Text
           numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
@@ -156,8 +162,15 @@ const styles = StyleSheet.create({
     paddingEnd: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  disclosure: { width: 16, alignItems: "center", marginEnd: -space.xs },
-  title: { flex: 1, fontSize: 16, lineHeight: 22 },
+  disclosure: {
+    position: "absolute",
+    top: space.sm,
+    width: DISCLOSURE_WIDTH,
+    height: TITLE_LINE_HEIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: { flex: 1, fontSize: 16, lineHeight: TITLE_LINE_HEIGHT },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
   meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
   metaIcon: { width: 18, alignItems: "center" },
