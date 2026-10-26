@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import {
   getConfigOptionThinkingLevels,
   getEffectiveThinkingLevel,
   getThinkingLevelOptions,
-} from "@/features/sessions/thinking-level";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 const claudeEfforts = [
   { reasoningEffort: "low", description: "low" },

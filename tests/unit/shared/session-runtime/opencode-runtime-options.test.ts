@@ -2,12 +2,12 @@ import type {
   AgentProviderSnapshot,
   ProviderModelRecord,
 } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
 import {
   getDefaultOpenCodeAgent,
   getOpenCodeRuntimeOptions,
   resolveOpenCodeRuntimeValue,
-} from "@/features/sessions/provider-model/opencode-runtime-options";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 function createModel(compatJson: string | null): ProviderModelRecord {
   return { compatJson } as ProviderModelRecord;

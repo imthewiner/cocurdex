@@ -32,9 +32,7 @@ export {
   bootstrapProviderModelsAtom,
   findProviderModel,
   getCachedProviderModelEntry,
-  getDefaultOpenCodeAgent,
   getDefaultProviderModelValue,
-  getOpenCodeRuntimeOptions,
   getProviderModelCacheVersion,
   invalidateProviderModelCache,
   loadProviderModelOptions,
@@ -45,7 +43,6 @@ export {
   providerModelsAtom,
   providerModelsLoadedAtom,
   RuntimeAxisSubmenu,
-  resolveOpenCodeRuntimeValue,
   shouldShowProviderGroupLabels,
   subscribeProviderModelCache,
 } from "./provider-model";
@@ -59,14 +56,6 @@ export {
   sessionResultAttentionAtom,
   unreadSessionIdsAtom,
 } from "./session-attention-store";
-export {
-  findSessionConfigOption,
-  getComposerSessionConfigOptions,
-  getConfigOptionSpeedTiers,
-  getSessionConfigTriggerValues,
-  isBaselineSpeedOptionValue,
-  type OccupiedSessionConfigAxis,
-} from "./session-config-options";
 export {
   ContextHandoffMarker,
   canSwitchSessionAgent,
@@ -140,12 +129,4 @@ export {
   upsertSessionAtom,
 } from "./session-store";
 export { TeamPanel } from "./team";
-export {
-  getConfigOptionThinkingLevels,
-  getEffectiveThinkingLevel,
-  getThinkingLevelLabel,
-  getThinkingLevelOptions,
-  resolveThinkingLevel,
-  type ThinkingLevelOption,
-} from "./thinking-level";
 export { ThinkingLevelSubmenu } from "./thinking-level-submenu";

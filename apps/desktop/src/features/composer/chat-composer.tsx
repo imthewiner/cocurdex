@@ -11,6 +11,7 @@ import {
   isContextAttachment,
   isDocumentAttachment,
   supportsInSessionRuntimeAxis,
+  type ThinkingLevelOption,
 } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { Paperclip, Plus } from "lucide-react";
@@ -36,7 +37,6 @@ import {
   getAgentDisplayLabel,
   getSessionModeOptions,
   SessionModeSubmenu,
-  type ThinkingLevelOption,
   ThinkingLevelSubmenu,
 } from "@/features/sessions";
 import { cn } from "@/lib";

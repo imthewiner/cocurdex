@@ -1,4 +1,4 @@
-import type { AgentSessionConfigOption } from "@cocurdex/shared";
+import type { AgentSessionConfigOption } from "../contracts";
 
 export type OccupiedSessionConfigAxis =
   | "model"
@@ -69,8 +69,6 @@ export function getComposerSessionConfigOptions(
 
 const BASELINE_SPEED_VALUES = new Set(["default", "normal", "standard"]);
 
-// The rung a session speed option rests at by default (Devin's "standard")
-// maps to the picker's built-in standard row, not a named tier.
 export function isBaselineSpeedOptionValue(
   value: string | null | undefined,
 ): boolean {

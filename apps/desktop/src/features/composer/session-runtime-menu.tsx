@@ -8,25 +8,25 @@ import type {
   ProviderModelRecord,
   ReasoningEffort,
 } from "@cocurdex/shared";
-import { supportsInSessionRuntimeAxis } from "@cocurdex/shared";
-import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import {
   findSessionConfigOption,
   getComposerSessionConfigOptions,
   getConfigOptionSpeedTiers,
+  getDefaultOpenCodeAgent,
+  getOpenCodeRuntimeOptions,
   getSessionConfigTriggerValues,
   isBaselineSpeedOptionValue,
   type OccupiedSessionConfigAxis,
+  resolveOpenCodeRuntimeValue,
+  supportsInSessionRuntimeAxis,
+} from "@cocurdex/shared";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import {
   PermissionModeSubmenu,
   ProviderModelMenu,
   supportsLivePermissionMode,
 } from "@/features/sessions";
-import {
-  getDefaultOpenCodeAgent,
-  getOpenCodeRuntimeOptions,
-  resolveOpenCodeRuntimeValue,
-} from "@/features/sessions/provider-model/opencode-runtime-options";
 import { shouldShowProviderGroupLabels } from "@/features/sessions/provider-model/provider-model-label";
 import { AgentRuntimeConfigItems } from "./agent-runtime-controls";
 import { composerFooterControlClassName } from "./chat-composer-layout";

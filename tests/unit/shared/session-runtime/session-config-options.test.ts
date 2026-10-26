@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import {
   getComposerSessionConfigOptions,
   getSessionConfigTriggerValues,
-} from "@/features/sessions/session-config-options";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 const grokOccupied = ["model", "thinking", "mode", "permission"] as const;
 
