@@ -1,25 +1,13 @@
 import { useRouter } from "expo-router";
-import { type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  useColorScheme,
-  View,
-} from "react-native";
-import { SvgCss } from "react-native-svg/css";
+import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { space, useThemeColors } from "@/theme";
 import { PendingIndicator } from "@/ui";
+import { DiagramPreview } from "./diagram-preview";
 import { useDiagram } from "./mermaid-store";
-import { withoutReversedMarkers } from "./svg-markers";
 
 const PLACEHOLDER_HEIGHT = 160;
-
-function NativeSvg({ svg }: { svg: string }) {
-  const xml = useMemo(() => withoutReversedMarkers(svg), [svg]);
-  return <SvgCss xml={xml} width="100%" height="100%" />;
-}
 
 function DiagramPlaceholder() {
   const { t } = useTranslation();
@@ -49,7 +37,7 @@ export function MermaidDiagram({
   const entry = useDiagram(source, appearance);
   if (entry?.kind === "failed") return fallback;
   if (!entry) return <DiagramPlaceholder />;
-  const { svg, width, height, image } = entry.diagram;
+  const { width, height } = entry.diagram;
   return (
     <View style={[styles.frame, { maxWidth: width }]}>
       <Pressable
@@ -65,15 +53,7 @@ export function MermaidDiagram({
         }
         style={[styles.fill, { aspectRatio: width / height }]}
       >
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.image}
-            resizeMode="contain"
-          />
-        ) : (
-          <NativeSvg svg={svg} />
-        )}
+        <DiagramPreview diagram={entry.diagram} />
       </Pressable>
     </View>
   );
@@ -87,5 +67,4 @@ const styles = StyleSheet.create({
   },
   frame: { width: "100%", alignSelf: "center", marginBottom: space.sm },
   fill: { width: "100%" },
-  image: { width: "100%", height: "100%" },
 });
