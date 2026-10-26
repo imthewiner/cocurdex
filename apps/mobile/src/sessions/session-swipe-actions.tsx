@@ -88,9 +88,8 @@ export function SessionSwipeActions({
       overshootRight={false}
       renderRightActions={renderActions}
       childrenContainerStyle={{ backgroundColor: colors.background }}
-      onSwipeableOpenStartDrag={() => setRevealed(true)}
       onSwipeableWillOpen={() => setRevealed(true)}
-      onSwipeableClose={() => setRevealed(false)}
+      onSwipeableWillClose={() => setRevealed(false)}
     >
       {children}
     </ReanimatedSwipeable>
