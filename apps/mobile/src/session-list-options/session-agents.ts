@@ -1,5 +1,5 @@
 import type { AgentId } from "@cocurdex/shared";
-import { useAgents } from "@/new-session";
+import { useAgents } from "@/agents";
 import { useHostSessions } from "@/sessions";
 
 export interface SessionAgentChoice {

@@ -5,6 +5,7 @@ import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
+import { useAgents } from "@/agents";
 import {
   EmptyHosts,
   HostSwitcher,
@@ -12,7 +13,7 @@ import {
   usePairingRoutes,
   useScopeGate,
 } from "@/hosts";
-import { beginNewSession, useAgents } from "@/new-session";
+import { beginNewSession } from "@/new-session";
 import { SessionList, sessionsStore, useSessionListUi } from "@/sessions";
 import { emptyListOptions, type ListHeader, useListHeader } from "@/ui";
 

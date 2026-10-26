@@ -6,7 +6,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Keyboard, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AgentIcon, RoleAvatar, useAgentRoles } from "@/agents";
+import {
+  AgentIcon,
+  RoleAvatar,
+  useAgentRoles,
+  useAgents,
+  useCompatibleModels,
+  usePermissionModeLabels,
+} from "@/agents";
 import { hostConnection } from "@/connection";
 import { useSavedHosts } from "@/hosts";
 import { Composer, pickImages, uploadImage } from "@/session-detail";
@@ -26,13 +33,8 @@ import {
   draftWorkspaceId,
   workspaceChoices,
 } from "./new-session-draft";
-import {
-  useAgents,
-  useCompatibleModels,
-  useNewSessionDefaults,
-} from "./new-session-queries";
+import { useNewSessionDefaults } from "./new-session-queries";
 import { useNewSessionState } from "./new-session-store";
-import { usePermissionModeLabels } from "./permission-mode-labels";
 import { createSessionStarter, shownSessionPayload } from "./start-session";
 
 function Sheet({ host }: { host: SavedHost }) {

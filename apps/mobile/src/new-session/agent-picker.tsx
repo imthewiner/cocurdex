@@ -8,7 +8,14 @@ import {
 import { Text } from "@expo/ui";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
-import { AgentIcon, RoleAvatar, useAgentRoles } from "@/agents";
+import {
+  AgentIcon,
+  RoleAvatar,
+  useAgentRoles,
+  useAgents,
+  useCompatibleModels,
+  usePermissionModeLabels,
+} from "@/agents";
 import { useSavedHosts } from "@/hosts";
 import { RuntimeSections } from "@/session-runtime";
 import { useHostSessions } from "@/sessions";
@@ -32,13 +39,8 @@ import {
   draftWorkspaceId,
   workspaceChoices,
 } from "./new-session-draft";
-import {
-  useAgents,
-  useCompatibleModels,
-  useNewSessionDefaults,
-} from "./new-session-queries";
+import { useNewSessionDefaults } from "./new-session-queries";
 import { updateNewSessionDraft, useNewSessionState } from "./new-session-store";
-import { usePermissionModeLabels } from "./permission-mode-labels";
 
 function useAvailabilityLabels(): Record<AgentAvailability, string> {
   const { t } = useTranslation("sessions");
