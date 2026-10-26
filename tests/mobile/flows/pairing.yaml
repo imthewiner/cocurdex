@@ -459,7 +459,7 @@ appId: dev.cocurdex.mobile
     when:
       platform: iOS
     commands:
-      - tapOn: ${SYSTEM_CANCEL}
+      - tapOn: ${SEARCH_DISMISS}
 - runFlow:
     when:
       platform: Android
