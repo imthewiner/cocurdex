@@ -85,6 +85,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "agentRole.get": "read",
   "host.session": "read",
   "host.identity": "read",
+  "host.devices.revokeSelf": "read",
   "system.homeDir": "read",
   "system.fontFamilies": "read",
   "workspace.listEntries": "files.read",

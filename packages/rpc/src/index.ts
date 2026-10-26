@@ -679,6 +679,7 @@ export type DaemonRequestPayloadByMethod = {
   "host.pairing.cancel": { pairingId: string };
   "host.devices.list": undefined;
   "host.devices.revoke": { deviceId: string };
+  "host.devices.revokeSelf": undefined;
   "host.devices.updateScopes": { deviceId: string; scopes: HostAccessScope[] };
   "host.audit.list": { limit?: number };
 };
@@ -961,6 +962,7 @@ export type DaemonResultByMethod = {
   "host.pairing.cancel": HostPairingRecord | null;
   "host.devices.list": PairedDeviceRecord[];
   "host.devices.revoke": PairedDeviceRecord | null;
+  "host.devices.revokeSelf": PairedDeviceRecord | null;
   "host.devices.updateScopes": PairedDeviceRecord | null;
   "host.audit.list": HostAccessAuditEntry[];
 };
@@ -991,6 +993,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "host.remoteAccess.get": true,
   "host.pairing.list": true,
   "host.devices.list": true,
+  "host.devices.revokeSelf": true,
   "issue.listViews": true,
   "issue.listLabels": true,
   "issue.listLinkedSessionIds": true,
