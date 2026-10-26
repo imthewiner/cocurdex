@@ -4,7 +4,7 @@ export const DOC_IMAGE_URI_PREFIX = `${ENTITY_URI_PREFIX}image/`;
 
 const STORED_IMAGE_FILE_NAME = /^[A-Za-z0-9-]+\.(gif|jpg|png|webp)$/;
 const DOC_IMAGE_MARKDOWN =
-  /!\[((?:[^\]\\\n]|\\.)*)\]\((cocurdex:\/\/image\/[A-Za-z0-9.-]+)\)/g;
+  /!\[((?:[^[\]\\\n]|\\.)*)\]\((cocurdex:\/\/image\/[A-Za-z0-9.-]+)\)/g;
 
 export interface DocImageFile {
   uri: string;

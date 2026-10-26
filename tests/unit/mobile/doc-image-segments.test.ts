@@ -27,7 +27,9 @@ describe("doc image segments", () => {
       "markdown",
     ]);
     expect(segments[2]).toMatchObject({ text: " here" });
-    const keys = streamingBlocks(segments, false).map((block) => block.key);
+    const keys = streamingBlocks(segments, { live: true, split: true }).map(
+      (block) => block.key,
+    );
     expect(new Set(keys).size).toBe(keys.length);
   });
 

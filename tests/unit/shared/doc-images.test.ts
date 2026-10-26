@@ -38,4 +38,11 @@ describe("doc image references", () => {
       ),
     ).toEqual([]);
   });
+
+  it("scans unclosed image openers in linear time", () => {
+    const hostile = `${"![".repeat(50_000)}\\`;
+    const started = performance.now();
+    expect(findDocImages(hostile)).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(200);
+  });
 });
