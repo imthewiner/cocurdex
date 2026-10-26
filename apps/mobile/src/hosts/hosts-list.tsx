@@ -80,6 +80,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   text: { flex: 1, gap: 2 },
-  title: { fontSize: 16, lineHeight: 22, fontWeight: "500" },
-  detail: { fontSize: 15, lineHeight: 20 },
+  title: { fontSize: 16, lineHeight: 22 },
+  detail: { fontSize: 14, lineHeight: 19 },
 });

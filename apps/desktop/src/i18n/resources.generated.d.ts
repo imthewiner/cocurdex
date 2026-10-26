@@ -1130,6 +1130,11 @@ export default interface Resources {
       titleLabel: "Note title";
       untitledPlaceholder: "Untitled";
     };
+    image: {
+      tooLarge: "Images must be 10 MB or smaller.";
+      unsupported: "Only PNG, JPEG, GIF, or WebP images are supported.";
+      uploadFailed: "Couldn't add the image";
+    };
     scope: {
       private: "Private";
       workspace: "{{name}}";
@@ -2069,9 +2074,17 @@ export default interface Resources {
       };
     };
     devices: {
+      access: {
+        cancel: "Cancel";
+        description: "The device reconnects right away with the new access.";
+        failed: "Could not change the device access";
+        save: "Save";
+        title: "Access for {{name}}";
+      };
       audit: {
         action: {
           deviceRevoked: "Device revoked";
+          deviceScopesChanged: "Device access changed";
           pairingCancelled: "Pairing cancelled";
           pairingCreated: "Pairing created";
           pairingExchanged: "Device paired";
@@ -2084,6 +2097,7 @@ export default interface Resources {
       copy: "Copy";
       list: {
         detail: "{{scopes}} · last seen {{time}}";
+        editAccess: "Edit access";
         empty: "No devices are paired with this computer yet.";
         groupTitle: "Paired devices";
         revoke: "Revoke";

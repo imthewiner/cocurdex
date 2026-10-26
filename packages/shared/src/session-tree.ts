@@ -1,7 +1,8 @@
-import type { SessionRecord } from "@cocurdex/shared";
-
-export type SessionRootOrder = "activity" | "created" | "title";
-export type SessionOrderDirection = "asc" | "desc";
+import type { SessionRecord } from "./contracts";
+import type {
+  SessionOrderDirection,
+  SessionOrdering,
+} from "./session-ordering";
 
 const titleCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -50,7 +51,7 @@ export function subtreeActivityAt(
 function rootSortKey(
   session: SessionRecord,
   childrenByParent: Map<string | null, SessionRecord[]>,
-  order: SessionRootOrder,
+  order: SessionOrdering,
 ) {
   return order === "created"
     ? session.createdAt
@@ -61,7 +62,7 @@ function compareRoots(
   left: SessionRecord,
   right: SessionRecord,
   childrenByParent: Map<string | null, SessionRecord[]>,
-  order: SessionRootOrder,
+  order: SessionOrdering,
 ) {
   if (order === "title") {
     return titleCollator.compare(left.title, right.title);
@@ -74,7 +75,7 @@ function compareRoots(
 function sortRoots(
   sessions: SessionRecord[],
   childrenByParent: Map<string | null, SessionRecord[]>,
-  order: SessionRootOrder,
+  order: SessionOrdering,
   direction: SessionOrderDirection,
 ) {
   const sign = direction === "asc" ? 1 : -1;
@@ -149,7 +150,7 @@ export function sessionAncestorIds(
 export function buildVisibleSessionTree(
   sessions: SessionRecord[],
   collapsedIds: ReadonlySet<string> = new Set(),
-  order: SessionRootOrder = "activity",
+  order: SessionOrdering = "activity",
   direction: SessionOrderDirection = "desc",
 ): FlatSessionNode[] {
   const byId = new Map(sessions.map((session) => [session.id, session]));

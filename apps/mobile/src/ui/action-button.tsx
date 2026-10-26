@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   grow: { flexGrow: 1, flexBasis: 0 },
-  label: { fontSize: 15, fontWeight: "600" },
+  label: { fontSize: 15, fontWeight: "500" },
   dimmed: { opacity: 0.5 },
 });

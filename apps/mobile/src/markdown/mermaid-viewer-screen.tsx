@@ -1,13 +1,63 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useThemeColors } from "@/theme";
 import { CloseButton } from "@/ui";
-import { useDiagramById } from "./mermaid-cache";
+import { DiagramPreview } from "./diagram-preview";
+import type { RenderedDiagram } from "./mermaid-cache";
 import {
   allowsMermaidNavigation,
   mermaidViewerDocument,
 } from "./mermaid-document";
+import { useDiagramById } from "./mermaid-store";
+
+function FittedPreview({ diagram }: { diagram: RenderedDiagram }) {
+  const window = useWindowDimensions();
+  const scale = Math.min(
+    window.width / diagram.width,
+    window.height / diagram.height,
+  );
+  return (
+    <View style={styles.center} pointerEvents="none">
+      <View
+        style={{ width: diagram.width * scale, height: diagram.height * scale }}
+      >
+        <DiagramPreview diagram={diagram} />
+      </View>
+    </View>
+  );
+}
+
+function ZoomableDiagram({
+  diagram,
+  background,
+}: {
+  diagram: RenderedDiagram;
+  background: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {loaded ? null : <FittedPreview diagram={diagram} />}
+      <WebView
+        source={{ html: mermaidViewerDocument(diagram.svg, background) }}
+        originWhitelist={["about:blank"]}
+        javaScriptEnabled={false}
+        setSupportMultipleWindows={false}
+        allowsLinkPreview={false}
+        setBuiltInZoomControls
+        setDisplayZoomControls={false}
+        onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
+        onLoadEnd={() => setLoaded(true)}
+        style={[
+          styles.fill,
+          { backgroundColor: background, opacity: loaded ? 1 : 0 },
+        ]}
+      />
+    </>
+  );
+}
 
 export function MermaidViewerScreen({
   diagramId,
@@ -33,20 +83,9 @@ export function MermaidViewerScreen({
         testID="mermaid-viewer"
       >
         {entry?.kind === "rendered" ? (
-          <WebView
-            source={{
-              html: mermaidViewerDocument(entry.diagram.svg, colors.background),
-            }}
-            originWhitelist={["about:blank"]}
-            javaScriptEnabled={false}
-            setSupportMultipleWindows={false}
-            allowsLinkPreview={false}
-            setBuiltInZoomControls
-            setDisplayZoomControls={false}
-            onShouldStartLoadWithRequest={({ url }) =>
-              allowsMermaidNavigation(url)
-            }
-            style={[styles.fill, { backgroundColor: colors.background }]}
+          <ZoomableDiagram
+            diagram={entry.diagram}
+            background={colors.background}
           />
         ) : null}
       </View>
@@ -56,4 +95,9 @@ export function MermaidViewerScreen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  center: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

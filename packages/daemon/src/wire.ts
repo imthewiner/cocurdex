@@ -557,7 +557,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       }),
     );
     hostAccess.bindRemoteListener(remoteListener);
-    hostAccess.onDeviceRevoked((deviceId) => {
+    hostAccess.onDeviceAccessChanged((deviceId) => {
       for (const [connection, deviceIds] of connections) {
         if (deviceIds.has(deviceId)) connection.close();
       }

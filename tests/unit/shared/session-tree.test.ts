@@ -1,12 +1,12 @@
 import type { SessionRecord } from "@cocurdex/shared";
-import { describe, expect, it } from "vitest";
 import {
   buildVisibleSessionTree,
   collectSessionSubtreeIds,
   isSubagentSession,
   limitSessionTreeRoots,
   sessionAncestorIds,
-} from "@/features/sessions/session-tree";
+} from "@cocurdex/shared";
+import { describe, expect, it } from "vitest";
 
 function session(
   partial: Pick<SessionRecord, "id"> & Partial<SessionRecord>,

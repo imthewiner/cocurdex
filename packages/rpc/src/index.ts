@@ -54,6 +54,8 @@ import type {
   DeleteNotePayload,
   DeleteViewPayload,
   DiagnosticsExportResult,
+  DocImage,
+  DocImageFile,
   EditDeckPayload,
   EditorViewRecord,
   EntityLink,
@@ -75,6 +77,7 @@ import type {
   GitPushResult,
   GitWorktreeInfo,
   HostAccessAuditEntry,
+  HostAccessScope,
   HostAccessSession,
   HostDirectoryListing,
   HostIdentity,
@@ -82,6 +85,7 @@ import type {
   HostRemoteAccessStatus,
   ImportDeckImagePayload,
   ImportDeckPayload,
+  ImportDocImagePayload,
   InstalledSkillDetail,
   IssueDetail,
   IssueLabel,
@@ -90,6 +94,7 @@ import type {
   LinkIssueSessionPayload,
   ListEntityLinksPayload,
   LoadViewPayload,
+  LocateDocImagePayload,
   LogLevel,
   ManagedWorktree,
   McpConfigFile,
@@ -580,6 +585,8 @@ export type DaemonRequestPayloadByMethod = {
   "deck.exportFile": ExportDeckFilePayload;
   "deck.importImage": ImportDeckImagePayload;
   "deck.import": ImportDeckPayload;
+  "image.import": ImportDocImagePayload;
+  "image.locate": LocateDocImagePayload;
   "deck.readPptx": ReadPptxPayload;
   "issue.listViews": undefined;
   "issue.loadView": LoadViewPayload;
@@ -672,6 +679,7 @@ export type DaemonRequestPayloadByMethod = {
   "host.pairing.cancel": { pairingId: string };
   "host.devices.list": undefined;
   "host.devices.revoke": { deviceId: string };
+  "host.devices.updateScopes": { deviceId: string; scopes: HostAccessScope[] };
   "host.audit.list": { limit?: number };
 };
 
@@ -876,6 +884,8 @@ export type DaemonResultByMethod = {
   "deck.exportFile": ExportDeckFileResult;
   "deck.importImage": DeckImage;
   "deck.import": DeckWriteResult;
+  "image.import": DocImage;
+  "image.locate": DocImageFile | null;
   "deck.readPptx": PptxOutline;
   "issue.listViews": ViewSummary[];
   "issue.loadView": ViewFull | null;
@@ -951,6 +961,7 @@ export type DaemonResultByMethod = {
   "host.pairing.cancel": HostPairingRecord | null;
   "host.devices.list": PairedDeviceRecord[];
   "host.devices.revoke": PairedDeviceRecord | null;
+  "host.devices.updateScopes": PairedDeviceRecord | null;
   "host.audit.list": HostAccessAuditEntry[];
 };
 

@@ -2,8 +2,14 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, View } from "react-native";
-import { ListNotice, ListSectionHeader, ListSeparator } from "@/ui";
+import { SectionList, StyleSheet } from "react-native";
+import {
+  ListNotice,
+  ListSectionHeader,
+  ListSeparator,
+  PendingIndicator,
+  usePullToRefresh,
+} from "@/ui";
 import { useIssueView } from "./issue-queries";
 import { IssueRowView } from "./issue-row";
 import { issueSections } from "./issue-sections";
@@ -21,6 +27,7 @@ export function IssueList({
   const router = useRouter();
   const view = useIssueView(host.hostId);
   const data = view.data;
+  const pull = usePullToRefresh(() => view.mutate());
   const sections = useMemo(
     () =>
       data
@@ -43,7 +50,7 @@ export function IssueList({
   );
 
   if (!data) {
-    if (data === undefined && !view.error) return <View style={styles.fill} />;
+    if (data === undefined && !view.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}
@@ -65,8 +72,8 @@ export function IssueList({
       sections={sections}
       keyExtractor={(issue) => issue.id}
       stickySectionHeadersEnabled={false}
-      refreshing={view.isValidating}
-      onRefresh={() => void view.mutate()}
+      refreshing={pull.refreshing}
+      onRefresh={pull.onRefresh}
       ListEmptyComponent={
         searching ? (
           <ListNotice title={t("noResults", { query: query.trim() })} />

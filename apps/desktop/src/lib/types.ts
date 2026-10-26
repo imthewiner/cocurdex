@@ -48,6 +48,7 @@ import type {
   GitCommitInfo,
   GitWorktreeInfo,
   HostAccessAuditEntry,
+  HostAccessScope,
   HostDirectoryListing,
   HostPairingRecord,
   HostRemoteAccessStatus,
@@ -601,6 +602,10 @@ export interface ProductApi {
   cancelHostPairing(pairingId: string): Promise<HostPairingRecord | null>;
   listHostDevices(): Promise<PairedDeviceRecord[]>;
   revokeHostDevice(deviceId: string): Promise<PairedDeviceRecord | null>;
+  updateHostDeviceScopes(
+    deviceId: string,
+    scopes: HostAccessScope[],
+  ): Promise<PairedDeviceRecord | null>;
   listHostAudit(limit: number): Promise<HostAccessAuditEntry[]>;
   listSessionMessages(sessionId: string): Promise<SessionMessagesResult>;
   listSessionToolCalls(sessionId: string): Promise<AgentToolCallRecord[]>;

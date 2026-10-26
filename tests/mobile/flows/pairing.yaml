@@ -12,6 +12,14 @@ appId: dev.cocurdex.mobile
           timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: scan
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: ${SCAN_UNREACHABLE}
+          timeout: 15000
+      - takeScreenshot: scan-unreachable
 - retry:
     maxRetries: 2
     commands:
@@ -38,6 +46,16 @@ appId: dev.cocurdex.mobile
     timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
+- scrollUntilVisible:
+    element:
+      text: ${SHOW_MORE}
+    optional: true
+- tapOn:
+    text: ${SHOW_MORE}
+    optional: true
+- scrollUntilVisible:
+    element: ${WORKSPACE_NAME}
+    direction: UP
 - scrollUntilVisible:
     element: ${CODE_SESSION_TITLE}
 - retry:
@@ -75,12 +93,15 @@ appId: dev.cocurdex.mobile
           visible:
             id: "transcript-activity-.*"
           timeout: 10000
-- tapOn:
-    id: "transcript-activity-.*"
-- extendedWaitUntil:
-    visible:
-      id: "transcript-tool-.*"
-    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "transcript-activity-.*"
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-tool-.*"
+          timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -93,27 +114,40 @@ appId: dev.cocurdex.mobile
 - assertVisible: ${TOOL_INPUT_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: tool-call
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn:
-          point: 5%, 9%
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - back
-- extendedWaitUntil:
-    visible:
-      id: "transcript-tool-.*"
-    timeout: 5000
 - retry:
     maxRetries: 2
     commands:
-      - tapOn:
-          text: ${FILE_LINK_TEXT}
-          point: 8%, 90%
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: 5%, 9%
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-tool-.*"
+          timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                text: ${FILE_LINK_TEXT}
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - tapOn:
+                text: ${FILE_LINK_TEXT}
+                point: 8%, 90%
       - extendedWaitUntil:
           visible: ${FILE_SOURCE_TEXT}
           timeout: 10000
@@ -169,6 +203,7 @@ appId: dev.cocurdex.mobile
     element:
       id: "mermaid-diagram"
     direction: UP
+    visibilityPercentage: 40
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-mermaid
@@ -274,6 +309,11 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${SEND_REPLY}
     timeout: 20000
+- takeScreenshot: session-streaming
+- extendedWaitUntil:
+    visible: ${SEND_REPLY_END}
+    timeout: 20000
+- assertVisible: ${SEND_REPLY_CODE}
 - assertVisible: ${SEND_PROMPT}
 - tapOn: ${SEND_REPLY}
 - waitForAnimationToEnd
@@ -340,6 +380,8 @@ appId: dev.cocurdex.mobile
           visible: ${NEW_SESSION_MODEL}
           timeout: 5000
 - tapOn: ${NEW_SESSION_MODEL}
+- tapOn:
+    id: "new-session-role-${ROLE_ID}"
 - waitForAnimationToEnd
 - takeScreenshot: new-session-agent
 - runFlow:
@@ -356,11 +398,15 @@ appId: dev.cocurdex.mobile
     visible:
       id: "new-session-prompt"
     timeout: 5000
+- assertVisible:
+    text: ${ROLE_NAME}
+    childOf:
+      id: "new-session-agent"
 - tapOn:
     id: "new-session-prompt"
 - inputText: ${NEW_SESSION_PROMPT}
 - takeScreenshot: new-session-filled
-- tapOn: ${NEW_SESSION_START}
+- tapOn: ${SEND_ACTION}
 - extendedWaitUntil:
     visible: ${SEND_REPLY}
     timeout: 20000
@@ -425,7 +471,7 @@ appId: dev.cocurdex.mobile
           commands:
             - tapOn: ${TAB_SESSIONS}
             - extendedWaitUntil:
-                visible: ${WORKSPACE_NAME}
+                visible: ${SEARCHED_SESSION_TITLE}
                 timeout: 5000
 - runFlow:
     when:
@@ -436,15 +482,22 @@ appId: dev.cocurdex.mobile
     when:
       platform: iOS
     commands:
-      - tapOn: ${SYSTEM_CANCEL}
+      - tapOn: ${SEARCH_DISMISS}
 - runFlow:
     when:
       platform: Android
     commands:
       - back
 - extendedWaitUntil:
-    visible: ${OTHER_SESSION_TITLE}
+    visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
+- scrollUntilVisible:
+    element: ${OTHER_SESSION_TITLE}
+    timeout: 10000
+- scrollUntilVisible:
+    element: ${SEARCHED_SESSION_TITLE}
+    direction: UP
+    timeout: 10000
 - retry:
     maxRetries: 2
     commands:
@@ -482,8 +535,31 @@ appId: dev.cocurdex.mobile
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000
 - assertVisible: ${ISSUE_SESSION_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: "doc-image"
+    timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: issue-detail
+- tapOn:
+    id: "doc-image"
+- extendedWaitUntil:
+    visible:
+      id: "image-viewer"
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${IMAGE_CLOSE}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 5000
 - runFlow:
     when:
       platform: iOS
@@ -562,25 +638,23 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
-- runFlow:
-    when:
-      platform: Android
+- retry:
+    maxRetries: 3
     commands:
-      - back
-      - back
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn: ${TAB_NOTES}
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - back
-- extendedWaitUntil:
-    visible: ${NOTE_PARENT_TITLE}
-    timeout: 5000
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - tapOn:
+                point: 5%, 9%
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - back
+      - extendedWaitUntil:
+          visible: ${NOTE_PARENT_TITLE}
+          timeout: 3000
 - retry:
     maxRetries: 2
     commands:

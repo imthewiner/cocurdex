@@ -1,5 +1,6 @@
 export * from "./acp-agent-profiles";
 export * from "./acp-registry";
+export * from "./agent-brand-icons";
 export * from "./agent-permission-modes";
 export * from "./agent-role";
 export * from "./agent-runtime-capabilities";
@@ -22,6 +23,7 @@ export * from "./context-transfer";
 export * from "./contracts";
 export * from "./data-events";
 export * from "./decks";
+export * from "./doc-images";
 export * from "./entity-links";
 export * from "./execution-tree";
 export * from "./file-path-candidates";
@@ -63,10 +65,14 @@ export * from "./run-limits";
 export * from "./script-run";
 export * from "./search";
 export * from "./session-attention";
+export * from "./session-list-view";
 export * from "./session-observation";
+export * from "./session-ordering";
+export * from "./session-tree";
 export * from "./settings-changes";
 export * from "./skill-library";
 export * from "./skills";
+export * from "./streaming-markdown";
 export * from "./subagent-session";
 export type {
   SendSessionCommand,

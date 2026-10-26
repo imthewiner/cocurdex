@@ -1,16 +1,29 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import type { AgentAvailability, AgentDescriptor } from "@cocurdex/shared";
+import type {
+  AgentAvailability,
+  AgentDescriptor,
+  AgentRoleRecord,
+} from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
+import { AgentIcon, RoleAvatar, useAgentRoles } from "@/agents";
 import { useSavedHosts } from "@/hosts";
 import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
-import { BrandHost, Form, FormRow, FormSection, SelectedMark } from "@/ui";
+import {
+  BrandHost,
+  Form,
+  FormRow,
+  FormSection,
+  HostedAccessory,
+  SelectedMark,
+} from "@/ui";
 import {
   chooseAgent,
   chooseModel,
   choosePermissionMode,
+  chooseRole,
   displayedChoices,
   draftWorkspaceId,
   workspaceChoices,
@@ -45,10 +58,16 @@ function AgentRow({
   const available = agent.availability === "available";
   return (
     <FormRow
+      testID={`new-session-agent-${agent.id}`}
       onPress={
         available
           ? () => updateNewSessionDraft((draft) => chooseAgent(draft, agent.id))
           : undefined
+      }
+      leading={
+        <HostedAccessory>
+          <AgentIcon agentId={agent.id} size={20} />
+        </HostedAccessory>
       }
       supportingText={
         <Text textStyle={{ color: colors.mutedForeground }}>
@@ -61,6 +80,48 @@ function AgentRow({
         textStyle={available ? undefined : { color: colors.mutedForeground }}
       >
         {agent.label}
+      </Text>
+    </FormRow>
+  );
+}
+
+function RoleRow({
+  role,
+  agent,
+  selected,
+}: {
+  role: AgentRoleRecord;
+  agent: AgentDescriptor | undefined;
+  selected: boolean;
+}) {
+  const colors = useThemeColors();
+  const available = agent?.availability === "available";
+  return (
+    <FormRow
+      testID={`new-session-role-${role.id}`}
+      onPress={
+        available
+          ? () => updateNewSessionDraft((draft) => chooseRole(draft, role))
+          : undefined
+      }
+      leading={
+        <HostedAccessory>
+          <RoleAvatar role={role} agentId={role.agentId} size={28} />
+        </HostedAccessory>
+      }
+      supportingText={
+        <Text textStyle={{ color: colors.mutedForeground }}>
+          {[agent?.label ?? role.agentId, role.modelName]
+            .filter(Boolean)
+            .join(" · ")}
+        </Text>
+      }
+      trailing={<SelectedMark selected={selected} />}
+    >
+      <Text
+        textStyle={available ? undefined : { color: colors.mutedForeground }}
+      >
+        {role.name}
       </Text>
     </FormRow>
   );
@@ -80,18 +141,41 @@ function Picker({ host }: { host: SavedHost }) {
   const shown = displayedChoices(draft, defaults);
   const agentType = shown.agentType;
   const agents = useAgents(host.hostId).data ?? [];
+  const roles = useAgentRoles(host.hostId).data ?? [];
+  const roleId = roles.some((role) => role.id === draft.roleId)
+    ? draft.roleId
+    : undefined;
   const models = useCompatibleModels(host.hostId, agentType).data ?? [];
   const selectedMode = shown.permissionMode;
 
   return (
     <BrandHost style={styles.fill}>
       <Form>
+        {roles.length > 0 ? (
+          <FormSection
+            title={t("newSession.role")}
+            footer={
+              <Text textStyle={{ color: colors.mutedForeground }}>
+                {t("newSession.roleFooter")}
+              </Text>
+            }
+          >
+            {roles.map((role) => (
+              <RoleRow
+                key={role.id}
+                role={role}
+                agent={agents.find((agent) => agent.id === role.agentId)}
+                selected={role.id === roleId}
+              />
+            ))}
+          </FormSection>
+        ) : null}
         <FormSection title={t("newSession.agent")}>
           {agents.map((agent) => (
             <AgentRow
               key={agent.id}
               agent={agent}
-              selected={agent.id === agentType}
+              selected={!roleId && agent.id === agentType}
             />
           ))}
         </FormSection>

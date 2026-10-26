@@ -2,9 +2,15 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, View } from "react-native";
+import { SectionList, StyleSheet } from "react-native";
 import { useHostSessions } from "@/sessions";
-import { ListNotice, ListSectionHeader, ListSeparator } from "@/ui";
+import {
+  ListNotice,
+  ListSectionHeader,
+  ListSeparator,
+  PendingIndicator,
+  usePullToRefresh,
+} from "@/ui";
 import { useNotes } from "./note-queries";
 import { NoteRowView } from "./note-row";
 import { type NoteRow, noteSections } from "./note-sections";
@@ -13,6 +19,7 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   const { t } = useTranslation("notes");
   const router = useRouter();
   const notes = useNotes(host.hostId);
+  const pull = usePullToRefresh(() => notes.mutate());
   const { workspaces } = useHostSessions(host.hostId);
   const sections = useMemo(
     () =>
@@ -25,7 +32,7 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   );
 
   if (!notes.data) {
-    if (!notes.error) return <View style={styles.fill} />;
+    if (!notes.error) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}
@@ -47,8 +54,8 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
       sections={sections}
       keyExtractor={(row) => row.note.id}
       stickySectionHeadersEnabled={false}
-      refreshing={notes.isValidating}
-      onRefresh={() => void notes.mutate()}
+      refreshing={pull.refreshing}
+      onRefresh={pull.onRefresh}
       ListEmptyComponent={
         searching ? (
           <ListNotice title={t("noResults", { query: query.trim() })} />

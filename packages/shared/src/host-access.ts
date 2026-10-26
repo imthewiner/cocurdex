@@ -88,6 +88,7 @@ export type HostAccessAuditAction =
   | "pairing.exchanged"
   | "pairing.rejected"
   | "device.revoked"
+  | "device.scopesChanged"
   | "remote.enabled"
   | "remote.disabled";
 

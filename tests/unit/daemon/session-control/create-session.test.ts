@@ -7,6 +7,7 @@ import type {
   AgentDescriptor,
   AgentId,
   AgentPermissionMode,
+  AgentRoleRecord,
   CompatibleProviderModel,
   SessionRecord,
 } from "@cocurdex/shared";
@@ -104,7 +105,34 @@ function context(
           ]
         : [compatible("openai", "gpt")],
     defaultModel: async () => null,
+    role: null,
     ...overrides,
+  };
+}
+
+function role(extra: Partial<AgentRoleRecord> = {}): AgentRoleRecord {
+  return {
+    id: "role-reviewer",
+    name: "Reviewer",
+    description: null,
+    instructions: null,
+    skillIds: null,
+    avatar: null,
+    agentId: "claude-agent",
+    providerId: "anthropic",
+    modelId: "claude-haiku-4",
+    modelName: "claude-haiku-4",
+    permissionMode: "claude-default",
+    sessionModeId: null,
+    reasoningEffort: null,
+    serviceTier: null,
+    fastMode: null,
+    thinkingLevel: null,
+    openCodeAgent: null,
+    openCodeVariant: null,
+    createdAt: now,
+    updatedAt: now,
+    ...extra,
   };
 }
 
@@ -223,6 +251,62 @@ describe("resolveNewSession", () => {
       title: "Fix tax",
       providerSnapshot: null,
       permissionMode: "codex-auto",
+    });
+  });
+});
+
+describe("resolveNewSession with a role", () => {
+  it("starts with the role's agent, model, and permission mode and records the role", async () => {
+    const session = await resolveNewSession(
+      { workspaceId: "workspace-1", agentRoleId: "role-reviewer" },
+      "new-1",
+      context({
+        role: role(),
+        workspaceSessions: [previous("codex")],
+      }),
+    );
+
+    expect(session).toMatchObject({
+      agentType: "claude-agent",
+      agentRoleId: "role-reviewer",
+      permissionMode: "claude-default",
+      providerSnapshot: { providerId: "anthropic", modelId: "claude-haiku-4" },
+    });
+  });
+
+  it("lets explicit choices override the role's preset", async () => {
+    const session = await resolveNewSession(
+      {
+        workspaceId: "workspace-1",
+        agentRoleId: "role-reviewer",
+        model: { providerId: "anthropic", modelId: "claude-sonnet" },
+        permissionMode: "claude-auto",
+      },
+      "new-1",
+      context({ role: role() }),
+    );
+
+    expect(session).toMatchObject({
+      agentType: "claude-agent",
+      agentRoleId: "role-reviewer",
+      permissionMode: "claude-auto",
+      providerSnapshot: { modelId: "claude-sonnet" },
+    });
+  });
+
+  it("falls back to the agent's defaults when the role's model is gone", async () => {
+    const session = await resolveNewSession(
+      { workspaceId: "workspace-1", agentRoleId: "role-reviewer" },
+      "new-1",
+      context({
+        role: role({ modelId: "retired-model", permissionMode: null }),
+      }),
+    );
+
+    expect(session).toMatchObject({
+      agentRoleId: "role-reviewer",
+      providerSnapshot: { modelId: "claude-sonnet" },
+      permissionMode: "claude-auto",
     });
   });
 });

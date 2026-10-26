@@ -1,9 +1,16 @@
-import type { AgentId, SessionRecord } from "@cocurdex/shared";
+import type { AgentId, SessionRecord } from "./contracts";
+import {
+  defaultOrderDirection,
+  SESSION_ORDER_DIRECTIONS,
+  SESSION_ORDERINGS,
+  type SessionOrderDirection,
+  type SessionOrdering,
+} from "./session-ordering";
 import {
   groupChildren,
   rootSessionId,
   subtreeActivityAt,
-} from "../session-tree";
+} from "./session-tree";
 
 export const SESSION_GROUPINGS = [
   "workspace",
@@ -13,18 +20,6 @@ export const SESSION_GROUPINGS = [
   "none",
 ] as const;
 export type SessionGrouping = (typeof SESSION_GROUPINGS)[number];
-
-export const SESSION_ORDERINGS = ["activity", "created", "title"] as const;
-export type SessionOrdering = (typeof SESSION_ORDERINGS)[number];
-
-export const SESSION_ORDER_DIRECTIONS = ["desc", "asc"] as const;
-export type SessionOrderDirection = (typeof SESSION_ORDER_DIRECTIONS)[number];
-
-export function defaultOrderDirection(
-  ordering: SessionOrdering,
-): SessionOrderDirection {
-  return ordering === "title" ? "asc" : "desc";
-}
 
 export const SESSION_STATUS_BUCKETS = [
   "attention",

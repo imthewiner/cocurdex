@@ -1,7 +1,7 @@
 import { createDiagramCache } from "@cocurdex/mobile/internal/markdown/mermaid-cache";
 import { describe, expect, it, vi } from "vitest";
 
-const diagram = { svg: "<svg/>", width: 320, height: 120 };
+const diagram = { svg: "<svg/>", width: 320, height: 120, image: null };
 
 describe("createDiagramCache", () => {
   it("returns a rendered diagram on the next visit without rendering again", () => {
@@ -35,5 +35,16 @@ describe("createDiagramCache", () => {
     expect(cache.get("a", "light")).toBeNull();
     expect(first && cache.byId(first.id)).toBeNull();
     expect(cache.get("c", "light")).not.toBeNull();
+  });
+
+  it("hands evicted and replaced diagrams to the release callback", () => {
+    const released = vi.fn();
+    const cache = createDiagramCache(1, released);
+    const first = { ...diagram, image: "file:///cache/a.png" };
+    cache.rendered("a", "light", first);
+    cache.rendered("a", "light", { ...diagram, image: "file:///cache/b.png" });
+    expect(released).toHaveBeenCalledWith(first);
+    cache.failed("b", "light");
+    expect(released).toHaveBeenCalledTimes(2);
   });
 });

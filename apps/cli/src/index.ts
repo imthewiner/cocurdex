@@ -22,6 +22,7 @@ import {
   handleDiagnosticsCommand,
 } from "./diagnostics-commands";
 import { handleHostCommand, hostUsageLines } from "./host-commands";
+import { handleImageCommand, imageUsageLines } from "./image-commands";
 import { handleIssueCommand } from "./issue-commands";
 import { handleLinkCommand } from "./link-commands";
 import { handleMcpCommand, mcpUsageLines } from "./mcp-commands";
@@ -108,6 +109,13 @@ async function main(rawArgs: string[]) {
 
   if (resource === "note") {
     const handled = await handleNoteCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
+  }
+
+  if (resource === "image") {
+    const handled = await handleImageCommand(action, args, parsed);
     if (handled) {
       return;
     }
@@ -531,6 +539,7 @@ function printUsage() {
       "  cocurdex note list|show|create|update|move|delete|backlinks|tags [--json]",
       "  cocurdex note create|update ... [--body <markdown> | --body - | --body-file <path>]",
       "  cocurdex note update <id> ... [--expected-revision <n>]",
+      ...imageUsageLines(),
       "  cocurdex link list <ref> [--json]",
       "  cocurdex link add|remove <ref> <ref>   (ref: <kind>:<id> or cocurdex://<kind>/<id>; kind session|note|issue|deck)",
       "  cocurdex deck list|show|create|update|delete|check [--json]",
@@ -552,7 +561,7 @@ function printUsage() {
       ...worktreeUsageLines(),
       "  cocurdex workspace list",
       "  cocurdex session list",
-      "  cocurdex session create --workspace <id|path> [--agent <agent>] [--provider <provider> --model <model>] [--permission <mode>] [--title <title>]",
+      "  cocurdex session create --workspace <id|path> [--agent <agent>] [--provider <provider> --model <model>] [--permission <mode>] [--role <role-id>] [--title <title>]",
       "  cocurdex session tui [session-id]",
       "  cocurdex session tui --workspace <id|path> --agent <agent> --provider <provider> --model <model>",
       "  cocurdex session send <session-id> <prompt>",
@@ -621,6 +630,7 @@ async function createSession(parsed: ParsedArgs) {
       permissionMode: stringFlag(parsed, "permission") as
         | AgentPermissionMode
         | undefined,
+      agentRoleId: stringFlag(parsed, "role"),
       title: stringFlag(parsed, "title"),
     });
   });

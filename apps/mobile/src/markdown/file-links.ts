@@ -33,6 +33,10 @@ function hrefTarget(href: string, root: string | null) {
   return targetFor(parseLocalFileHref(href), root);
 }
 
+export function localFileLinkTarget(href: string, root: string | null) {
+  return parseFileLinkHref(href) ?? hrefTarget(href, root);
+}
+
 export function fileLinkHref(target: FileLinkTarget) {
   const params = [`path=${encodeURIComponent(target.path)}`];
   if (target.line !== null) params.push(`line=${target.line}`);
@@ -113,5 +117,22 @@ export function linkFilePaths(
     const [whole, label, , title, code] = match;
     if (code !== undefined) return `[${whole}](${fileLinkHref(target)})`;
     return `[${label}](${fileLinkHref(target)}${title ?? ""})`;
+  });
+}
+
+const CODE_PAD = " ";
+const LABEL_CODE = /^`([^`\n]+)`$/;
+
+function paddedCode(code: string) {
+  return `\`${CODE_PAD}${code}${CODE_PAD}\``;
+}
+
+export function padInlineCode(markdown: string) {
+  return mapProse(markdown, (match) => {
+    const [whole, label, href, , code] = match;
+    if (code !== undefined) return paddedCode(code);
+    const labelCode = label?.match(LABEL_CODE)?.[1];
+    if (labelCode === undefined || href === undefined) return null;
+    return `[${paddedCode(labelCode)}]${whole.slice(label.length + 2)}`;
   });
 }

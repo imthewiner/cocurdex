@@ -1,6 +1,8 @@
 import type { SessionPrimaryState } from "@cocurdex/shared";
+import { SymbolView } from "expo-symbols";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AgentIcon, RoleAvatar, type RoleAvatarSource } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
 import { useAgeLabel } from "@/ui";
 import { type SessionRow, sessionRowStatus } from "./session-sections";
@@ -21,14 +23,72 @@ function useStateDetails(): Record<SessionPrimaryState, string | null> {
   };
 }
 
-export function SessionRowView({
+function MetaIcon({
   row,
-  onPress,
-  onLongPress,
+  role,
 }: {
   row: SessionRow;
+  role: RoleAvatarSource | null;
+}) {
+  return (
+    <View style={styles.metaIcon}>
+      {role ? (
+        <RoleAvatar role={role} agentId={row.agentType} size={18} />
+      ) : (
+        <AgentIcon agentId={row.agentType} size={14} />
+      )}
+    </View>
+  );
+}
+
+const CHILD_INDENT = 20;
+const DISCLOSURE_SLOP = { top: 12, bottom: 12, left: 12, right: 8 };
+
+function ChildrenDisclosure({
+  expanded,
+  onPress,
+}: {
+  expanded: boolean;
+  onPress(): void;
+}) {
+  const { t } = useTranslation("sessions");
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        expanded ? t("list.collapseChildren") : t("list.expandChildren")
+      }
+      accessibilityState={{ expanded }}
+      hitSlop={DISCLOSURE_SLOP}
+      onPress={onPress}
+      style={styles.disclosure}
+    >
+      <SymbolView
+        name={
+          expanded
+            ? { ios: "chevron.down", android: "keyboard_arrow_down" }
+            : { ios: "chevron.right", android: "keyboard_arrow_right" }
+        }
+        size={14}
+        tintColor={colors.mutedForeground}
+      />
+    </Pressable>
+  );
+}
+
+export function SessionRowView({
+  row,
+  role,
+  onPress,
+  onLongPress,
+  onToggleChildren,
+}: {
+  row: SessionRow;
+  role: RoleAvatarSource | null;
   onPress(): void;
   onLongPress(): void;
+  onToggleChildren(): void;
 }) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
@@ -36,8 +96,10 @@ export function SessionRowView({
   const status = sessionRowStatus(row.state);
   const detailColor =
     status === "failed" ? colors.destructive : colors.mutedForeground;
-  const secondary = detail ?? row.model;
-  const summary = [detail, age].filter(Boolean).join(", ");
+  const secondary = [role?.name, detail ?? row.model]
+    .filter(Boolean)
+    .join(" · ");
+  const summary = [role?.name, detail, age].filter(Boolean).join(", ");
   return (
     <Pressable
       accessibilityLabel={row.title}
@@ -47,11 +109,18 @@ export function SessionRowView({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
+        { paddingStart: layout.sideMargin + row.depth * CHILD_INDENT },
         pressed && { backgroundColor: colors.muted },
       ]}
       testID={`session-row-${row.id}`}
     >
       <View style={styles.line}>
+        {row.hasChildren ? (
+          <ChildrenDisclosure
+            expanded={row.expanded}
+            onPress={onToggleChildren}
+          />
+        ) : null}
         <Text
           numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
@@ -62,17 +131,18 @@ export function SessionRowView({
           {age}
         </Text>
       </View>
-      {secondary ? (
-        <View style={styles.line}>
+      <View style={styles.line}>
+        <View style={styles.meta}>
+          <MetaIcon row={row} role={role} />
           <Text
             numberOfLines={1}
             style={[styles.detail, { color: detailColor }]}
           >
             {secondary}
           </Text>
-          <SessionStatusMark status={status} />
         </View>
-      ) : null}
+        <SessionStatusMark status={status} />
+      </View>
     </Pressable>
   );
 }
@@ -83,10 +153,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
     paddingVertical: space.sm,
-    paddingHorizontal: layout.sideMargin,
+    paddingEnd: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  title: { flex: 1, fontSize: 16, lineHeight: 22, fontWeight: "500" },
+  disclosure: { width: 16, alignItems: "center", marginEnd: -space.xs },
+  title: { flex: 1, fontSize: 16, lineHeight: 22 },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
-  detail: { flex: 1, fontSize: 15, lineHeight: 20 },
+  meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  metaIcon: { width: 18, alignItems: "center" },
+  detail: { flex: 1, fontSize: 14, lineHeight: 19 },
 });

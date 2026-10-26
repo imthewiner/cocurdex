@@ -6,7 +6,10 @@
     "deleteMessage": "会话及其记录会从电脑上删除，无法恢复。",
     "deleteTitle": "删除「{{title}}」？",
     "fork": "分叉会话",
-    "markUnread": "标为未读"
+    "markUnread": "标为未读",
+    "pin": "置顶",
+    "rename": "重命名",
+    "unpin": "取消置顶"
   },
   "activity": {
     "command_other": "执行了 {{count}} 条命令",
@@ -64,6 +67,62 @@
   "image": {
     "close": "关闭"
   },
+  "list": {
+    "agentFilter": "Agent",
+    "clearFilters": "清除筛选",
+    "collapseChildren": "折叠子会话",
+    "direction": {
+      "asc": "升序",
+      "desc": "降序"
+    },
+    "environment": {
+      "local": "本地",
+      "worktree": "Worktree"
+    },
+    "environmentFilter": "环境",
+    "expandChildren": "展开子会话",
+    "filtersCount_other": "筛选（{{count}}）",
+    "filtersLabel": "筛选",
+    "grouping": {
+      "agent": "Agent",
+      "none": "不分组",
+      "status": "状态",
+      "updated": "最近更新",
+      "workspace": "工作区"
+    },
+    "groupingLabel": "分组",
+    "markAllRead": "全部标为已读",
+    "menu": "会话分组与筛选",
+    "noMatches": "没有符合筛选条件的会话",
+    "ordering": {
+      "activity": "最近活动",
+      "created": "创建时间",
+      "title": "标题"
+    },
+    "orderingLabel": "排序",
+    "pinned": "已置顶",
+    "rootLimit": {
+      "all": "全部",
+      "count_other": "{{count}} 个会话"
+    },
+    "rootLimitLabel": "每组显示会话数",
+    "showLess": "收起",
+    "showMore_other": "再显示 {{count}} 个",
+    "status": {
+      "attention": "需要处理",
+      "error": "出错",
+      "idle": "空闲",
+      "running": "运行中",
+      "unread": "未读"
+    },
+    "statusFilter": "状态",
+    "updated": {
+      "older": "更早",
+      "today": "今天",
+      "week": "近 7 天",
+      "yesterday": "昨天"
+    }
+  },
   "message": {
     "copied": "已复制",
     "copy": "复制",
@@ -88,11 +147,11 @@
     "none": "无",
     "open": "新建会话",
     "promptPlaceholder": "要让 Agent 做什么？",
+    "role": "角色",
+    "roleFooter": "角色在电脑上设置，选择后会套用它的 agent、模型和权限。",
     "runsOn": "在 {{host}} 上运行。",
     "searchWorkspaces": "搜索工作区",
     "sessionCount_other": "{{count}} 个会话",
-    "start": "开始",
-    "starting": "正在开始…",
     "title": "新会话",
     "where": "运行位置",
     "workspace": "工作区"
@@ -157,6 +216,12 @@
     "placeholder": "你的回答",
     "reply": "回复",
     "title": "agent 有个问题"
+  },
+  "rename": {
+    "failed": "重命名失败，请重试。",
+    "placeholder": "会话标题",
+    "save": "保存",
+    "saving": "正在保存"
   },
   "search": "搜索会话",
   "status": {

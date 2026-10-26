@@ -1,13 +1,31 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
+import type { AgentId } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SectionList, StyleSheet, Text, View } from "react-native";
+import { Pressable, SectionList, StyleSheet, Text } from "react-native";
+import { useAgentRoles } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, ListSectionHeader, ListSeparator } from "@/ui";
+import {
+  ListNotice,
+  ListSectionHeader,
+  ListSeparator,
+  PendingIndicator,
+} from "@/ui";
 import { SessionActionsSheet } from "./session-actions-sheet";
+import { useSessionListLabels } from "./session-list-labels";
+import {
+  toggleSectionExpanded,
+  toggleSessionChildren,
+  useSessionListUi,
+} from "./session-list-view-store";
 import { SessionRowView } from "./session-row";
-import { buildSessionSections, type SessionRow } from "./session-sections";
+import {
+  buildSessionSections,
+  type SessionRow,
+  type SessionSection,
+  type SessionSectionHeading,
+} from "./session-sections";
 import { useHostSessions } from "./sessions";
 import type { HostSessionsSnapshot } from "./sessions-store";
 
@@ -16,23 +34,72 @@ const OFFLINE_STATES = new Set<HostSessionsSnapshot["connection"]>([
   "waiting",
 ]);
 
+function useHeadingTitle(agentLabels: ReadonlyMap<AgentId, string>) {
+  const { t } = useTranslation("sessions");
+  const labels = useSessionListLabels();
+  return (heading: SessionSectionHeading) => {
+    switch (heading.kind) {
+      case "pinned":
+        return t("list.pinned");
+      case "workspace":
+        return heading.name;
+      case "status":
+        return labels.status[heading.value];
+      case "updated":
+        return labels.updated[heading.value];
+      case "agent":
+        return agentLabels.get(heading.value) ?? heading.value;
+      default:
+        return null;
+    }
+  };
+}
+
+function SectionFooter({ section }: { section: SessionSection }) {
+  const { t } = useTranslation("sessions");
+  const colors = useThemeColors();
+  const { expandedSectionKeys } = useSessionListUi();
+  const expanded = expandedSectionKeys.has(section.key);
+  if (section.hiddenCount === 0 && !expanded) return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => toggleSectionExpanded(section.key)}
+      style={({ pressed }) => [
+        styles.footer,
+        pressed && { backgroundColor: colors.muted },
+      ]}
+      testID={`session-section-more-${section.key}`}
+    >
+      <Text style={[styles.footerLabel, { color: colors.mutedForeground }]}>
+        {expanded
+          ? t("list.showLess")
+          : t("list.showMore", { count: section.hiddenCount })}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function SessionList({
   host,
   query,
+  agentLabels,
   onReload,
 }: {
   host: SavedHost;
   query: string;
+  agentLabels: ReadonlyMap<AgentId, string>;
   onReload(): void;
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const router = useRouter();
   const snapshot = useHostSessions(host.hostId);
-  const [actionTarget, setActionTarget] = useState<{
-    row: SessionRow;
-    workspace: string;
-  } | null>(null);
+  const ui = useSessionListUi();
+  const roles = useAgentRoles(host.hostId).data;
+  const roleById = new Map(roles?.map((role) => [role.id, role]));
+  const headingTitle = useHeadingTitle(agentLabels);
+  const [actionTarget, setActionTarget] = useState<SessionRow | null>(null);
   const sections = useMemo(
     () =>
       buildSessionSections({
@@ -40,12 +107,16 @@ export function SessionList({
         sessions: snapshot.sessions,
         attention: snapshot.attention,
         query,
+        view: ui.view,
+        collapsedIds: ui.collapsedIds,
+        expandedSectionKeys: ui.expandedSectionKeys,
+        now: new Date(),
       }).map((section) => ({ ...section, data: section.rows })),
-    [snapshot.workspaces, snapshot.sessions, snapshot.attention, query],
+    [snapshot.workspaces, snapshot.sessions, snapshot.attention, query, ui],
   );
 
   if (!snapshot.loaded) {
-    if (!snapshot.failed) return <View style={styles.fill} />;
+    if (!snapshot.failed) return <PendingIndicator />;
     return (
       <ListNotice
         title={t("unavailable.title", { host: host.name })}
@@ -57,10 +128,15 @@ export function SessionList({
 
   const offline = OFFLINE_STATES.has(snapshot.connection);
   const searching = query.trim() !== "";
+  const filtering =
+    ui.view.statuses.length +
+      ui.view.agents.length +
+      ui.view.environments.length >
+    0;
 
   return (
     <>
-      <SectionList<SessionRow>
+      <SectionList<SessionRow, SessionSection>
         style={styles.fill}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
@@ -78,6 +154,8 @@ export function SessionList({
         ListEmptyComponent={
           searching ? (
             <ListNotice title={t("noResults", { query: query.trim() })} />
+          ) : filtering ? (
+            <ListNotice title={t("list.noMatches")} />
           ) : (
             <ListNotice
               title={t("empty.title")}
@@ -85,15 +163,19 @@ export function SessionList({
             />
           )
         }
-        renderSectionHeader={({ section }) => (
-          <ListSectionHeader title={section.title} />
+        renderSectionHeader={({ section }) => {
+          const title = headingTitle(section.heading);
+          return title ? <ListSectionHeader title={title} /> : null;
+        }}
+        renderSectionFooter={({ section }) => (
+          <SectionFooter section={section} />
         )}
-        renderItem={({ item, section }) => (
+        renderItem={({ item }) => (
           <SessionRowView
             row={item}
-            onLongPress={() =>
-              setActionTarget({ row: item, workspace: section.title })
-            }
+            role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
+            onLongPress={() => setActionTarget(item)}
+            onToggleChildren={() => toggleSessionChildren(item.id)}
             onPress={() =>
               router.push({
                 pathname: "/session/[hostId]/[sessionId]",
@@ -106,10 +188,10 @@ export function SessionList({
       />
       <SessionActionsSheet
         host={host}
-        row={actionTarget?.row ?? null}
+        row={actionTarget}
         detail={
           actionTarget
-            ? [actionTarget.workspace, actionTarget.row.model]
+            ? [actionTarget.workspaceName, actionTarget.model]
                 .filter(Boolean)
                 .join(" · ")
             : null
@@ -127,4 +209,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.sideMargin,
     paddingTop: space.sm,
   },
+  footer: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: layout.sideMargin,
+  },
+  footerLabel: { fontSize: 14 },
 });

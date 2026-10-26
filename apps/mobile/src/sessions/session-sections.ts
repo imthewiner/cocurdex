@@ -1,9 +1,21 @@
 import {
+  type AgentId,
+  buildVisibleSessionTree,
+  filterSessionsByView,
+  groupSessionsByView,
   isChatSession,
+  limitSessionTreeRoots,
+  resolveRootLimit,
+  rootSessionId,
   SESSION_PRIMARY_STATE_PRIORITY,
   type SessionAttentionSnapshot,
+  type SessionListFacts,
+  type SessionListView,
   type SessionPrimaryState,
   type SessionRecord,
+  type SessionStatusBucket,
+  type SessionUpdatedBucket,
+  splitPinnedSessions,
   type WorkspaceRecord,
 } from "@cocurdex/shared";
 
@@ -20,12 +32,28 @@ export interface SessionRow {
   activityAt: string;
   state: SessionPrimaryState;
   model: string | null;
+  agentType: AgentId;
+  roleId: string | null;
+  workspaceName: string;
+  depth: number;
+  hasChildren: boolean;
+  expanded: boolean;
+  pinned: boolean;
 }
 
+export type SessionSectionHeading =
+  | { kind: "pinned" }
+  | { kind: "workspace"; name: string }
+  | { kind: "status"; value: SessionStatusBucket }
+  | { kind: "updated"; value: SessionUpdatedBucket }
+  | { kind: "agent"; value: AgentId }
+  | { kind: "all" };
+
 export interface SessionSection {
-  workspaceId: string;
-  title: string;
+  key: string;
+  heading: SessionSectionHeading;
   rows: SessionRow[];
+  hiddenCount: number;
 }
 
 export interface SessionSectionsInput {
@@ -33,6 +61,10 @@ export interface SessionSectionsInput {
   sessions: readonly SessionRecord[];
   attention: readonly SessionAttentionSnapshot[];
   query: string;
+  view: SessionListView;
+  collapsedIds: ReadonlySet<string>;
+  expandedSectionKeys: ReadonlySet<string>;
+  now: Date;
 }
 
 const ROW_STATUS: Record<SessionPrimaryState, SessionRowStatus> = {
@@ -51,6 +83,8 @@ const STATE_RANK = new Map<SessionPrimaryState, number>(
   SESSION_PRIMARY_STATE_PRIORITY.map((state, index) => [state, index]),
 );
 
+export const PINNED_SECTION_KEY = "pinned";
+
 export function sessionRowStatus(state: SessionPrimaryState): SessionRowStatus {
   return ROW_STATUS[state];
 }
@@ -61,90 +95,207 @@ function moreUrgent(left: SessionPrimaryState, right: SessionPrimaryState) {
     : right;
 }
 
-function topLevelIds(sessions: readonly SessionRecord[]) {
-  const parents = new Map(
-    sessions.map((session) => [session.id, session.parentSessionId ?? null]),
-  );
-  const rootOf = (id: string) => {
-    let current = id;
-    const seen = new Set<string>();
-    for (;;) {
-      const parent = parents.get(current) ?? null;
-      if (!parent || !parents.has(parent) || seen.has(parent)) return current;
-      seen.add(current);
-      current = parent;
-    }
-  };
-  return new Map(sessions.map((session) => [session.id, rootOf(session.id)]));
-}
-
-function rolledUpStates(
-  sessions: readonly SessionRecord[],
+function listFacts(
   attention: readonly SessionAttentionSnapshot[],
-) {
-  const roots = topLevelIds(sessions);
-  const states = new Map<string, SessionPrimaryState>();
+): SessionListFacts {
+  const attentionIds = new Set<string>();
+  const unreadIds = new Set<string>();
   for (const snapshot of attention) {
-    const root = roots.get(snapshot.sessionId);
-    if (!root) continue;
-    const current = states.get(root);
-    states.set(
-      root,
-      current
-        ? moreUrgent(current, snapshot.primaryState)
-        : snapshot.primaryState,
-    );
+    const status = sessionRowStatus(snapshot.primaryState);
+    if (status === "needs-you") attentionIds.add(snapshot.sessionId);
+    if (status === "unread") unreadIds.add(snapshot.sessionId);
   }
-  return states;
+  return { attentionIds, unreadIds, issueLinkedIds: new Set() };
 }
 
-function isListed(session: SessionRecord) {
-  return !(
-    session.parentSessionId ||
-    session.archivedAt ||
-    isChatSession(session)
+function treesByRoot(sessions: readonly SessionRecord[]) {
+  const byId = new Map(sessions.map((session) => [session.id, session]));
+  const trees = new Map<string, SessionRecord[]>();
+  for (const session of sessions) {
+    const rootId = rootSessionId(session.id, byId);
+    trees.set(rootId, [...(trees.get(rootId) ?? []), session]);
+  }
+  return trees;
+}
+
+function matchingTrees(
+  sessions: readonly SessionRecord[],
+  query: string,
+  workspaceName: (session: SessionRecord) => string,
+) {
+  if (!query) return [...sessions];
+  const matches = (text: string) => text.toLocaleLowerCase().includes(query);
+  return [...treesByRoot(sessions).values()]
+    .filter((tree) =>
+      tree.some(
+        (session) => matches(session.title) || matches(workspaceName(session)),
+      ),
+    )
+    .flat();
+}
+
+function subtreeStates(
+  sessions: readonly SessionRecord[],
+  states: ReadonlyMap<string, SessionPrimaryState>,
+) {
+  const rolled = new Map<string, SessionPrimaryState>();
+  const byId = new Map(sessions.map((session) => [session.id, session]));
+  for (const session of sessions) {
+    const own = states.get(session.id);
+    if (!own) continue;
+    const visited = new Set<string>();
+    let current: SessionRecord | undefined = session;
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id);
+      const previous = rolled.get(current.id);
+      rolled.set(current.id, previous ? moreUrgent(previous, own) : own);
+      const parentId: string | null | undefined = current.parentSessionId;
+      current = parentId ? byId.get(parentId) : undefined;
+    }
+  }
+  return rolled;
+}
+
+function latestActivity(rows: readonly SessionRow[]) {
+  return rows.reduce(
+    (latest, row) => (row.activityAt > latest ? row.activityAt : latest),
+    "",
   );
 }
-
-function matches(query: string, ...texts: string[]) {
-  return texts.some((text) => text.toLocaleLowerCase().includes(query));
-}
-
-const byNewest = (left: SessionRow, right: SessionRow) =>
-  right.activityAt.localeCompare(left.activityAt);
-
-const latest = (section: SessionSection) => section.rows[0]?.activityAt ?? "";
 
 export function buildSessionSections(
   input: SessionSectionsInput,
 ): SessionSection[] {
   const query = input.query.trim().toLocaleLowerCase();
-  const states = rolledUpStates(input.sessions, input.attention);
   const workspaces = new Map(
     input.workspaces.map((workspace) => [workspace.id, workspace]),
   );
-  const rowsByWorkspace = new Map<string, SessionRow[]>();
+  const workspaceName = (session: SessionRecord) =>
+    workspaces.get(session.workspaceId)?.name ?? "";
+  const listed = input.sessions.filter(
+    (session) =>
+      workspaces.has(session.workspaceId) &&
+      !session.archivedAt &&
+      !isChatSession(session),
+  );
+  const searched = matchingTrees(listed, query, workspaceName);
+  const facts = listFacts(input.attention);
+  const states = new Map(
+    input.attention.map((snapshot) => [
+      snapshot.sessionId,
+      snapshot.primaryState,
+    ]),
+  );
+  const rolledStates = subtreeStates(searched, states);
+  const keepVisible = searched
+    .filter((session) => {
+      const status = sessionRowStatus(states.get(session.id) ?? "ready");
+      return status === "needs-you" || status === "running";
+    })
+    .map((session) => session.id);
+  const { pinned, unpinned } = splitPinnedSessions(searched);
 
-  for (const session of input.sessions) {
-    const workspace = workspaces.get(session.workspaceId);
-    if (!(workspace && isListed(session))) continue;
-    if (query && !matches(query, session.title, workspace.name)) continue;
-    const rows = rowsByWorkspace.get(workspace.id) ?? [];
-    rows.push({
-      id: session.id,
-      title: session.title,
-      activityAt: session.lastMessageAt ?? session.updatedAt,
-      state: states.get(session.id) ?? "ready",
-      model: session.providerSnapshot?.modelName ?? null,
+  const section = (
+    key: string,
+    heading: SessionSectionHeading,
+    sessions: SessionRecord[],
+    limited: boolean,
+  ): SessionSection => {
+    const nodes = buildVisibleSessionTree(
+      sessions,
+      input.collapsedIds,
+      input.view.ordering,
+      input.view.direction,
+    );
+    const rootLimit =
+      limited && !query && !input.expandedSectionKeys.has(key)
+        ? resolveRootLimit(input.view.rootLimit)
+        : Number.POSITIVE_INFINITY;
+    const shown = limitSessionTreeRoots(
+      nodes,
+      sessions,
+      rootLimit,
+      keepVisible,
+    );
+    const rows = shown.nodes.map(({ session, depth, hasChildren }) => {
+      const expanded = !input.collapsedIds.has(session.id);
+      const stateMap = hasChildren && !expanded ? rolledStates : states;
+      return {
+        id: session.id,
+        title: session.title,
+        activityAt: session.lastMessageAt ?? session.updatedAt,
+        state: stateMap.get(session.id) ?? "ready",
+        model: session.providerSnapshot?.modelName ?? null,
+        agentType: session.agentType,
+        roleId: session.agentRoleId ?? null,
+        workspaceName: workspaceName(session),
+        depth,
+        hasChildren,
+        expanded,
+        pinned: Boolean(session.pinnedAt),
+      };
     });
-    rowsByWorkspace.set(workspace.id, rows);
-  }
+    return { key, heading, rows, hiddenCount: shown.hiddenRootCount };
+  };
 
-  return [...rowsByWorkspace]
-    .map(([workspaceId, rows]) => ({
-      workspaceId,
-      title: workspaces.get(workspaceId)?.name ?? workspaceId,
-      rows: rows.sort(byNewest),
-    }))
-    .sort((left, right) => latest(right).localeCompare(latest(left)));
+  const sections: SessionSection[] = [];
+  if (pinned.length > 0) {
+    sections.push(
+      section(PINNED_SECTION_KEY, { kind: "pinned" }, pinned, false),
+    );
+  }
+  const filtered = filterSessionsByView(unpinned, input.view, facts);
+  if (input.view.grouping === "workspace") {
+    const byWorkspace = new Map<string, SessionRecord[]>();
+    for (const session of filtered) {
+      byWorkspace.set(session.workspaceId, [
+        ...(byWorkspace.get(session.workspaceId) ?? []),
+        session,
+      ]);
+    }
+    const workspaceSections = [...byWorkspace].map(([workspaceId, group]) =>
+      section(
+        `workspace:${workspaceId}`,
+        { kind: "workspace", name: workspaces.get(workspaceId)?.name ?? "" },
+        group,
+        true,
+      ),
+    );
+    return [
+      ...sections,
+      ...workspaceSections.sort((left, right) =>
+        latestActivity(right.rows).localeCompare(latestActivity(left.rows)),
+      ),
+    ];
+  }
+  for (const group of groupSessionsByView(
+    filtered,
+    input.view.grouping,
+    facts,
+    input.now,
+  )) {
+    sections.push(
+      section(
+        group.key,
+        groupHeading(input.view.grouping, group.value),
+        [...group.sessions],
+        true,
+      ),
+    );
+  }
+  return sections;
+}
+
+function groupHeading(
+  grouping: Exclude<SessionListView["grouping"], "workspace">,
+  value: string,
+): SessionSectionHeading {
+  if (grouping === "status") {
+    return { kind: "status", value: value as SessionStatusBucket };
+  }
+  if (grouping === "updated") {
+    return { kind: "updated", value: value as SessionUpdatedBucket };
+  }
+  if (grouping === "agent") return { kind: "agent", value: value as AgentId };
+  return { kind: "all" };
 }

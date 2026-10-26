@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import {
   FIXTURE_ISSUES,
   FIXTURE_NOTES,
+  FIXTURE_ROLES,
   FIXTURE_SESSIONS,
   FIXTURE_WORKSPACE_NAME,
 } from "@cocurdex/e2e/fixture-db/recipe";
@@ -26,9 +27,9 @@ const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
   "zh-CN": "继续",
 };
-const SYSTEM_CANCEL: Record<SupportedLocale, string> = {
-  "en-US": "Cancel",
-  "zh-CN": "取消",
+const SEARCH_DISMISS: Record<SupportedLocale, string> = {
+  "en-US": "Cancel|Close",
+  "zh-CN": "取消|关闭",
 };
 
 function readMessages(locale: SupportedLocale, namespace: string) {
@@ -98,6 +99,7 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_TITLE: OPENED_NOTE.title,
     NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
+    SHOW_MORE: sessions.list.showMore_other.replace("{{count}}", "\\d+"),
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
     WORKSPACE_NAME: FIXTURE_WORKSPACE_NAME,
@@ -105,6 +107,8 @@ function flowLabels(locale: SupportedLocale) {
     SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
     SEARCHED_SESSION_LAST_PROMPT: lastPrompt(SEARCHED_SESSION),
     OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
+    ROLE_ID: FIXTURE_ROLES[0].id,
+    ROLE_NAME: FIXTURE_ROLES[0].name,
     CODE_SESSION_TITLE: fixtureSession(CODE_SESSION).title,
     CODE_BLOCK_TEXT: "(?s)const fulfillmentSteps = .*",
     TOOL_SESSION_TITLE: fixtureSession(TOOL_SESSION).title,
@@ -116,20 +120,20 @@ function flowLabels(locale: SupportedLocale) {
     IMAGE_NAME: IMAGE_SESSION.imageName,
     IMAGE_CLOSE: sessions.image.close,
     TOOL_INPUT_TITLE: sessions.tool.input,
-    FILE_LINK_TEXT: "(?s)(.*\\n)?src/cart\\.ts",
+    FILE_LINK_TEXT: "(?s)(.*\\n)?.?src/cart\\.ts.?",
     FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
     SCAN_TITLE: hosts.scan.title,
     SCAN_PASTE: hosts.scan.paste,
+    SCAN_UNREACHABLE: hosts.pair.failure.unreachable,
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
-    SYSTEM_CANCEL: SYSTEM_CANCEL[locale],
+    SEARCH_DISMISS: SEARCH_DISMISS[locale],
     NEW_SESSION_ACTION: sessions.newSession.open,
     NEW_SESSION_AGENT_ROW: sessions.newSession.agent,
     NEW_SESSION_TITLE: sessions.newSession.title,
-    NEW_SESSION_START: sessions.newSession.start,
     NEW_ISSUE_ACTION: issues.create.open,
     NEW_ISSUE_SUBMIT: issues.create.submit,
     NEW_NOTE_ACTION: notes.create.open,
@@ -144,11 +148,22 @@ function sendLabels(locale: SupportedLocale) {
     SEND_SESSION_TITLE: `Mobile reply check ${locale}`,
     SEND_PROMPT: `Summarize the cart module ${locale}`,
     SEND_REPLY: `The cart module totals line items ${locale}`,
+    SEND_REPLY_CODE: "let totalCents = 0",
+    SEND_REPLY_END: `Totals are stored in cents ${locale}`,
     NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
     NEW_ISSUE_TITLE: `Export last week's orders ${locale}`,
     NEW_NOTE_TITLE: `Release checklist ${locale}`,
     NEW_NOTE_BODY: `Ship the order export ${locale}`,
   };
+}
+
+function streamedReply(send: ReturnType<typeof sendLabels>) {
+  return [
+    send.SEND_REPLY,
+    "- Adds each **line total**\n- Applies the `discount` last",
+    `\`\`\`ts\n${send.SEND_REPLY_CODE}\n\`\`\``,
+    send.SEND_REPLY_END,
+  ].join("\n\n");
 }
 
 const { values } = parseArgs({
@@ -272,7 +287,7 @@ async function main() {
         const send = sendLabels(locale);
         await daemon.createReplyingSession(
           send.SEND_SESSION_TITLE,
-          send.SEND_REPLY,
+          streamedReply(send),
         );
         await target.resetState();
         await target.setAppearance(appearance);

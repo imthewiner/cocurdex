@@ -77,13 +77,14 @@ function eventSessionId(event: CocurdexDaemonEvent) {
 export function createSessionDetailStore(
   connection: SessionDetailConnection,
   sessionId: string,
+  lastSeen: SessionObservationSnapshot | null = null,
 ) {
   const listeners = new Set<() => void>();
   let snapshot: SessionDetailSnapshot = {
-    loaded: false,
+    loaded: lastSeen !== null,
     failed: false,
     missing: false,
-    observation: null,
+    observation: lastSeen,
   };
   let stop: (() => void) | null = null;
   let reloadTimer: ReturnType<typeof setTimeout> | null = null;

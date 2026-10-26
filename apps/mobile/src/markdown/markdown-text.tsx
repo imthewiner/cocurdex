@@ -1,6 +1,7 @@
+import { hidePendingTableStart } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
-import { Linking, Platform, View } from "react-native";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Linking, View } from "react-native";
 import {
   EnrichedMarkdownText,
   type MarkdownStyle,
@@ -12,21 +13,26 @@ import {
   useSyntaxColors,
   useThemeColors,
 } from "@/theme";
+import { preloadFileContent } from "@/workspace-files";
+import { DocImage } from "./doc-image";
+import { splitDocImages } from "./doc-image-segments";
 import { entityLinkHref, entityLinkRef } from "./entity-link";
 import { externalLinkUrl } from "./external-link";
+import { FadeInBlock } from "./fade-in-block";
 import { useExistingFiles } from "./file-link-queries";
 import {
   collectFileLinkTargets,
   linkFilePaths,
+  localFileLinkTarget,
+  padInlineCode,
   parseFileLinkHref,
 } from "./file-links";
 import { splitMermaidBlocks } from "./markdown-segments";
 import { MermaidDiagram } from "./mermaid-diagram";
+import { MONO_FONT } from "./mono-font";
+import { type StreamingBlock, streamingBlocks } from "./streaming-blocks";
+import { useStreamingReveal } from "./use-streaming-reveal";
 
-export const MONO_FONT = Platform.select({
-  ios: "Menlo",
-  default: "monospace",
-});
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
 
@@ -43,9 +49,9 @@ function markdownStyle(
   return {
     paragraph: block,
     list: { ...block, bulletColor: colors.mutedForeground },
-    h1: { ...block, fontSize: 22, lineHeight: 28, fontWeight: "700" },
-    h2: { ...block, fontSize: 19, lineHeight: 26, fontWeight: "700" },
-    h3: { ...block, fontSize: 17, lineHeight: 24, fontWeight: "600" },
+    h1: { ...block, fontSize: 22, lineHeight: 28, fontWeight: "600" },
+    h2: { ...block, fontSize: 19, lineHeight: 26, fontWeight: "600" },
+    h3: { ...block, fontSize: 17, lineHeight: 24, fontWeight: "500" },
     blockquote: {
       ...block,
       color: colors.mutedForeground,
@@ -98,33 +104,46 @@ function markdownStyle(
   };
 }
 
-function useOpenLink(hostId: string | undefined) {
-  const router = useRouter();
-  return (url: string) => {
-    const external = externalLinkUrl(url);
-    if (external) {
-      void Linking.openURL(external);
-      return;
-    }
-    const file = hostId ? parseFileLinkHref(url) : null;
-    if (file && hostId) {
-      router.push({
-        pathname: "/file/[hostId]",
-        params: {
-          hostId,
-          path: file.path,
-          ...(file.line === null ? {} : { line: String(file.line) }),
-        },
-      });
-      return;
-    }
-    const ref = entityLinkRef(url);
-    const href = ref && hostId ? entityLinkHref(hostId, ref) : null;
-    if (href) router.push(href);
-  };
+function fileTargetOf(url: string, fileRoot: string | null | undefined) {
+  return fileRoot === undefined
+    ? parseFileLinkHref(url)
+    : localFileLinkTarget(url, fileRoot);
 }
 
-function MarkdownBlock({
+function useOpenLink(
+  hostId: string | undefined,
+  fileRoot: string | null | undefined,
+) {
+  const router = useRouter();
+  return useCallback(
+    (url: string) => {
+      const external = externalLinkUrl(url);
+      if (external) {
+        void Linking.openURL(external);
+        return;
+      }
+      const file = hostId ? fileTargetOf(url, fileRoot) : null;
+      if (file && hostId) {
+        preloadFileContent(hostId, file.path);
+        router.push({
+          pathname: "/file/[hostId]",
+          params: {
+            hostId,
+            path: file.path,
+            ...(file.line === null ? {} : { line: String(file.line) }),
+          },
+        });
+        return;
+      }
+      const ref = entityLinkRef(url);
+      const href = ref && hostId ? entityLinkHref(hostId, ref) : null;
+      if (href) router.push(href);
+    },
+    [router, hostId, fileRoot],
+  );
+}
+
+const MarkdownBlock = memo(function MarkdownBlock({
   markdown,
   style,
   onOpenLink,
@@ -138,12 +157,12 @@ function MarkdownBlock({
       markdown={markdown}
       flavor="github"
       markdownStyle={style}
-      selectable
+      selectable={false}
       enableTaskListItemToggle={false}
       onLinkPress={({ url }) => onOpenLink(url)}
     />
   );
-}
+});
 
 function useFileLinkedMarkdown(
   markdown: string,
@@ -167,50 +186,89 @@ function useFileLinkedMarkdown(
   );
 }
 
+function SegmentView({
+  block,
+  style,
+  hostId,
+  onOpenLink,
+}: {
+  block: StreamingBlock;
+  style: MarkdownStyle;
+  hostId: string | undefined;
+  onOpenLink(url: string): void;
+}) {
+  if (block.kind === "image") {
+    return hostId ? (
+      <DocImage hostId={hostId} fileName={block.fileName} alt={block.alt} />
+    ) : null;
+  }
+  if (block.kind === "markdown") {
+    return (
+      <MarkdownBlock
+        markdown={block.text}
+        style={style}
+        onOpenLink={onOpenLink}
+      />
+    );
+  }
+  return (
+    <MermaidDiagram
+      source={block.source}
+      fallback={
+        <MarkdownBlock
+          markdown={`~~~~\n${block.source}\n~~~~`}
+          style={style}
+          onOpenLink={onOpenLink}
+        />
+      }
+    />
+  );
+}
+
 export function MarkdownText({
   markdown,
+  streaming = false,
   hostId,
   fileRoot,
   testID,
 }: {
   markdown: string;
+  streaming?: boolean;
   hostId?: string;
   fileRoot?: string | null;
   testID?: string;
 }) {
-  const linked = useFileLinkedMarkdown(markdown, hostId, fileRoot);
-  const openLink = useOpenLink(hostId);
+  const { content, live } = useStreamingReveal(markdown, streaming);
+  const [split] = useState(streaming);
+  const settled = live ? hidePendingTableStart(content) : content;
+  const linked = useFileLinkedMarkdown(settled, hostId, fileRoot);
+  const openLink = useOpenLink(hostId, fileRoot);
   const colors = useThemeColors();
   const syntaxColors = useSyntaxColors();
   const style = useMemo(
     () => markdownStyle(colors, syntaxColors),
     [colors, syntaxColors],
   );
-  const segments = useMemo(() => splitMermaidBlocks(linked), [linked]);
+  const blocks = useMemo(
+    () =>
+      streamingBlocks(
+        splitDocImages(splitMermaidBlocks(padInlineCode(linked))),
+        { live, split },
+      ),
+    [linked, live, split],
+  );
   return (
-    <View testID={testID}>
-      {segments.map((segment) =>
-        segment.kind === "markdown" ? (
-          <MarkdownBlock
-            key={`markdown-${segment.line}`}
-            markdown={segment.text}
+    <View testID={testID} style={{ gap: space.sm }}>
+      {blocks.map((block) => (
+        <FadeInBlock key={block.key} fade={live}>
+          <SegmentView
+            block={block}
             style={style}
+            hostId={hostId}
             onOpenLink={openLink}
           />
-        ) : (
-          <MermaidDiagram
-            key={`mermaid-${segment.line}`}
-            source={segment.source}
-            fallback={
-              <MarkdownBlock
-                markdown={`~~~~\n${segment.source}\n~~~~`}
-                style={style}
-                onOpenLink={openLink}
-              />
-            }
-          />
-        ),
-      )}
+        </FadeInBlock>
+      ))}
     </View>
   );
 }

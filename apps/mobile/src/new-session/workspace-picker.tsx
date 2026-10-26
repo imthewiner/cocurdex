@@ -14,6 +14,7 @@ import {
   FormRow,
   FormSection,
   SelectedMark,
+  useSearchBarOptions,
 } from "@/ui";
 import {
   chooseWorkspace,
@@ -29,6 +30,10 @@ function Picker({ host }: { host: SavedHost }) {
   const { draft } = useNewSessionState();
   const { workspaces, sessions } = useHostSessions(host.hostId);
   const [query, setQuery] = useState("");
+  const searchBarOptions = useSearchBarOptions(
+    t("newSession.searchWorkspaces"),
+    setQuery,
+  );
   const choices = workspaceChoices(workspaces, sessions);
   const selectedId = draftWorkspaceId(draft, choices);
   const needle = query.trim().toLocaleLowerCase();
@@ -45,12 +50,7 @@ function Picker({ host }: { host: SavedHost }) {
     <>
       <Stack.Screen
         options={{
-          headerSearchBarOptions: {
-            placeholder: t("newSession.searchWorkspaces"),
-            hideWhenScrolling: false,
-            onChangeText: (event) => setQuery(event.nativeEvent.text),
-            onCancelButtonPress: () => setQuery(""),
-          },
+          headerSearchBarOptions: searchBarOptions,
         }}
       />
       <BrandHost style={styles.fill}>

@@ -139,6 +139,8 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "deck.exportFile": "files.write",
   "deck.importImage": "interact",
   "deck.import": "interact",
+  "image.import": "interact",
+  "image.locate": "read",
   "deck.readPptx": "files.read",
   "issue.createView": "interact",
   "issue.updateView": "interact",
@@ -277,5 +279,6 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "host.pairing.cancel": "host.admin",
   "host.devices.list": "host.admin",
   "host.devices.revoke": "host.admin",
+  "host.devices.updateScopes": "host.admin",
   "host.audit.list": "host.admin",
 };

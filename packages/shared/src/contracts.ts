@@ -1344,6 +1344,7 @@ export interface CreateSessionPayload {
   agentType?: AgentId;
   model?: { providerId: string; modelId: string } | null;
   permissionMode?: AgentPermissionMode | null;
+  agentRoleId?: string | null;
   title?: string;
 }
 

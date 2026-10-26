@@ -1,7 +1,7 @@
 import { type SavedHost, savedHostEndpoint } from "@cocurdex/client-runtime";
-import { buildDaemonFileUrl } from "@cocurdex/shared";
-import useSWR from "swr";
-import { hostConnection } from "@/connection";
+import { buildDaemonFileUrl, workspaceImageMimeType } from "@cocurdex/shared";
+import useSWR, { preload } from "swr";
+import { hosts } from "@/hosts";
 import { MAX_PREVIEW_BYTES, readFileContent } from "./file-content";
 
 export function workspaceFileSource(
@@ -27,19 +27,22 @@ async function fetchFileContent(host: SavedHost, filePath: string) {
   );
 }
 
+function fileContentKey(hostId: string, filePath: string) {
+  return ["files.raw", hostId, filePath] as const;
+}
+
 export function useFileContent(host: SavedHost, filePath: string) {
   return useSWR(
-    ["files.raw", host.hostId, filePath] as const,
+    fileContentKey(host.hostId, filePath),
     () => fetchFileContent(host, filePath),
     { dedupingInterval: 0 },
   );
 }
 
-export function useFileExists(hostId: string, filePath: string | null) {
-  return useSWR(
-    filePath ? (["file.exists", hostId, filePath] as const) : null,
-    ([method, host, path]) =>
-      hostConnection(host).request(method, { filePath: path }),
-    { dedupingInterval: 10_000 },
-  );
+export function preloadFileContent(hostId: string, filePath: string) {
+  const host = hosts.getSnapshot().find((saved) => saved.hostId === hostId);
+  if (!host || workspaceImageMimeType(filePath)) return;
+  preload(fileContentKey(hostId, filePath), () =>
+    fetchFileContent(host, filePath),
+  ).catch(() => undefined);
 }

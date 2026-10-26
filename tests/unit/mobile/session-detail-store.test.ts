@@ -65,6 +65,23 @@ async function loadedStore(results: Record<string, unknown[]>) {
 }
 
 describe("createSessionDetailStore", () => {
+  it("shows the last seen transcript at once and replaces it when the reload lands", async () => {
+    const renamed = {
+      ...OBSERVATION,
+      session: { ...SESSION, title: "Renamed" },
+    };
+    const fake = fakeConnection({ "session.snapshot": [renamed] });
+    const store = createSessionDetailStore(fake.connection, "s1", OBSERVATION);
+    store.subscribe(() => {});
+
+    expect(store.getSnapshot()).toMatchObject({
+      loaded: true,
+      observation: OBSERVATION,
+    });
+    await vi.runAllTimersAsync();
+    expect(store.getSnapshot().observation?.session.title).toBe("Renamed");
+  });
+
   it("streams deltas into one message and settles it on completion", async () => {
     const { fake, store } = await loadedStore({
       "session.snapshot": [OBSERVATION],

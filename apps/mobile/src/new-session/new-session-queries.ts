@@ -33,6 +33,7 @@ function newSessionPayload(
     agentType: draft.agentType,
     model: draft.model,
     permissionMode: draft.permissionMode,
+    agentRoleId: draft.roleId,
   };
 }
 

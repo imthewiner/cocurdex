@@ -1,6 +1,13 @@
 export type MarkdownSegment =
-  | { kind: "markdown"; line: number; text: string }
-  | { kind: "mermaid"; line: number; source: string };
+  | { kind: "markdown"; line: number; column?: number; text: string }
+  | { kind: "mermaid"; line: number; source: string }
+  | {
+      kind: "image";
+      line: number;
+      column: number;
+      fileName: string;
+      alt: string;
+    };
 
 const OPENING_FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*mermaid[ \t]*$/i;
 

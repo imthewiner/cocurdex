@@ -52,7 +52,18 @@ export interface FixtureSession {
   pinned?: boolean;
   archived?: boolean;
   interruptedTurn?: FixtureInterruptedTurn;
+  roleId?: string;
 }
+
+export interface FixtureRole {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+export const FIXTURE_ROLES: FixtureRole[] = [
+  { id: "fixture-role-reviewer", name: "Checkout reviewer", emoji: "🕵️" },
+];
 
 export interface FixtureNote {
   key: string;
@@ -76,6 +87,7 @@ export interface FixtureIssue {
   labels: string[];
   comment?: string;
   linkedSessionId?: string;
+  image?: { fixture: string; name: string };
 }
 
 export const FIXTURE_LABELS = [
@@ -336,6 +348,7 @@ export const FIXTURE_SESSIONS: FixtureSession[] = [
     id: "fixture-session-checkout-bug",
     title: "Investigate failing checkout",
     kind: "main",
+    roleId: "fixture-role-reviewer",
     turns: [
       {
         messageId: "fixture-message-checkout-1",
@@ -552,6 +565,10 @@ export const FIXTURE_ISSUES: FixtureIssue[] = [
     labels: ["feature", "checkout"],
     comment: "Implementation is ready for review in the discounts session.",
     linkedSessionId: "fixture-session-discounts",
+    image: {
+      fixture: "doc-images/checkout-screenshot.png",
+      name: "Checkout with a discount code",
+    },
   },
   {
     title: "Checkout fails for some carts",

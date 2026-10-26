@@ -17,7 +17,12 @@
     }
   },
   "files": {
-    "includes": ["**", "!.agents", "!**/.claude"]
+    "includes": [
+      "**",
+      "!.agents",
+      "!**/.claude",
+      "!apps/mobile/src/markdown/mermaid-runtime.generated.ts"
+    ]
   },
   "vcs": {
     "enabled": true,

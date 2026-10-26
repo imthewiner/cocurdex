@@ -29,6 +29,7 @@
     "title": "Linked",
     "untitled": "Untitled"
   },
+  "loading": "Loading",
   "markdown": {
     "closeDiagram": "Close",
     "diagram": "Diagram",
@@ -42,6 +43,7 @@
     "newNote": "New Note",
     "notes": "Notes",
     "pair": "Pair a Computer",
+    "renameSession": "Rename Session",
     "sessions": "Sessions",
     "settings": "Settings"
   },

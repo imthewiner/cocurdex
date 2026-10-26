@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile, realpath } from "node:fs/promises";
+import { createRequire } from "node:module";
 import net from "node:net";
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
@@ -29,9 +30,8 @@ const AGENT_MODEL_ID = "e2e-agent-model";
 const AGENT_MODEL_NAME = "E2E Agent Model";
 const STUB_REQUEST_TAIL = 6;
 const DAEMON_LOG_TAIL = 150;
-const IMAGE_FIXTURE = path.join(
-  import.meta.dirname,
-  "../fixtures/checkout-screenshot.png",
+const IMAGE_FIXTURE = createRequire(import.meta.url).resolve(
+  "../../e2e/fixtures/doc-images/checkout-screenshot.png",
 );
 
 function freePort() {
@@ -112,6 +112,17 @@ async function pointWorkspacesAtFixtures(
       options,
     );
   }
+}
+
+const STREAM_CHUNK_CHARS = 6;
+const STREAM_CHUNK_INTERVAL_MS = 60;
+
+function streamedChunks(reply: string) {
+  const chunks: string[] = [];
+  for (let at = 0; at < reply.length; at += STREAM_CHUNK_CHARS) {
+    chunks.push(reply.slice(at, at + STREAM_CHUNK_CHARS));
+  }
+  return chunks;
 }
 
 export async function startPairingDaemon(
@@ -196,7 +207,11 @@ export async function startPairingDaemon(
       },
       sessionAttention: () => requestDaemon("attention.list", daemon.options),
       async createReplyingSession(title: string, reply: string) {
-        stub.plan = { kind: "stream", chunks: [reply] };
+        stub.plan = {
+          kind: "stream",
+          chunks: streamedChunks(reply),
+          intervalMs: STREAM_CHUNK_INTERVAL_MS,
+        };
         return requestDaemon(
           "session.configure",
           {

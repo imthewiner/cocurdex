@@ -1,9 +1,9 @@
 import CheckIcon from "@expo/material-symbols/check.xml";
-import { BottomSheet, Column, Icon, ListItem, Text } from "@expo/ui";
+import { BottomSheet, Column, Icon, Text } from "@expo/ui";
 import { Platform } from "react-native";
 import { space, useThemeColors } from "@/theme";
+import { SheetRow } from "./sheet-row";
 
-const TRANSPARENT = "#00000000";
 const LIST_ITEM_INSET = Platform.OS === "android" ? 16 : 0;
 
 export const SHEET_TITLE_INSET = LIST_ITEM_INSET;
@@ -50,9 +50,10 @@ export function ChoiceSheet({
             </Text>
           </Column>
           {choices.map((choice) => (
-            <ListItem
+            <SheetRow
               key={choice.value}
-              colors={{ containerColor: TRANSPARENT }}
+              label={choice.label}
+              color={colors.foreground}
               onPress={() => {
                 onSelect(choice.value);
                 onDismiss();
@@ -66,11 +67,7 @@ export function ChoiceSheet({
                   />
                 ) : undefined
               }
-            >
-              <Text textStyle={{ color: colors.foreground }}>
-                {choice.label}
-              </Text>
-            </ListItem>
+            />
           ))}
         </Column>
       ) : null}

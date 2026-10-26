@@ -46,6 +46,7 @@ function CodeBlock({ text }: { text: string }) {
   const colors = useThemeColors();
   return (
     <ScrollView
+      scrollsChildToFocus={false}
       style={[styles.code, { backgroundColor: colors.muted }]}
       contentContainerStyle={styles.codeContent}
     >

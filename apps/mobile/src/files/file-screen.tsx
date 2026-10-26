@@ -19,9 +19,13 @@ import {
 } from "react-native";
 import { MarkdownText } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice } from "@/ui";
-import { FileLoadError, type FileLoadFailure } from "./file-content";
-import { useFileContent, workspaceFileSource } from "./file-queries";
+import { ListNotice, PendingIndicator, useTransitionSettled } from "@/ui";
+import {
+  FileLoadError,
+  type FileLoadFailure,
+  useFileContent,
+  workspaceFileSource,
+} from "@/workspace-files";
 import { isMarkdownFile, sourceLanguage } from "./source-language";
 import { SourceView } from "./source-view";
 
@@ -29,6 +33,7 @@ const MAX_ZOOM = 4;
 
 function ImageFile({ host, filePath }: { host: SavedHost; filePath: string }) {
   const { width, height } = useWindowDimensions();
+  const [loaded, setLoaded] = useState(false);
   return (
     <ScrollView
       style={styles.fill}
@@ -44,7 +49,13 @@ function ImageFile({ host, filePath }: { host: SavedHost; filePath: string }) {
         resizeMode="contain"
         source={workspaceFileSource(host, filePath)}
         style={{ width, height: height * 0.75 }}
+        onLoadEnd={() => setLoaded(true)}
       />
+      {loaded ? null : (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <PendingIndicator />
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -56,6 +67,48 @@ function useFailureText(): Record<FileLoadFailure, string> {
     missing: t("missing"),
     failed: t("failed"),
   };
+}
+
+function FileToolbar({
+  markdown,
+  preview,
+  text,
+  onTogglePreview,
+}: {
+  markdown: boolean;
+  preview: boolean;
+  text: string | null;
+  onTogglePreview(): void;
+}) {
+  const { t } = useTranslation("files");
+  return (
+    <Stack.Toolbar placement="right">
+      {markdown ? (
+        <Stack.Toolbar.Button
+          icon={
+            Platform.OS === "ios"
+              ? preview
+                ? "chevron.left.forwardslash.chevron.right"
+                : "eye"
+              : preview
+                ? CodeIcon
+                : VisibilityIcon
+          }
+          accessibilityLabel={preview ? t("showSource") : t("showPreview")}
+          disabled={text === null}
+          onPress={onTogglePreview}
+        />
+      ) : null}
+      <Stack.Toolbar.Button
+        icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
+        accessibilityLabel={t("copy")}
+        disabled={text === null}
+        onPress={() => {
+          if (text !== null) void Clipboard.setStringAsync(text);
+        }}
+      />
+    </Stack.Toolbar>
+  );
 }
 
 function TextFile({
@@ -71,29 +124,54 @@ function TextFile({
   const colors = useThemeColors();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const content = useFileContent(host, filePath);
+  const settled = useTransitionSettled();
   const failures = useFailureText();
   const markdown = isMarkdownFile(pathBaseName(filePath));
   const [preview, setPreview] = useState(markdown && line === null);
+  const loaded = content.data?.kind === "text" ? content.data : null;
+  const toolbar = (
+    <FileToolbar
+      markdown={markdown}
+      preview={preview}
+      text={loaded?.text ?? null}
+      onTogglePreview={() => setPreview((current) => !current)}
+    />
+  );
 
-  if (content.data === undefined) {
-    if (!content.error) return <View style={styles.fill} />;
+  if (content.data === undefined || !settled) {
+    if (!content.error || !settled) {
+      return (
+        <>
+          {toolbar}
+          <PendingIndicator />
+        </>
+      );
+    }
     const reason =
       content.error instanceof FileLoadError ? content.error.reason : "failed";
     return (
-      <ListNotice
-        title={failures[reason]}
-        action={
-          reason === "failed"
-            ? { label: t("retry"), onPress: () => void content.mutate() }
-            : undefined
-        }
-      />
+      <>
+        {toolbar}
+        <ListNotice
+          title={failures[reason]}
+          action={
+            reason === "failed"
+              ? { label: t("retry"), onPress: () => void content.mutate() }
+              : undefined
+          }
+        />
+      </>
     );
   }
-  if (content.data.kind === "binary") {
-    return <ListNotice title={t("binary")} />;
+  if (!loaded) {
+    return (
+      <>
+        {toolbar}
+        <ListNotice title={t("binary")} />
+      </>
+    );
   }
-  const { text, lines, truncated } = content.data;
+  const { text, lines, truncated } = loaded;
   const footer = truncated ? (
     <Text style={[styles.notice, { color: colors.mutedForeground }]}>
       {t("truncated")}
@@ -102,33 +180,13 @@ function TextFile({
 
   return (
     <>
-      <Stack.Toolbar placement="right">
-        {markdown ? (
-          <Stack.Toolbar.Button
-            icon={
-              Platform.OS === "ios"
-                ? preview
-                  ? "chevron.left.forwardslash.chevron.right"
-                  : "eye"
-                : preview
-                  ? CodeIcon
-                  : VisibilityIcon
-            }
-            accessibilityLabel={preview ? t("showSource") : t("showPreview")}
-            onPress={() => setPreview((current) => !current)}
-          />
-        ) : null}
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
-          accessibilityLabel={t("copy")}
-          onPress={() => void Clipboard.setStringAsync(text)}
-        />
-      </Stack.Toolbar>
+      {toolbar}
       {preview ? (
         <ScrollView
           style={styles.fill}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.markdown}
+          scrollsChildToFocus={false}
         >
           <MarkdownText
             markdown={text}
@@ -151,6 +209,11 @@ function TextFile({
   );
 }
 
+function SettledImageFile(props: { host: SavedHost; filePath: string }) {
+  const settled = useTransitionSettled();
+  return settled ? <ImageFile {...props} /> : <PendingIndicator />;
+}
+
 export function FileScreen({
   host,
   filePath,
@@ -160,16 +223,10 @@ export function FileScreen({
   filePath: string;
   line: number | null;
 }) {
-  const name = pathBaseName(filePath);
-  return (
-    <>
-      <Stack.Screen options={{ title: name }} />
-      {workspaceImageMimeType(filePath) ? (
-        <ImageFile host={host} filePath={filePath} />
-      ) : (
-        <TextFile host={host} filePath={filePath} line={line} />
-      )}
-    </>
+  return workspaceImageMimeType(filePath) ? (
+    <SettledImageFile host={host} filePath={filePath} />
+  ) : (
+    <TextFile host={host} filePath={filePath} line={line} />
   );
 }
 

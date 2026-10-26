@@ -1,8 +1,10 @@
 import "@/runtime";
 import "@/i18n";
+import { pathBaseName } from "@cocurdex/shared";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, useColorScheme } from "react-native";
+import { MermaidRendererHost } from "@/markdown";
 import {
   navigationThemes,
   themeColors,
@@ -14,6 +16,11 @@ const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
+function fileScreenTitle(params: object | undefined) {
+  const path = params && "path" in params ? params.path : undefined;
+  return typeof path === "string" ? pathBaseName(path) : "";
+}
+
 export default function RootLayout() {
   const { t } = useTranslation();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
@@ -24,6 +31,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           statusBarStyle: scheme === "dark" ? "light" : "dark",
+          headerTitleAlign: "center",
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -88,12 +96,12 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="file/[hostId]"
-          options={{
-            title: "",
+          options={({ route }) => ({
+            title: fileScreenTitle(route.params),
             headerBackButtonDisplayMode: "minimal",
             animation: PUSH_ANIMATION,
             contentStyle: { backgroundColor: colors.background },
-          }}
+          })}
         />
         <Stack.Screen
           name="image/[hostId]/index"
@@ -147,6 +155,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="rename-session/[hostId]/[sessionId]"
+          options={{
+            title: t("screens.renameSession"),
+            presentation: "modal",
+            headerStyle: { backgroundColor: grouped.page },
+            contentStyle: { backgroundColor: grouped.page },
+          }}
+        />
+        <Stack.Screen
           name="scan"
           options={{
             title: "",
@@ -157,6 +174,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      <MermaidRendererHost />
     </ThemeProvider>
   );
 }

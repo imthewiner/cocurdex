@@ -19,6 +19,8 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
+import { useTransitionSettled } from "@/ui";
+import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
@@ -122,7 +124,8 @@ function FilesSection({
             accessibilityRole="link"
             accessibilityLabel={label}
             testID={`tool-call-file-${label}`}
-            onPress={() =>
+            onPress={() => {
+              preloadFileContent(hostId, path);
               router.push({
                 pathname: "/file/[hostId]",
                 params: {
@@ -130,8 +133,8 @@ function FilesSection({
                   path,
                   ...(location.line ? { line: String(location.line) } : {}),
                 },
-              })
-            }
+              });
+            }}
             style={({ pressed }) => [
               styles.fileRow,
               pressed ? { opacity: 0.6 } : null,
@@ -194,6 +197,7 @@ export function ToolCallScreen({
     toolCallId,
     needsResult ? `${call.status}:${call.updatedAt}` : null,
   );
+  const settled = useTransitionSettled();
   if (!call) return null;
   const locations = host?.scopes.includes("files.read")
     ? uniqueLocations(call.locations)
@@ -229,41 +233,46 @@ export function ToolCallScreen({
         </Stack.Toolbar>
       ) : null}
       <ScrollView
+        scrollsChildToFocus={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
       >
-        {locations.length > 0 ? (
-          <FilesSection hostId={hostId} locations={locations} root={root} />
+        {settled ? (
+          <>
+            {locations.length > 0 ? (
+              <FilesSection hostId={hostId} locations={locations} root={root} />
+            ) : null}
+            {input ? (
+              <CodeSection
+                title={t("tool.input")}
+                text={input}
+                testID="tool-call-input"
+              />
+            ) : null}
+            {outputText ? (
+              <CodeSection
+                title={t("tool.output")}
+                note={output?.truncated ? t("tool.outputTail") : null}
+                text={outputText}
+                testID="tool-call-output"
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.empty,
+                  {
+                    color:
+                      placeholder === "failed"
+                        ? colors.destructive
+                        : colors.mutedForeground,
+                  },
+                ]}
+              >
+                {placeholderText}
+              </Text>
+            )}
+          </>
         ) : null}
-        {input ? (
-          <CodeSection
-            title={t("tool.input")}
-            text={input}
-            testID="tool-call-input"
-          />
-        ) : null}
-        {outputText ? (
-          <CodeSection
-            title={t("tool.output")}
-            note={output?.truncated ? t("tool.outputTail") : null}
-            text={outputText}
-            testID="tool-call-output"
-          />
-        ) : (
-          <Text
-            style={[
-              styles.empty,
-              {
-                color:
-                  placeholder === "failed"
-                    ? colors.destructive
-                    : colors.mutedForeground,
-              },
-            ]}
-          >
-            {placeholderText}
-          </Text>
-        )}
       </ScrollView>
     </>
   );
