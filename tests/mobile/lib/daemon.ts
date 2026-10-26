@@ -191,6 +191,7 @@ export async function startPairingDaemon(
         return buildHostPairingLink(baseUrl.origin, code);
       },
       agentModelName: AGENT_MODEL_NAME,
+      agentModelId: AGENT_MODEL_ID,
       async agentLabel(agentId: AgentId) {
         const agents = await requestDaemon("agent.list", daemon.options);
         const agent = agents.find((candidate) => candidate.id === agentId);

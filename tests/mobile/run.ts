@@ -143,6 +143,7 @@ function flowLabels(locale: SupportedLocale) {
     NEW_NOTE_SUBMIT: notes.create.submit,
     SETTINGS_ACTION: common.screens.settings,
     ARCHIVE_ACTION: sessions.actions.archive,
+    SESSION_CONFIG_DONE: sessions.sessionConfig.done,
   };
 }
 
@@ -304,6 +305,7 @@ async function main() {
             ...send,
             NEW_SESSION_AGENT: await daemon.agentLabel("pi"),
             NEW_SESSION_MODEL: daemon.agentModelName,
+            AGENT_MODEL_ID: daemon.agentModelId,
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
             LINK_NOTE_TITLE,

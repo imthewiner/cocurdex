@@ -493,6 +493,13 @@ export default interface Resources {
       thinking: "Reasoning effort";
     };
     search: "Search sessions";
+    sessionConfig: {
+      close: "Close";
+      done: "Done";
+      modeNeedsExecute: "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.";
+      open: "Agent settings: {{summary}}";
+      openMode: "Permission mode: {{mode}}";
+    };
     status: {
       needsYou: "Needs you";
       running: "Running";

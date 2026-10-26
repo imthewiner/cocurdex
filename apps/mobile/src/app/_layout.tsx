@@ -154,6 +154,17 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="session-config/[hostId]/[sessionId]"
+            options={{
+              title: "",
+              presentation: SHEET_PRESENTATION,
+              sheetAllowedDetents: [0.75, 1],
+              sheetGrabberVisible: true,
+              headerStyle: { backgroundColor: grouped.page },
+              contentStyle: { backgroundColor: grouped.page },
+            }}
+          />
+          <Stack.Screen
             name="new-session"
             options={{ headerShown: false, presentation: "modal" }}
           />
