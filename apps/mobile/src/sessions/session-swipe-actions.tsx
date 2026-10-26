@@ -82,6 +82,7 @@ export function SessionSwipeActions({
       rightThreshold={ACTION_WIDTH / 2}
       overshootRight={false}
       renderRightActions={renderActions}
+      childrenContainerStyle={{ backgroundColor: colors.background }}
     >
       {children}
     </ReanimatedSwipeable>
