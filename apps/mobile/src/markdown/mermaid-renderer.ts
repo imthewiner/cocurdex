@@ -21,6 +21,7 @@ type RendererOptions = {
   save(job: DiagramJob, output: RenderedOutput): Promise<RenderedDiagram>;
   rendered(job: DiagramJob, diagram: RenderedDiagram): void;
   failed(job: DiagramJob): void;
+  renderLocally?(job: DiagramJob): RenderedOutput | null;
   startDelayMs?: number;
   timeoutMs?: number;
 };
@@ -37,11 +38,14 @@ export function createMermaidRenderer({
   save,
   rendered,
   failed,
+  renderLocally = () => null,
   startDelayMs = START_DELAY_MS,
   timeoutMs = RENDER_TIMEOUT_MS,
 }: RendererOptions) {
   const pending = new Set<string>();
   const queue: DiagramJob[] = [];
+  const localQueue: DiagramJob[] = [];
+  let localScheduled = false;
   const listeners = new Set<() => void>();
   let current: { request: MermaidRequest; job: DiagramJob } | null = null;
   let send: ((script: string) => void) | null = null;
@@ -91,6 +95,36 @@ export function createMermaidRenderer({
     send(mermaidRenderScript(request));
   }
 
+  function store(job: DiagramJob, output: RenderedOutput) {
+    void save(job, output)
+      .then((diagram) => {
+        settle(job);
+        rendered(job, diagram);
+      })
+      .catch(() => fail(job));
+  }
+
+  function renderNext() {
+    localScheduled = false;
+    const job = localQueue.shift();
+    if (!job) return;
+    let output: RenderedOutput | null = null;
+    try {
+      output = renderLocally(job);
+    } catch {
+      output = null;
+    }
+    if (output) store(job, output);
+    else enqueue(job);
+    scheduleLocal();
+  }
+
+  function scheduleLocal() {
+    if (localScheduled || localQueue.length === 0) return;
+    localScheduled = true;
+    setTimeout(renderNext, 0);
+  }
+
   function enqueue(job: DiagramJob) {
     queue.push(job);
     start();
@@ -114,7 +148,10 @@ export function createMermaidRenderer({
       void cached(job)
         .catch(() => null)
         .then((hit) => {
-          if (!hit) return enqueue(job);
+          if (!hit) {
+            localQueue.push(job);
+            return scheduleLocal();
+          }
           settle(job);
           rendered(job, hit);
         });
@@ -137,12 +174,7 @@ export function createMermaidRenderer({
       finishCurrent();
       if (message.type === "error") return fail(job);
       const { svg, width, height, png } = message;
-      void save(job, { svg, width, height, png })
-        .then((diagram) => {
-          settle(job);
-          rendered(job, diagram);
-        })
-        .catch(() => fail(job));
+      store(job, { svg, width, height, png });
     },
   };
 }

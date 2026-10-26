@@ -1,5 +1,6 @@
 import { CryptoDigestAlgorithm, digestStringAsync } from "expo-crypto";
 import { Directory, File, Paths } from "expo-file-system";
+import { diagramPalette } from "./diagram-palette";
 import type { RenderedDiagram } from "./mermaid-cache";
 import type { DiagramJob, RenderedOutput } from "./mermaid-renderer";
 import { MERMAID_RUNTIME_VERSION } from "./mermaid-runtime.generated";
@@ -26,7 +27,7 @@ function prepare() {
 async function entryName({ source, appearance }: DiagramJob) {
   return digestStringAsync(
     CryptoDigestAlgorithm.SHA256,
-    `${appearance}\n${source}`,
+    `${JSON.stringify(diagramPalette(appearance))}\n${appearance}\n${source}`,
   );
 }
 

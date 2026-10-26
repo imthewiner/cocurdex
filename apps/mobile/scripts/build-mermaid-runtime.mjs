@@ -42,7 +42,17 @@ const result = await esbuild.build({
 
 const script = result.outputFiles[0].text.replace(/<\/script/gi, "<\\/script");
 const html = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"></head><body><div id="diagram"></div><script>${script}</script></body></html>`;
-const version = createHash("sha256").update(html).digest("hex").slice(0, 16);
+const nativeRenderer = JSON.parse(
+  readFileSync(
+    new URL("../node_modules/beautiful-mermaid/package.json", import.meta.url),
+    "utf8",
+  ),
+);
+const version = createHash("sha256")
+  .update(html)
+  .update(`${nativeRenderer.name}@${nativeRenderer.version}`)
+  .digest("hex")
+  .slice(0, 16);
 const output = `export const MERMAID_RUNTIME_VERSION = "${version}";\nexport const MERMAID_RUNTIME_HTML = ${JSON.stringify(html)};\n`;
 
 function current() {

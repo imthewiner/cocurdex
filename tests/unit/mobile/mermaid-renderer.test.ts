@@ -12,7 +12,10 @@ function diagramOf(svg: string): RenderedDiagram {
   return { svg, width: 10, height: 5, image: null };
 }
 
-function setup(diskCache = new Map<string, RenderedDiagram>()) {
+function setup(
+  diskCache = new Map<string, RenderedDiagram>(),
+  local: (job: DiagramJob) => string | null = () => null,
+) {
   const known = new Set<string>();
   const results: string[] = [];
   const sent: string[] = [];
@@ -28,6 +31,10 @@ function setup(diskCache = new Map<string, RenderedDiagram>()) {
     failed: (job) => {
       known.add(keyOf(job));
       results.push(`${keyOf(job)}=failed`);
+    },
+    renderLocally: (job) => {
+      const svg = local(job);
+      return svg ? { svg, width: 10, height: 5, png: null } : null;
     },
     startDelayMs: START_DELAY_MS,
     timeoutMs: TIMEOUT_MS,
@@ -54,6 +61,22 @@ describe("createMermaidRenderer", () => {
     await vi.runAllTimersAsync();
     expect(results).toEqual(["dark:graph TD=<svg>cached</svg>"]);
     expect(renderer.isActive()).toBe(false);
+  });
+
+  it("draws supported diagrams locally and sends only the rest to the web renderer", async () => {
+    const { renderer, results, sent } = setup(undefined, (job) =>
+      job.source === "native" ? "<svg>local</svg>" : null,
+    );
+    renderer.request({ source: "native", appearance: "light" });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(results).toEqual(["light:native=<svg>local</svg>"]);
+    expect(renderer.isActive()).toBe(false);
+
+    renderer.request({ source: "pie", appearance: "light" });
+    await vi.advanceTimersByTimeAsync(START_DELAY_MS);
+    expect(renderer.isActive()).toBe(true);
+    renderer.attach((script) => sent.push(script));
+    expect(sent[0]).toContain('"source":"pie"');
   });
 
   it("starts the renderer after a delay and renders queued diagrams one at a time", async () => {

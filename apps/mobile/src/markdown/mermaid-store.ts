@@ -1,8 +1,11 @@
 import type { MermaidAppearance } from "@cocurdex/shared";
 import { useCallback, useSyncExternalStore } from "react";
+import { diagramPalette } from "./diagram-palette";
 import { createDiagramCache } from "./mermaid-cache";
 import { cachedDiagram, saveDiagram } from "./mermaid-images";
 import { createMermaidRenderer } from "./mermaid-renderer";
+import { MONO_FONT } from "./mono-font";
+import { renderNativeDiagram } from "./native-mermaid";
 
 export const diagrams = createDiagramCache();
 
@@ -13,6 +16,8 @@ export const mermaidRenderer = createMermaidRenderer({
   rendered: ({ source, appearance }, diagram) =>
     diagrams.rendered(source, appearance, diagram),
   failed: ({ source, appearance }) => diagrams.failed(source, appearance),
+  renderLocally: ({ source, appearance }) =>
+    renderNativeDiagram(source, diagramPalette(appearance), MONO_FONT),
 });
 
 export function useDiagram(source: string, appearance: MermaidAppearance) {

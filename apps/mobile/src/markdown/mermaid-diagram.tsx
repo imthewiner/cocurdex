@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
@@ -12,8 +12,14 @@ import { SvgCss } from "react-native-svg/css";
 import { space, useThemeColors } from "@/theme";
 import { PendingIndicator } from "@/ui";
 import { useDiagram } from "./mermaid-store";
+import { withoutReversedMarkers } from "./svg-markers";
 
 const PLACEHOLDER_HEIGHT = 160;
+
+function NativeSvg({ svg }: { svg: string }) {
+  const xml = useMemo(() => withoutReversedMarkers(svg), [svg]);
+  return <SvgCss xml={xml} width="100%" height="100%" />;
+}
 
 function DiagramPlaceholder() {
   const { t } = useTranslation();
@@ -66,7 +72,7 @@ export function MermaidDiagram({
             resizeMode="contain"
           />
         ) : (
-          <SvgCss xml={svg} width="100%" height="100%" />
+          <NativeSvg svg={svg} />
         )}
       </Pressable>
     </View>

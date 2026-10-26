@@ -1,7 +1,7 @@
 import { hidePendingTableStart } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Linking, Platform, View } from "react-native";
+import { Linking, View } from "react-native";
 import {
   EnrichedMarkdownText,
   type MarkdownStyle,
@@ -29,13 +29,10 @@ import {
 } from "./file-links";
 import { splitMermaidBlocks } from "./markdown-segments";
 import { MermaidDiagram } from "./mermaid-diagram";
+import { MONO_FONT } from "./mono-font";
 import { type StreamingBlock, streamingBlocks } from "./streaming-blocks";
 import { useStreamingReveal } from "./use-streaming-reveal";
 
-export const MONO_FONT = Platform.select({
-  ios: "Menlo",
-  default: "monospace",
-});
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
 
