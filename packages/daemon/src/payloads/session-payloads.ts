@@ -49,6 +49,20 @@ const agentRoleAvatarSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+const runtimeSelectionSchema = z.object({
+  reasoningEffort: z.enum(reasoningEfforts).nullish(),
+  serviceTier: z.string().max(256).nullish(),
+  fastMode: z.boolean().nullish(),
+  thinkingLevel: z.enum(["default", "off", ...reasoningEfforts]).nullish(),
+  openCodeAgent: z.string().max(256).nullish(),
+  openCodeVariant: z.string().max(256).nullish(),
+});
+
+const modelSelectionSchema = z.object({
+  providerId: idSchema,
+  modelId: z.string().min(1).max(512),
+});
+
 const createSessionPayload = z.object({
   workspaceId: idSchema,
   agentType: agentIdSchema.optional(),
@@ -62,16 +76,7 @@ const createSessionPayload = z.object({
     .optional(),
   agentRoleId: idSchema.nullable().optional(),
   title: z.string().max(200).optional(),
-  runtime: z
-    .object({
-      reasoningEffort: z.enum(reasoningEfforts).nullish(),
-      serviceTier: z.string().max(256).nullish(),
-      fastMode: z.boolean().nullish(),
-      thinkingLevel: z.enum(["default", "off", ...reasoningEfforts]).nullish(),
-      openCodeAgent: z.string().max(256).nullish(),
-      openCodeVariant: z.string().max(256).nullish(),
-    })
-    .optional(),
+  runtime: runtimeSelectionSchema.optional(),
 });
 
 export const sessionPayloadSchemas = {
@@ -179,6 +184,13 @@ export const sessionPayloadSchemas = {
   ),
   "session.setMode": exact<Payload<"session.setMode">>()(
     z.object({ sessionId: idSchema, modeId: idSchema }),
+  ),
+  "session.updateRuntime": exact<Payload<"session.updateRuntime">>()(
+    z.object({
+      sessionId: idSchema,
+      model: modelSelectionSchema.optional(),
+      runtime: runtimeSelectionSchema.optional(),
+    }),
   ),
   "session.undoTurnChanges": exact<Payload<"session.undoTurnChanges">>()(
     sessionMessagePayload,

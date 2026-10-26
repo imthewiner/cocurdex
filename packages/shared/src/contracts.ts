@@ -1350,6 +1350,12 @@ export interface CreateSessionPayload {
   runtime?: SessionRuntimeSelection;
 }
 
+export interface UpdateSessionRuntimePayload {
+  sessionId: string;
+  model?: { providerId: string; modelId: string };
+  runtime?: SessionRuntimeSelection;
+}
+
 export interface NewSessionDefaults {
   agentType: AgentId;
   model: { providerId: string; modelId: string; name: string } | null;

@@ -117,6 +117,7 @@ export const DAEMON_METHOD_SCOPES: Record<DaemonMethod, HostAccessScope> = {
   "session.sendQueuedNow": "interact",
   "session.setConfig": "interact",
   "session.setMode": "interact",
+  "session.updateRuntime": "interact",
   "session.stop": "interact",
   "session.sendPeerMessage": "interact",
   "session.setPeerInbound": "interact",

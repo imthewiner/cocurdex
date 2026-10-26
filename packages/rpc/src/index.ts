@@ -215,6 +215,7 @@ import type {
   UpdateIssuePayload,
   UpdateNotePayload,
   UpdateSessionAttentionPayload,
+  UpdateSessionRuntimePayload,
   UpdateSessionTitlePayload,
   UpdateViewPayload,
   ViewColumnRecord,
@@ -486,6 +487,7 @@ export type DaemonRequestPayloadByMethod = {
     value: boolean | string;
   };
   "session.setMode": { sessionId: string; modeId: string };
+  "session.updateRuntime": UpdateSessionRuntimePayload;
   "session.stop": { sessionId: string };
   "session.undoTurnChanges": UndoTurnChangesInput;
   "session.getTurnChangeFile": TurnChangeFileContentRequest;
@@ -797,6 +799,7 @@ export type DaemonResultByMethod = {
   "session.sendQueuedNow": MessageRecord;
   "session.setConfig": AgentSessionConfigOption[];
   "session.setMode": null;
+  "session.updateRuntime": SessionRecord;
   "session.stop": null;
   "session.undoTurnChanges": UndoTurnChangesResult;
   "session.getTurnChangeFile": TurnChangeFileContent;

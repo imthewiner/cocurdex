@@ -49,6 +49,7 @@ import type {
   TurnChangeFileContentRequest,
   UndoTurnChangesInput,
   UpdateSessionAttentionPayload,
+  UpdateSessionRuntimePayload,
   UpdateSessionTitlePayload,
   WorkspaceRecord,
   WorkspaceWorktreeEnvironment,
@@ -164,6 +165,7 @@ import {
   resolveNewSession,
   resolveNewSessionDefaults,
 } from "./session-control/create-session";
+import { resolveRuntimeUpdate } from "./session-control/update-runtime";
 import { DaemonSkillLibraryService } from "./skills";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
@@ -1672,6 +1674,25 @@ export class CocurdexDaemonService {
       defaultModel: (agentId) =>
         this.providerService.getAgentProviderDefault(agentId),
     };
+  }
+
+  async updateSessionRuntime(
+    input: UpdateSessionRuntimePayload,
+    principal: HostPrincipal,
+  ) {
+    const session = await this.state.getSession(input.sessionId);
+    if (!session) throw new Error(`Session ${input.sessionId} was not found.`);
+    const agent = (await this.listAgents()).find(
+      (candidate) => candidate.id === session.agentType,
+    );
+    const configuration = resolveRuntimeUpdate(session, input, {
+      compatibleModels: await this.providerService.listCompatibleProviderModels(
+        session.agentType,
+      ),
+      permissionModes:
+        agent?.capabilities.permissionModes.map((option) => option.id) ?? [],
+    });
+    return this.saveSessionConfiguration(configuration, principal);
   }
 
   async resolveNewSessionDefaults(input: CreateSessionPayload) {

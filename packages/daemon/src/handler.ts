@@ -662,6 +662,8 @@ export async function handleDaemonRequest(
         request.params.modeId,
       );
       return null;
+    case "session.updateRuntime":
+      return service.updateSessionRuntime(request.params, context.principal);
     case "session.stop":
       return service.stopSession(request.params.sessionId);
     case "session.undoTurnChanges":
