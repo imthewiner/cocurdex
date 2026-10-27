@@ -13,6 +13,7 @@ import {
   useThemeColors,
   useThemeName,
 } from "@/theme";
+import { useHeaderOptions } from "@/ui";
 
 const SHEET_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
@@ -28,15 +29,14 @@ export default function RootLayout() {
   const scheme = useThemeName();
   const colors = useThemeColors();
   const grouped = useGroupedColors();
+  const headerOptions = useHeaderOptions();
   return (
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={navigationThemes[scheme]}>
         <Stack
           screenOptions={{
+            ...headerOptions,
             statusBarStyle: scheme === "dark" ? "light" : "dark",
-            headerTitleAlign: "center",
-            headerTintColor: colors.foreground,
-            headerShadowVisible: false,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -44,7 +44,6 @@ export default function RootLayout() {
             name="session/[hostId]/[sessionId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.sessions"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -54,7 +53,6 @@ export default function RootLayout() {
             name="note/[hostId]/[noteId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.notes"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -64,7 +62,6 @@ export default function RootLayout() {
             name="issue/[hostId]/[issueId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.issues"),
               animation: PUSH_ANIMATION,
               headerStyle: { backgroundColor: grouped.page },
@@ -75,7 +72,6 @@ export default function RootLayout() {
             name="computers"
             options={{
               title: t("screens.computers"),
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.settings"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -85,7 +81,6 @@ export default function RootLayout() {
             name="computer/[hostId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               headerStyle: { backgroundColor: grouped.page },
               contentStyle: { backgroundColor: grouped.page },
@@ -95,7 +90,6 @@ export default function RootLayout() {
             name="archived/[hostId]"
             options={{
               title: t("screens.archived"),
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -104,7 +98,6 @@ export default function RootLayout() {
             name="tool-call/[hostId]/[sessionId]/[toolCallId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -113,7 +106,6 @@ export default function RootLayout() {
             name="file/[hostId]"
             options={({ route }) => ({
               title: fileScreenTitle(route.params),
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             })}
@@ -169,7 +161,6 @@ export default function RootLayout() {
             name="new-session/index"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.sessions"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },

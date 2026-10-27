@@ -1,9 +1,7 @@
-import AddIcon from "@expo/material-symbols/add.xml";
-import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { HostsList } from "@/computers";
 import { EmptyHosts, usePairingRoutes, useSavedHosts } from "@/hosts";
+import { HeaderButtons } from "@/ui";
 
 export default function ComputersRoute() {
   const { t } = useTranslation();
@@ -12,13 +10,16 @@ export default function ComputersRoute() {
 
   return (
     <>
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "plus" : AddIcon}
-          accessibilityLabel={t("screens.pair")}
-          onPress={openPaste}
-        />
-      </Stack.Toolbar>
+      <HeaderButtons
+        items={[
+          {
+            key: "pair",
+            icon: { ios: "plus", android: "add" },
+            label: t("screens.pair"),
+            onPress: openPaste,
+          },
+        ]}
+      />
       {hasHosts ? (
         <HostsList />
       ) : (

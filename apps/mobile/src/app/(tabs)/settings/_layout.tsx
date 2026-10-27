@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import { useGroupedColors } from "@/theme";
+import { useHeaderOptions } from "@/ui";
 
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
@@ -9,8 +10,9 @@ const PUSH_ANIMATION =
 export default function SettingsLayout() {
   const { t } = useTranslation();
   const grouped = useGroupedColors();
+  const headerOptions = useHeaderOptions();
   return (
-    <Stack screenOptions={{ headerShadowVisible: false }}>
+    <Stack screenOptions={headerOptions}>
       <Stack.Screen
         name="index"
         options={{
@@ -23,7 +25,6 @@ export default function SettingsLayout() {
         name="language"
         options={{
           title: t("screens.language"),
-          headerBackButtonDisplayMode: "minimal",
           animation: PUSH_ANIMATION,
           headerStyle: { backgroundColor: grouped.page },
           contentStyle: { backgroundColor: grouped.page },

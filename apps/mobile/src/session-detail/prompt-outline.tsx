@@ -1,8 +1,7 @@
-import TocIcon from "@expo/material-symbols/toc.xml";
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { useOptionSheet } from "@/ui";
+import { HeaderButtons, useOptionSheet } from "@/ui";
 import type { CondensedItem } from "./transcript-activity";
 import { promptOutline } from "./transcript-jump";
 
@@ -31,14 +30,17 @@ export function PromptOutline({
     });
   return (
     <>
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "list.bullet" : TocIcon}
-          accessibilityLabel={t("detail.prompts")}
-          hidden={prompts.length < MIN_PROMPTS}
-          onPress={open}
-        />
-      </Stack.Toolbar>
+      <HeaderButtons
+        items={[
+          {
+            key: "prompts",
+            icon: { ios: "list.bullet", android: "toc" },
+            label: t("detail.prompts"),
+            hidden: prompts.length < MIN_PROMPTS,
+            onPress: open,
+          },
+        ]}
+      />
       {optionSheet.sheet}
     </>
   );

@@ -1,17 +1,14 @@
 import { Platform } from "react-native";
-import { useGroupedColors, useThemeColors } from "@/theme";
+import { useGroupedColors } from "@/theme";
+import { useHeaderOptions } from "./header-options";
 
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
 export function useSheetStackOptions() {
-  const colors = useThemeColors();
   const grouped = useGroupedColors();
   return {
-    headerBackButtonDisplayMode: "minimal",
-    headerTitleAlign: "center",
-    headerTintColor: colors.foreground,
-    headerShadowVisible: false,
+    ...useHeaderOptions(),
     animation: PUSH_ANIMATION,
     headerStyle: { backgroundColor: grouped.page },
     contentStyle: { backgroundColor: grouped.page },

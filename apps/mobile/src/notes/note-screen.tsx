@@ -1,7 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { NoteSummary } from "@cocurdex/shared";
-import CheckIcon from "@expo/material-symbols/check.xml";
-import LinkIcon from "@expo/material-symbols/link.xml";
 import { Stack } from "expo-router";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
@@ -11,6 +9,7 @@ import { hostConnection } from "@/connection";
 import { useLinkedEntityRows } from "@/entity-links";
 import { useHostSessions } from "@/sessions";
 import {
+  HeaderButtons,
   ListNotice,
   PendingIndicator,
   useAgeLabel,
@@ -168,21 +167,25 @@ export function NoteScreen({
   return (
     <>
       <Stack.Screen options={{ title: "" }} />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "checkmark" : CheckIcon}
-          variant="done"
-          accessibilityLabel={t("editor.done")}
-          hidden={!focused}
-          onPress={() => blur.current?.()}
-        />
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "link" : LinkIcon}
-          accessibilityLabel={links.label}
-          hidden={focused || links.empty}
-          onPress={links.open}
-        />
-      </Stack.Toolbar>
+      <HeaderButtons
+        items={[
+          {
+            key: "done",
+            icon: { ios: "checkmark", android: "check" },
+            label: t("editor.done"),
+            done: true,
+            hidden: !focused,
+            onPress: () => blur.current?.(),
+          },
+          {
+            key: "links",
+            icon: { ios: "link", android: "link" },
+            label: links.label,
+            hidden: focused || links.empty,
+            onPress: links.open,
+          },
+        ]}
+      />
       {content}
       {links.sheet}
       {properties.sheet}

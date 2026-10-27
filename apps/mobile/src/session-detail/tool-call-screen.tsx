@@ -3,7 +3,6 @@ import {
   type AgentToolCallRecord,
   resolveCandidatePath,
 } from "@cocurdex/shared";
-import ContentCopyIcon from "@expo/material-symbols/content_copy.xml";
 import * as Clipboard from "expo-clipboard";
 import { Stack, useRouter } from "expo-router";
 import type { TFunction } from "i18next";
@@ -19,7 +18,11 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { useScrollIndicatorWhileScrolling, useTransitionSettled } from "@/ui";
+import {
+  HeaderButtons,
+  useScrollIndicatorWhileScrolling,
+  useTransitionSettled,
+} from "@/ui";
 import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
@@ -226,13 +229,16 @@ export function ToolCallScreen({
         }}
       />
       {outputText ? (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button
-            icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
-            accessibilityLabel={t("tool.copyOutput")}
-            onPress={() => void Clipboard.setStringAsync(outputText)}
-          />
-        </Stack.Toolbar>
+        <HeaderButtons
+          items={[
+            {
+              key: "copy",
+              icon: { ios: "doc.on.doc", android: "content_copy" },
+              label: t("tool.copyOutput"),
+              onPress: () => void Clipboard.setStringAsync(outputText),
+            },
+          ]}
+        />
       ) : null}
       <ScrollView
         {...scrollIndicator}

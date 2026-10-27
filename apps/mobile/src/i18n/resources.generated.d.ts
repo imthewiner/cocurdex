@@ -2,6 +2,7 @@
 export default interface Resources {
   common: {
     actions: {
+      back: "Back";
       cancel: "Cancel";
       close: "Close";
       search: "Search";
