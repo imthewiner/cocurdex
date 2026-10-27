@@ -29,6 +29,16 @@ export const applyAgentRuntimeEventAtom = atom(
   },
 );
 
+function isUnreportedRuntimeState(state: AgentSessionRuntimeState) {
+  return (
+    state.capabilities === null &&
+    state.commands === null &&
+    state.configOptions.length === 0 &&
+    state.mode === null &&
+    state.runtime === null
+  );
+}
+
 export const seedAgentRuntimeAtom = atom(
   null,
   (
@@ -37,6 +47,8 @@ export const seedAgentRuntimeAtom = atom(
     payload: { sessionId: string; state: AgentSessionRuntimeState },
   ) => {
     const current = get(agentRuntimeBySessionAtom);
+    const live = current[payload.sessionId];
+    if (!live && isUnreportedRuntimeState(payload.state)) return;
     set(agentRuntimeBySessionAtom, {
       ...current,
       [payload.sessionId]: seedSessionRuntimeState(

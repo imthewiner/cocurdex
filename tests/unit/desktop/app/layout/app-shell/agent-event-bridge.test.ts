@@ -328,4 +328,23 @@ describe("runtime state seeding", () => {
       "plan",
     );
   });
+
+  it("leaves a session without reported runtime state unset", async () => {
+    host.getSessionRuntimeState.mockResolvedValue(
+      EMPTY_AGENT_SESSION_RUNTIME_STATE,
+    );
+    const store = createStore();
+    store.set(sessionsAtom, [
+      sessionRecord("idle", "2026-10-27T00:00:00.000Z"),
+    ]);
+    const stop = createAgentEventBridge(store).start();
+    store.set(selectSessionAtom, "idle");
+    await vi.waitFor(() =>
+      expect(host.getSessionRuntimeState).toHaveBeenCalledWith("idle"),
+    );
+    await Promise.resolve();
+    stop();
+
+    expect(store.get(agentRuntimeBySessionAtom).idle).toBeUndefined();
+  });
 });
