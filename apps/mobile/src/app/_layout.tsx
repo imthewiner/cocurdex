@@ -15,6 +15,7 @@ import {
 } from "@/theme";
 import { useHeaderOptions } from "@/ui";
 
+const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
@@ -133,7 +134,7 @@ export default function RootLayout() {
             name="pair"
             options={{
               title: t("screens.pair"),
-              presentation: "formSheet",
+              presentation: PAIR_PRESENTATION,
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
             }}
