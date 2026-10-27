@@ -1,6 +1,5 @@
 {
   "about": {
-    "pairedComputers": "已配对电脑",
     "title": "关于",
     "version": "版本"
   },
@@ -10,6 +9,7 @@
     "system": "跟随系统",
     "title": "外观"
   },
+  "computers": "电脑",
   "language": {
     "system": "跟随系统",
     "title": "语言"

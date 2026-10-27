@@ -95,7 +95,7 @@ function flowLabels(locale: SupportedLocale) {
   const issues = readMessages(locale, "issues");
   const notes = readMessages(locale, "notes");
   return {
-    TAB_COMPUTERS: common.tabs.computers,
+    TAB_SETTINGS: common.tabs.settings,
     TAB_SESSIONS: common.tabs.sessions,
     TAB_ISSUES: common.tabs.issues,
     TAB_NOTES: common.tabs.notes,
@@ -155,8 +155,8 @@ function flowLabels(locale: SupportedLocale) {
     NEW_ISSUE_SUBMIT: issues.create.submit,
     RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,
-    NEW_NOTE_SUBMIT: notes.create.submit,
-    SETTINGS_ACTION: common.screens.settings,
+    NOTE_DONE: notes.editor.done,
+    DEFAULT_NOTE_TITLE: "Untitled",
     ARCHIVE_ACTION: sessions.actions.archive,
     SESSION_CONFIG_DONE: sessions.sessionConfig.done,
     SAVE_ROLE_SAVE: sessions.saveRole.save,

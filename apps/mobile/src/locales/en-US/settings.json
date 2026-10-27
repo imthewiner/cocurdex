@@ -1,6 +1,5 @@
 {
   "about": {
-    "pairedComputers": "Paired Computers",
     "title": "About",
     "version": "Version"
   },
@@ -10,6 +9,7 @@
     "system": "Match System",
     "title": "Appearance"
   },
+  "computers": "Computers",
   "language": {
     "system": "Match System",
     "title": "Language"

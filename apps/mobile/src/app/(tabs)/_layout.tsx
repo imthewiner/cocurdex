@@ -52,10 +52,13 @@ export default function TabsLayout() {
         />
         <NativeTabs.Trigger.Label>{t("tabs.notes")}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="computers">
-        <NativeTabs.Trigger.Icon sf="laptopcomputer" md="computer" />
+      <NativeTabs.Trigger name="settings">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "gearshape", selected: "gearshape.fill" }}
+          md="settings"
+        />
         <NativeTabs.Trigger.Label>
-          {t("tabs.computers")}
+          {t("tabs.settings")}
         </NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>

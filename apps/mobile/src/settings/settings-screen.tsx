@@ -1,9 +1,9 @@
 import { type SupportedLocale, supportedLocales } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import Constants from "expo-constants";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useCurrentHost, useSavedHosts } from "@/hosts";
+import { useCurrentHost } from "@/hosts";
 import {
   APPEARANCE_PREFERENCES,
   type AppearancePreference,
@@ -42,6 +42,7 @@ function useAppearanceLabels(): Record<AppearancePreference, string> {
 }
 
 function ArchivedRow({ hostId }: { hostId: string }) {
+  const router = useRouter();
   const { t } = useTranslation("settings");
   const { workspaces } = useHostSessions(hostId);
   const { data } = useArchivedSessions(hostId);
@@ -64,15 +65,23 @@ function ValueText({ value }: { value: string }) {
 }
 
 export function SettingsScreen() {
+  const router = useRouter();
   const { t } = useTranslation("settings");
   const preferences = usePreferences();
   const appearanceLabels = useAppearanceLabels();
   const host = useCurrentHost();
-  const pairedCount = useSavedHosts().length;
   const languages: LanguagePreference[] = ["system", ...supportedLocales];
   return (
     <BrandHost style={{ flex: 1 }}>
       <Form>
+        <FormSection>
+          <ValueFormRow
+            testID="settings-computers"
+            label={t("computers")}
+            value={host?.name ?? ""}
+            onPress={() => router.push("/computers")}
+          />
+        </FormSection>
         <FormSection title={t("appearance.title")}>
           {APPEARANCE_PREFERENCES.map((appearance) => (
             <FormRow
@@ -117,9 +126,6 @@ export function SettingsScreen() {
             trailing={<ValueText value={Constants.expoConfig?.version ?? ""} />}
           >
             <Text>{t("about.version")}</Text>
-          </FormRow>
-          <FormRow trailing={<ValueText value={String(pairedCount)} />}>
-            <Text>{t("about.pairedComputers")}</Text>
           </FormRow>
         </FormSection>
       </Form>

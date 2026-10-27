@@ -3,7 +3,7 @@ import "@/i18n";
 import { pathBaseName } from "@cocurdex/shared";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet, useColorScheme } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MermaidRendererHost } from "@/markdown";
 import {
@@ -11,6 +11,7 @@ import {
   themeColors,
   useGroupedColors,
   useThemeColors,
+  useThemeName,
 } from "@/theme";
 
 const SHEET_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
@@ -24,7 +25,7 @@ function fileScreenTitle(params: object | undefined) {
 
 export default function RootLayout() {
   const { t } = useTranslation();
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const scheme = useThemeName();
   const colors = useThemeColors();
   const grouped = useGroupedColors();
   return (
@@ -70,13 +71,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="settings"
+            name="computers"
             options={{
-              title: t("screens.settings"),
+              title: t("screens.computers"),
               headerBackButtonDisplayMode: "minimal",
+              headerBackTitle: t("tabs.settings"),
               animation: PUSH_ANIMATION,
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen
@@ -186,15 +187,6 @@ export default function RootLayout() {
             name="new-issue/[hostId]"
             options={{
               title: t("screens.newIssue"),
-              presentation: "modal",
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
-            }}
-          />
-          <Stack.Screen
-            name="new-note/[hostId]"
-            options={{
-              title: t("screens.newNote"),
               presentation: "modal",
               headerStyle: { backgroundColor: grouped.page },
               contentStyle: { backgroundColor: grouped.page },

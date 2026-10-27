@@ -267,12 +267,28 @@ appId: dev.cocurdex.mobile
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-mermaid
-- tapOn:
-    id: "mermaid-diagram"
-- extendedWaitUntil:
-    visible:
-      id: "mermaid-viewer"
-    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "mermaid-diagram"
+          direction: UP
+          visibilityPercentage: 40
+          timeout: 10000
+      - scrollUntilVisible:
+          element:
+            id: "mermaid-diagram"
+          direction: DOWN
+          visibilityPercentage: 100
+          speed: 20
+          timeout: 10000
+      - tapOn:
+          id: "mermaid-diagram"
+      - extendedWaitUntil:
+          visible:
+            id: "mermaid-viewer"
+          timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: mermaid-viewer
 - runFlow:
@@ -286,10 +302,9 @@ appId: dev.cocurdex.mobile
     commands:
       - back
 - extendedWaitUntil:
-    visible: ${DIAGRAM_HEADING}
+    visible:
+      id: "mermaid-diagram"
     timeout: 5000
-- assertVisible:
-    id: "mermaid-diagram"
 - runFlow:
     when:
       platform: iOS
@@ -598,7 +613,7 @@ appId: dev.cocurdex.mobile
           timeout: 10000
 - assertVisible:
     id: "composer-input"
-- assertNotVisible: ${TAB_COMPUTERS}
+- assertNotVisible: ${TAB_SETTINGS}
 - waitForAnimationToEnd
 - takeScreenshot: session-detail
 - retry:
@@ -651,10 +666,6 @@ appId: dev.cocurdex.mobile
           commands:
             - tapOn:
                 id: ".*search_close_btn"
-      - extendedWaitUntil:
-          visible:
-            id: "host-switcher"
-          timeout: 5000
 - extendedWaitUntil:
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
@@ -760,14 +771,17 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     notVisible: ${IN_PROGRESS_ISSUE_TITLE}
     timeout: 10000
-- scrollUntilVisible:
-    element:
-      id: issue-column-done
-    direction: RIGHT
-    timeout: 10000
-- extendedWaitUntil:
-    visible: ${IN_PROGRESS_ISSUE_TITLE}
-    timeout: 10000
+- repeat:
+    while:
+      notVisible: ${IN_PROGRESS_ISSUE_TITLE}
+    times: 6
+    commands:
+      - swipe:
+          start: 90%, 70%
+          end: 10%, 70%
+          duration: 400
+      - waitForAnimationToEnd
+- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
 - longPressOn: ${IN_PROGRESS_ISSUE_TITLE}
 - extendedWaitUntil:
     visible:
@@ -778,14 +792,17 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     notVisible: ${IN_PROGRESS_ISSUE_TITLE}
     timeout: 10000
-- scrollUntilVisible:
-    element:
-      id: issue-column-doing
-    direction: LEFT
-    timeout: 10000
-- extendedWaitUntil:
-    visible: ${IN_PROGRESS_ISSUE_TITLE}
-    timeout: 10000
+- repeat:
+    while:
+      notVisible: ${IN_PROGRESS_ISSUE_TITLE}
+    times: 6
+    commands:
+      - swipe:
+          start: 10%, 70%
+          end: 90%, 70%
+          duration: 400
+      - waitForAnimationToEnd
+- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
 - tapOn: ${SHOW_LIST}
 - extendedWaitUntil:
     notVisible:
@@ -801,18 +818,26 @@ appId: dev.cocurdex.mobile
 - waitForAnimationToEnd
 - takeScreenshot: notes
 - tapOn: ${NEW_NOTE_ACTION}
-- tapOn:
-    id: new-note-title
+- extendedWaitUntil:
+    visible:
+      id: note-format-bold
+    timeout: 10000
 - inputText: ${NEW_NOTE_TITLE}
-- tapOn:
-    id: new-note-body
+- pressKey: Enter
 - inputText: ${NEW_NOTE_BODY}
+- tapOn:
+    id: note-format-bold
 - waitForAnimationToEnd
 - takeScreenshot: new-note
-- tapOn: ${NEW_NOTE_SUBMIT}
+- tapOn: ${NOTE_DONE}
+- extendedWaitUntil:
+    notVisible:
+      id: note-format-bold
+    timeout: 5000
 - extendedWaitUntil:
     visible: ${NEW_NOTE_BODY}
     timeout: 10000
+- takeScreenshot: new-note-saved
 - runFlow:
     when:
       platform: iOS
@@ -825,6 +850,28 @@ appId: dev.cocurdex.mobile
       - back
 - extendedWaitUntil:
     visible: ${NEW_NOTE_TITLE}
+    timeout: 10000
+- tapOn: ${NEW_NOTE_ACTION}
+- extendedWaitUntil:
+    visible:
+      id: note-format-bold
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${TAB_NOTES}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+      - back
+- extendedWaitUntil:
+    visible: ${NEW_NOTE_TITLE}
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible: ${DEFAULT_NOTE_TITLE}
     timeout: 10000
 - tapOn: ${NOTE_TITLE}
 - extendedWaitUntil:
@@ -876,7 +923,9 @@ appId: dev.cocurdex.mobile
 - retry:
     maxRetries: 2
     commands:
-      - tapOn: ${TAB_COMPUTERS}
+      - tapOn: ${TAB_SETTINGS}
+      - tapOn:
+          id: settings-computers
       - extendedWaitUntil:
           visible: ".*${HOST_ADDRESS}.*"
           timeout: 5000
@@ -933,6 +982,30 @@ appId: dev.cocurdex.mobile
       id: "host-row-.*"
     timeout: 5000
 - assertVisible: ${RENAMED_COMPUTER}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 3
+          commands:
+            - waitForAnimationToEnd
+            - tapOn:
+                point: 5%, 9%
+            - extendedWaitUntil:
+                visible:
+                  id: settings-computers
+                timeout: 3000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: settings-computers
+    timeout: 5000
+- assertVisible: "${RENAMED_COMPUTER}"
 - retry:
     maxRetries: 2
     commands:
@@ -940,32 +1013,6 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${SEND_SESSION_TITLE}
           timeout: 5000
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn: ".*${RENAMED_COMPUTER}.*"
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - assertVisible:
-          text: "${RENAMED_COMPUTER}"
-          childOf:
-            id: "host-switcher"
-      - tapOn:
-          id: "host-switcher"
-- extendedWaitUntil:
-    visible:
-      id: host-switcher-pair
-    timeout: 5000
-- takeScreenshot: host-switcher
-- tapOn:
-    id: "host-switcher-(?!pair).*"
-- extendedWaitUntil:
-    notVisible:
-      id: host-switcher-pair
-    timeout: 5000
 - longPressOn: ${SEND_SESSION_TITLE}
 - extendedWaitUntil:
     visible:
@@ -977,8 +1024,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     notVisible: ${SEND_SESSION_TITLE}
     timeout: 10000
-- tapOn: ${TAB_COMPUTERS}
-- tapOn: ${SETTINGS_ACTION}
+- tapOn: ${TAB_SETTINGS}
 - waitForAnimationToEnd
 - takeScreenshot: settings
 - tapOn:

@@ -1,7 +1,7 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { IssueRecord } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { type ReactElement, useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -36,12 +36,10 @@ export function IssueBoard({
   host,
   workspaceId,
   query,
-  header,
 }: {
   host: SavedHost;
   workspaceId: string | null;
   query: string;
-  header?: ReactElement;
 }) {
   const { t } = useTranslation("issues");
   const colors = useThemeColors();
@@ -73,16 +71,13 @@ export function IssueBoard({
   if (!data) {
     if (data === undefined && !view.error) return <PendingIndicator />;
     return (
-      <>
-        {header}
-        <ListNotice
-          title={t("unavailable.title", { host: host.name })}
-          action={{
-            label: t("unavailable.retry"),
-            onPress: () => void view.mutate(),
-          }}
-        />
-      </>
+      <ListNotice
+        title={t("unavailable.title", { host: host.name })}
+        action={{
+          label: t("unavailable.retry"),
+          onPress: () => void view.mutate(),
+        }}
+      />
     );
   }
 
@@ -166,7 +161,6 @@ export function IssueBoard({
 
   return (
     <View style={styles.fill}>
-      {header}
       <FlatList
         horizontal
         style={styles.fill}

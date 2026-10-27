@@ -14,7 +14,6 @@
   },
   "empty": {
     "description": "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.",
-    "pair": "Pair a Computer",
     "paste": "Paste Pairing Link",
     "scan": "Scan to Pair",
     "title": "No Computers"
@@ -81,9 +80,5 @@
     "gitDestructive": "Discard changes, switch branches, and push.",
     "interact": "Send messages, stop sessions, and edit notes and issues.",
     "read": "View sessions, messages, notes, and issues."
-  },
-  "switcher": {
-    "label": "Computer: {{host}}",
-    "title": "Switch Computer"
   }
 }

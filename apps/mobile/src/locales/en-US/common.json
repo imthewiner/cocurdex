@@ -44,7 +44,6 @@
     "computers": "Computers",
     "issues": "Issues",
     "newIssue": "New Issue",
-    "newNote": "New Note",
     "notes": "Notes",
     "pair": "Pair a Computer",
     "renameComputer": "Rename Computer",
@@ -53,9 +52,9 @@
     "settings": "Settings"
   },
   "tabs": {
-    "computers": "Computers",
     "issues": "Issues",
     "notes": "Notes",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "settings": "Settings"
   }
 }

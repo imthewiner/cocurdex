@@ -9,7 +9,6 @@ import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import {
   EmptyHosts,
-  HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
   useScopeGate,
@@ -36,15 +35,15 @@ export default function IssuesScreen() {
       </>
     );
   }
-  return <HostIssues host={host} onPair={openPaste} />;
+  return <HostIssues host={host} />;
 }
 
-function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
+function HostIssues({ host }: { host: SavedHost }) {
   const { t } = useTranslation(["issues", "common"]);
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader(t("common:screens.issues"), {
+  const listHeader = useListHeader({
     placeholder: t("search"),
     onQuery: setQuery,
   });
@@ -61,7 +60,6 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
   return (
     <>
       <Stack.Screen options={listHeader.options} />
-      <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={layoutToggleIcon(board)}
@@ -88,12 +86,7 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
           )}
         />
       </Stack.Toolbar>
-      <Issues
-        host={host}
-        workspaceId={workspaceId}
-        query={query}
-        header={listHeader.header}
-      />
+      <Issues host={host} workspaceId={workspaceId} query={query} />
       <WorkspaceFilterSheet
         host={host}
         presented={pickingWorkspace}

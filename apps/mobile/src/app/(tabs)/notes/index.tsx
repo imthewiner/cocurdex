@@ -2,15 +2,14 @@ import AddIcon from "@expo/material-symbols/add.xml";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import {
   EmptyHosts,
-  HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
   useScopeGate,
 } from "@/hosts";
-import { NoteList } from "@/notes";
+import { createBlankNote, NoteList } from "@/notes";
 import { emptyListOptions, useListHeader } from "@/ui";
 
 export default function NotesScreen() {
@@ -20,7 +19,8 @@ export default function NotesScreen() {
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader(t("common:screens.notes"), {
+  const [creating, setCreating] = useState(false);
+  const listHeader = useListHeader({
     placeholder: t("search"),
     onQuery: setQuery,
   });
@@ -36,20 +36,30 @@ export default function NotesScreen() {
   return (
     <>
       <Stack.Screen options={listHeader.options} />
-      <HostSwitcher current={host} onPair={openPaste} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "square.and.pencil" : AddIcon}
           accessibilityLabel={t("create.open")}
-          onPress={gate("interact", () =>
-            router.push({
-              pathname: "/new-note/[hostId]",
-              params: { hostId: host.hostId },
-            }),
-          )}
+          disabled={creating}
+          onPress={gate("interact", () => {
+            setCreating(true);
+            createBlankNote(host.hostId)
+              .then((note) =>
+                router.push({
+                  pathname: "/note/[hostId]/[noteId]",
+                  params: {
+                    hostId: host.hostId,
+                    noteId: note.id,
+                    created: "1",
+                  },
+                }),
+              )
+              .catch(() => Alert.alert(t("create.failed")))
+              .finally(() => setCreating(false));
+          })}
         />
       </Stack.Toolbar>
-      <NoteList host={host} query={query} header={listHeader.header} />
+      <NoteList host={host} query={query} />
     </>
   );
 }

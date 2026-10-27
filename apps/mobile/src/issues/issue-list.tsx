@@ -1,6 +1,6 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
-import { type ReactElement, useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionList, StyleSheet } from "react-native";
 import {
@@ -19,12 +19,10 @@ export function IssueList({
   host,
   workspaceId,
   query,
-  header,
 }: {
   host: SavedHost;
   workspaceId: string | null;
   query: string;
-  header?: ReactElement;
 }) {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("issues");
@@ -56,16 +54,13 @@ export function IssueList({
   if (!data) {
     if (data === undefined && !view.error) return <PendingIndicator />;
     return (
-      <>
-        {header}
-        <ListNotice
-          title={t("unavailable.title", { host: host.name })}
-          action={{
-            label: t("unavailable.retry"),
-            onPress: () => void view.mutate(),
-          }}
-        />
-      </>
+      <ListNotice
+        title={t("unavailable.title", { host: host.name })}
+        action={{
+          label: t("unavailable.retry"),
+          onPress: () => void view.mutate(),
+        }}
+      />
     );
   }
 
@@ -80,7 +75,6 @@ export function IssueList({
       sections={sections}
       keyExtractor={(issue) => issue.id}
       stickySectionHeadersEnabled={false}
-      ListHeaderComponent={header}
       refreshing={pull.refreshing}
       onRefresh={pull.onRefresh}
       ListEmptyComponent={

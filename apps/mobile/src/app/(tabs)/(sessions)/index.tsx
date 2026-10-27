@@ -8,7 +8,6 @@ import { Platform } from "react-native";
 import { useAgents } from "@/agents";
 import {
   EmptyHosts,
-  HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
   useScopeGate,
@@ -30,7 +29,7 @@ export default function SessionsScreen() {
   const router = useRouter();
   const host = useCurrentHost();
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader(t("common:screens.sessions"), {
+  const listHeader = useListHeader({
     placeholder: t("search"),
     onQuery: setQuery,
   });
@@ -50,7 +49,6 @@ export default function SessionsScreen() {
       host={host}
       query={query}
       listHeader={listHeader}
-      onPair={openPaste}
       onNewSession={() => {
         beginNewSession(host.hostId);
         router.push("/new-session");
@@ -63,13 +61,11 @@ function HostSessionsScreen({
   host,
   query,
   listHeader,
-  onPair,
   onNewSession,
 }: {
   host: NonNullable<ReturnType<typeof useCurrentHost>>;
   query: string;
   listHeader: ListHeader;
-  onPair(): void;
   onNewSession(): void;
 }) {
   const { t } = useTranslation("sessions");
@@ -85,7 +81,6 @@ function HostSessionsScreen({
   return (
     <>
       <Stack.Screen options={listHeader.options} />
-      <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
           icon={filterIcon(filtered)}
@@ -105,7 +100,6 @@ function HostSessionsScreen({
         query={query}
         agentLabels={agentLabels}
         onReload={() => void sessionsStore(host.hostId).reload()}
-        header={listHeader.header}
       />
     </>
   );

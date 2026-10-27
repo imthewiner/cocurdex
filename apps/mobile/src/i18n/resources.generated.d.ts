@@ -46,7 +46,6 @@ export default interface Resources {
       computers: "Computers";
       issues: "Issues";
       newIssue: "New Issue";
-      newNote: "New Note";
       notes: "Notes";
       pair: "Pair a Computer";
       renameComputer: "Rename Computer";
@@ -55,10 +54,10 @@ export default interface Resources {
       settings: "Settings";
     };
     tabs: {
-      computers: "Computers";
       issues: "Issues";
       notes: "Notes";
       sessions: "Sessions";
+      settings: "Settings";
     };
   };
   files: {
@@ -88,7 +87,6 @@ export default interface Resources {
     };
     empty: {
       description: "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.";
-      pair: "Pair a Computer";
       paste: "Paste Pairing Link";
       scan: "Scan to Pair";
       title: "No Computers";
@@ -156,10 +154,6 @@ export default interface Resources {
       interact: "Send messages, stop sessions, and edit notes and issues.";
       read: "View sessions, messages, notes, and issues.";
     };
-    switcher: {
-      label: "Computer: {{host}}";
-      title: "Switch Computer";
-    };
   };
   issues: {
     allWorkspaces: "All Workspaces";
@@ -208,22 +202,56 @@ export default interface Resources {
   };
   notes: {
     create: {
-      bodyPlaceholder: "Write in Markdown";
-      creating: "Creating…";
       failed: "Couldn't create the note. Check the connection and try again.";
-      hint: "Agents can read and edit this note too.";
       open: "New Note";
-      submit: "Create";
-      titlePlaceholder: "Title";
+    };
+    editor: {
+      block: {
+        blockquote: "Quote";
+        codeBlock: "Code Block";
+        heading1: "Heading 1";
+        heading2: "Heading 2";
+        heading3: "Heading 3";
+        paragraph: "Body";
+      };
+      bodyPlaceholder: "Write something, or type / to insert headings, lists, and to-dos";
+      done: "Done";
+      format: {
+        bold: "Bold";
+        bulletList: "Bulleted List";
+        hideKeyboard: "Hide Keyboard";
+        insert: "Insert";
+        taskList: "Checklist";
+        text: "Text Style";
+      };
+      insert: {
+        bulletList: "Bulleted List";
+        horizontalRule: "Divider";
+        orderedList: "Numbered List";
+        table: "Table";
+        taskList: "Checklist";
+      };
+      status: {
+        error: "Not saved";
+        saved: "Saved";
+        saving: "Saving…";
+      };
+      titlePlaceholder: "Untitled";
+      untitled: "Untitled";
     };
     empty: {
       description: "Notes you write on {{host}} appear here.";
       title: "No Notes";
     };
-    emptyBody: "This note is empty.";
     missing: "This note was deleted on the computer.";
     noResults: "No notes match “{{query}}”";
     noWorkspace: "No Workspace";
+    properties: {
+      moveFailed: "Couldn't move the note. Check the connection and try again.";
+      noParent: "None";
+      parent: "Parent Note";
+      title: "Note Properties";
+    };
     search: "Search notes";
     unavailable: {
       retry: "Try Again";
@@ -558,7 +586,6 @@ export default interface Resources {
   };
   settings: {
     about: {
-      pairedComputers: "Paired Computers";
       title: "About";
       version: "Version";
     };
@@ -568,6 +595,7 @@ export default interface Resources {
       system: "Match System";
       title: "Appearance";
     };
+    computers: "Computers";
     language: {
       system: "Match System";
       title: "Language";
