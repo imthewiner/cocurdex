@@ -5,13 +5,6 @@ import {
   STICK_TO_BOTTOM_THRESHOLD,
 } from "@/components/chat";
 
-// Re-export so existing agent imports keep working; implementation lives in
-// components/chat for pure-chat reuse.
-export {
-  type JumpButtonKind,
-  resolveJumpButton,
-} from "@/components/chat";
-
 const SCROLL_BOTTOM_THRESHOLD = STICK_TO_BOTTOM_THRESHOLD;
 const SCROLL_RESUME_BOTTOM_THRESHOLD = STICK_TO_BOTTOM_RESUME_THRESHOLD;
 

@@ -1,7 +1,3 @@
-// Shared jump-button policy for agent chat and pure chat. Edges point to the
-// opposite end; the middle mirrors scroll direction so the control always
-// points where the viewer is already heading.
-
 export type JumpButtonKind = "top" | "latest" | null;
 
 export function resolveJumpButton({
@@ -26,8 +22,6 @@ export function resolveJumpButton({
   }
 
   if (isNearBottom) {
-    // Suppressed until the viewer scrolls, so a freshly opened (auto-pinned to
-    // bottom) conversation does not show a button it never asked for.
     return hasUserScrolled ? "top" : null;
   }
 
