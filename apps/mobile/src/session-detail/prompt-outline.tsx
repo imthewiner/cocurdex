@@ -18,7 +18,6 @@ export function PromptOutline({
   const { t } = useTranslation("sessions");
   const optionSheet = useOptionSheet();
   const prompts = promptOutline(items);
-  if (prompts.length < MIN_PROMPTS) return null;
   const open = () =>
     optionSheet.open({
       title: t("detail.prompts"),
@@ -36,6 +35,7 @@ export function PromptOutline({
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "list.bullet" : TocIcon}
           accessibilityLabel={t("detail.prompts")}
+          hidden={prompts.length < MIN_PROMPTS}
           onPress={open}
         />
       </Stack.Toolbar>
