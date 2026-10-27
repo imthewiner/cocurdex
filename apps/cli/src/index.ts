@@ -53,6 +53,11 @@ import {
   sessionLineageUsageLines,
 } from "./session-lineage-commands";
 import {
+  handleSessionRuntimeCommand,
+  modelSelectionFromFlags,
+  sessionRuntimeUsageLines,
+} from "./session-runtime-commands";
+import {
   handleSessionTreeCommand,
   sessionTreeUsageLines,
 } from "./session-tree-command";
@@ -303,7 +308,8 @@ async function main(rawArgs: string[]) {
 
   if (
     resource === "session" &&
-    (await handleSessionLineageCommand(action, args, parsed))
+    ((await handleSessionLineageCommand(action, args, parsed)) ||
+      (await handleSessionRuntimeCommand(action, args, parsed)))
   ) {
     return;
   }
@@ -567,6 +573,7 @@ function printUsage() {
       "  cocurdex session send <session-id> <prompt>",
       ...sessionTreeUsageLines(),
       ...sessionLineageUsageLines(),
+      ...sessionRuntimeUsageLines(),
       "  cocurdex session peers <session-id>",
       "  cocurdex session send-peer <from-session-id> <to-session-id> <message>",
       "  cocurdex session peer-inbound <session-id> deliver|refuse",
@@ -587,16 +594,6 @@ function printUsage() {
       "  cocurdex workflow cancel <run-id>",
     ].join("\n"),
   );
-}
-
-function requestedModel(parsed: ParsedArgs) {
-  const providerId = stringFlag(parsed, "provider");
-  const modelId = stringFlag(parsed, "model");
-  if (!providerId && !modelId) return undefined;
-  if (!providerId || !modelId) {
-    throw new Error("--provider and --model must be given together");
-  }
-  return { providerId, modelId };
 }
 
 async function createSession(parsed: ParsedArgs) {
@@ -626,7 +623,7 @@ async function createSession(parsed: ParsedArgs) {
     return requestDaemon("session.create", {
       workspaceId: targetWorkspace.id,
       agentType: stringFlag(parsed, "agent") as AgentId | undefined,
-      model: requestedModel(parsed),
+      model: modelSelectionFromFlags(parsed),
       permissionMode: stringFlag(parsed, "permission") as
         | AgentPermissionMode
         | undefined,
