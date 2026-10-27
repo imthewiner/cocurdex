@@ -1,14 +1,12 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import {
   type AgentAvailability,
-  type AgentDescriptor,
-  type AgentRoleRecord,
   getSessionRuntimeAxes,
 } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import {
   AgentIcon,
   RoleAvatar,
@@ -18,16 +16,16 @@ import {
   usePermissionModeLabels,
 } from "@/agents";
 import { useSavedHosts } from "@/hosts";
-import { RuntimeSections } from "@/session-runtime";
+import { RuntimeRows } from "@/session-runtime";
 import { useHostSessions } from "@/sessions";
 import { useThemeColors } from "@/theme";
 import {
   BrandHost,
+  CloseButton,
   Form,
-  FormRow,
   FormSection,
-  HostedAccessory,
-  SelectedMark,
+  SheetAction,
+  useOptionSheet,
   ValueFormRow,
 } from "@/ui";
 import {
@@ -36,6 +34,7 @@ import {
   choosePermissionMode,
   chooseRole,
   chooseRuntime,
+  chooseWorkspace,
   displayedChoices,
   displayedRuntime,
   draftWorkspaceId,
@@ -54,98 +53,16 @@ function useAvailabilityLabels(): Record<AgentAvailability, string> {
   };
 }
 
-function AgentRow({
-  agent,
-  selected,
-}: {
-  agent: AgentDescriptor;
-  selected: boolean;
-}) {
-  const colors = useThemeColors();
-  const availability = useAvailabilityLabels();
-  const available = agent.availability === "available";
-  return (
-    <FormRow
-      testID={`new-session-agent-${agent.id}`}
-      onPress={
-        available
-          ? () => updateNewSessionDraft((draft) => chooseAgent(draft, agent.id))
-          : undefined
-      }
-      leading={
-        <HostedAccessory>
-          <AgentIcon agentId={agent.id} size={20} />
-        </HostedAccessory>
-      }
-      supportingText={
-        <Text textStyle={{ color: colors.mutedForeground }}>
-          {availability[agent.availability]}
-        </Text>
-      }
-      trailing={<SelectedMark selected={selected} />}
-    >
-      <Text
-        textStyle={available ? undefined : { color: colors.mutedForeground }}
-      >
-        {agent.label}
-      </Text>
-    </FormRow>
-  );
-}
-
-function RoleRow({
-  role,
-  agent,
-  selected,
-}: {
-  role: AgentRoleRecord;
-  agent: AgentDescriptor | undefined;
-  selected: boolean;
-}) {
-  const colors = useThemeColors();
-  const available = agent?.availability === "available";
-  return (
-    <FormRow
-      testID={`new-session-role-${role.id}`}
-      onPress={
-        available
-          ? () => updateNewSessionDraft((draft) => chooseRole(draft, role))
-          : undefined
-      }
-      leading={
-        <HostedAccessory>
-          <RoleAvatar role={role} agentId={role.agentId} size={28} />
-        </HostedAccessory>
-      }
-      supportingText={
-        <Text textStyle={{ color: colors.mutedForeground }}>
-          {[agent?.label ?? role.agentId, role.modelName]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
-      }
-      trailing={<SelectedMark selected={selected} />}
-    >
-      <Text
-        textStyle={available ? undefined : { color: colors.mutedForeground }}
-      >
-        {role.name}
-      </Text>
-    </FormRow>
-  );
-}
-
 function Picker({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
   const router = useRouter();
   const colors = useThemeColors();
   const modeLabels = usePermissionModeLabels();
+  const availability = useAvailabilityLabels();
   const { draft } = useNewSessionState();
   const { workspaces, sessions } = useHostSessions(host.hostId);
-  const workspaceId = draftWorkspaceId(
-    draft,
-    workspaceChoices(workspaces, sessions),
-  );
+  const choices = workspaceChoices(workspaces, sessions);
+  const workspaceId = draftWorkspaceId(draft, choices);
   const defaults = useNewSessionDefaults(host.hostId, workspaceId, draft).data;
   const shown = displayedChoices(draft, defaults);
   const agentType = shown.agentType;
@@ -170,124 +87,209 @@ function Picker({ host }: { host: SavedHost }) {
       )
     : null;
 
+  const workspace = choices.find(
+    (choice) => choice.workspace.id === workspaceId,
+  )?.workspace;
+  const agent = agents.find((entry) => entry.id === agentType);
+  const optionSheet = useOptionSheet();
+  const open = optionSheet.open;
+  const done = () => router.dismiss();
+
+  const openWorkspaces = () =>
+    open({
+      title: t("newSession.workspace"),
+      subtitle: t("newSession.addOnComputer"),
+      items: choices.map(({ workspace: entry, sessionCount }) => ({
+        key: entry.id,
+        testID: `workspace-choice-${entry.id}`,
+        label: entry.name,
+        supporting: t("newSession.sessionCount", { count: sessionCount }),
+        selected: entry.id === workspaceId,
+        onPress: () =>
+          updateNewSessionDraft((current) =>
+            chooseWorkspace(current, entry.id),
+          ),
+      })),
+    });
+
+  const openRoles = () =>
+    open({
+      title: t("newSession.role"),
+      subtitle: t("newSession.roleFooter"),
+      items: roles.map((entry) => {
+        const roleAgent = agents.find((item) => item.id === entry.agentId);
+        return {
+          key: entry.id,
+          testID: `new-session-role-${entry.id}`,
+          label: entry.name,
+          supporting: [roleAgent?.label ?? entry.agentId, entry.modelName]
+            .filter(Boolean)
+            .join(" · "),
+          selected: entry.id === roleId,
+          onPress: () =>
+            roleAgent?.availability === "available"
+              ? updateNewSessionDraft((current) => chooseRole(current, entry))
+              : undefined,
+        };
+      }),
+    });
+
+  const openAgents = () =>
+    open({
+      title: t("newSession.agent"),
+      items: agents.map((entry) => ({
+        key: entry.id,
+        testID: `new-session-agent-${entry.id}`,
+        label: entry.label,
+        supporting: availability[entry.availability],
+        selected: !roleId && entry.id === agentType,
+        onPress: () =>
+          entry.availability === "available"
+            ? updateNewSessionDraft((current) => chooseAgent(current, entry.id))
+            : undefined,
+      })),
+    });
+
+  const openModels = () =>
+    open({
+      title: t("newSession.model"),
+      subtitle: t("newSession.modelsFromComputer"),
+      items: models.map(({ provider, model }) => ({
+        key: `${provider.id}/${model.modelId}`,
+        testID: `new-session-model-${model.modelId}`,
+        label: model.name,
+        supporting: provider.name,
+        selected:
+          shown.model?.providerId === provider.id &&
+          shown.model.modelId === model.modelId,
+        onPress: () => {
+          if (!agentType) return;
+          updateNewSessionDraft((current) =>
+            chooseModel(current, agentType, {
+              providerId: provider.id,
+              modelId: model.modelId,
+            }),
+          );
+        },
+      })),
+    });
+
+  const openModes = () =>
+    open({
+      title: t("newSession.mode"),
+      items: shown.permissionModes.map((mode) => ({
+        key: mode,
+        testID: `new-session-mode-${mode}`,
+        label: modeLabels[mode].label,
+        supporting: modeLabels[mode].description,
+        selected: mode === selectedMode,
+        onPress: () => {
+          if (!agentType) return;
+          updateNewSessionDraft((current) =>
+            choosePermissionMode(current, agentType, mode),
+          );
+        },
+      })),
+    });
+
   return (
-    <BrandHost style={styles.fill}>
-      <Form>
-        {roles.length > 0 ? (
+    <>
+      {Platform.OS === "android" ? (
+        <CloseButton
+          accessibilityLabel={t("sessionConfig.close")}
+          onPress={done}
+        />
+      ) : null}
+      <SheetAction
+        label={t("sessionConfig.done")}
+        disabled={false}
+        onPress={done}
+      />
+      <BrandHost style={styles.fill}>
+        <Form>
           <FormSection
-            title={t("newSession.role")}
             footer={
               <Text textStyle={{ color: colors.mutedForeground }}>
-                {t("newSession.roleFooter")}
+                {t("newSession.runsOn", { host: host.name })}
               </Text>
             }
           >
-            {roles.map((role) => (
-              <RoleRow
-                key={role.id}
-                role={role}
-                agent={agents.find((agent) => agent.id === role.agentId)}
-                selected={role.id === roleId}
-              />
-            ))}
-          </FormSection>
-        ) : null}
-        <FormSection title={t("newSession.agent")}>
-          {agents.map((agent) => (
-            <AgentRow
-              key={agent.id}
-              agent={agent}
-              selected={!roleId && agent.id === agentType}
-            />
-          ))}
-        </FormSection>
-        <FormSection
-          title={t("newSession.model")}
-          footer={
-            <Text textStyle={{ color: colors.mutedForeground }}>
-              {models.length > 0
-                ? t("newSession.modelsFromComputer")
-                : t("newSession.agentDefaultModel")}
-            </Text>
-          }
-        >
-          {models.map(({ provider, model }) => (
-            <FormRow
-              key={`${provider.id}/${model.modelId}`}
-              onPress={() => {
-                if (!agentType) return;
-                updateNewSessionDraft((current) =>
-                  chooseModel(current, agentType, {
-                    providerId: provider.id,
-                    modelId: model.modelId,
-                  }),
-                );
-              }}
-              supportingText={
-                <Text textStyle={{ color: colors.mutedForeground }}>
-                  {provider.name}
-                </Text>
-              }
-              trailing={
-                <SelectedMark
-                  selected={
-                    shown.model?.providerId === provider.id &&
-                    shown.model.modelId === model.modelId
-                  }
-                />
-              }
-            >
-              <Text>{model.name}</Text>
-            </FormRow>
-          ))}
-        </FormSection>
-        <FormSection
-          title={t("newSession.mode")}
-          footer={
-            <Text textStyle={{ color: colors.mutedForeground }}>
-              {selectedMode
-                ? modeLabels[selectedMode].description
-                : t("newSession.noModes")}
-            </Text>
-          }
-        >
-          {shown.permissionModes.map((mode) => (
-            <FormRow
-              key={mode}
-              onPress={() => {
-                if (!agentType) return;
-                updateNewSessionDraft((current) =>
-                  choosePermissionMode(current, agentType, mode),
-                );
-              }}
-              trailing={<SelectedMark selected={mode === selectedMode} />}
-            >
-              <Text>{modeLabels[mode].label}</Text>
-            </FormRow>
-          ))}
-        </FormSection>
-        {axes && agentType ? (
-          <RuntimeSections
-            axes={axes}
-            onChange={(patch) =>
-              updateNewSessionDraft((current) =>
-                chooseRuntime(current, agentType, patch),
-              )
-            }
-          />
-        ) : null}
-        {defaults && host.scopes.includes("interact") ? (
-          <FormSection>
             <ValueFormRow
-              testID="new-session-save-role"
-              label={t("saveRole.open")}
-              value=""
-              onPress={() => router.push("/new-session/save-role")}
+              testID="new-session-workspace"
+              label={t("newSession.workspace")}
+              value={workspace?.name ?? t("newSession.none")}
+              onPress={openWorkspaces}
             />
           </FormSection>
-        ) : null}
-      </Form>
-    </BrandHost>
+          <FormSection>
+            {roles.length > 0 ? (
+              <ValueFormRow
+                testID="new-session-role"
+                label={t("newSession.role")}
+                value={role?.name ?? t("newSession.none")}
+                icon={
+                  role ? (
+                    <RoleAvatar role={role} agentId={role.agentId} size={20} />
+                  ) : undefined
+                }
+                onPress={openRoles}
+              />
+            ) : null}
+            <ValueFormRow
+              testID="new-session-agent-row"
+              label={t("newSession.agent")}
+              value={agent?.label ?? t("newSession.none")}
+              icon={
+                agent ? <AgentIcon agentId={agent.id} size={16} /> : undefined
+              }
+              onPress={openAgents}
+            />
+            {models.length > 0 ? (
+              <ValueFormRow
+                testID="new-session-model"
+                label={t("newSession.model")}
+                value={selectedModel?.name ?? t("newSession.none")}
+                onPress={openModels}
+              />
+            ) : null}
+            {shown.permissionModes.length > 0 ? (
+              <ValueFormRow
+                testID="new-session-mode"
+                label={t("newSession.mode")}
+                value={
+                  selectedMode
+                    ? modeLabels[selectedMode].label
+                    : t("newSession.none")
+                }
+                onPress={openModes}
+              />
+            ) : null}
+            {axes && agentType ? (
+              <RuntimeRows
+                axes={axes}
+                open={open}
+                onChange={(patch) =>
+                  updateNewSessionDraft((current) =>
+                    chooseRuntime(current, agentType, patch),
+                  )
+                }
+              />
+            ) : null}
+          </FormSection>
+          {defaults && host.scopes.includes("interact") ? (
+            <FormSection>
+              <ValueFormRow
+                testID="new-session-save-role"
+                label={t("saveRole.open")}
+                value=""
+                onPress={() => router.push("/new-session/config/save-role")}
+              />
+            </FormSection>
+          ) : null}
+        </Form>
+      </BrandHost>
+      {optionSheet.sheet}
+    </>
   );
 }
 

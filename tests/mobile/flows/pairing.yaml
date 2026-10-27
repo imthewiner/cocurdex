@@ -372,12 +372,21 @@ appId: dev.cocurdex.mobile
     id: "session-config-chip"
 - extendedWaitUntil:
     visible:
-      id: "session-config-model-${AGENT_MODEL_ID}"
+      id: "session-config-model"
     timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: session-config
 - tapOn:
+    id: "session-config-model"
+- scrollUntilVisible:
+    element:
+      id: "session-config-model-${AGENT_MODEL_ID}"
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: session-config-model
+- tapOn:
     id: "session-config-model-${AGENT_MODEL_ID}"
+- waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "session-config-save-role"
@@ -439,9 +448,14 @@ appId: dev.cocurdex.mobile
 - waitForAnimationToEnd
 - takeScreenshot: new-session
 - tapOn:
-    text: ${WORKSPACE_NAME}
-    childOf:
+    id: "new-session-agent"
+- extendedWaitUntil:
+    visible:
       id: "new-session-workspace"
+    timeout: 5000
+- waitForAnimationToEnd
+- tapOn:
+    id: "new-session-workspace"
 - extendedWaitUntil:
     visible:
       id: "workspace-choice-.*"
@@ -450,43 +464,57 @@ appId: dev.cocurdex.mobile
     id: "workspace-choice-.*"
 - extendedWaitUntil:
     visible:
-      id: "new-session-prompt"
+      id: "new-session-agent-row"
+    timeout: 5000
+- waitForAnimationToEnd
+- tapOn:
+    id: "new-session-agent-row"
+- scrollUntilVisible:
+    element:
+      id: "new-session-agent-pi"
     timeout: 5000
 - tapOn:
-    id: "new-session-agent"
+    id: "new-session-agent-pi"
 - extendedWaitUntil:
-    visible: ${NEW_SESSION_AGENT}
+    visible:
+      id: "new-session-model"
     timeout: 10000
-- retry:
-    maxRetries: 2
-    commands:
-      - tapOn: ${NEW_SESSION_AGENT}
-      - extendedWaitUntil:
-          visible: ${NEW_SESSION_MODEL}
-          timeout: 5000
-- tapOn: ${NEW_SESSION_MODEL}
+- waitForAnimationToEnd
+- tapOn:
+    id: "new-session-model"
+- scrollUntilVisible:
+    element:
+      id: "new-session-model-${AGENT_MODEL_ID}"
+    timeout: 5000
+- tapOn:
+    id: "new-session-model-${AGENT_MODEL_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-role"
+    timeout: 5000
+- waitForAnimationToEnd
+- tapOn:
+    id: "new-session-role"
+- scrollUntilVisible:
+    element:
+      id: "new-session-role-${ROLE_ID}"
+    timeout: 5000
 - tapOn:
     id: "new-session-role-${ROLE_ID}"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-role"
+    timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: new-session-agent
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn: ${NEW_SESSION_TITLE}
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - back
+- tapOn: ${SESSION_CONFIG_DONE}
 - extendedWaitUntil:
     visible:
       id: "new-session-prompt"
     timeout: 5000
 - assertVisible:
-    text: ${ROLE_NAME}
-    childOf:
-      id: "new-session-agent"
+    id: "new-session-agent"
+    text: "(?s).*${ROLE_NAME}.*"
 - tapOn:
     id: "new-session-prompt"
 - inputText: ${NEW_SESSION_PROMPT}
@@ -539,7 +567,7 @@ appId: dev.cocurdex.mobile
       platform: iOS
     commands:
       - tapOn: ${SEARCH_OPEN}
-- tapOn: ${SEARCH_PLACEHOLDER}
+      - tapOn: ${SEARCH_PLACEHOLDER}
 - inputText: ${SEARCH_QUERY}
 - extendedWaitUntil:
     visible: ${SEARCHED_SESSION_TITLE}
@@ -762,8 +790,8 @@ appId: dev.cocurdex.mobile
           visible: ".*${HOST_ADDRESS}.*"
           timeout: 5000
 - takeScreenshot: paired
-- tapOn:
-    id: "host-more-.*"
+- longPressOn:
+    id: "host-row-.*"
 - extendedWaitUntil:
     visible:
       id: computer-action-details
@@ -802,7 +830,7 @@ appId: dev.cocurdex.mobile
                 point: 5%, 9%
             - extendedWaitUntil:
                 visible:
-                  id: "host-more-.*"
+                  id: "host-row-.*"
                 timeout: 3000
 - runFlow:
     when:
@@ -811,7 +839,7 @@ appId: dev.cocurdex.mobile
       - back
 - extendedWaitUntil:
     visible:
-      id: "host-more-.*"
+      id: "host-row-.*"
     timeout: 5000
 - assertVisible: ${RENAMED_COMPUTER}
 - retry:
@@ -821,7 +849,20 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${SEND_SESSION_TITLE}
           timeout: 5000
-- tapOn: ".*${RENAMED_COMPUTER}.*"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ".*${RENAMED_COMPUTER}.*"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "host-switcher"
+          text: ".*${RENAMED_COMPUTER}.*"
+      - tapOn:
+          id: "host-switcher"
 - extendedWaitUntil:
     visible:
       id: host-switcher-pair

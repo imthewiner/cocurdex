@@ -19,7 +19,12 @@ import {
 } from "react-native";
 import { MarkdownText } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, PendingIndicator, useTransitionSettled } from "@/ui";
+import {
+  ListNotice,
+  PendingIndicator,
+  useScrollIndicatorWhileScrolling,
+  useTransitionSettled,
+} from "@/ui";
 import {
   FileLoadError,
   type FileLoadFailure,
@@ -32,10 +37,12 @@ import { SourceView } from "./source-view";
 const MAX_ZOOM = 4;
 
 function ImageFile({ host, filePath }: { host: SavedHost; filePath: string }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { width, height } = useWindowDimensions();
   const [loaded, setLoaded] = useState(false);
   return (
     <ScrollView
+      {...scrollIndicator}
       style={styles.fill}
       contentContainerStyle={styles.center}
       maximumZoomScale={MAX_ZOOM}
@@ -120,6 +127,7 @@ function TextFile({
   filePath: string;
   line: number | null;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("files");
   const colors = useThemeColors();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
@@ -183,6 +191,7 @@ function TextFile({
       {toolbar}
       {preview ? (
         <ScrollView
+          {...scrollIndicator}
           style={styles.fill}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.markdown}

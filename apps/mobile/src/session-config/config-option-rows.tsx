@@ -1,6 +1,7 @@
 import type { AgentSessionConfigOption } from "@cocurdex/shared";
 import { useTranslation } from "react-i18next";
-import { ChoiceSection, type RuntimeChoice } from "@/session-runtime";
+import { ChoiceRow, type RuntimeChoice } from "@/session-runtime";
+import type { OpenOptionSheet } from "@/ui";
 
 function optionChoices(
   option: AgentSessionConfigOption,
@@ -24,10 +25,12 @@ function optionChoices(
   }));
 }
 
-export function ConfigOptionSections({
+export function ConfigOptionRows({
   options,
   onChange,
+  open,
 }: {
+  open: OpenOptionSheet;
   options: readonly AgentSessionConfigOption[];
   onChange(configId: string, value: boolean | string): void;
 }) {
@@ -36,7 +39,8 @@ export function ConfigOptionSections({
   return (
     <>
       {options.map((option) => (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           key={option.id}
           title={option.name}
           testIDPrefix={`session-config-option-${option.id}`}

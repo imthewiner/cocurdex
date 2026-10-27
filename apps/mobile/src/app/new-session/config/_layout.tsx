@@ -6,7 +6,7 @@ import { useGroupedColors } from "@/theme";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
-export default function NewSessionLayout() {
+export default function NewSessionConfigLayout() {
   const { t } = useTranslation("sessions");
   const grouped = useGroupedColors();
   return (
@@ -20,11 +20,6 @@ export default function NewSessionLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: t("newSession.title") }} />
-      <Stack.Screen
-        name="workspace"
-        options={{ title: t("newSession.workspace") }}
-      />
-      <Stack.Screen name="agent" options={{ title: t("newSession.agent") }} />
       <Stack.Screen name="save-role" options={{ title: t("saveRole.title") }} />
     </Stack>
   );

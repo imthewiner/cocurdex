@@ -2,9 +2,7 @@ import type {
   SessionRuntimeAxes,
   SessionRuntimeSelection,
 } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
-import { useThemeColors } from "@/theme";
-import { FormRow, FormSection, SelectedMark } from "@/ui";
+import { type OpenOptionSheet, ValueFormRow } from "@/ui";
 import {
   effortChoiceLabel,
   thinkingOptionLabel,
@@ -19,52 +17,58 @@ export interface RuntimeChoice {
   onPress(): void;
 }
 
-export function ChoiceSection({
+export function ChoiceRow({
   title,
   testIDPrefix,
   choices,
+  open,
+  disabled = false,
 }: {
   title: string;
   testIDPrefix: string;
   choices: readonly RuntimeChoice[];
+  open: OpenOptionSheet;
+  disabled?: boolean;
 }) {
-  const colors = useThemeColors();
+  const selected = choices.find((choice) => choice.selected);
   return (
-    <FormSection title={title}>
-      {choices.map((choice) => (
-        <FormRow
-          key={choice.key}
-          testID={`${testIDPrefix}-${choice.key}`}
-          onPress={choice.onPress}
-          supportingText={
-            choice.supporting ? (
-              <Text textStyle={{ color: colors.mutedForeground }}>
-                {choice.supporting}
-              </Text>
-            ) : undefined
-          }
-          trailing={<SelectedMark selected={choice.selected} />}
-        >
-          <Text>{choice.label}</Text>
-        </FormRow>
-      ))}
-    </FormSection>
+    <ValueFormRow
+      testID={testIDPrefix}
+      label={title}
+      value={selected?.label ?? ""}
+      onPress={() =>
+        open({
+          title,
+          items: choices.map((choice) => ({
+            key: choice.key,
+            testID: `${testIDPrefix}-${choice.key}`,
+            label: choice.label,
+            supporting: choice.supporting ?? undefined,
+            selected: choice.selected,
+            onPress: disabled ? () => undefined : choice.onPress,
+          })),
+        })
+      }
+    />
   );
 }
 
-export function RuntimeSections({
+export function RuntimeRows({
   axes,
   onChange,
+  open,
 }: {
   axes: SessionRuntimeAxes;
   onChange(patch: SessionRuntimeSelection): void;
+  open: OpenOptionSheet;
 }) {
   const labels = useRuntimeLabels();
   const { thinking, effort, speed, fastMode, openCode } = axes;
   return (
     <>
       {thinking ? (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.thinking}
           testIDPrefix="runtime-thinking"
           choices={thinking.options.map((option) => ({
@@ -77,7 +81,8 @@ export function RuntimeSections({
         />
       ) : null}
       {effort ? (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.thinking}
           testIDPrefix="runtime-effort"
           choices={effort.options.map((option) => ({
@@ -90,7 +95,8 @@ export function RuntimeSections({
         />
       ) : null}
       {speed ? (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.speed}
           testIDPrefix="runtime-speed"
           choices={[
@@ -111,7 +117,8 @@ export function RuntimeSections({
         />
       ) : null}
       {fastMode === null ? null : (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.fastMode}
           testIDPrefix="runtime-fast"
           choices={[true, false].map((on) => ({
@@ -123,7 +130,8 @@ export function RuntimeSections({
         />
       )}
       {openCode && openCode.agents.length > 0 ? (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.openCodeAgent}
           testIDPrefix="runtime-opencode-agent"
           choices={openCode.agents.map((agent) => ({
@@ -135,7 +143,8 @@ export function RuntimeSections({
         />
       ) : null}
       {openCode && openCode.variants.length > 0 ? (
-        <ChoiceSection
+        <ChoiceRow
+          open={open}
           title={labels.openCodeVariant}
           testIDPrefix="runtime-opencode-variant"
           choices={[

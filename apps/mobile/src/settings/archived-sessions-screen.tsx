@@ -14,7 +14,12 @@ import {
   useHostSessions,
 } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListNotice, ListSeparator, useAgeLabel } from "@/ui";
+import {
+  ListNotice,
+  ListSeparator,
+  useAgeLabel,
+  useScrollIndicatorWhileScrolling,
+} from "@/ui";
 import { useAgentLabels } from "./settings-queries";
 
 function ArchivedRow({
@@ -79,6 +84,7 @@ function ArchivedRow({
 }
 
 export function ArchivedSessionsScreen({ host }: { host: SavedHost }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const { workspaces } = useHostSessions(host.hostId);
@@ -110,6 +116,7 @@ export function ArchivedSessionsScreen({ host }: { host: SavedHost }) {
   };
   return (
     <FlatList
+      {...scrollIndicator}
       data={rows}
       keyExtractor={(row) => row.id}
       contentInsetAdjustmentBehavior="automatic"

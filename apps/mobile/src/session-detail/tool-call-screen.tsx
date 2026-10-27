@@ -19,7 +19,7 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { useTransitionSettled } from "@/ui";
+import { useScrollIndicatorWhileScrolling, useTransitionSettled } from "@/ui";
 import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
@@ -179,6 +179,7 @@ export function ToolCallScreen({
   sessionId: string;
   toolCallId: string;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const detail = useSessionDetail(hostId, sessionId);
@@ -233,6 +234,7 @@ export function ToolCallScreen({
         </Stack.Toolbar>
       ) : null}
       <ScrollView
+        {...scrollIndicator}
         scrollsChildToFocus={false}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}

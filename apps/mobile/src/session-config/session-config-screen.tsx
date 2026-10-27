@@ -12,19 +12,18 @@ import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet } from "react-native";
 import { usePermissionModeLabels } from "@/agents";
 import { hostConnection } from "@/connection";
-import { RuntimeSections } from "@/session-runtime";
+import { RuntimeRows } from "@/session-runtime";
 import { useThemeColors } from "@/theme";
 import {
   BrandHost,
   CloseButton,
   Form,
-  FormRow,
   FormSection,
-  SelectedMark,
   SheetAction,
+  useOptionSheet,
   ValueFormRow,
 } from "@/ui";
-import { ConfigOptionSections } from "./config-option-sections";
+import { ConfigOptionRows } from "./config-option-rows";
 import { McpSection } from "./mcp-section";
 import { useSessionConfigState } from "./session-config-state";
 
@@ -43,6 +42,8 @@ export function SessionConfigScreen({
   const { session, agent, models, snapshot, axes, configOptions, mcpServers } =
     useSessionConfigState(host, sessionId);
   const [failed, setFailed] = useState(false);
+  const optionSheet = useOptionSheet();
+  const open = optionSheet.open;
   const canInteract = host.scopes.includes("interact");
   const canConfigure = host.scopes.includes("execute");
   const connection = hostConnection(host.hostId);
@@ -120,102 +121,80 @@ export function SessionConfigScreen({
             />
           ) : null}
           <FormSection
-            title={t("newSession.model")}
             footer={
-              models.length > 0 ? undefined : (
+              canConfigure || permissionModes.length === 0 ? undefined : (
                 <Text textStyle={{ color: colors.mutedForeground }}>
-                  {snapshot?.modelName ?? t("newSession.agentDefaultModel")}
+                  {t("sessionConfig.modeNeedsExecute")}
                 </Text>
               )
             }
           >
-            {models.map(({ provider, model }) => (
-              <FormRow
-                key={`${provider.id}/${model.modelId}`}
-                testID={`session-config-model-${model.modelId}`}
-                onPress={
-                  canInteract
-                    ? () =>
-                        void updateRuntime({
-                          model: {
-                            providerId: provider.id,
-                            modelId: model.modelId,
-                          },
-                        })
-                    : undefined
-                }
-                supportingText={
-                  <Text textStyle={{ color: colors.mutedForeground }}>
-                    {provider.name}
-                  </Text>
-                }
-                trailing={
-                  <SelectedMark
-                    selected={
+            <ValueFormRow
+              testID="session-config-model"
+              label={t("newSession.model")}
+              value={snapshot?.modelName ?? t("newSession.agentDefaultModel")}
+              onPress={() =>
+                open({
+                  title: t("newSession.model"),
+                  items: models.map(({ provider, model }) => ({
+                    key: `${provider.id}/${model.modelId}`,
+                    testID: `session-config-model-${model.modelId}`,
+                    label: model.name,
+                    supporting: provider.name,
+                    selected:
                       snapshot?.providerId === provider.id &&
-                      snapshot.modelId === model.modelId
-                    }
-                  />
-                }
-              >
-                <Text>{model.name}</Text>
-              </FormRow>
-            ))}
-          </FormSection>
-          {axes && canInteract ? (
-            <RuntimeSections
-              axes={axes}
-              onChange={(runtime) => void updateRuntime({ runtime })}
-            />
-          ) : null}
-          {canInteract && configOptions.length > 0 ? (
-            <ConfigOptionSections
-              options={configOptions}
-              onChange={setConfigOption}
-            />
-          ) : null}
-          {permissionModes.length > 0 ? (
-            <FormSection
-              title={t("newSession.mode")}
-              footer={
-                canConfigure ? undefined : (
-                  <Text textStyle={{ color: colors.mutedForeground }}>
-                    {t("sessionConfig.modeNeedsExecute")}
-                  </Text>
-                )
+                      snapshot.modelId === model.modelId,
+                    onPress: () => {
+                      if (!canInteract) return;
+                      void updateRuntime({
+                        model: {
+                          providerId: provider.id,
+                          modelId: model.modelId,
+                        },
+                      });
+                    },
+                  })),
+                })
               }
-            >
-              {permissionModes.map((mode) => (
-                <FormRow
-                  key={mode.id}
-                  testID={`session-config-mode-${mode.id}`}
-                  onPress={
-                    canConfigure
-                      ? () => choosePermissionMode(mode.id)
-                      : undefined
-                  }
-                  supportingText={
-                    <Text textStyle={{ color: colors.mutedForeground }}>
-                      {modeLabels[mode.id].description}
-                    </Text>
-                  }
-                  trailing={
-                    <SelectedMark selected={mode.id === selectedMode} />
-                  }
-                >
-                  <Text
-                    textStyle={
-                      mode.risk === "dangerous"
-                        ? { color: colors.destructive }
-                        : undefined
-                    }
-                  >
-                    {modeLabels[mode.id].label}
-                  </Text>
-                </FormRow>
-              ))}
-            </FormSection>
-          ) : null}
+            />
+            {axes && canInteract ? (
+              <RuntimeRows
+                axes={axes}
+                open={open}
+                onChange={(runtime) => void updateRuntime({ runtime })}
+              />
+            ) : null}
+            {canInteract && configOptions.length > 0 ? (
+              <ConfigOptionRows
+                options={configOptions}
+                open={open}
+                onChange={setConfigOption}
+              />
+            ) : null}
+            {permissionModes.length > 0 ? (
+              <ValueFormRow
+                testID="session-config-mode"
+                label={t("newSession.mode")}
+                value={selectedMode ? modeLabels[selectedMode].label : ""}
+                onPress={() =>
+                  open({
+                    title: t("newSession.mode"),
+                    items: permissionModes.map((mode) => ({
+                      key: mode.id,
+                      testID: `session-config-mode-${mode.id}`,
+                      label: modeLabels[mode.id].label,
+                      supporting: modeLabels[mode.id].description,
+                      destructive: mode.risk === "dangerous",
+                      selected: mode.id === selectedMode,
+                      onPress: () => {
+                        if (canConfigure) choosePermissionMode(mode.id);
+                      },
+                    })),
+                  })
+                }
+              />
+            ) : null}
+          </FormSection>
           {mcpServers ? <McpSection servers={mcpServers} /> : null}
           {canInteract && session ? (
             <FormSection>
@@ -234,6 +213,7 @@ export function SessionConfigScreen({
           ) : null}
         </Form>
       </BrandHost>
+      {optionSheet.sheet}
     </>
   );
 }

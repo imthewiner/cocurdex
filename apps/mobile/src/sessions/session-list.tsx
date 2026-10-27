@@ -5,13 +5,13 @@ import { type ReactElement, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, SectionList, StyleSheet, Text } from "react-native";
 import { useAgentRoles } from "@/agents";
-import { hostConnection } from "@/connection";
 import { layout, space, useThemeColors } from "@/theme";
 import {
   ListNotice,
   ListSectionHeader,
   ListSeparator,
   PendingIndicator,
+  useScrollIndicatorWhileScrolling,
 } from "@/ui";
 import { SessionActionsSheet } from "./session-actions-sheet";
 import { useSessionListLabels } from "./session-list-labels";
@@ -27,7 +27,7 @@ import {
   type SessionSection,
   type SessionSectionHeading,
 } from "./session-sections";
-import { sessionsStore, useHostSessions } from "./sessions";
+import { useHostSessions } from "./sessions";
 import type { HostSessionsSnapshot } from "./sessions-store";
 
 const OFFLINE_STATES = new Set<HostSessionsSnapshot["connection"]>([
@@ -94,6 +94,7 @@ export function SessionList({
   onReload(): void;
   header?: ReactElement;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const router = useRouter();
@@ -140,6 +141,7 @@ export function SessionList({
   return (
     <>
       <SectionList<SessionRow, SessionSection>
+        {...scrollIndicator}
         style={styles.fill}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"

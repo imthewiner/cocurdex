@@ -67,6 +67,7 @@
     "pendingApproval": "Waiting for your approval",
     "planReady": "Plan ready for review",
     "responding": "Replying",
+    "sending": "Sending",
     "thinking": "Thinking",
     "usingTools": "Using tools",
     "working": "Working…"
@@ -167,18 +168,15 @@
     "mode": "Mode",
     "model": "Model",
     "modelsFromComputer": "Models come from the providers set up on the computer.",
-    "noModes": "This agent has no permission modes to choose from.",
     "none": "None",
     "open": "New session",
     "promptPlaceholder": "What should the agent do?",
     "role": "Role",
     "roleFooter": "Roles are set up on the computer. Picking one applies its agent, model, and permissions.",
     "runsOn": "Runs on {{host}}.",
-    "searchWorkspaces": "Search workspaces",
     "sessionCount_one": "{{count}} session",
     "sessionCount_other": "{{count}} sessions",
     "title": "New session",
-    "where": "Run on",
     "workspace": "Workspace"
   },
   "noResults": "No sessions match “{{query}}”",
@@ -294,8 +292,7 @@
       "failed": "Failed"
     },
     "modeNeedsExecute": "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.",
-    "open": "Agent settings: {{summary}}",
-    "openMode": "Permission mode: {{mode}}"
+    "open": "Agent settings: {{summary}}"
   },
   "status": {
     "needsYou": "Needs you",

@@ -10,10 +10,8 @@ import {
   useSavedHosts,
 } from "@/hosts";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListSeparator } from "@/ui";
+import { ListSeparator, useScrollIndicatorWhileScrolling } from "@/ui";
 import { ComputerActionsSheet } from "./computer-actions-sheet";
-
-const MORE_HIT_SIZE = 48;
 
 function HostRow({
   host,
@@ -71,25 +69,12 @@ function HostRow({
           tintColor={colors.tint}
         />
       ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("actions.more", { host: host.name })}
-        hitSlop={space.xs}
-        onPress={onMore}
-        style={styles.more}
-        testID={`host-more-${host.hostId}`}
-      >
-        <SymbolView
-          name={{ ios: "ellipsis", android: "more_horiz" }}
-          size={20}
-          tintColor={colors.mutedForeground}
-        />
-      </Pressable>
     </Pressable>
   );
 }
 
 export function HostsList({ header }: { header?: ReactElement }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const saved = useSavedHosts();
   const current = useCurrentHost();
   const [actionsHostId, setActionsHostId] = useState<string | null>(null);
@@ -98,6 +83,7 @@ export function HostsList({ header }: { header?: ReactElement }) {
   return (
     <>
       <FlatList
+        {...scrollIndicator}
         style={styles.fill}
         contentInsetAdjustmentBehavior="automatic"
         data={saved}
@@ -130,7 +116,7 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingVertical: space.sm,
     paddingLeft: layout.sideMargin,
-    paddingRight: layout.sideMargin - space.md,
+    paddingRight: layout.sideMargin,
   },
   tile: {
     width: 36,
@@ -142,10 +128,4 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 2 },
   title: { fontSize: 16, lineHeight: 22 },
   detail: { fontSize: 14, lineHeight: 19 },
-  more: {
-    width: MORE_HIT_SIZE,
-    height: MORE_HIT_SIZE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });

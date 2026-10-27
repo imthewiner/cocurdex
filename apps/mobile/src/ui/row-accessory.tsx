@@ -35,14 +35,16 @@ export function RowValue({
   return (
     <HostedAccessory onPress={onPress}>
       <View style={styles.row}>
-        {icon}
         <View style={styles.values}>
-          <Text
-            numberOfLines={1}
-            style={[styles.value, { color: colors.mutedForeground }]}
-          >
-            {value}
-          </Text>
+          <View style={styles.valueLine}>
+            {icon}
+            <Text
+              numberOfLines={1}
+              style={[styles.value, { color: colors.mutedForeground }]}
+            >
+              {value}
+            </Text>
+          </View>
           {detail ? (
             <Text
               numberOfLines={1}
@@ -77,6 +79,7 @@ export function FolderIcon() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  valueLine: { flexDirection: "row", alignItems: "center", gap: space.xs },
   values: { alignItems: "flex-end" },
   value: { fontSize: 17 },
   detail: { fontSize: 13 },

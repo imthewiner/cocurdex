@@ -16,7 +16,7 @@ import { hostConnection } from "@/connection";
 import { SessionConfigChips } from "@/session-config";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { ShimmerText, useTransitionSettled } from "@/ui";
+import { useTransitionSettled } from "@/ui";
 import { Composer } from "./composer";
 import {
   imageAttachmentSource,
@@ -24,9 +24,15 @@ import {
   uploadImage,
 } from "./image-attachments";
 import { type InteractionActions, InteractionDock } from "./interaction-dock";
+import {
+  type PendingSend,
+  pendingSendItem,
+  unconfirmedSends,
+} from "./pending-send";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
+import { StatusLine } from "./status-line";
 import { buildTranscript, pendingInteraction } from "./transcript";
 import { type CondensedItem, condenseTranscript } from "./transcript-activity";
 import { TranscriptView } from "./transcript-view";
@@ -38,27 +44,6 @@ function sessionSubtitle(
   const model = observation?.session.providerSnapshot?.modelName;
   const parts = [workspace?.name, model].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : null;
-}
-
-function StatusLine({ text, failed }: { text: string; failed: boolean }) {
-  const colors = useThemeColors();
-  return (
-    <View style={styles.statusLine} accessibilityLiveRegion="polite">
-      {failed ? (
-        <Text style={[styles.statusText, { color: colors.destructive }]}>
-          {text}
-        </Text>
-      ) : (
-        <ShimmerText
-          text={text}
-          baseColor={colors.mutedForeground}
-          highlightColor={colors.foreground}
-          style={styles.statusText}
-          testID="session-running-status"
-        />
-      )}
-    </View>
-  );
 }
 
 type LivePhase = "thinking" | "usingTools" | "responding";
@@ -83,9 +68,13 @@ function livePhase(items: readonly CondensedItem[]): LivePhase {
 export function SessionDetailScreen({
   host,
   sessionId,
+  entered = false,
+  pendingSend,
 }: {
   host: SavedHost;
   sessionId: string;
+  entered?: boolean;
+  pendingSend?: PendingSend;
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
@@ -93,7 +82,8 @@ export function SessionDetailScreen({
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const detail = useSessionDetail(host.hostId, sessionId);
   const [actionFailed, setActionFailed] = useState(false);
-  const settled = useTransitionSettled();
+  const transitionSettled = useTransitionSettled();
+  const settled = entered || transitionSettled;
   const observation = detail.observation;
   const viewed = useViewedSession(host.hostId, sessionId);
   const workspaces = viewed.workspaces;
@@ -103,16 +93,33 @@ export function SessionDetailScreen({
   const running =
     observation?.session.status === "running" ||
     observation?.activeRun?.status === "running";
-  const items = useMemo(
+  const [sends, setSends] = useState<readonly PendingSend[]>(() =>
+    pendingSend ? [pendingSend] : [],
+  );
+  const unconfirmed = useMemo(
     () =>
       observation
-        ? condenseTranscript(
-            buildTranscript({ ...observation, workspacePath }),
-            observation.toolCalls,
-            running,
+        ? unconfirmedSends(
+            sends,
+            observation.messages,
+            observation.activeMessages,
           )
-        : [],
-    [observation, workspacePath, running],
+        : sends,
+    [sends, observation],
+  );
+  const items = useMemo(
+    () =>
+      condenseTranscript(
+        [
+          ...(observation
+            ? buildTranscript({ ...observation, workspacePath })
+            : []),
+          ...unconfirmed.map(pendingSendItem),
+        ],
+        observation?.toolCalls ?? [],
+        running,
+      ),
+    [observation, workspacePath, running, unconfirmed],
   );
   const pending = observation
     ? pendingInteraction(observation.interactions)
@@ -156,9 +163,15 @@ export function SessionDetailScreen({
     },
   };
 
-  const send = (content: string, attachments: ImageAttachment[]) => {
+  const send = async (content: string, attachments: ImageAttachment[]) => {
     const messageId = randomUUID();
-    return attempt(() =>
+    const pending: PendingSend = {
+      id: messageId,
+      text: content,
+      images: attachments,
+    };
+    setSends((current) => [...current, pending]);
+    const sent = await attempt(() =>
       connection.command(
         "session.send",
         {
@@ -172,6 +185,10 @@ export function SessionDetailScreen({
         { idempotencyKey: messageId },
       ),
     );
+    if (!sent) {
+      setSends((current) => current.filter((entry) => entry.id !== messageId));
+    }
+    return sent;
   };
 
   const fork = (throughMessageId: string) => {
@@ -198,7 +215,8 @@ export function SessionDetailScreen({
     usingTools: t("detail.usingTools"),
     responding: t("detail.responding"),
   };
-  const runningStatus = running ? liveLabels[livePhase(items)] : null;
+  const sendingStatus = unconfirmed.length > 0 ? t("detail.sending") : null;
+  const runningStatus = running ? liveLabels[livePhase(items)] : sendingStatus;
   const status = failed ? t("detail.failed") : runningStatus;
 
   return (
@@ -294,8 +312,6 @@ export function SessionDetailScreen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  statusLine: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  statusText: { fontSize: 14 },
   error: {
     fontSize: 13,
     paddingHorizontal: layout.sideMargin,

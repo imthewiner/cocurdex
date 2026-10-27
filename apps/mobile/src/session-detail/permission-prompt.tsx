@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { MONO_FONT } from "@/markdown";
 import { control, space, useThemeColors } from "@/theme";
+import { useScrollIndicatorWhileScrolling } from "@/ui";
 
 type FileAction = Extract<PermissionRequestSummary, { kind: "file" }>["action"];
 
@@ -43,9 +44,11 @@ function useDetailLabels(): Record<PermissionDetail["label"], string> {
 }
 
 function CodeBlock({ text }: { text: string }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const colors = useThemeColors();
   return (
     <ScrollView
+      {...scrollIndicator}
       scrollsChildToFocus={false}
       style={[styles.code, { backgroundColor: colors.muted }]}
       contentContainerStyle={styles.codeContent}

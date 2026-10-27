@@ -71,7 +71,6 @@ export default interface Resources {
   hosts: {
     actions: {
       details: "Permissions and Connection";
-      more: "More for {{host}}";
       remove: "Remove This Computer";
       rename: "Rename";
       switch: "Switch to This Computer";
@@ -288,6 +287,7 @@ export default interface Resources {
       pendingApproval: "Waiting for your approval";
       planReady: "Plan ready for review";
       responding: "Replying";
+      sending: "Sending";
       thinking: "Thinking";
       usingTools: "Using tools";
       working: "Working…";
@@ -388,18 +388,15 @@ export default interface Resources {
       mode: "Mode";
       model: "Model";
       modelsFromComputer: "Models come from the providers set up on the computer.";
-      noModes: "This agent has no permission modes to choose from.";
       none: "None";
       open: "New session";
       promptPlaceholder: "What should the agent do?";
       role: "Role";
       roleFooter: "Roles are set up on the computer. Picking one applies its agent, model, and permissions.";
       runsOn: "Runs on {{host}}.";
-      searchWorkspaces: "Search workspaces";
       sessionCount_one: "{{count}} session";
       sessionCount_other: "{{count}} sessions";
       title: "New session";
-      where: "Run on";
       workspace: "Workspace";
     };
     noResults: "No sessions match “{{query}}”";
@@ -516,7 +513,6 @@ export default interface Resources {
       };
       modeNeedsExecute: "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.";
       open: "Agent settings: {{summary}}";
-      openMode: "Permission mode: {{mode}}";
     };
     status: {
       needsYou: "Needs you";

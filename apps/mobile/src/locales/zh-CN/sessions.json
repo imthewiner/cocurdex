@@ -56,6 +56,7 @@
     "pendingApproval": "等你批准",
     "planReady": "计划已写好，等你决定",
     "responding": "回复中",
+    "sending": "发送中",
     "thinking": "思考中",
     "usingTools": "工具调用中",
     "working": "正在运行…"
@@ -152,17 +153,14 @@
     "mode": "模式",
     "model": "模型",
     "modelsFromComputer": "模型来自电脑上配置的服务商。",
-    "noModes": "这个 Agent 没有可选的权限模式。",
     "none": "无",
     "open": "新建会话",
     "promptPlaceholder": "要让 Agent 做什么？",
     "role": "角色",
     "roleFooter": "角色在电脑上设置，选择后会套用它的 agent、模型和权限。",
     "runsOn": "在 {{host}} 上运行。",
-    "searchWorkspaces": "搜索工作区",
     "sessionCount_other": "{{count}} 个会话",
     "title": "新会话",
-    "where": "运行位置",
     "workspace": "工作区"
   },
   "noResults": "没有匹配“{{query}}”的会话",
@@ -278,8 +276,7 @@
       "failed": "失败"
     },
     "modeNeedsExecute": "修改权限模式需要此设备拥有「启动任务」权限，请在电脑上授予。",
-    "open": "Agent 设置：{{summary}}",
-    "openMode": "权限模式：{{mode}}"
+    "open": "Agent 设置：{{summary}}"
   },
   "status": {
     "needsYou": "需要处理",

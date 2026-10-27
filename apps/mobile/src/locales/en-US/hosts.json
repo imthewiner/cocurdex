@@ -1,7 +1,6 @@
 {
   "actions": {
     "details": "Permissions and Connection",
-    "more": "More for {{host}}",
     "remove": "Remove This Computer",
     "rename": "Rename",
     "switch": "Switch to This Computer"
