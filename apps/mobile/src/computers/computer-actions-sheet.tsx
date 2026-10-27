@@ -4,7 +4,7 @@ import InfoIcon from "@expo/material-symbols/info.xml";
 import RemoveIcon from "@expo/material-symbols/link_off.xml";
 import SwitchIcon from "@expo/material-symbols/swap_horiz.xml";
 import type { IconName } from "@expo/ui";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { hostAddress, selectHost } from "@/hosts";
 import { ListSheet } from "@/ui";
@@ -20,6 +20,7 @@ const ACTION_ICONS: Record<ComputerAction, IconName> = {
 };
 
 function computerHandlers(
+  router: ReturnType<typeof useRouter>,
   host: SavedHost,
   onDismiss: () => void,
   unpair: (host: SavedHost, onDone: () => void) => void,
@@ -56,6 +57,7 @@ export function ComputerActionsSheet({
   current: boolean;
   onDismiss(): void;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("hosts");
   const { unpair, dialog } = useUnpairHost();
   const labels: Record<ComputerAction, string> = {
@@ -64,7 +66,9 @@ export function ComputerActionsSheet({
     details: t("actions.details"),
     remove: t("actions.remove"),
   };
-  const handlers = host ? computerHandlers(host, onDismiss, unpair) : null;
+  const handlers = host
+    ? computerHandlers(router, host, onDismiss, unpair)
+    : null;
   const actions: ComputerAction[] = [
     ...(current ? [] : (["switch"] as const)),
     "rename",

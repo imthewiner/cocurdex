@@ -1,6 +1,6 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { SymbolView } from "expo-symbols";
-import { type ReactElement, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import {
@@ -73,7 +73,7 @@ function HostRow({
   );
 }
 
-export function HostsList({ header }: { header?: ReactElement }) {
+export function HostsList() {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
   const saved = useSavedHosts();
   const current = useCurrentHost();
@@ -96,7 +96,6 @@ export function HostsList({ header }: { header?: ReactElement }) {
           />
         )}
         ItemSeparatorComponent={ListSeparator}
-        ListHeaderComponent={header}
       />
       <ComputerActionsSheet
         host={actionsHost}

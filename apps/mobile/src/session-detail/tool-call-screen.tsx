@@ -5,7 +5,7 @@ import {
 } from "@cocurdex/shared";
 import ContentCopyIcon from "@expo/material-symbols/content_copy.xml";
 import * as Clipboard from "expo-clipboard";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
@@ -104,6 +104,7 @@ function FilesSection({
   locations: readonly AgentToolCallLocation[];
   root: string | null;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   return (

@@ -1,7 +1,7 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { HostAccessScope } from "@cocurdex/shared";
 import { Text } from "@expo/ui";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import {
@@ -60,6 +60,7 @@ function useScopeLabels() {
 }
 
 function Detail({ host, current }: { host: SavedHost; current: boolean }) {
+  const router = useRouter();
   const { t, i18n } = useTranslation("hosts");
   const colors = useThemeColors();
   const scopeLabels = useScopeLabels();

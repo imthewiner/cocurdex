@@ -6,7 +6,7 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { randomUUID } from "expo-crypto";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,6 +77,7 @@ export function SessionDetailScreen({
   entered?: boolean;
   pendingSend?: PendingSend;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const headerHeight = useHeaderHeight();

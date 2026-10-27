@@ -7,7 +7,7 @@ import PinIcon from "@expo/material-symbols/keep.xml";
 import UnpinIcon from "@expo/material-symbols/keep_off.xml";
 import MarkUnreadIcon from "@expo/material-symbols/mark_chat_unread.xml";
 import { type IconName, Text } from "@expo/ui";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { hostConnection } from "@/connection";
@@ -47,6 +47,7 @@ export function SessionActionsSheet({
   detail: string | null;
   onDismiss(): void;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const [failed, setFailed] = useState(false);
