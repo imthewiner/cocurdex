@@ -1,6 +1,7 @@
 {
   "actions": {
     "cancel": "Cancel",
+    "close": "Close",
     "search": "Search"
   },
   "age": {

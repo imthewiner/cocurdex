@@ -9,6 +9,7 @@ import {
   FormNote,
   FormTextField,
   keyboardHidden,
+  ModalCloseButton,
   SheetAction,
 } from "@/ui";
 
@@ -33,6 +34,7 @@ export function RenameComputerForm({ hostId }: { hostId: string }) {
 
   return (
     <>
+      <ModalCloseButton />
       <SheetAction
         label={t("rename.save")}
         disabled={!canSave}

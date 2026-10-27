@@ -3,6 +3,7 @@ export default interface Resources {
   common: {
     actions: {
       cancel: "Cancel";
+      close: "Close";
       search: "Search";
     };
     age: {

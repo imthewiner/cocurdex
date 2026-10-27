@@ -10,7 +10,7 @@ export default function SettingsLayout() {
   const { t } = useTranslation();
   const grouped = useGroupedColors();
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShadowVisible: false }}>
       <Stack.Screen
         name="index"
         options={{

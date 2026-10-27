@@ -10,6 +10,7 @@ import {
   FormNote,
   FormTextField,
   keyboardHidden,
+  ModalCloseButton,
   SheetAction,
 } from "@/ui";
 import { sessionsStore, useHostSessions } from "./sessions";
@@ -61,6 +62,7 @@ export function RenameSessionForm({
 
   return (
     <>
+      <ModalCloseButton />
       <SheetAction
         label={saving ? t("rename.saving") : t("rename.save")}
         disabled={!canSave}

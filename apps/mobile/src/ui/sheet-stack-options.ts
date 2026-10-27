@@ -11,6 +11,7 @@ export function useSheetStackOptions() {
     headerBackButtonDisplayMode: "minimal",
     headerTitleAlign: "center",
     headerTintColor: colors.foreground,
+    headerShadowVisible: false,
     animation: PUSH_ANIMATION,
     headerStyle: { backgroundColor: grouped.page },
     contentStyle: { backgroundColor: grouped.page },

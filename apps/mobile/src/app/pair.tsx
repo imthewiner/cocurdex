@@ -14,6 +14,7 @@ import {
   FormText,
   FormTextField,
   keyboardHidden,
+  ModalCloseButton,
   SheetAction,
 } from "@/ui";
 
@@ -77,6 +78,7 @@ export default function PairScreen() {
 
   return (
     <>
+      <ModalCloseButton />
       <SheetAction
         label={pairing ? t("pair.pairing") : t("pair.action")}
         disabled={!canPair}

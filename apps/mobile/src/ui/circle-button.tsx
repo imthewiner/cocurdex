@@ -1,8 +1,17 @@
 import { type AndroidSymbol, type SFSymbol, SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
-import { useThemeColors } from "@/theme";
+import { type ThemeColors, useThemeColors } from "@/theme";
 
 const SIZE = 44;
+
+function iconColor(
+  colors: ThemeColors,
+  { filled, prominent }: { filled: boolean; prominent: boolean },
+) {
+  if (filled) return colors.background;
+  if (prominent) return colors.mutedForeground;
+  return colors.foreground;
+}
 
 export function CircleButton({
   icon,
@@ -11,6 +20,7 @@ export function CircleButton({
   badge = false,
   disabled = false,
   prominent = false,
+  tonal = false,
   testID,
 }: {
   icon: { ios: SFSymbol; android: AndroidSymbol };
@@ -19,10 +29,12 @@ export function CircleButton({
   badge?: boolean;
   disabled?: boolean;
   prominent?: boolean;
+  tonal?: boolean;
   testID?: string;
 }) {
   const colors = useThemeColors();
-  const tint = prominent ? colors.background : colors.foreground;
+  const filled = prominent && !disabled;
+  const tint = iconColor(colors, { filled, prominent });
   return (
     <Pressable
       accessibilityRole="button"
@@ -33,9 +45,10 @@ export function CircleButton({
       android_ripple={{ color: colors.muted, borderless: true }}
       style={({ pressed }) => [
         styles.button,
-        prominent && { backgroundColor: colors.foreground },
-        pressed && !prominent && { backgroundColor: colors.muted },
-        disabled && styles.disabled,
+        (tonal || prominent) && { backgroundColor: colors.muted },
+        filled && { backgroundColor: colors.foreground },
+        pressed && !filled && { opacity: 0.7 },
+        disabled && !prominent && styles.disabled,
       ]}
       testID={testID}
     >

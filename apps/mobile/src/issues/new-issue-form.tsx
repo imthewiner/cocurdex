@@ -1,5 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { type ReactElement, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ import {
   ChoiceSheet,
   keyboardHidden,
   type MenuAnchor,
+  ModalCloseButton,
   measureAnchor,
   SheetAction,
   useAnchoredMenu,
@@ -33,10 +34,15 @@ import { IssueStatusMark } from "./issue-status-mark";
 import { defaultIssuePriority, defaultIssueStatus } from "./new-issue-defaults";
 
 const NO_WORKSPACE = "";
+const UNSET_VALUES: Record<IssueField, string | null> = {
+  status: null,
+  priority: "none",
+  workspace: NO_WORKSPACE,
+};
 
 type IssueField = "workspace" | "status" | "priority";
 
-const FIELDS: readonly IssueField[] = ["status", "priority", "workspace"];
+const CHIP_FIELDS: readonly IssueField[] = ["status", "priority"];
 const MENU_LIMIT = 6;
 
 export function NewIssueForm({
@@ -185,8 +191,25 @@ export function NewIssueForm({
       markOf(field, values[field], labelOf(field))
     );
 
+  const fieldChip = (field: IssueField) => {
+    const unset = UNSET_VALUES[field] === values[field];
+    return (
+      <PropertyChip
+        key={field}
+        testID={`new-issue-${field}`}
+        label={unset ? titles[field] : labelOf(field)}
+        unset={unset}
+        accessibilityLabel={`${titles[field]}, ${labelOf(field)}`}
+        leading={chipMarkOf(field)}
+        onPress={(anchor) => pick(field, anchor)}
+      />
+    );
+  };
+
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ headerTitle: () => fieldChip("workspace") }} />
+      <ModalCloseButton />
       <SheetAction
         label={creating ? t("create.creating") : t("create.submit")}
         disabled={!canCreate}
@@ -238,20 +261,7 @@ export function NewIssueForm({
           { paddingBottom: (keyboardOverlap || bottomInset) + space.sm },
         ]}
       >
-        {FIELDS.map((field) => {
-          const unset = values[field] === NO_WORKSPACE;
-          return (
-            <PropertyChip
-              key={field}
-              testID={`new-issue-${field}`}
-              label={unset ? titles[field] : labelOf(field)}
-              unset={unset}
-              accessibilityLabel={`${titles[field]}, ${labelOf(field)}`}
-              leading={chipMarkOf(field)}
-              onPress={(anchor) => pick(field, anchor)}
-            />
-          );
-        })}
+        {CHIP_FIELDS.map(fieldChip)}
       </ScrollView>
       {menu.menu}
       <ChoiceSheet
@@ -293,8 +303,8 @@ function PropertyChip({
       onPress={() => measureAnchor(chip.current, onPress)}
       style={({ pressed }) => [
         styles.chip,
-        { borderColor: colors.border },
-        pressed && { backgroundColor: colors.muted },
+        { backgroundColor: colors.muted },
+        pressed && styles.pressed,
       ]}
       testID={testID}
     >
@@ -337,7 +347,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: space.md,
     borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
   },
+  pressed: { opacity: 0.7 },
   chipLabel: { fontSize: 14, lineHeight: 20 },
 });

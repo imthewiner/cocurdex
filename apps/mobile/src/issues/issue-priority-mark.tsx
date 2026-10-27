@@ -25,7 +25,16 @@ export function IssuePriorityMark({
     );
   }
   const level = BAR_LEVELS[priority];
-  if (level === undefined) return null;
+  if (level === undefined) {
+    return (
+      <SymbolView
+        accessibilityLabel={label}
+        name={{ ios: "ellipsis", android: "more_horiz" }}
+        size={14}
+        tintColor={colors.mutedForeground}
+      />
+    );
+  }
   return (
     <View
       accessible

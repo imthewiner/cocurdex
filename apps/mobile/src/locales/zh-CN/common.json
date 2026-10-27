@@ -1,6 +1,7 @@
 {
   "actions": {
     "cancel": "取消",
+    "close": "关闭",
     "search": "搜索"
   },
   "age": {

@@ -33,6 +33,7 @@ export { useKeyboardVisible } from "./keyboard-visible";
 export { ListNotice, ListSectionHeader } from "./list-parts";
 export { ListScreenHeader } from "./list-screen-header";
 export { ListSheet, type ListSheetItem } from "./list-sheet";
+export { ModalCloseButton } from "./modal-close-button";
 export {
   type OpenOptionSheet,
   type OptionSheetRequest,
