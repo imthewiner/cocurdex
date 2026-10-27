@@ -43,63 +43,61 @@ export function ListSheet({
       containerColor={colors.popover}
       testID={testID}
     >
-      {presented ? (
-        <Column spacing={space.xs}>
-          <Column spacing={2} style={{ paddingHorizontal: TITLE_INSET }}>
+      <Column spacing={space.xs}>
+        <Column spacing={2} style={{ paddingHorizontal: TITLE_INSET }}>
+          <Text
+            numberOfLines={2}
+            textStyle={{
+              color: colors.foreground,
+              fontSize: 17,
+              fontWeight: "600",
+            }}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
             <Text
-              numberOfLines={2}
-              textStyle={{
-                color: colors.foreground,
-                fontSize: 17,
-                fontWeight: "600",
-              }}
+              numberOfLines={1}
+              textStyle={{ color: colors.mutedForeground, fontSize: 13 }}
             >
-              {title}
+              {subtitle}
             </Text>
-            {subtitle ? (
-              <Text
-                numberOfLines={1}
-                textStyle={{ color: colors.mutedForeground, fontSize: 13 }}
-              >
-                {subtitle}
-              </Text>
-            ) : null}
-          </Column>
-          {items.map((item) => {
-            const color = item.destructive
-              ? colors.destructive
-              : colors.foreground;
-            const iconColor = item.destructive
-              ? colors.destructive
-              : colors.mutedForeground;
-            return (
-              <SheetRow
-                key={item.key}
-                testID={item.testID}
-                label={item.label}
-                supporting={item.supporting}
-                color={color}
-                onPress={item.onPress}
-                leading={
-                  item.icon ? (
-                    <Icon name={item.icon} size={22} color={iconColor} />
-                  ) : undefined
-                }
-                trailing={
-                  item.selected ? (
-                    <Icon
-                      name={{ ios: "checkmark", android: CheckIcon }}
-                      size={18}
-                      color={colors.tint}
-                    />
-                  ) : undefined
-                }
-              />
-            );
-          })}
-          {footer}
+          ) : null}
         </Column>
-      ) : null}
+        {items.map((item) => {
+          const color = item.destructive
+            ? colors.destructive
+            : colors.foreground;
+          const iconColor = item.destructive
+            ? colors.destructive
+            : colors.mutedForeground;
+          return (
+            <SheetRow
+              key={item.key}
+              testID={item.testID}
+              label={item.label}
+              supporting={item.supporting}
+              color={color}
+              onPress={item.onPress}
+              leading={
+                item.icon ? (
+                  <Icon name={item.icon} size={22} color={iconColor} />
+                ) : undefined
+              }
+              trailing={
+                item.selected ? (
+                  <Icon
+                    name={{ ios: "checkmark", android: CheckIcon }}
+                    size={18}
+                    color={colors.tint}
+                  />
+                ) : undefined
+              }
+            />
+          );
+        })}
+        {footer}
+      </Column>
     </BottomSheet>
   );
 }

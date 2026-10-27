@@ -8,6 +8,7 @@ export function useSearchBarOptions(
   const colors = useThemeColors();
   return {
     placeholder,
+    placement: "integratedButton",
     hideWhenScrolling: false,
     headerIconColor: colors.foreground,
     textColor: colors.foreground,
@@ -15,5 +16,6 @@ export function useSearchBarOptions(
     tintColor: colors.tint,
     onChangeText: (event) => onQuery(event.nativeEvent.text),
     onCancelButtonPress: () => onQuery(""),
+    onClose: () => onQuery(""),
   };
 }

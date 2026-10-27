@@ -228,7 +228,6 @@ export default interface Resources {
       deleteTitle: "Delete “{{title}}”?";
       fork: "Fork Session";
       markUnread: "Mark as Unread";
-      more: "More";
       pin: "Pin";
       rename: "Rename";
       unpin: "Unpin";

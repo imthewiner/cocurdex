@@ -13,7 +13,6 @@ import {
   ListSeparator,
   PendingIndicator,
 } from "@/ui";
-import { reloadArchivedSessions } from "./archived-sessions-queries";
 import { SessionActionsSheet } from "./session-actions-sheet";
 import { useSessionListLabels } from "./session-list-labels";
 import {
@@ -28,7 +27,6 @@ import {
   type SessionSection,
   type SessionSectionHeading,
 } from "./session-sections";
-import { SessionSwipeActions } from "./session-swipe-actions";
 import { sessionsStore, useHostSessions } from "./sessions";
 import type { HostSessionsSnapshot } from "./sessions-store";
 
@@ -105,15 +103,6 @@ export function SessionList({
   const roleById = new Map(roles?.map((role) => [role.id, role]));
   const headingTitle = useHeadingTitle(agentLabels);
   const [actionTarget, setActionTarget] = useState<SessionRow | null>(null);
-  const canInteract = host.scopes.includes("interact");
-  const archive = (row: SessionRow) =>
-    void hostConnection(host.hostId)
-      .request("session.archive", { sessionId: row.id })
-      .then(() => {
-        void sessionsStore(host.hostId).reload();
-        void reloadArchivedSessions(host.hostId);
-      })
-      .catch(() => setActionTarget(row));
   const sections = useMemo(
     () =>
       buildSessionSections({
@@ -189,23 +178,17 @@ export function SessionList({
         )}
         renderItem={({ item }) => (
           <>
-            <SessionSwipeActions
-              sessionId={item.id}
-              onMore={() => setActionTarget(item)}
-              onArchive={canInteract ? () => archive(item) : null}
-            >
-              <SessionRowView
-                row={item}
-                role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
-                onLongPress={() => setActionTarget(item)}
-                onPress={() =>
-                  router.push({
-                    pathname: "/session/[hostId]/[sessionId]",
-                    params: { hostId: host.hostId, sessionId: item.id },
-                  })
-                }
-              />
-            </SessionSwipeActions>
+            <SessionRowView
+              row={item}
+              role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
+              onLongPress={() => setActionTarget(item)}
+              onPress={() =>
+                router.push({
+                  pathname: "/session/[hostId]/[sessionId]",
+                  params: { hostId: host.hostId, sessionId: item.id },
+                })
+              }
+            />
             {item.hasChildren ? (
               <ChildrenToggle
                 row={item}
