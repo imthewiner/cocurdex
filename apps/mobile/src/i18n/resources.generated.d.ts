@@ -163,6 +163,11 @@ export default interface Resources {
   };
   issues: {
     allWorkspaces: "All Workspaces";
+    board: {
+      move: "Move";
+      moveFailed: "Couldn't move the issue. Check the connection and try again.";
+      moveTitle: "Move to";
+    };
     create: {
       creating: "Creating…";
       descriptionPlaceholder: "Add a description";
@@ -182,6 +187,10 @@ export default interface Resources {
       priority: "Priority";
       status: "Status";
       workspace: "Workspace";
+    };
+    layout: {
+      showBoard: "Show as Board";
+      showList: "Show as List";
     };
     missing: "This issue was deleted on the computer.";
     noResults: "No issues match “{{query}}”";
@@ -286,10 +295,15 @@ export default interface Resources {
       completedUnread: "Finished";
       connecting: "Connecting…";
       failed: "Run failed";
+      imagePrompt: "Image";
+      jumpToLatest: "Jump to latest";
+      jumpToOldest: "Jump to first message";
       missing: "This session is no longer on the computer.";
       monitoring: "Working in the background";
       pendingApproval: "Waiting for your approval";
       planReady: "Plan ready for review";
+      promptNumber: "Prompt {{number}}";
+      prompts: "Prompts";
       responding: "Replying";
       sending: "Sending";
       thinking: "Thinking";

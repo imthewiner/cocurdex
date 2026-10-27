@@ -1,5 +1,10 @@
 {
   "allWorkspaces": "All Workspaces",
+  "board": {
+    "move": "Move",
+    "moveFailed": "Couldn't move the issue. Check the connection and try again.",
+    "moveTitle": "Move to"
+  },
   "create": {
     "creating": "Creating…",
     "descriptionPlaceholder": "Add a description",
@@ -19,6 +24,10 @@
     "priority": "Priority",
     "status": "Status",
     "workspace": "Workspace"
+  },
+  "layout": {
+    "showBoard": "Show as Board",
+    "showList": "Show as List"
   },
   "missing": "This issue was deleted on the computer.",
   "noResults": "No issues match “{{query}}”",

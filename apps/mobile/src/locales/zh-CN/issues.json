@@ -1,5 +1,10 @@
 {
   "allWorkspaces": "全部工作区",
+  "board": {
+    "move": "移动",
+    "moveFailed": "无法移动该 issue，请检查连接后重试。",
+    "moveTitle": "移动到"
+  },
   "create": {
     "creating": "正在创建…",
     "descriptionPlaceholder": "添加描述",
@@ -19,6 +24,10 @@
     "priority": "优先级",
     "status": "状态",
     "workspace": "工作区"
+  },
+  "layout": {
+    "showBoard": "以看板显示",
+    "showList": "以列表显示"
   },
   "missing": "这个 issue 已在电脑上删除。",
   "noResults": "没有与“{{query}}”匹配的 issue",

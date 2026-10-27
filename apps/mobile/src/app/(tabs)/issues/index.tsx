@@ -1,6 +1,8 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import AddIcon from "@expo/material-symbols/add.xml";
 import FolderIcon from "@expo/material-symbols/folder.xml";
+import ViewKanbanIcon from "@expo/material-symbols/view_kanban.xml";
+import ViewListIcon from "@expo/material-symbols/view_list.xml";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,7 +15,10 @@ import {
   useScopeGate,
 } from "@/hosts";
 import {
+  IssueBoard,
   IssueList,
+  setIssueLayout,
+  useIssueLayout,
   useWorkspaceFilterLabel,
   WorkspaceFilterSheet,
 } from "@/issues";
@@ -49,12 +54,22 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
     host.hostId,
     workspaceId,
   );
+  const issueLayout = useIssueLayout();
+  const board = issueLayout === "board";
+  const Issues = board ? IssueBoard : IssueList;
 
   return (
     <>
       <Stack.Screen options={listHeader.options} />
       <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon={layoutToggleIcon(board)}
+          accessibilityLabel={
+            board ? t("layout.showList") : t("layout.showBoard")
+          }
+          onPress={() => setIssueLayout(board ? "list" : "board")}
+        />
         <Stack.Toolbar.Button
           icon={Platform.OS === "ios" ? "folder" : FolderIcon}
           accessibilityLabel={workspaceFilterLabel}
@@ -73,7 +88,7 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
           )}
         />
       </Stack.Toolbar>
-      <IssueList
+      <Issues
         host={host}
         workspaceId={workspaceId}
         query={query}
@@ -88,4 +103,10 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
       />
     </>
   );
+}
+
+function layoutToggleIcon(board: boolean) {
+  if (Platform.OS === "ios")
+    return board ? "list.bullet" : "rectangle.split.3x1";
+  return board ? ViewListIcon : ViewKanbanIcon;
 }

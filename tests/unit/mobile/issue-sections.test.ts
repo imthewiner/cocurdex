@@ -1,5 +1,8 @@
-import { issueSections } from "@cocurdex/mobile/internal/issues/issue-sections";
-import type { IssueFieldOption, IssueRecord } from "@cocurdex/shared";
+import {
+  issueSections,
+  withIssueStatus,
+} from "@cocurdex/mobile/internal/issues/issue-sections";
+import type { IssueFieldOption, IssueRecord, ViewFull } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
 
 const now = "2026-10-25T00:00:00.000Z";
@@ -79,5 +82,40 @@ describe("issueSections", () => {
         section.issues.map((entry) => entry.identifier),
       ),
     ).toEqual(["COC-6"]);
+  });
+
+  it("keeps every status as a board column when asked", () => {
+    expect(
+      issueSections(issues, statuses, "docs", "", { includeEmpty: true }).map(
+        (section) => [section.status.id, section.issues.length],
+      ),
+    ).toEqual([
+      ["doing", 0],
+      ["review", 0],
+      ["todo", 1],
+      ["backlog", 0],
+      ["done", 0],
+    ]);
+  });
+});
+
+describe("withIssueStatus", () => {
+  const view = {
+    statusOptions: statuses,
+    issues: [issue(1, "todo"), issue(2, "todo")],
+  } as unknown as ViewFull;
+
+  it("moves only the chosen issue and carries the status category", () => {
+    const moved = withIssueStatus(view, "issue-1", "done");
+    expect(
+      moved.issues.map((entry) => [entry.status, entry.statusCategory]),
+    ).toEqual([
+      ["done", "completed"],
+      ["todo", null],
+    ]);
+  });
+
+  it("leaves the view untouched for an unknown status", () => {
+    expect(withIssueStatus(view, "issue-1", "gone")).toBe(view);
   });
 });

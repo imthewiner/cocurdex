@@ -2,6 +2,7 @@ import type {
   IssueFieldOption,
   IssueRecord,
   IssueStatusCategory,
+  ViewFull,
 } from "@cocurdex/shared";
 
 export interface IssueSection {
@@ -35,6 +36,7 @@ export function issueSections(
   statusOptions: readonly IssueFieldOption[],
   workspaceId: string | null,
   query: string,
+  { includeEmpty = false } = {},
 ): IssueSection[] {
   const needle = query.trim().toLocaleLowerCase();
   const shown = issues.filter(
@@ -55,5 +57,22 @@ export function issueSections(
         .filter((issue) => issue.status === status.id)
         .sort((left, right) => left.sortOrder - right.sortOrder),
     }))
-    .filter((section) => section.issues.length > 0);
+    .filter((section) => includeEmpty || section.issues.length > 0);
+}
+
+export function withIssueStatus(
+  view: ViewFull,
+  issueId: string,
+  statusId: string,
+): ViewFull {
+  const status = view.statusOptions.find((option) => option.id === statusId);
+  if (!status) return view;
+  return {
+    ...view,
+    issues: view.issues.map((issue) =>
+      issue.id === issueId
+        ? { ...issue, status: status.id, statusCategory: status.category }
+        : issue,
+    ),
+  };
 }
