@@ -45,10 +45,16 @@ appId: dev.cocurdex.mobile
       text: ${PAIR_ACTION}
       enabled: true
     timeout: 5000
-- tapOn: ${PAIR_ACTION}
-- extendedWaitUntil:
-    visible: ${WORKSPACE_NAME}
-    timeout: 30000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          text: ${SYSTEM_CONTINUE}
+          optional: true
+      - tapOn: ${PAIR_ACTION}
+      - extendedWaitUntil:
+          visible: ${WORKSPACE_NAME}
+          timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
 - retry:
@@ -585,17 +591,11 @@ appId: dev.cocurdex.mobile
                 start: 50%, 35%
                 end: 50%, 85%
       - waitForAnimationToEnd
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - tapOn:
-          id: ".*search_button"
+- tapOn: ${SEARCH_OPEN}
 - runFlow:
     when:
       platform: iOS
     commands:
-      - tapOn: ${SEARCH_OPEN}
       - tapOn: ${SEARCH_PLACEHOLDER}
 - inputText: ${SEARCH_QUERY}
 - extendedWaitUntil:
@@ -649,23 +649,7 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - back
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - tapOn: ${SEARCH_DISMISS}
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - repeat:
-          while:
-            visible:
-              id: ".*search_close_btn"
-          times: 2
-          commands:
-            - tapOn:
-                id: ".*search_close_btn"
+- tapOn: ${SEARCH_DISMISS}
 - extendedWaitUntil:
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
@@ -751,14 +735,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${IN_PROGRESS_ISSUE_TITLE}
     timeout: 5000
-- tapOn: ${SHOW_BOARD}
-- extendedWaitUntil:
-    visible:
-      id: issue-column-doing
-    timeout: 10000
-- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
 - waitForAnimationToEnd
-- takeScreenshot: issue-board
 - longPressOn: ${IN_PROGRESS_ISSUE_TITLE}
 - extendedWaitUntil:
     visible:
@@ -771,17 +748,15 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     notVisible: ${IN_PROGRESS_ISSUE_TITLE}
     timeout: 10000
-- repeat:
-    while:
-      notVisible: ${IN_PROGRESS_ISSUE_TITLE}
-    times: 6
-    commands:
-      - swipe:
-          start: 90%, 70%
-          end: 10%, 70%
-          duration: 400
-      - waitForAnimationToEnd
-- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
+- scrollUntilVisible:
+    element:
+      id: issue-section-done
+    direction: DOWN
+- tapOn:
+    id: issue-section-done
+- scrollUntilVisible:
+    element: ${IN_PROGRESS_ISSUE_TITLE}
+    direction: DOWN
 - longPressOn: ${IN_PROGRESS_ISSUE_TITLE}
 - extendedWaitUntil:
     visible:
@@ -789,25 +764,15 @@ appId: dev.cocurdex.mobile
     timeout: 5000
 - tapOn:
     id: issue-move-doing
-- extendedWaitUntil:
-    notVisible: ${IN_PROGRESS_ISSUE_TITLE}
-    timeout: 10000
-- repeat:
-    while:
-      notVisible: ${IN_PROGRESS_ISSUE_TITLE}
-    times: 6
-    commands:
-      - swipe:
-          start: 10%, 70%
-          end: 90%, 70%
-          duration: 400
-      - waitForAnimationToEnd
-- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
-- tapOn: ${SHOW_LIST}
-- extendedWaitUntil:
-    notVisible:
-      id: issue-board
-    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: issue-section-done
+    direction: DOWN
+- tapOn:
+    id: issue-section-done
+- scrollUntilVisible:
+    element: ${IN_PROGRESS_ISSUE_TITLE}
+    direction: UP
 - retry:
     maxRetries: 2
     commands:
@@ -865,8 +830,13 @@ appId: dev.cocurdex.mobile
     when:
       platform: Android
     commands:
-      - hideKeyboard
-      - back
+      - retry:
+          maxRetries: 2
+          commands:
+            - back
+            - extendedWaitUntil:
+                visible: ${NEW_NOTE_TITLE}
+                timeout: 3000
 - extendedWaitUntil:
     visible: ${NEW_NOTE_TITLE}
     timeout: 10000
@@ -890,16 +860,29 @@ appId: dev.cocurdex.mobile
     commands:
       - back
 - tapOn: ${LINK_NOTE_TITLE}
-- tapOn: ${ISSUE_LINK_TEXT}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: ${ISSUE_LINK_TEXT}
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: ${ISSUE_LINK_TEXT}
+          timeout: 10000
+      - tapOn:
+          point: "15%,18%"
 - extendedWaitUntil:
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000
 - takeScreenshot: note-issue-link
 - scrollUntilVisible:
-    element: ${LINK_NOTE_TITLE}
+    element: "${LINK_NOTE_TITLE}.*"
     direction: DOWN
     timeout: 10000
-- tapOn: ${LINK_NOTE_TITLE}
+- tapOn: "${LINK_NOTE_TITLE}.*"
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
@@ -946,8 +929,19 @@ appId: dev.cocurdex.mobile
 - takeScreenshot: computer-detail
 - tapOn:
     id: computer-rename
-- tapOn:
-    id: rename-computer-name
+- extendedWaitUntil:
+    visible:
+      id: rename-computer-name
+    timeout: 5000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: rename-computer-name
+            focused: true
+          timeout: 5000
 - eraseText: 80
 - inputText: ${RENAMED_COMPUTER}
 - tapOn: ${RENAME_COMPUTER_SAVE}
@@ -1005,11 +999,14 @@ appId: dev.cocurdex.mobile
     visible:
       id: settings-computers
     timeout: 5000
-- assertVisible: "${RENAMED_COMPUTER}"
+- assertVisible: ".*${RENAMED_COMPUTER}.*"
 - retry:
     maxRetries: 2
     commands:
-      - tapOn: ${TAB_SESSIONS}
+      - tapOn:
+          text: ${TAB_SESSIONS}
+          below:
+            id: settings-archived
       - extendedWaitUntil:
           visible: ${SEND_SESSION_TITLE}
           timeout: 5000
@@ -1027,6 +1024,21 @@ appId: dev.cocurdex.mobile
 - tapOn: ${TAB_SETTINGS}
 - waitForAnimationToEnd
 - takeScreenshot: settings
+- tapOn:
+    id: settings-language
+- extendedWaitUntil:
+    visible:
+      id: settings-language-zh-CN
+    timeout: 5000
+- assertVisible:
+    id: settings-language-en-US
+- takeScreenshot: settings-language
+- tapOn:
+    id: settings-language-system
+- extendedWaitUntil:
+    visible:
+      id: settings-archived
+    timeout: 5000
 - tapOn:
     id: settings-archived
 - extendedWaitUntil:

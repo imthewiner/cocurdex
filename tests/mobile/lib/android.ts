@@ -125,10 +125,11 @@ async function freeConsolePort(sdk: string) {
 export async function startAndroidTarget(
   mobileDir: string,
   avdName: string | undefined,
-  options: { visible?: boolean } = {},
+  options: { visible?: boolean; install?: boolean } = {},
 ): Promise<MobileTarget> {
   const apkPath = androidApkPath(mobileDir);
-  if (!existsSync(apkPath)) {
+  const install = options.install ?? true;
+  if (install && !existsSync(apkPath)) {
     throw new Error(`Missing ${apkPath}; run with --build first`);
   }
   const sdk = androidSdk();
@@ -184,7 +185,9 @@ export async function startAndroidTarget(
       const reason = error instanceof Error ? error.message : String(error);
       throw new Error(`${reason}\nEmulator output:\n${emulatorOutput}`);
     });
-    await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
+    if (install) {
+      await runCommand(adb(sdk), ["-s", serial, "install", "-r", apkPath]);
+    }
     await disableInputMethods(shell);
     return {
       deviceId: serial,

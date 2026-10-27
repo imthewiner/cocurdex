@@ -150,8 +150,6 @@ function flowLabels(locale: SupportedLocale) {
     NEW_SESSION_ACTION: sessions.newSession.open,
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_ISSUE_ACTION: issues.create.open,
-    SHOW_BOARD: issues.layout.showBoard,
-    SHOW_LIST: issues.layout.showList,
     NEW_ISSUE_SUBMIT: issues.create.submit,
     RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,

@@ -88,9 +88,13 @@ export function iosAppPath(mobileDir: string) {
   );
 }
 
-export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
+export async function startIosTarget(
+  mobileDir: string,
+  options: { install?: boolean } = {},
+): Promise<MobileTarget> {
+  const install = options.install ?? true;
   const appPath = iosAppPath(mobileDir);
-  if (!existsSync(appPath)) {
+  if (install && !existsSync(appPath)) {
     throw new Error(`Missing ${appPath}; run with --build first`);
   }
   const { runtime, deviceType } = await latestIosRuntime();
@@ -110,7 +114,9 @@ export async function startIosTarget(mobileDir: string): Promise<MobileTarget> {
   try {
     await runCommand("xcrun", ["simctl", "boot", udid]);
     await runCommand("xcrun", ["simctl", "bootstatus", udid, "-b"]);
-    await runCommand("xcrun", ["simctl", "install", udid, appPath]);
+    if (install) {
+      await runCommand("xcrun", ["simctl", "install", udid, appPath]);
+    }
     return {
       deviceId: udid,
       setAppearance: async (appearance) => {
