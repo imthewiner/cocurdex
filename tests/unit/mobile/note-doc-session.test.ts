@@ -140,4 +140,23 @@ describe("createNoteDocSession", () => {
     await session.load();
     expect(session.snapshot()).toMatchObject({ loaded: false, missing: true });
   });
+
+  it("treats a body of empty blocks as blank and any text as content", async () => {
+    const { api } = serverApi();
+    const session = createNoteDocSession(api, () => undefined, TIMING);
+    await session.load();
+    const view = editorDoc(session);
+    const body = view.getXmlFragment("default");
+    const paragraph = new Y.XmlElement("paragraph");
+    body.insert(0, [paragraph, new Y.XmlElement("paragraph")]);
+    expect(session.isBlank()).toBe(true);
+
+    const run = new Y.XmlText();
+    paragraph.insert(0, [run]);
+    run.insert(0, "  ");
+    expect(session.isBlank()).toBe(true);
+
+    run.insert(2, "<script", { bold: true });
+    expect(session.isBlank()).toBe(false);
+  });
 });

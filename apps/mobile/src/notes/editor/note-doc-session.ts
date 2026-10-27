@@ -5,7 +5,17 @@ import { decodeNoteDocBytes, encodeNoteDocBytes } from "./note-doc-bytes";
 const REMOTE_ORIGIN = Symbol("note-doc-remote");
 const LOCAL_ORIGIN = Symbol("note-doc-local");
 const NOTE_DOC_FIELD = "default";
-const MARKUP = /<[^>]*>/g;
+
+function hasText(fragment: Y.XmlFragment) {
+  for (const node of fragment.createTreeWalker(
+    (entry) => entry instanceof Y.XmlText,
+  )) {
+    const runs: { insert?: unknown }[] = (node as Y.XmlText).toDelta();
+    if (runs.some((run) => typeof run.insert === "string" && run.insert.trim()))
+      return true;
+  }
+  return false;
+}
 
 export type NoteSaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -159,12 +169,7 @@ export function createNoteDocSession(
     detach() {
       attached = false;
     },
-    isBlank: () =>
-      doc
-        .getXmlFragment(NOTE_DOC_FIELD)
-        .toString()
-        .replace(MARKUP, "")
-        .trim() === "",
+    isBlank: () => !hasText(doc.getXmlFragment(NOTE_DOC_FIELD)),
   };
 }
 
