@@ -1,6 +1,11 @@
 import { type AndroidSymbol, type SFSymbol, SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
-import { type ThemeColors, useThemeColors } from "@/theme";
+import { type ThemeColors, useThemeColors, useThemeName } from "@/theme";
+
+const TONAL_FILL = {
+  light: "rgba(0, 0, 0, 0.06)",
+  dark: "rgba(255, 255, 255, 0.10)",
+} as const;
 
 const SIZE = 44;
 
@@ -33,6 +38,7 @@ export function CircleButton({
   testID?: string;
 }) {
   const colors = useThemeColors();
+  const scheme = useThemeName();
   const filled = prominent && !disabled;
   const tint = iconColor(colors, { filled, prominent });
   return (
@@ -45,7 +51,7 @@ export function CircleButton({
       android_ripple={{ color: colors.muted, borderless: true }}
       style={({ pressed }) => [
         styles.button,
-        (tonal || prominent) && { backgroundColor: colors.muted },
+        (tonal || prominent) && { backgroundColor: TONAL_FILL[scheme] },
         filled && { backgroundColor: colors.foreground },
         pressed && !filled && { opacity: 0.7 },
         disabled && !prominent && styles.disabled,

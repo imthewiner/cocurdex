@@ -2,7 +2,6 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { countActiveSessionFilters } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { useCurrentHost } from "@/hosts";
 import { useSessionListLabels, useSessionListUi } from "@/sessions";
 import {
@@ -11,7 +10,6 @@ import {
   FormRow,
   FormSection,
   FormText,
-  SheetAction,
   ValueFormRow,
 } from "@/ui";
 import { clearSessionFilters, useFilterSummaries } from "./filter-summaries";
@@ -33,15 +31,8 @@ function Sheet({ host }: { host: SavedHost }) {
 
   return (
     <>
-      {Platform.OS === "android" ? (
-        <CloseButton
-          accessibilityLabel={t("list.options.close")}
-          onPress={done}
-        />
-      ) : null}
-      <SheetAction
-        label={t("list.options.done")}
-        disabled={false}
+      <CloseButton
+        accessibilityLabel={t("list.options.close")}
         onPress={done}
       />
       <Form>

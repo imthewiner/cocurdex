@@ -8,7 +8,6 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { usePermissionModeLabels } from "@/agents";
 import { hostConnection } from "@/connection";
 import { RuntimeRows } from "@/session-runtime";
@@ -17,7 +16,6 @@ import {
   Form,
   FormNote,
   FormSection,
-  SheetAction,
   useOptionSheet,
   ValueFormRow,
 } from "@/ui";
@@ -92,15 +90,8 @@ export function SessionConfigScreen({
   return (
     <>
       <Stack.Screen options={{ title: agent?.label ?? "" }} />
-      {Platform.OS === "android" ? (
-        <CloseButton
-          accessibilityLabel={t("sessionConfig.close")}
-          onPress={done}
-        />
-      ) : null}
-      <SheetAction
-        label={t("sessionConfig.done")}
-        disabled={false}
+      <CloseButton
+        accessibilityLabel={t("sessionConfig.close")}
         onPress={done}
       />
       <Form>

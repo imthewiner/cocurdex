@@ -110,7 +110,7 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
     LIST_OPTIONS_ACTION: sessions.list.menu,
-    LIST_OPTIONS_DONE: sessions.list.options.done,
+    LIST_OPTIONS_CLOSE: sessions.list.options.close,
     SHOW_MORE: sessions.list.showMore_other.replace("{{count}}", "\\d+"),
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
@@ -156,7 +156,7 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_DONE: notes.editor.done,
     DEFAULT_NOTE_TITLE: "Untitled",
     ARCHIVE_ACTION: sessions.actions.archive,
-    SESSION_CONFIG_DONE: sessions.sessionConfig.done,
+    SESSION_CONFIG_CLOSE: sessions.sessionConfig.close,
     SAVE_ROLE_SAVE: sessions.saveRole.save,
   };
 }

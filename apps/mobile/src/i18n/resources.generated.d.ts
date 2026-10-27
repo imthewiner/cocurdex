@@ -378,7 +378,6 @@ export default interface Resources {
         any: "All";
         archived: "Archived Sessions";
         close: "Close";
-        done: "Done";
         title: "Display Options";
         view: "View";
       };
@@ -547,7 +546,6 @@ export default interface Resources {
     search: "Search sessions";
     sessionConfig: {
       close: "Close";
-      done: "Done";
       mcp: "MCP servers";
       mcpNone: "This session reports no MCP servers.";
       mcpStatus: {

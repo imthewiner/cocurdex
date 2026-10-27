@@ -173,7 +173,6 @@ export function NoteScreen({
             key: "done",
             icon: { ios: "checkmark", android: "check" },
             label: t("editor.done"),
-            done: true,
             hidden: !focused,
             onPress: () => blur.current?.(),
           },

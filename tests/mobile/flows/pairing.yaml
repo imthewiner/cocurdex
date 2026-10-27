@@ -105,7 +105,7 @@ appId: dev.cocurdex.mobile
           visible:
             id: list-option-grouping
           timeout: 5000
-- tapOn: ${LIST_OPTIONS_DONE}
+- tapOn: ${LIST_OPTIONS_CLOSE}
 - extendedWaitUntil:
     visible: ${WORKSPACE_NAME}
     timeout: 5000
@@ -439,7 +439,7 @@ appId: dev.cocurdex.mobile
     visible:
       id: "session-config-save-role"
     timeout: 10000
-- tapOn: ${SESSION_CONFIG_DONE}
+- tapOn: ${SESSION_CONFIG_CLOSE}
 - extendedWaitUntil:
     visible:
       id: "session-config-chip"
@@ -542,7 +542,7 @@ appId: dev.cocurdex.mobile
     timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: new-session-agent
-- tapOn: ${SESSION_CONFIG_DONE}
+- tapOn: ${SESSION_CONFIG_CLOSE}
 - extendedWaitUntil:
     visible:
       id: "new-session-prompt"

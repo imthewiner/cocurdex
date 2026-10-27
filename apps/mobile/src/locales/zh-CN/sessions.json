@@ -105,7 +105,6 @@
       "any": "全部",
       "archived": "已归档会话",
       "close": "关闭",
-      "done": "完成",
       "title": "显示选项",
       "view": "视图"
     },
@@ -271,7 +270,6 @@
   "search": "搜索会话",
   "sessionConfig": {
     "close": "关闭",
-    "done": "完成",
     "mcp": "MCP 服务器",
     "mcpNone": "此会话没有报告 MCP 服务器。",
     "mcpStatus": {

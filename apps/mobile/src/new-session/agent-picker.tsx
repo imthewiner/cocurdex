@@ -5,7 +5,6 @@ import {
 } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import {
   AgentIcon,
   RoleAvatar,
@@ -21,7 +20,6 @@ import {
   CloseButton,
   Form,
   FormSection,
-  SheetAction,
   useOptionSheet,
   ValueFormRow,
 } from "@/ui";
@@ -201,15 +199,8 @@ function Picker({ host }: { host: SavedHost }) {
 
   return (
     <>
-      {Platform.OS === "android" ? (
-        <CloseButton
-          accessibilityLabel={t("sessionConfig.close")}
-          onPress={done}
-        />
-      ) : null}
-      <SheetAction
-        label={t("sessionConfig.done")}
-        disabled={false}
+      <CloseButton
+        accessibilityLabel={t("sessionConfig.close")}
         onPress={done}
       />
       <Form>
