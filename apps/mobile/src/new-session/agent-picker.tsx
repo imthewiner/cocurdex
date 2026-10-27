@@ -43,6 +43,9 @@ import {
 import { useNewSessionDefaults } from "./new-session-queries";
 import { updateNewSessionDraft, useNewSessionState } from "./new-session-store";
 
+const ROW_AVATAR = 32;
+const ROW_AGENT_ICON = 22;
+
 function useAvailabilityLabels(): Record<AgentAvailability, string> {
   const { t } = useTranslation("sessions");
   return {
@@ -122,6 +125,13 @@ function Picker({ host }: { host: SavedHost }) {
           key: entry.id,
           testID: `new-session-role-${entry.id}`,
           label: entry.name,
+          leading: (
+            <RoleAvatar
+              role={entry}
+              agentId={entry.agentId}
+              size={ROW_AVATAR}
+            />
+          ),
           supporting: [roleAgent?.label ?? entry.agentId, entry.modelName]
             .filter(Boolean)
             .join(" · "),
@@ -141,6 +151,7 @@ function Picker({ host }: { host: SavedHost }) {
         key: entry.id,
         testID: `new-session-agent-${entry.id}`,
         label: entry.label,
+        leading: <AgentIcon agentId={entry.id} size={ROW_AGENT_ICON} />,
         supporting: availability[entry.availability],
         selected: !roleId && entry.id === agentType,
         onPress: () =>

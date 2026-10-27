@@ -8,10 +8,11 @@ import {
   Text,
   TextInput,
 } from "@expo/ui";
-import { type ReactNode, useState } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import { space, useThemeColors } from "@/theme";
+import { HostedAccessory } from "./hosted-accessory";
 import { matchesQuery } from "./option-query";
 import { SheetRow } from "./sheet-row";
 
@@ -22,10 +23,17 @@ export interface ListSheetItem {
   label: string;
   supporting?: string;
   icon?: IconName;
+  leading?: ReactElement;
   destructive?: boolean;
   selected?: boolean;
   testID?: string;
   onPress(): void;
+}
+
+function rowLeading(item: ListSheetItem, iconColor: string) {
+  if (item.leading) return <HostedAccessory>{item.leading}</HostedAccessory>;
+  if (item.icon) return <Icon name={item.icon} size={22} color={iconColor} />;
+  return undefined;
 }
 
 export function ListSheet({
@@ -72,11 +80,7 @@ export function ListSheet({
         supporting={item.supporting}
         color={color}
         onPress={item.onPress}
-        leading={
-          item.icon ? (
-            <Icon name={item.icon} size={22} color={iconColor} />
-          ) : undefined
-        }
+        leading={rowLeading(item, iconColor)}
         trailing={
           item.selected ? (
             <Icon
