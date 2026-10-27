@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSavedHosts } from "@/hosts";
+import { scaledSize, useCodeScale } from "@/preferences";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import {
@@ -53,6 +54,9 @@ function toolCallSubtitle(call: AgentToolCallRecord, t: TFunction<"sessions">) {
   return `${status} · ${t("tool.duration", { seconds })}`;
 }
 
+const CODE_SIZE = 12.5;
+const CODE_LINE_HEIGHT = 19;
+
 function CodeSection({
   title,
   note,
@@ -65,6 +69,7 @@ function CodeSection({
   testID: string;
 }) {
   const colors = useThemeColors();
+  const codeScale = useCodeScale();
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -84,7 +89,14 @@ function CodeSection({
         <Text
           selectable
           testID={testID}
-          style={[styles.codeText, { color: colors.foreground }]}
+          style={[
+            styles.codeText,
+            {
+              color: colors.foreground,
+              fontSize: scaledSize(CODE_SIZE, codeScale),
+              lineHeight: scaledSize(CODE_LINE_HEIGHT, codeScale),
+            },
+          ]}
         >
           {text}
         </Text>
@@ -308,8 +320,8 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
-    fontSize: 12.5,
-    lineHeight: 19,
+    fontSize: CODE_SIZE,
+    lineHeight: CODE_LINE_HEIGHT,
   },
   empty: { fontSize: 15 },
   fileRow: { minHeight: 44, justifyContent: "center", gap: 2 },

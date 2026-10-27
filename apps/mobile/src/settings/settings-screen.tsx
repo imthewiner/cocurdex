@@ -23,6 +23,7 @@ import {
   SelectedMark,
   ValueFormRow,
 } from "@/ui";
+import { useTextSizeLabels } from "./font-size-screen";
 import { LOCALE_ENDONYMS } from "./locale-names";
 
 function useAppearanceLabels(): Record<AppearancePreference, string> {
@@ -59,6 +60,8 @@ export function SettingsScreen() {
   const appearanceLabels = useAppearanceLabels();
   const host = useCurrentHost();
   const grouped = useGroupedColors();
+  const textLabels = useTextSizeLabels();
+  const fontSizeValue = textLabels[preferences.textSize];
   const language =
     preferences.language === "system"
       ? t("language.system")
@@ -95,6 +98,12 @@ export function SettingsScreen() {
           ))}
         </FormSection>
         <FormSection>
+          <ValueFormRow
+            testID="settings-font-size"
+            label={t("fontSize.title")}
+            value={fontSizeValue}
+            onPress={() => router.push("/settings/font-size")}
+          />
           <ValueFormRow
             testID="settings-language"
             label={t("language.title")}

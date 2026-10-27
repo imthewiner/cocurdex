@@ -13,6 +13,8 @@
       "paragraph": "Body"
     },
     "bodyPlaceholder": "Write something, or type / to insert headings, lists, and to-dos",
+    "edit": "Edit",
+    "finishEditing": "Done Editing",
     "format": {
       "bold": "Bold",
       "bulletList": "Bulleted List",

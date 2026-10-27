@@ -16,6 +16,7 @@ export type { ConfirmRequest } from "./confirm-request";
 export { FieldSection } from "./field-section";
 export { useFloatingSurface } from "./floating-surface";
 export { Form } from "./form";
+export { FormCell } from "./form-cell";
 export { FormRow } from "./form-row";
 export { FormSection } from "./form-section";
 export {

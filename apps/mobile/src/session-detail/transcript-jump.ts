@@ -76,6 +76,23 @@ export function nextJumpState(
   return { ...state, kind, direction, awayFromLatestAt };
 }
 
+const ANIMATED_JUMP_SCREENS = 1;
+
+export function latestJumpLead({ offset, viewportHeight }: ScrollMetrics) {
+  const lead = viewportHeight * ANIMATED_JUMP_SCREENS;
+  return offset > lead ? lead : null;
+}
+
+export function oldestJumpLead({
+  offset,
+  contentHeight,
+  viewportHeight,
+}: ScrollMetrics) {
+  const end = Math.max(0, contentHeight - viewportHeight);
+  const lead = end - viewportHeight * ANIMATED_JUMP_SCREENS;
+  return offset < lead ? lead : null;
+}
+
 export function hasUnseenLatest(state: JumpState, itemCount: number) {
   return state.awayFromLatestAt !== null && itemCount > state.awayFromLatestAt;
 }

@@ -187,7 +187,7 @@ function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
   titleField.placeholder = message.titlePlaceholder;
   metaButton.textContent = message.meta;
   titleField.readOnly = !message.editable;
-  metaButton.disabled = !message.editable;
+  metaButton.disabled = !message.interactive;
   fitTitle();
   doc = new Y.Doc();
   Y.applyUpdate(doc, decodeNoteDocBytes(message.state), REMOTE_ORIGIN);
@@ -234,6 +234,15 @@ function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
   }
 }
 
+function setEditable(editable: boolean) {
+  titleField.readOnly = !editable;
+  if (!editable) {
+    titleField.blur();
+    editor?.commands.blur();
+  }
+  editor?.setEditable(editable);
+}
+
 titleField.addEventListener("input", () => {
   const brokeLine = titleField.value.includes("\n");
   if (brokeLine) titleField.value = titleField.value.replace(/\n/g, "");
@@ -270,6 +279,8 @@ window.noteEditor = {
       }
     } else if (message.type === "meta") {
       metaButton.textContent = message.meta;
+    } else if (message.type === "editable") {
+      setEditable(message.editable);
     } else if (message.type === "theme") {
       applyTheme(message.theme);
     } else {

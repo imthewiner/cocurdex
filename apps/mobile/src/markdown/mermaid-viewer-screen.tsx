@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { WebView } from "react-native-webview";
@@ -36,10 +35,9 @@ function ZoomableDiagram({
   diagram: RenderedDiagram;
   background: string;
 }) {
-  const [loaded, setLoaded] = useState(false);
   return (
     <>
-      {loaded ? null : <FittedPreview diagram={diagram} />}
+      <FittedPreview diagram={diagram} />
       <WebView
         source={{ html: mermaidViewerDocument(diagram.svg, background) }}
         originWhitelist={["about:blank"]}
@@ -49,11 +47,7 @@ function ZoomableDiagram({
         setBuiltInZoomControls
         setDisplayZoomControls={false}
         onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
-        onLoadEnd={() => setLoaded(true)}
-        style={[
-          styles.fill,
-          { backgroundColor: background, opacity: loaded ? 1 : 0 },
-        ]}
+        style={styles.webView}
       />
     </>
   );
@@ -95,6 +89,7 @@ export function MermaidViewerScreen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  webView: { flex: 1, backgroundColor: "transparent" },
   center: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",

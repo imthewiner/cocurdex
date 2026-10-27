@@ -22,6 +22,15 @@ export default function SettingsLayout() {
         }}
       />
       <Stack.Screen
+        name="font-size"
+        options={{
+          title: t("screens.fontSize"),
+          animation: PUSH_ANIMATION,
+          headerStyle: { backgroundColor: grouped.page },
+          contentStyle: { backgroundColor: grouped.page },
+        }}
+      />
+      <Stack.Screen
         name="language"
         options={{
           title: t("screens.language"),

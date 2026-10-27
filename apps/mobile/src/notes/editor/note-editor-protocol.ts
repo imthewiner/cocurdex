@@ -48,7 +48,9 @@ export type NoteEditorInbound =
       theme: NoteEditorTheme;
       focusTitle: boolean;
       editable: boolean;
+      interactive: boolean;
     }
+  | { type: "editable"; editable: boolean }
   | { type: "remote"; update: string }
   | { type: "title"; title: string }
   | { type: "meta"; meta: string }

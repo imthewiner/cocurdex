@@ -15,7 +15,6 @@ import {
 } from "@/theme";
 import { useHeaderOptions } from "@/ui";
 
-const SHEET_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 
@@ -134,7 +133,7 @@ export default function RootLayout() {
             name="pair"
             options={{
               title: t("screens.pair"),
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
             }}
@@ -143,7 +142,7 @@ export default function RootLayout() {
             name="list-options"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
             }}
@@ -152,16 +151,34 @@ export default function RootLayout() {
             name="issue-filters"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
+            }}
+          />
+          <Stack.Screen
+            name="issue-labels"
+            options={{
+              headerShown: false,
+              presentation: "formSheet",
+              sheetAllowedDetents: [0.6, 1],
+              sheetGrabberVisible: true,
+            }}
+          />
+          <Stack.Screen
+            name="edit-issue/[hostId]/[issueId]"
+            options={{
+              title: t("screens.editIssue"),
+              presentation: "modal",
+              headerStyle: { backgroundColor: colors.background },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen
             name="session-config/[hostId]/[sessionId]"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
             }}
@@ -179,7 +196,7 @@ export default function RootLayout() {
             name="new-session/config"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
             }}

@@ -3,10 +3,14 @@ import { useSyncExternalStore } from "react";
 import { Appearance } from "react-native";
 import {
   type AppearancePreference,
+  CODE_SCALE,
+  type CodeSize,
   type LanguagePreference,
   type Preferences,
   parsePreferences,
   resolveColorScheme,
+  TEXT_SCALE,
+  type TextSize,
 } from "./preferences";
 
 const file = new File(Paths.document, "preferences.json");
@@ -55,6 +59,32 @@ export function setAppearance(appearance: AppearancePreference) {
 export function setLanguage(language: LanguagePreference) {
   if (language === current.language) return;
   update({ ...current, language });
+}
+
+export function setTextSize(textSize: TextSize) {
+  if (textSize === current.textSize) return;
+  update({ ...current, textSize });
+}
+
+export function setCodeSize(codeSize: CodeSize) {
+  if (codeSize === current.codeSize) return;
+  update({ ...current, codeSize });
+}
+
+function currentTextScale() {
+  return TEXT_SCALE[current.textSize];
+}
+
+function currentCodeScale() {
+  return CODE_SCALE[current.codeSize];
+}
+
+export function useTextScale() {
+  return useSyncExternalStore(subscribePreferences, currentTextScale);
+}
+
+export function useCodeScale() {
+  return useSyncExternalStore(subscribePreferences, currentCodeScale);
 }
 
 export function usePreferences() {

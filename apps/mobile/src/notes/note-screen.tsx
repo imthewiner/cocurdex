@@ -160,7 +160,10 @@ export function NoteScreen({
   const saveLabel = useSaveLabel(doc.status, shown?.updatedAt);
   const settled = useTransitionSettled();
   const [focused, setFocused] = useState(false);
+  const [editing, setEditing] = useState(created);
   const links = useNoteLinks(host.hostId, noteId);
+  const interactive = host.scopes.includes("interact");
+  const ready = settled && doc.loaded && shown !== undefined;
 
   const content = noteContent();
   return (
@@ -174,6 +177,15 @@ export function NoteScreen({
             label: links.label,
             hidden: focused || links.empty,
             onPress: links.open,
+          },
+          {
+            key: "edit",
+            icon: editing
+              ? { ios: "checkmark", android: "check" }
+              : { ios: "pencil", android: "edit" },
+            label: editing ? t("editor.finishEditing") : t("editor.edit"),
+            hidden: !interactive || !ready,
+            onPress: () => setEditing(!editing),
           },
         ]}
       />
@@ -212,7 +224,8 @@ export function NoteScreen({
         session={doc.session}
         title={shown.title}
         meta={meta}
-        editable={host.scopes.includes("interact")}
+        editable={interactive && editing}
+        interactive={interactive}
         focusTitle={created}
         onTitle={doc.setTitle}
         onProperties={properties.open}

@@ -2,10 +2,11 @@ import type { JumpButtonKind } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
-import { space, useThemeColors } from "@/theme";
+import { space, useThemeColors, useThemeName } from "@/theme";
 
 const SIZE = 40;
 const DOT = 10;
+const FILL = { light: "#e5e5e5", dark: "#333333" } as const;
 
 export function JumpButton({
   target,
@@ -18,6 +19,7 @@ export function JumpButton({
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const fill = FILL[useThemeName()];
   const latest = target === "latest";
   return (
     <View pointerEvents="box-none" style={styles.slot}>
@@ -31,11 +33,7 @@ export function JumpButton({
         onPress={onPress}
         style={({ pressed }) => [
           styles.button,
-          {
-            backgroundColor: colors.popover,
-            borderColor: colors.border,
-            shadowColor: colors.foreground,
-          },
+          { backgroundColor: fill },
           pressed && styles.pressed,
         ]}
       >
@@ -52,7 +50,7 @@ export function JumpButton({
           <View
             style={[
               styles.dot,
-              { backgroundColor: colors.tint, borderColor: colors.popover },
+              { backgroundColor: colors.tint, borderColor: fill },
             ]}
           />
         ) : null}
@@ -73,13 +71,8 @@ const styles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
   pressed: { opacity: 0.6 },
   dot: {

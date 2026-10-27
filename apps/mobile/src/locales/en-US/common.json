@@ -48,6 +48,8 @@
   "screens": {
     "archived": "Archived Sessions",
     "computers": "Computers",
+    "editIssue": "Edit Issue",
+    "fontSize": "Text Size",
     "issues": "Issues",
     "language": "Language",
     "newIssue": "New Issue",

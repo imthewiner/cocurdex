@@ -10,11 +10,12 @@ import {
   Form,
   FormRow,
   FormSection,
-  FormText,
+  HeaderButtons,
   ListNotice,
   PendingIndicator,
   useTransitionSettled,
 } from "@/ui";
+import { IssueProperties } from "./issue-properties";
 import { useIssueDetail, useIssueView } from "./issue-queries";
 import { IssueStatusMark } from "./issue-status-mark";
 
@@ -78,13 +79,6 @@ export function IssueScreen({
 
   const children = detail.data?.children ?? [];
   const sessions = detail.data?.sessions ?? [];
-  const status = view?.statusOptions.find((entry) => entry.id === issue.status);
-  const priority = view?.priorityOptions.find(
-    (entry) => entry.id === issue.priority,
-  );
-  const labels = issue.labelIds.flatMap(
-    (id) => view?.labels.find((label) => label.id === id)?.name ?? [],
-  );
   const doneChildren = children.filter(
     (child) => child.statusCategory === "completed",
   ).length;
@@ -93,6 +87,21 @@ export function IssueScreen({
   return (
     <>
       <Stack.Screen options={{ title: issue.identifier }} />
+      <HeaderButtons
+        items={[
+          {
+            key: "edit",
+            icon: { ios: "pencil", android: "edit" },
+            label: t("edit.action"),
+            hidden: !host.scopes.includes("interact") || !detail.data,
+            onPress: () =>
+              router.push({
+                pathname: "/edit-issue/[hostId]/[issueId]",
+                params: { hostId: host.hostId, issueId: issue.id },
+              }),
+          },
+        ]}
+      />
       <Form>
         <FormSection
           header={
@@ -114,37 +123,7 @@ export function IssueScreen({
             </View>
           }
         >
-          <FormRow
-            leading={
-              <IssueStatusMark
-                category={issue.statusCategory}
-                label={status?.title ?? issue.status}
-              />
-            }
-            trailing={
-              <FormText tone="muted">{status?.title ?? issue.status}</FormText>
-            }
-          >
-            {t("field.status")}
-          </FormRow>
-          <FormRow
-            trailing={
-              <FormText tone="muted">
-                {priority?.title ?? issue.priority}
-              </FormText>
-            }
-          >
-            {t("field.priority")}
-          </FormRow>
-          <FormRow
-            trailing={
-              <FormText tone="muted">
-                {labels.length > 0 ? labels.join(", ") : t("field.none")}
-              </FormText>
-            }
-          >
-            {t("field.labels")}
-          </FormRow>
+          <IssueProperties host={host} issue={issue} view={view ?? undefined} />
         </FormSection>
         {sessions.length > 0 ? (
           <FormSection title={t("sessions")}>

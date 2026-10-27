@@ -3,7 +3,9 @@ import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
   type JumpState,
+  latestJumpLead,
   nextJumpState,
+  oldestJumpLead,
   promptOutline,
 } from "@cocurdex/mobile/internal/session-detail/transcript-jump";
 import { describe, expect, it } from "vitest";
@@ -82,5 +84,43 @@ describe("promptOutline", () => {
       { id: "u1", text: "Review totals", index: 0 },
       { id: "u2", text: "Ship it", index: 2 },
     ]);
+  });
+});
+
+describe("jump leads", () => {
+  const viewport = 800;
+
+  it("jumps within one screen of the latest before animating", () => {
+    expect(
+      latestJumpLead({
+        offset: 5000,
+        contentHeight: 9000,
+        viewportHeight: viewport,
+      }),
+    ).toBe(800);
+    expect(
+      latestJumpLead({
+        offset: 600,
+        contentHeight: 9000,
+        viewportHeight: viewport,
+      }),
+    ).toBeNull();
+  });
+
+  it("jumps within one screen of the oldest before animating", () => {
+    expect(
+      oldestJumpLead({
+        offset: 100,
+        contentHeight: 9000,
+        viewportHeight: viewport,
+      }),
+    ).toBe(7400);
+    expect(
+      oldestJumpLead({
+        offset: 7800,
+        contentHeight: 9000,
+        viewportHeight: viewport,
+      }),
+    ).toBeNull();
   });
 });

@@ -7,6 +7,12 @@
     "submit": "Create",
     "titlePlaceholder": "Issue title"
   },
+  "edit": {
+    "action": "Edit",
+    "failed": "Couldn't save. The issue may have changed elsewhere; reopen it and try again.",
+    "save": "Save",
+    "saving": "Saving…"
+  },
   "empty": {
     "description": "Issues you track on {{host}} appear here.",
     "title": "No Issues"
@@ -27,6 +33,9 @@
     "remove": "Remove filter {{label}}",
     "title": "Filter"
   },
+  "labels": {
+    "empty": "No labels yet"
+  },
   "missing": "This issue was deleted on the computer.",
   "move": {
     "action": "Move",
@@ -41,5 +50,8 @@
     "retry": "Try Again",
     "title": "Couldn’t load issues from {{host}}"
   },
-  "untitledSession": "Untitled session"
+  "untitledSession": "Untitled session",
+  "update": {
+    "failed": "Couldn't update the issue. Check the connection and try again."
+  }
 }

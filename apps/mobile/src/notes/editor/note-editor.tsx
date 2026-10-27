@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, PixelRatio, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { useOpenLink } from "@/markdown";
+import { useTextScale } from "@/preferences";
 import { type ThemeColors, useThemeColors } from "@/theme";
 import { useBottomKeyboardOverlap, useOptionSheet } from "@/ui";
 import type { NoteDocSession } from "./note-doc-session";
@@ -50,7 +51,7 @@ const INSERT_CHOICES: readonly InsertChoice[] = [
   { name: "insert", kind: "table" },
 ];
 
-function editorTheme(colors: ThemeColors) {
+function editorTheme(colors: ThemeColors, textScale: number) {
   return {
     colors: {
       background: colors.background,
@@ -61,7 +62,7 @@ function editorTheme(colors: ThemeColors) {
       tint: colors.tint,
       "brand-mark": colors.brandMark,
     },
-    fontScale: PixelRatio.getFontScale(),
+    fontScale: PixelRatio.getFontScale() * textScale,
   };
 }
 
@@ -76,6 +77,7 @@ export function NoteEditor({
   meta,
   focusTitle,
   editable,
+  interactive,
   onTitle,
   onProperties,
   onFocusChange,
@@ -86,6 +88,7 @@ export function NoteEditor({
   meta: string;
   focusTitle: boolean;
   editable: boolean;
+  interactive: boolean;
   onTitle(title: string): void;
   onProperties(): void;
   onFocusChange(focused: boolean): void;
@@ -100,6 +103,11 @@ export function NoteEditor({
   const optionSheet = useOptionSheet();
   const webView = useRef<EditorWebView | null>(null);
   const sentMeta = useRef(meta);
+  const sentEditable = useRef(editable);
+  const textScale = useTextScale();
+  const theme = editorTheme(colors, textScale);
+  const sentTheme = useRef<string | null>(null);
+  const themeKey = JSON.stringify(theme);
   const [focused, setFocused] = useState(false);
   const [format, setFormat] = useState<NoteEditorFormatState | null>(null);
 
@@ -107,6 +115,16 @@ export function NoteEditor({
     webView.current?.injectJavaScript(noteEditorScript(message));
   const run = (command: NoteEditorCommand) =>
     send({ type: "command", command });
+
+  if (sentTheme.current !== null && sentTheme.current !== themeKey) {
+    sentTheme.current = themeKey;
+    send({ type: "theme", theme });
+  }
+
+  if (sentEditable.current !== editable) {
+    sentEditable.current = editable;
+    send({ type: "editable", editable });
+  }
 
   if (sentMeta.current !== meta) {
     sentMeta.current = meta;
@@ -161,7 +179,8 @@ export function NoteEditor({
     if (!message) return;
     switch (message.type) {
       case "ready":
-        if (focusTitle && editable) webView.current?.requestFocus();
+        if (focusTitle && sentEditable.current) webView.current?.requestFocus();
+        sentTheme.current = themeKey;
         send({
           type: "init",
           state: session.state(),
@@ -169,9 +188,10 @@ export function NoteEditor({
           meta: sentMeta.current,
           titlePlaceholder: t("editor.titlePlaceholder"),
           bodyPlaceholder: t("editor.bodyPlaceholder"),
-          theme: editorTheme(colors),
+          theme,
           focusTitle,
-          editable,
+          editable: sentEditable.current,
+          interactive,
         });
         return;
       case "update":

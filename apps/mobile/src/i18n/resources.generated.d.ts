@@ -50,6 +50,8 @@ export default interface Resources {
     screens: {
       archived: "Archived Sessions";
       computers: "Computers";
+      editIssue: "Edit Issue";
+      fontSize: "Text Size";
       issues: "Issues";
       language: "Language";
       newIssue: "New Issue";
@@ -171,6 +173,12 @@ export default interface Resources {
       submit: "Create";
       titlePlaceholder: "Issue title";
     };
+    edit: {
+      action: "Edit";
+      failed: "Couldn't save. The issue may have changed elsewhere; reopen it and try again.";
+      save: "Save";
+      saving: "Saving…";
+    };
     empty: {
       description: "Issues you track on {{host}} appear here.";
       title: "No Issues";
@@ -191,6 +199,9 @@ export default interface Resources {
       remove: "Remove filter {{label}}";
       title: "Filter";
     };
+    labels: {
+      empty: "No labels yet";
+    };
     missing: "This issue was deleted on the computer.";
     move: {
       action: "Move";
@@ -206,6 +217,9 @@ export default interface Resources {
       title: "Couldn’t load issues from {{host}}";
     };
     untitledSession: "Untitled session";
+    update: {
+      failed: "Couldn't update the issue. Check the connection and try again.";
+    };
   };
   notes: {
     create: {
@@ -222,6 +236,8 @@ export default interface Resources {
         paragraph: "Body";
       };
       bodyPlaceholder: "Write something, or type / to insert headings, lists, and to-dos";
+      edit: "Edit";
+      finishEditing: "Done Editing";
       format: {
         bold: "Bold";
         bulletList: "Bulleted List";
@@ -600,6 +616,16 @@ export default interface Resources {
       title: "Appearance";
     };
     computers: "Computers";
+    fontSize: {
+      code: "Code";
+      default: "Default";
+      large: "Large";
+      preview: "Agents read the repo, run the tests, and report back in plain language.\n\n```ts\nconst total = cart.items.reduce((sum, item) => sum + item.cents, 0);\n```";
+      small: "Small";
+      text: "Text";
+      title: "Text Size";
+      xlarge: "Extra Large";
+    };
     language: {
       names: {
         enUS: "English";

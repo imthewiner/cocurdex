@@ -43,6 +43,8 @@
   "screens": {
     "archived": "已归档会话",
     "computers": "电脑",
+    "editIssue": "编辑 issue",
+    "fontSize": "字号",
     "issues": "Issues",
     "language": "语言",
     "newIssue": "新建 issue",
