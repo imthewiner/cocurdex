@@ -37,6 +37,10 @@ export default interface Resources {
       diagram: "Diagram";
       openDiagram: "Open full screen";
     };
+    optionSearch: {
+      empty: "No matches";
+      placeholder: "Search";
+    };
     screens: {
       archived: "Archived Sessions";
       computers: "Computers";

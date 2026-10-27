@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ListSheet, type ListSheetItem } from "./list-sheet";
 
 const SCROLL_AFTER_ITEMS = 6;
+const SEARCH_AFTER_ITEMS = 10;
 
 export interface OptionSheetRequest {
   title: string;
@@ -33,6 +34,7 @@ export function useOptionSheet() {
       subtitle={request?.subtitle}
       items={items}
       scrollable={items.length > SCROLL_AFTER_ITEMS}
+      searchable={items.length > SEARCH_AFTER_ITEMS}
       onDismiss={close}
     />
   );

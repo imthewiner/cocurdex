@@ -41,6 +41,7 @@ export function ConfigOptionRows({
       {options.map((option) => (
         <ChoiceRow
           open={open}
+          unsetLabel={t("runtime.default")}
           key={option.id}
           title={option.name}
           testIDPrefix={`session-config-option-${option.id}`}

@@ -22,12 +22,14 @@ export function ChoiceRow({
   testIDPrefix,
   choices,
   open,
+  unsetLabel,
   disabled = false,
 }: {
   title: string;
   testIDPrefix: string;
   choices: readonly RuntimeChoice[];
   open: OpenOptionSheet;
+  unsetLabel: string;
   disabled?: boolean;
 }) {
   const selected = choices.find((choice) => choice.selected);
@@ -35,7 +37,7 @@ export function ChoiceRow({
     <ValueFormRow
       testID={testIDPrefix}
       label={title}
-      value={selected?.label ?? ""}
+      value={selected?.label ?? unsetLabel}
       onPress={() =>
         open({
           title,
@@ -69,6 +71,7 @@ export function RuntimeRows({
       {thinking ? (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.thinking}
           testIDPrefix="runtime-thinking"
           choices={thinking.options.map((option) => ({
@@ -83,6 +86,7 @@ export function RuntimeRows({
       {effort ? (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.thinking}
           testIDPrefix="runtime-effort"
           choices={effort.options.map((option) => ({
@@ -97,6 +101,7 @@ export function RuntimeRows({
       {speed ? (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.speed}
           testIDPrefix="runtime-speed"
           choices={[
@@ -119,6 +124,7 @@ export function RuntimeRows({
       {fastMode === null ? null : (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.fastMode}
           testIDPrefix="runtime-fast"
           choices={[true, false].map((on) => ({
@@ -132,6 +138,7 @@ export function RuntimeRows({
       {openCode && openCode.agents.length > 0 ? (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.openCodeAgent}
           testIDPrefix="runtime-opencode-agent"
           choices={openCode.agents.map((agent) => ({
@@ -145,6 +152,7 @@ export function RuntimeRows({
       {openCode && openCode.variants.length > 0 ? (
         <ChoiceRow
           open={open}
+          unsetLabel={labels.defaultValue}
           title={labels.openCodeVariant}
           testIDPrefix="runtime-opencode-variant"
           choices={[

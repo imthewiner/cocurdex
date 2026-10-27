@@ -611,10 +611,19 @@ appId: dev.cocurdex.mobile
 - runFlow:
     when:
       platform: Android
-      visible: ${SEARCH_QUERY}
     commands:
-      - tapOn: ${SEARCH_QUERY}
-      - eraseText: 40
+      - repeat:
+          while:
+            visible:
+              id: ".*search_close_btn"
+          times: 2
+          commands:
+            - tapOn:
+                id: ".*search_close_btn"
+      - extendedWaitUntil:
+          visible:
+            id: "host-switcher"
+          timeout: 5000
 - extendedWaitUntil:
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
@@ -859,8 +868,9 @@ appId: dev.cocurdex.mobile
       platform: Android
     commands:
       - assertVisible:
-          id: "host-switcher"
-          text: ".*${RENAMED_COMPUTER}.*"
+          text: "${RENAMED_COMPUTER}"
+          childOf:
+            id: "host-switcher"
       - tapOn:
           id: "host-switcher"
 - extendedWaitUntil:

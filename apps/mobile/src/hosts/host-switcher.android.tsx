@@ -6,6 +6,7 @@ import {
   testID,
   weight,
   width,
+  wrapContentWidth,
 } from "@expo/ui/jetpack-compose/modifiers";
 import { Stack } from "expo-router";
 import { useState } from "react";
@@ -15,8 +16,7 @@ import { useThemeColors } from "@/theme";
 import { BrandHost } from "@/ui";
 import { HostSwitcherSheet } from "./host-switcher-sheet";
 
-const TITLE_INSET = 12;
-const TITLE_PADDING = { start: TITLE_INSET, end: 4 };
+const TITLE_PADDING = { start: 10, end: 3 };
 const TOOLBAR_INSETS = 16 + 4;
 const TRAILING_ACTIONS = 3;
 const ACTION_WIDTH = 48;
@@ -45,16 +45,13 @@ export function HostSwitcher({
         <Stack.Toolbar.View>
           <BrandHost
             matchContents={{ vertical: true }}
-            style={{
-              width: switcherMaxWidth(windowWidth),
-              transform: [{ translateX: -TITLE_INSET }],
-            }}
+            style={{ width: switcherMaxWidth(windowWidth) }}
           >
             <TextButton
               onClick={() => setPresented(true)}
               colors={{ contentColor: colors.foreground }}
               contentPadding={TITLE_PADDING}
-              modifiers={[testID("host-switcher")]}
+              modifiers={[wrapContentWidth("start"), testID("host-switcher")]}
             >
               <Row
                 verticalAlignment="center"

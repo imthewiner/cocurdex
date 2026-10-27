@@ -34,6 +34,7 @@ export default function RootLayout() {
           screenOptions={{
             statusBarStyle: scheme === "dark" ? "light" : "dark",
             headerTitleAlign: "center",
+            headerTintColor: colors.foreground,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

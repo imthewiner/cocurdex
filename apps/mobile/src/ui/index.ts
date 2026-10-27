@@ -29,6 +29,7 @@ export {
 } from "./row-accessory";
 export { useScrollIndicatorWhileScrolling } from "./scroll-indicator-while-scrolling";
 export { SheetAction } from "./sheet-action";
+export { useSheetStackOptions } from "./sheet-stack-options";
 export { ShimmerText } from "./shimmer-text";
 export { useTransitionSettled } from "./transition-settled";
 export { useAgeLabel } from "./use-age-label";

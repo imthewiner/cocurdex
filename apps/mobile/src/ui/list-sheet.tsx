@@ -6,10 +6,13 @@ import {
   type IconName,
   ScrollView,
   Text,
+  TextInput,
 } from "@expo/ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
 import { space, useThemeColors } from "@/theme";
+import { matchesQuery } from "./option-query";
 import { SheetRow } from "./sheet-row";
 
 const TITLE_INSET = Platform.OS === "android" ? 16 : 0;
@@ -34,6 +37,7 @@ export function ListSheet({
   onDismiss,
   testID,
   scrollable = false,
+  searchable = false,
 }: {
   presented: boolean;
   title: string;
@@ -43,9 +47,19 @@ export function ListSheet({
   onDismiss(): void;
   testID?: string;
   scrollable?: boolean;
+  searchable?: boolean;
 }) {
+  const { t } = useTranslation("common");
   const colors = useThemeColors();
-  const rows = items.map((item) => {
+  const [query, setQuery] = useState("");
+  const dismiss = () => {
+    setQuery("");
+    onDismiss();
+  };
+  const shown = searchable
+    ? items.filter((item) => matchesQuery(item, query))
+    : items;
+  const rows = shown.map((item) => {
     const color = item.destructive ? colors.destructive : colors.foreground;
     const iconColor = item.destructive
       ? colors.destructive
@@ -78,7 +92,7 @@ export function ListSheet({
   return (
     <BottomSheet
       isPresented={presented}
-      onDismiss={onDismiss}
+      onDismiss={dismiss}
       containerColor={colors.popover}
       testID={testID}
       snapPoints={scrollable ? ["half", "full"] : undefined}
@@ -104,6 +118,37 @@ export function ListSheet({
             </Text>
           ) : null}
         </Column>
+        {searchable ? (
+          <Column style={{ paddingHorizontal: TITLE_INSET }}>
+            <TextInput
+              testID={testID ? `${testID}-search` : "list-sheet-search"}
+              placeholder={t("optionSearch.placeholder")}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              onChangeText={setQuery}
+              placeholderTextColor={colors.mutedForeground}
+              cursorColor={colors.tint}
+              style={{
+                backgroundColor: colors.muted,
+                borderRadius: 10,
+                paddingHorizontal: space.md,
+                paddingVertical: space.sm,
+              }}
+            />
+          </Column>
+        ) : null}
+        {searchable && shown.length === 0 ? (
+          <Text
+            textStyle={{ color: colors.mutedForeground, fontSize: 15 }}
+            style={{
+              paddingHorizontal: TITLE_INSET,
+              paddingVertical: space.md,
+            }}
+          >
+            {t("optionSearch.empty")}
+          </Text>
+        ) : null}
         {scrollable ? (
           <ScrollView>
             <Column spacing={space.xs}>{rows}</Column>

@@ -1,0 +1,18 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt
+index 68b8d852b8433a05e02372356d00a10530ccb8c9..e5bbeda6800626af630d0f65df22edb8c99d21b1 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt
+@@ -371,7 +371,12 @@ class ScreenStackHeaderConfig(
+                         ?: throw JSApplicationIllegalArgumentException(
+                             "Back button header config view should have Image as first child",
+                         )
+-                newActionBar.setHomeAsUpIndicator(firstChild.drawable)
++                val backDrawable = firstChild.drawable?.mutate()
++                if (tintColor != 0) {
++                    backDrawable?.colorFilter =
++                        PorterDuffColorFilter(tintColor, PorterDuff.Mode.SRC_ATOP)
++                }
++                newActionBar.setHomeAsUpIndicator(backDrawable)
+                 i++
+                 continue
+             }
