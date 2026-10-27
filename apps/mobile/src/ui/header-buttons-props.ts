@@ -7,7 +7,6 @@ export interface HeaderButtonItem {
   onPress(): void;
   hidden?: boolean;
   disabled?: boolean;
-  done?: boolean;
 }
 
 export interface HeaderButtonsProps {

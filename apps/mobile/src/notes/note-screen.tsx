@@ -2,9 +2,9 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import type { NoteSummary } from "@cocurdex/shared";
 import { Stack } from "expo-router";
 import type { ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 import { hostConnection } from "@/connection";
 import { useLinkedEntityRows } from "@/entity-links";
 import { useHostSessions } from "@/sessions";
@@ -160,7 +160,6 @@ export function NoteScreen({
   const saveLabel = useSaveLabel(doc.status, shown?.updatedAt);
   const settled = useTransitionSettled();
   const [focused, setFocused] = useState(false);
-  const blur = useRef<(() => void) | null>(null);
   const links = useNoteLinks(host.hostId, noteId);
 
   const content = noteContent();
@@ -169,13 +168,6 @@ export function NoteScreen({
       <Stack.Screen options={{ title: "" }} />
       <HeaderButtons
         items={[
-          {
-            key: "done",
-            icon: { ios: "checkmark", android: "check" },
-            label: t("editor.done"),
-            hidden: !focused,
-            onPress: () => blur.current?.(),
-          },
           {
             key: "links",
             icon: { ios: "link", android: "link" },
@@ -225,7 +217,6 @@ export function NoteScreen({
         onTitle={doc.setTitle}
         onProperties={properties.open}
         onFocusChange={setFocused}
-        blurRef={blur}
       />
     );
   }

@@ -6,7 +6,6 @@ export function SheetAction({ label, disabled, onPress }: SheetActionProps) {
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.Button
         icon="checkmark"
-        variant="done"
         accessibilityLabel={label}
         disabled={disabled}
         onPress={onPress}

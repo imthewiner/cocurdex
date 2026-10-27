@@ -214,7 +214,6 @@ export default interface Resources {
         paragraph: "Body";
       };
       bodyPlaceholder: "Write something, or type / to insert headings, lists, and to-dos";
-      done: "Done";
       format: {
         bold: "Bold";
         bulletList: "Bulleted List";

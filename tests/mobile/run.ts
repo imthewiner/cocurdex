@@ -153,7 +153,6 @@ function flowLabels(locale: SupportedLocale) {
     NEW_ISSUE_SUBMIT: issues.create.submit,
     RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,
-    NOTE_DONE: notes.editor.done,
     DEFAULT_NOTE_TITLE: "Untitled",
     ARCHIVE_ACTION: sessions.actions.archive,
     SESSION_CONFIG_CLOSE: sessions.sessionConfig.close,

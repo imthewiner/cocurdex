@@ -7,7 +7,7 @@ export function SheetAction({ label, disabled, onPress }: SheetActionProps) {
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.View>
         <CircleButton
-          prominent
+          tonal
           icon={{ ios: "checkmark", android: "check" }}
           label={label}
           disabled={disabled}

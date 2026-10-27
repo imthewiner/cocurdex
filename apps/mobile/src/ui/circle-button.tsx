@@ -1,6 +1,6 @@
 import { type AndroidSymbol, type SFSymbol, SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
-import { type ThemeColors, useThemeColors, useThemeName } from "@/theme";
+import { useThemeColors, useThemeName } from "@/theme";
 
 const TONAL_FILL = {
   light: "rgba(0, 0, 0, 0.06)",
@@ -9,22 +9,12 @@ const TONAL_FILL = {
 
 const SIZE = 44;
 
-function iconColor(
-  colors: ThemeColors,
-  { filled, prominent }: { filled: boolean; prominent: boolean },
-) {
-  if (filled) return colors.background;
-  if (prominent) return colors.mutedForeground;
-  return colors.foreground;
-}
-
 export function CircleButton({
   icon,
   label,
   onPress,
   badge = false,
   disabled = false,
-  prominent = false,
   tonal = false,
   testID,
 }: {
@@ -33,14 +23,11 @@ export function CircleButton({
   onPress(): void;
   badge?: boolean;
   disabled?: boolean;
-  prominent?: boolean;
   tonal?: boolean;
   testID?: string;
 }) {
   const colors = useThemeColors();
   const scheme = useThemeName();
-  const filled = prominent && !disabled;
-  const tint = iconColor(colors, { filled, prominent });
   return (
     <Pressable
       accessibilityRole="button"
@@ -51,14 +38,13 @@ export function CircleButton({
       android_ripple={{ color: colors.muted, borderless: true }}
       style={({ pressed }) => [
         styles.button,
-        (tonal || prominent) && { backgroundColor: TONAL_FILL[scheme] },
-        filled && { backgroundColor: colors.foreground },
-        pressed && !filled && { opacity: 0.7 },
-        disabled && !prominent && styles.disabled,
+        tonal && { backgroundColor: TONAL_FILL[scheme] },
+        pressed && { opacity: 0.7 },
+        disabled && styles.disabled,
       ]}
       testID={testID}
     >
-      <SymbolView name={icon} size={22} tintColor={tint} />
+      <SymbolView name={icon} size={22} tintColor={colors.foreground} />
       {badge ? (
         <View style={[styles.badge, { backgroundColor: colors.tint }]} />
       ) : null}

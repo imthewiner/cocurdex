@@ -1,6 +1,4 @@
-import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { HeaderButtons, useOptionSheet } from "@/ui";
 import type { CondensedItem } from "./transcript-activity";
 import { promptOutline } from "./transcript-jump";

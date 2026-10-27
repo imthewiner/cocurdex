@@ -79,7 +79,6 @@ export function NoteEditor({
   onTitle,
   onProperties,
   onFocusChange,
-  blurRef,
 }: {
   hostId: string;
   session: NoteDocSession;
@@ -90,7 +89,6 @@ export function NoteEditor({
   onTitle(title: string): void;
   onProperties(): void;
   onFocusChange(focused: boolean): void;
-  blurRef: { current: (() => void) | null };
 }) {
   const { t } = useTranslation("notes");
   const colors = useThemeColors();
@@ -109,7 +107,6 @@ export function NoteEditor({
     webView.current?.injectJavaScript(noteEditorScript(message));
   const run = (command: NoteEditorCommand) =>
     send({ type: "command", command });
-  blurRef.current = () => run({ name: "blur" });
 
   if (sentMeta.current !== meta) {
     sentMeta.current = meta;

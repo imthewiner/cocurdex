@@ -8,7 +8,6 @@ export function HeaderButtons({ items }: HeaderButtonsProps) {
         <Stack.Toolbar.Button
           key={item.key}
           icon={item.icon.ios}
-          variant={item.done ? "done" : undefined}
           accessibilityLabel={item.label}
           hidden={item.hidden}
           disabled={item.disabled}

@@ -1,12 +1,10 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { pathBaseName, workspaceImageMimeType } from "@cocurdex/shared";
 import * as Clipboard from "expo-clipboard";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,

@@ -13,8 +13,7 @@ export function HeaderButtons({ items }: HeaderButtonsProps) {
           {shown.map((item) => (
             <CircleButton
               key={item.key}
-              tonal={!item.done}
-              prominent={item.done}
+              tonal
               icon={item.icon}
               label={item.label}
               disabled={item.disabled}
