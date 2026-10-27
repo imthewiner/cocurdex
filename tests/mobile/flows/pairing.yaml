@@ -34,6 +34,11 @@ appId: dev.cocurdex.mobile
 - tapOn:
     id: "pairing-link"
 - inputText: ${PAIRING_LINK}
+- extendedWaitUntil:
+    visible:
+      id: "pairing-link"
+      text: ${PAIRING_LINK}
+    timeout: 10000
 - takeScreenshot: pairing-sheet
 - extendedWaitUntil:
     visible:
@@ -56,12 +61,15 @@ appId: dev.cocurdex.mobile
           timeout: 5000
 - waitForAnimationToEnd
 - takeScreenshot: list-options
-- tapOn:
-    id: list-option-grouping
-- extendedWaitUntil:
-    visible:
-      id: list-choice-none
-    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: list-option-grouping
+      - extendedWaitUntil:
+          visible:
+            id: list-choice-none
+          timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -72,12 +80,15 @@ appId: dev.cocurdex.mobile
           visible:
             id: list-option-grouping
           timeout: 5000
-- tapOn:
-    id: list-option-grouping
-- extendedWaitUntil:
-    visible:
-      id: list-choice-workspace
-    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: list-option-grouping
+      - extendedWaitUntil:
+          visible:
+            id: list-choice-workspace
+          timeout: 5000
 - retry:
     maxRetries: 2
     commands:
@@ -500,6 +511,8 @@ appId: dev.cocurdex.mobile
     element:
       id: "new-session-role-${ROLE_ID}"
     timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: role-sheet
 - tapOn:
     id: "new-session-role-${ROLE_ID}"
 - extendedWaitUntil:
@@ -588,6 +601,23 @@ appId: dev.cocurdex.mobile
 - assertNotVisible: ${TAB_COMPUTERS}
 - waitForAnimationToEnd
 - takeScreenshot: session-detail
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${PROMPTS_ACTION}
+      - extendedWaitUntil:
+          visible:
+            id: "transcript-prompt-${SEARCHED_SESSION_FIRST_PROMPT_ID}"
+          timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: prompt-outline
+- tapOn:
+    id: "transcript-prompt-${SEARCHED_SESSION_FIRST_PROMPT_ID}"
+- extendedWaitUntil:
+    visible: ${SEARCHED_SESSION_FIRST_PROMPT}
+    timeout: 5000
+- assertNotVisible:
+    id: "transcript-prompt-${SEARCHED_SESSION_FIRST_PROMPT_ID}"
 - runFlow:
     when:
       platform: iOS
@@ -709,6 +739,57 @@ appId: dev.cocurdex.mobile
       - back
 - extendedWaitUntil:
     visible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 5000
+- tapOn: ${SHOW_BOARD}
+- extendedWaitUntil:
+    visible:
+      id: issue-column-doing
+    timeout: 10000
+- assertVisible: ${IN_PROGRESS_ISSUE_TITLE}
+- waitForAnimationToEnd
+- takeScreenshot: issue-board
+- longPressOn: ${IN_PROGRESS_ISSUE_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: issue-move-done
+    timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: issue-move
+- tapOn:
+    id: issue-move-done
+- extendedWaitUntil:
+    notVisible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: issue-column-done
+    direction: RIGHT
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 10000
+- longPressOn: ${IN_PROGRESS_ISSUE_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: issue-move-doing
+    timeout: 5000
+- tapOn:
+    id: issue-move-doing
+- extendedWaitUntil:
+    notVisible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: issue-column-doing
+    direction: LEFT
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ${IN_PROGRESS_ISSUE_TITLE}
+    timeout: 10000
+- tapOn: ${SHOW_LIST}
+- extendedWaitUntil:
+    notVisible:
+      id: issue-board
     timeout: 5000
 - retry:
     maxRetries: 2

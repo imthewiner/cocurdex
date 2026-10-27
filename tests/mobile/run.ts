@@ -58,6 +58,12 @@ function lastPrompt(id: string) {
   return prompt;
 }
 
+function firstTurn(id: string) {
+  const turn = fixtureSession(id).turns[0];
+  if (!turn) throw new Error(`Fixture session ${id} has no turns`);
+  return turn;
+}
+
 function fixtureIssue(title: string) {
   const issue = FIXTURE_ISSUES.find((candidate) => candidate.title === title);
   if (!issue) throw new Error(`Fixture issue ${title} is missing`);
@@ -112,6 +118,9 @@ function flowLabels(locale: SupportedLocale) {
     SEARCH_QUERY: "percentage",
     SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
     SEARCHED_SESSION_LAST_PROMPT: lastPrompt(SEARCHED_SESSION),
+    SEARCHED_SESSION_FIRST_PROMPT: firstTurn(SEARCHED_SESSION).prompt,
+    SEARCHED_SESSION_FIRST_PROMPT_ID: firstTurn(SEARCHED_SESSION).messageId,
+    PROMPTS_ACTION: sessions.detail.prompts,
     OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
     ROLE_ID: FIXTURE_ROLES[0].id,
     ROLE_NAME: FIXTURE_ROLES[0].name,
@@ -141,6 +150,8 @@ function flowLabels(locale: SupportedLocale) {
     NEW_SESSION_ACTION: sessions.newSession.open,
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_ISSUE_ACTION: issues.create.open,
+    SHOW_BOARD: issues.layout.showBoard,
+    SHOW_LIST: issues.layout.showList,
     NEW_ISSUE_SUBMIT: issues.create.submit,
     RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,

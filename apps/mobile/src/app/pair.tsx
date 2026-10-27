@@ -92,7 +92,10 @@ export default function PairScreen() {
               autoCorrect={false}
               autoFocus
               keyboardType="url"
-              onChangeText={setLink}
+              onChangeText={(value) => {
+                setLink(value);
+                setFailure(null);
+              }}
               onSubmitEditing={() => void pair()}
             />
           </FieldSection>
