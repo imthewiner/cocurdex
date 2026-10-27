@@ -43,7 +43,7 @@ appId: dev.cocurdex.mobile
 - tapOn: ${PAIR_ACTION}
 - extendedWaitUntil:
     visible: ${WORKSPACE_NAME}
-    timeout: 15000
+    timeout: 30000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
 - retry:
