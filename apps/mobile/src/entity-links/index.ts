@@ -1,4 +1,4 @@
 export {
-  LinkedEntitiesList,
   LinkedEntitiesSection,
+  useLinkedEntityRows,
 } from "./linked-entities";

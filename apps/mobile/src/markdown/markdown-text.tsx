@@ -137,7 +137,7 @@ function fileTargetOf(url: string, fileRoot: string | null | undefined) {
     : localFileLinkTarget(url, fileRoot);
 }
 
-function useOpenLink(
+export function useOpenLink(
   hostId: string | undefined,
   fileRoot: string | null | undefined,
 ) {

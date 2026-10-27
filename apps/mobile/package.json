@@ -17,7 +17,9 @@
     "i18n:lint": "i18next-cli lint --config ./i18next.config.ts",
     "i18n:types": "i18next-cli types --config ./i18next.config.ts",
     "generate:mermaid-runtime": "node scripts/build-mermaid-runtime.mjs",
-    "check:mermaid-runtime": "node scripts/build-mermaid-runtime.mjs --check"
+    "check:mermaid-runtime": "node scripts/build-mermaid-runtime.mjs --check",
+    "generate:note-editor-runtime": "node scripts/build-note-editor-runtime.mjs",
+    "check:note-editor-runtime": "node scripts/build-note-editor-runtime.mjs --check"
   },
   "dependencies": {
     "@cocurdex/client-runtime": "workspace:*",
@@ -59,9 +61,16 @@
     "react-native-worklets": "0.13.0",
     "remend": "^1.4.0",
     "shiki": "^4.5.0",
-    "swr": "^2.5.1"
+    "swr": "^2.5.1",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
+    "@cocurdex/note-doc": "workspace:*",
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-collaboration": "^3.32.0",
+    "@tiptap/extensions": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/y-tiptap": "^3.0.10",
     "@types/culori": "4.0.1",
     "@types/react": "~19.3.0",
     "culori": "4.0.2",
