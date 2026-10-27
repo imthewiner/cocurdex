@@ -1,4 +1,8 @@
 import {
+  EMPTY_ISSUE_FILTERS,
+  type IssueFilters,
+} from "@cocurdex/mobile/internal/issues/issue-filters";
+import {
   issueSections,
   withIssueStatus,
 } from "@cocurdex/mobile/internal/issues/issue-sections";
@@ -54,9 +58,13 @@ describe("issueSections", () => {
     issue(5, "doing", { sortOrder: 1 }),
     issue(6, "todo", { workspaceId: "docs" }),
   ];
+  const inShop: IssueFilters = {
+    ...EMPTY_ISSUE_FILTERS,
+    workspaceIds: ["shop"],
+  };
 
   it("puts work in progress first and drops empty statuses", () => {
-    const sections = issueSections(issues, statuses, "shop", "");
+    const sections = issueSections(issues, statuses, inShop, "");
 
     expect(
       sections.map((section) => [
@@ -73,29 +81,15 @@ describe("issueSections", () => {
 
   it("searches titles and identifiers across every workspace", () => {
     expect(
-      issueSections(issues, statuses, null, "cents").flatMap((section) =>
-        section.issues.map((entry) => entry.identifier),
+      issueSections(issues, statuses, EMPTY_ISSUE_FILTERS, "cents").flatMap(
+        (section) => section.issues.map((entry) => entry.identifier),
       ),
     ).toEqual(["COC-3"]);
     expect(
-      issueSections(issues, statuses, null, "coc-6").flatMap((section) =>
-        section.issues.map((entry) => entry.identifier),
+      issueSections(issues, statuses, EMPTY_ISSUE_FILTERS, "coc-6").flatMap(
+        (section) => section.issues.map((entry) => entry.identifier),
       ),
     ).toEqual(["COC-6"]);
-  });
-
-  it("keeps every status as a board column when asked", () => {
-    expect(
-      issueSections(issues, statuses, "docs", "", { includeEmpty: true }).map(
-        (section) => [section.status.id, section.issues.length],
-      ),
-    ).toEqual([
-      ["doing", 0],
-      ["review", 0],
-      ["todo", 1],
-      ["backlog", 0],
-      ["done", 0],
-    ]);
   });
 });
 

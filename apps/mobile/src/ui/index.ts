@@ -44,6 +44,7 @@ export {
 } from "./option-sheet";
 export { PendingIndicator } from "./pending-indicator";
 export {
+  Decorative,
   FolderIcon,
   RowValue,
   SelectedMark,

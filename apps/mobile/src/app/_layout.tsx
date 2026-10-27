@@ -149,6 +149,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="issue-filters"
+            options={{
+              headerShown: false,
+              presentation: SHEET_PRESENTATION,
+              sheetAllowedDetents: [0.6, 1],
+              sheetGrabberVisible: true,
+            }}
+          />
+          <Stack.Screen
             name="session-config/[hostId]/[sessionId]"
             options={{
               headerShown: false,

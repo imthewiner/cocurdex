@@ -19,5 +19,6 @@ export interface FormRowProps {
   trailing?: ReactNode;
   testID?: string;
   disabled?: boolean;
+  selected?: boolean;
   onPress?(): void;
 }

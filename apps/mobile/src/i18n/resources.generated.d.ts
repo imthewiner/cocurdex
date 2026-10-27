@@ -163,7 +163,6 @@ export default interface Resources {
     };
   };
   issues: {
-    allWorkspaces: "All Workspaces";
     create: {
       creating: "Creating…";
       descriptionPlaceholder: "Add a description";
@@ -182,6 +181,15 @@ export default interface Resources {
       priority: "Priority";
       status: "Status";
       workspace: "Workspace";
+    };
+    filter: {
+      any: "Any";
+      clear: "Clear filters";
+      close: "Close";
+      empty: "No issues match these filters";
+      noWorkspace: "No workspace";
+      remove: "Remove filter {{label}}";
+      title: "Filter";
     };
     missing: "This issue was deleted on the computer.";
     move: {

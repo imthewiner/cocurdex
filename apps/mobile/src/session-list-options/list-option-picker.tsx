@@ -44,6 +44,7 @@ function OptionSection({
         <FormRow
           key={option.key}
           testID={`list-choice-${option.key}`}
+          selected={option.selected}
           onPress={option.onPress}
           leading={option.leading}
           trailing={<SelectedMark selected={option.selected} />}

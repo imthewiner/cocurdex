@@ -5,7 +5,7 @@ import { space, useThemeColors } from "@/theme";
 import { formMetrics } from "./form-metrics";
 import { FormRow } from "./form-row";
 
-function Decorative({ children }: { children: ReactNode }) {
+export function Decorative({ children }: { children: ReactNode }) {
   return (
     <View
       accessibilityElementsHidden

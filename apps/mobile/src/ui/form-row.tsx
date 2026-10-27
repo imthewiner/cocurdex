@@ -12,6 +12,7 @@ export function FormRow({
   trailing,
   testID,
   disabled,
+  selected,
   onPress,
 }: FormRowProps) {
   const colors = useThemeColors();
@@ -21,6 +22,7 @@ export function FormRow({
       <Pressable
         testID={testID}
         accessibilityRole={pressable ? "button" : undefined}
+        accessibilityState={selected === undefined ? undefined : { selected }}
         disabled={!pressable}
         onPress={onPress}
         android_ripple={pressable ? { color: colors.muted } : undefined}

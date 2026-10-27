@@ -8,7 +8,12 @@ import {
   usePairingRoutes,
   useScopeGate,
 } from "@/hosts";
-import { IssueList, WorkspaceChips } from "@/issues";
+import {
+  IssueFilterChips,
+  IssueList,
+  singleWorkspaceFilter,
+  useIssueFilters,
+} from "@/issues";
 import { ListScreenHeader } from "@/ui";
 
 export default function IssuesScreen() {
@@ -31,7 +36,9 @@ function HostIssues({ host }: { host: SavedHost }) {
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const filters = useIssueFilters(host.hostId);
+  const workspaceId = singleWorkspaceFilter(filters);
+  const filtered = Object.values(filters).some((values) => values.length > 0);
 
   return (
     <>
@@ -39,6 +46,18 @@ function HostIssues({ host }: { host: SavedHost }) {
         title={t("common:screens.issues")}
         search={{ placeholder: t("search"), onQuery: setQuery }}
         actions={[
+          {
+            key: "filter",
+            icon: {
+              ios: filtered
+                ? "line.3.horizontal.decrease.circle.fill"
+                : "line.3.horizontal.decrease.circle",
+              android: "filter_list",
+            },
+            label: t("filter.title"),
+            badge: filtered,
+            onPress: () => router.push("/issue-filters"),
+          },
           {
             key: "new",
             icon: { ios: "plus", android: "add" },
@@ -56,15 +75,8 @@ function HostIssues({ host }: { host: SavedHost }) {
       />
       <IssueList
         host={host}
-        workspaceId={workspaceId}
         query={query}
-        header={
-          <WorkspaceChips
-            host={host}
-            workspaceId={workspaceId}
-            onChange={setWorkspaceId}
-          />
-        }
+        header={<IssueFilterChips host={host} />}
       />
     </>
   );

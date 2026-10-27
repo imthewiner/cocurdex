@@ -12,6 +12,8 @@ import {
   useScrollIndicatorWhileScrolling,
   useTabBarInset,
 } from "@/ui";
+import { setIssueFilters, useIssueFilters } from "./issue-filter-store";
+import { activeIssueFilterCount, EMPTY_ISSUE_FILTERS } from "./issue-filters";
 import { useIssueMove } from "./issue-move";
 import { useIssueView } from "./issue-queries";
 import { IssueRowView } from "./issue-row";
@@ -24,12 +26,10 @@ const COLLAPSED_BY_DEFAULT: ReadonlySet<IssueStatusCategory | null> = new Set([
 
 export function IssueList({
   host,
-  workspaceId,
   query,
   header,
 }: {
   host: SavedHost;
-  workspaceId: string | null;
   query: string;
   header?: ReactElement;
 }) {
@@ -41,31 +41,29 @@ export function IssueList({
   const data = view.data;
   const pull = usePullToRefresh(() => view.mutate());
   const issueMove = useIssueMove(host);
+  const filters = useIssueFilters(host.hostId);
   const [toggled, setToggled] = useState<ReadonlySet<string>>(new Set());
   const searching = query.trim() !== "";
   const sections = useMemo(
     () =>
       data
-        ? issueSections(
-            data.issues,
-            data.statusOptions,
-            workspaceId,
-            query,
-          ).map((section) => {
-            const collapsed =
-              !searching &&
-              COLLAPSED_BY_DEFAULT.has(section.status.category) !==
-                toggled.has(section.status.id);
-            return {
-              key: section.status.id,
-              status: section.status,
-              issues: section.issues,
-              collapsed,
-              data: collapsed ? [] : section.issues,
-            };
-          })
+        ? issueSections(data.issues, data.statusOptions, filters, query).map(
+            (section) => {
+              const collapsed =
+                !searching &&
+                COLLAPSED_BY_DEFAULT.has(section.status.category) !==
+                  toggled.has(section.status.id);
+              return {
+                key: section.status.id,
+                status: section.status,
+                issues: section.issues,
+                collapsed,
+                data: collapsed ? [] : section.issues,
+              };
+            },
+          )
         : [],
-    [data, workspaceId, query, searching, toggled],
+    [data, filters, query, searching, toggled],
   );
   const toggle = (statusId: string) =>
     setToggled((current) => {
@@ -92,6 +90,39 @@ export function IssueList({
     );
   }
 
+  function emptyNotice() {
+    if (searching) {
+      return (
+        <ListNotice
+          icon={{ ios: "magnifyingglass", android: "search" }}
+          title={t("noResults", { query: query.trim() })}
+        />
+      );
+    }
+    if (activeIssueFilterCount(filters) > 0) {
+      return (
+        <ListNotice
+          icon={{
+            ios: "line.3.horizontal.decrease.circle",
+            android: "filter_list",
+          }}
+          title={t("filter.empty")}
+          action={{
+            label: t("filter.clear"),
+            onPress: () => setIssueFilters(host.hostId, EMPTY_ISSUE_FILTERS),
+          }}
+        />
+      );
+    }
+    return (
+      <ListNotice
+        icon={{ ios: "checklist", android: "checklist" }}
+        title={t("empty.title")}
+        description={t("empty.description", { host: host.name })}
+      />
+    );
+  }
+
   return (
     <>
       <SectionList
@@ -107,20 +138,7 @@ export function IssueList({
         ListHeaderComponent={header}
         refreshing={pull.refreshing}
         onRefresh={pull.onRefresh}
-        ListEmptyComponent={
-          searching ? (
-            <ListNotice
-              icon={{ ios: "magnifyingglass", android: "search" }}
-              title={t("noResults", { query: query.trim() })}
-            />
-          ) : (
-            <ListNotice
-              icon={{ ios: "checklist", android: "checklist" }}
-              title={t("empty.title")}
-              description={t("empty.description", { host: host.name })}
-            />
-          )
-        }
+        ListEmptyComponent={emptyNotice()}
         renderSectionHeader={({ section }) => (
           <ListSectionHeader
             title={section.status.title}
