@@ -6,6 +6,7 @@ import {
   type LanguagePreference,
   type Preferences,
   parsePreferences,
+  resolveColorScheme,
 } from "./preferences";
 
 const file = new File(Paths.document, "preferences.json");
@@ -58,4 +59,21 @@ export function setLanguage(language: LanguagePreference) {
 
 export function usePreferences() {
   return useSyncExternalStore(subscribePreferences, currentPreferences);
+}
+
+function currentColorScheme() {
+  return resolveColorScheme(current.appearance, Appearance.getColorScheme());
+}
+
+function subscribeColorScheme(listener: () => void) {
+  listeners.add(listener);
+  const subscription = Appearance.addChangeListener(listener);
+  return () => {
+    listeners.delete(listener);
+    subscription.remove();
+  };
+}
+
+export function useColorSchemeName() {
+  return useSyncExternalStore(subscribeColorScheme, currentColorScheme);
 }

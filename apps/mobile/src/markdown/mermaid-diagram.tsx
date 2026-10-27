@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
-import { space, useThemeColors } from "@/theme";
+import { Pressable, StyleSheet, View } from "react-native";
+import { space, useThemeColors, useThemeName } from "@/theme";
 import { PendingIndicator } from "@/ui";
 import { DiagramPreview } from "./diagram-preview";
 import { useDiagram } from "./mermaid-store";
@@ -33,7 +33,7 @@ export function MermaidDiagram({
 }) {
   const { t } = useTranslation();
   const router = useRouter();
-  const appearance = useColorScheme() === "dark" ? "dark" : "light";
+  const appearance = useThemeName();
   const entry = useDiagram(source, appearance);
   if (entry?.kind === "failed") return fallback;
   if (!entry) return <DiagramPlaceholder />;

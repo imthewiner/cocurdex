@@ -45,6 +45,16 @@ export function parsePreferences(text: string | null): Preferences {
   };
 }
 
+export type ColorSchemeName = "light" | "dark";
+
+export function resolveColorScheme(
+  appearance: AppearancePreference,
+  systemScheme: string | null | undefined,
+): ColorSchemeName {
+  if (appearance !== "system") return appearance;
+  return systemScheme === "dark" ? "dark" : "light";
+}
+
 export function resolveLocale(
   language: LanguagePreference,
   systemLocale: SupportedLocale,

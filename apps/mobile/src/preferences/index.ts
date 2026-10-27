@@ -1,6 +1,7 @@
 export {
   APPEARANCE_PREFERENCES,
   type AppearancePreference,
+  type ColorSchemeName,
   type LanguagePreference,
   resolveLocale,
 } from "./preferences";
@@ -9,5 +10,6 @@ export {
   setAppearance,
   setLanguage,
   subscribePreferences,
+  useColorSchemeName,
   usePreferences,
 } from "./preferences-store";

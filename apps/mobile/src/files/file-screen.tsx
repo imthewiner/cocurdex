@@ -13,12 +13,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from "react-native";
 import { MarkdownText } from "@/markdown";
-import { layout, space, useThemeColors } from "@/theme";
+import { layout, space, useThemeColors, useThemeName } from "@/theme";
 import {
   ListNotice,
   PendingIndicator,
@@ -130,7 +129,7 @@ function TextFile({
   const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("files");
   const colors = useThemeColors();
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const scheme = useThemeName();
   const content = useFileContent(host, filePath);
   const settled = useTransitionSettled();
   const failures = useFailureText();

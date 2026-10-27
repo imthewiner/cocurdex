@@ -1,6 +1,7 @@
 import {
   DEFAULT_PREFERENCES,
   parsePreferences,
+  resolveColorScheme,
   resolveLocale,
 } from "@cocurdex/mobile/internal/preferences/preferences";
 import { describe, expect, it } from "vitest";
@@ -31,5 +32,18 @@ describe("resolveLocale", () => {
   it("uses the system locale unless the user picked one", () => {
     expect(resolveLocale("system", "zh-CN")).toBe("zh-CN");
     expect(resolveLocale("en-US", "zh-CN")).toBe("en-US");
+  });
+});
+
+describe("resolveColorScheme", () => {
+  it("uses an explicit appearance over the system scheme", () => {
+    expect(resolveColorScheme("light", "dark")).toBe("light");
+    expect(resolveColorScheme("dark", "light")).toBe("dark");
+  });
+
+  it("follows the system scheme and defaults to light", () => {
+    expect(resolveColorScheme("system", "dark")).toBe("dark");
+    expect(resolveColorScheme("system", "light")).toBe("light");
+    expect(resolveColorScheme("system", null)).toBe("light");
   });
 });

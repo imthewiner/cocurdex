@@ -1,4 +1,4 @@
-import { useColorScheme } from "react-native";
+import { useColorSchemeName } from "@/preferences";
 import generated from "./colors.generated.json";
 import syntax from "./syntax-colors.generated.json";
 
@@ -24,7 +24,7 @@ export const themeColors: Record<ThemeName, ThemeColors> = {
 export type SyntaxColors = (typeof syntax)[ThemeName];
 
 export function useThemeName(): ThemeName {
-  return useColorScheme() === "dark" ? "dark" : "light";
+  return useColorSchemeName();
 }
 
 export function useThemeColors(): ThemeColors {
