@@ -1,10 +1,11 @@
-import { mkdtempSync } from "node:fs";
-import { copyFile, mkdir, readFile, rm } from "node:fs/promises";
+import { existsSync, mkdtempSync } from "node:fs";
+import { copyFile, cp, mkdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DATABASE_FILENAME } from "@cocurdex/daemon/paths";
 import {
   buildFixtureDb,
+  FIXTURE_DATA_DIRECTORIES,
   FIXTURE_MANIFEST_FILENAME,
   type FixtureManifest,
 } from "./build";
@@ -36,6 +37,13 @@ export async function installFixtureDb(input: {
       path.join(built, DATABASE_FILENAME),
       path.join(input.userDataPath, DATABASE_FILENAME),
     );
+    for (const directory of FIXTURE_DATA_DIRECTORIES) {
+      const source = path.join(built, directory);
+      if (!existsSync(source)) continue;
+      await cp(source, path.join(input.userDataPath, directory), {
+        recursive: true,
+      });
+    }
     const installedWorkspaces: InstalledFixtureWorkspace[] = [];
     for (const workspace of manifest.workspaces) {
       installedWorkspaces.push({

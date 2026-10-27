@@ -11,7 +11,17 @@ describe("createDiagramCache", () => {
     const entry = cache.get("graph TD; A-->B", "light");
     expect(entry).toMatchObject({ kind: "rendered", diagram });
     expect(cache.get("graph TD; A-->B", "dark")).toBeNull();
-    expect(entry && cache.byId(entry.id)).toBe(entry);
+    expect(entry && cache.sourceOf(entry.id)).toBe("graph TD; A-->B");
+  });
+
+  it("finds a diagram's source by id so a viewer can follow the theme", () => {
+    const cache = createDiagramCache();
+    cache.rendered("graph LR\nA-->B", "light", diagram);
+    const light = cache.get("graph LR\nA-->B", "light");
+    cache.rendered("graph LR\nA-->B", "dark", diagram);
+    const source = light ? cache.sourceOf(light.id) : null;
+    expect(source).toBe("graph LR\nA-->B");
+    expect(source && cache.get(source, "dark")?.kind).toBe("rendered");
   });
 
   it("tells subscribers when a diagram finishes or fails", () => {
@@ -33,7 +43,7 @@ describe("createDiagramCache", () => {
     cache.rendered("b", "light", diagram);
     cache.rendered("c", "light", diagram);
     expect(cache.get("a", "light")).toBeNull();
-    expect(first && cache.byId(first.id)).toBeNull();
+    expect(first && cache.sourceOf(first.id)).toBeNull();
     expect(cache.get("c", "light")).not.toBeNull();
   });
 

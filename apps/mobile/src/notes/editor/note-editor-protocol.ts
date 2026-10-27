@@ -29,6 +29,18 @@ export interface NoteEditorTheme {
   fontScale: number;
 }
 
+export interface NoteCodeToken {
+  from: number;
+  to: number;
+  color: string;
+}
+
+export interface NoteCodeRequest {
+  id: number;
+  language: string;
+  code: string;
+}
+
 export interface NoteEditorFormatState {
   block: NoteBlockStyle;
   marks: Record<NoteMark, boolean>;
@@ -55,6 +67,7 @@ export type NoteEditorInbound =
   | { type: "title"; title: string }
   | { type: "meta"; meta: string }
   | { type: "theme"; theme: NoteEditorTheme }
+  | { type: "highlighted"; id: number; tokens: NoteCodeToken[] }
   | { type: "command"; command: NoteEditorCommand };
 
 export type NoteEditorOutbound =
@@ -66,7 +79,8 @@ export type NoteEditorOutbound =
   | { type: "slash" }
   | { type: "properties" }
   | { type: "openLink"; href: string }
-  | { type: "openImage"; src: string; alt: string };
+  | { type: "openImage"; src: string; alt: string }
+  | { type: "highlight"; requests: NoteCodeRequest[] };
 
 const OUTBOUND_TYPES = new Set<NoteEditorOutbound["type"]>([
   "ready",
@@ -78,6 +92,7 @@ const OUTBOUND_TYPES = new Set<NoteEditorOutbound["type"]>([
   "properties",
   "openLink",
   "openImage",
+  "highlight",
 ]);
 
 export function parseNoteEditorMessage(

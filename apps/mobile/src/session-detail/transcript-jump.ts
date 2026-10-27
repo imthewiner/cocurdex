@@ -78,19 +78,17 @@ export function nextJumpState(
 
 const ANIMATED_JUMP_SCREENS = 1;
 
-export function latestJumpLead({ offset, viewportHeight }: ScrollMetrics) {
-  const lead = viewportHeight * ANIMATED_JUMP_SCREENS;
-  return offset > lead ? lead : null;
+export function isFarFromLatest({ offset, viewportHeight }: ScrollMetrics) {
+  return offset > viewportHeight * ANIMATED_JUMP_SCREENS;
 }
 
-export function oldestJumpLead({
+export function isFarFromOldest({
   offset,
   contentHeight,
   viewportHeight,
 }: ScrollMetrics) {
   const end = Math.max(0, contentHeight - viewportHeight);
-  const lead = end - viewportHeight * ANIMATED_JUMP_SCREENS;
-  return offset < lead ? lead : null;
+  return offset < end - viewportHeight * ANIMATED_JUMP_SCREENS;
 }
 
 export function hasUnseenLatest(state: JumpState, itemCount: number) {

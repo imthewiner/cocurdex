@@ -2,10 +2,10 @@ import type { CondensedItem } from "@cocurdex/mobile/internal/session-detail/tra
 import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
+  isFarFromLatest,
+  isFarFromOldest,
   type JumpState,
-  latestJumpLead,
   nextJumpState,
-  oldestJumpLead,
   promptOutline,
 } from "@cocurdex/mobile/internal/session-detail/transcript-jump";
 import { describe, expect, it } from "vitest";
@@ -87,40 +87,40 @@ describe("promptOutline", () => {
   });
 });
 
-describe("jump leads", () => {
+describe("jump distance", () => {
   const viewport = 800;
 
-  it("jumps within one screen of the latest before animating", () => {
+  it("animates only within one screen of the latest", () => {
     expect(
-      latestJumpLead({
+      isFarFromLatest({
         offset: 5000,
         contentHeight: 9000,
         viewportHeight: viewport,
       }),
-    ).toBe(800);
+    ).toBe(true);
     expect(
-      latestJumpLead({
+      isFarFromLatest({
         offset: 600,
         contentHeight: 9000,
         viewportHeight: viewport,
       }),
-    ).toBeNull();
+    ).toBe(false);
   });
 
-  it("jumps within one screen of the oldest before animating", () => {
+  it("animates only within one screen of the oldest", () => {
     expect(
-      oldestJumpLead({
+      isFarFromOldest({
         offset: 100,
         contentHeight: 9000,
         viewportHeight: viewport,
       }),
-    ).toBe(7400);
+    ).toBe(true);
     expect(
-      oldestJumpLead({
+      isFarFromOldest({
         offset: 7800,
         contentHeight: 9000,
         viewportHeight: viewport,
       }),
-    ).toBeNull();
+    ).toBe(false);
   });
 });

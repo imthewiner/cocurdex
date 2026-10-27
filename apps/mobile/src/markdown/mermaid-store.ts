@@ -34,6 +34,6 @@ export function useDiagram(source: string, appearance: MermaidAppearance) {
   );
 }
 
-export function useDiagramById(id: string) {
-  return useSyncExternalStore(diagrams.subscribe, () => diagrams.byId(id));
+export function diagramSource(id: string) {
+  return diagrams.sourceOf(id);
 }

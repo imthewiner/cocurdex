@@ -33,9 +33,9 @@ import type { ActivityChild, CondensedItem } from "./transcript-activity";
 import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
-  latestJumpLead,
+  isFarFromLatest,
+  isFarFromOldest,
   nextJumpState,
-  oldestJumpLead,
   type ScrollMetrics,
 } from "./transcript-jump";
 import { TurnActions } from "./turn-actions";
@@ -371,7 +371,6 @@ function toggledSet(current: ReadonlySet<string>, id: string) {
 }
 
 const MAX_INDEX_RETRIES = 3;
-const OLDEST_SETTLE_MS = 300;
 
 function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
   const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -400,7 +399,6 @@ export function TranscriptView({
   const lastOffset = useRef(0);
   const rowActions = useStableActions(actions);
   const seekingOldest = useRef(false);
-  const pendingOldest = useRef<ReturnType<typeof setTimeout> | null>(null);
   const indexRetries = useRef(0);
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -441,31 +439,15 @@ export function TranscriptView({
   }));
   const jumpToLatest = () => {
     seekingOldest.current = false;
-    const list = listRef.current;
     const metrics = lastMetrics.current;
-    const lead = metrics ? latestJumpLead(metrics) : null;
-    if (lead !== null) list?.scrollToOffset({ offset: lead, animated: false });
-    requestAnimationFrame(() =>
-      list?.scrollToOffset({ offset: 0, animated: true }),
-    );
+    const far = metrics !== null && isFarFromLatest(metrics);
+    listRef.current?.scrollToOffset({ offset: 0, animated: !far });
   };
   const jumpToOldest = () => {
     seekingOldest.current = true;
-    const list = listRef.current;
     const metrics = lastMetrics.current;
-    const lead = metrics ? oldestJumpLead(metrics) : null;
-    if (lead === null) {
-      list?.scrollToEnd({ animated: true });
-      return;
-    }
-    list?.scrollToOffset({ offset: lead, animated: false });
-    pendingOldest.current = setTimeout(finishOldestJump, OLDEST_SETTLE_MS);
-  };
-  const finishOldestJump = () => {
-    if (pendingOldest.current === null) return;
-    clearTimeout(pendingOldest.current);
-    pendingOldest.current = null;
-    listRef.current?.scrollToEnd({ animated: true });
+    const far = metrics !== null && isFarFromOldest(metrics);
+    listRef.current?.scrollToEnd({ animated: !far });
   };
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const metrics = scrollMetrics(event);
@@ -508,9 +490,7 @@ export function TranscriptView({
         onScroll={onScroll}
         onScrollBeginDrag={onScrollBeginDrag}
         onContentSizeChange={() => {
-          if (pendingOldest.current !== null) {
-            requestAnimationFrame(finishOldestJump);
-          } else if (seekingOldest.current) {
+          if (seekingOldest.current) {
             listRef.current?.scrollToEnd({ animated: false });
           }
         }}

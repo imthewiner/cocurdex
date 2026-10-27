@@ -1,6 +1,6 @@
 import { type AndroidSymbol, type SFSymbol, SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
-import { useThemeColors, useThemeName } from "@/theme";
+import { type ThemeName, themeColors, useThemeName } from "@/theme";
 
 const TONAL_FILL = {
   light: "rgba(0, 0, 0, 0.06)",
@@ -16,6 +16,7 @@ export function CircleButton({
   badge = false,
   disabled = false,
   tonal = false,
+  scheme: forcedScheme,
   testID,
 }: {
   icon: { ios: SFSymbol; android: AndroidSymbol };
@@ -24,10 +25,12 @@ export function CircleButton({
   badge?: boolean;
   disabled?: boolean;
   tonal?: boolean;
+  scheme?: ThemeName;
   testID?: string;
 }) {
-  const colors = useThemeColors();
-  const scheme = useThemeName();
+  const themeScheme = useThemeName();
+  const scheme = forcedScheme ?? themeScheme;
+  const colors = themeColors[scheme];
   return (
     <Pressable
       accessibilityRole="button"
@@ -35,7 +38,6 @@ export function CircleButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      android_ripple={{ color: colors.muted, borderless: true }}
       style={({ pressed }) => [
         styles.button,
         tonal && { backgroundColor: TONAL_FILL[scheme] },

@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { SheetSurface } from "@/theme";
 import { useSheetStackOptions } from "@/ui";
 
-export default function IssueLabelsLayout() {
+function IssueLabelsStack() {
   const { t } = useTranslation("issues");
   const screenOptions = useSheetStackOptions();
   return (
@@ -12,5 +13,13 @@ export default function IssueLabelsLayout() {
         options={{ title: t("field.labels") }}
       />
     </Stack>
+  );
+}
+
+export default function IssueLabelsLayout() {
+  return (
+    <SheetSurface>
+      <IssueLabelsStack />
+    </SheetSurface>
   );
 }

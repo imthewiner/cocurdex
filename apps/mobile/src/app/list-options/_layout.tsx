@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { SheetSurface } from "@/theme";
 import { useSheetStackOptions } from "@/ui";
 
-export default function ListOptionsLayout() {
+function ListOptionsStack() {
   const { t } = useTranslation("sessions");
   const screenOptions = useSheetStackOptions();
   return (
@@ -10,5 +11,13 @@ export default function ListOptionsLayout() {
       <Stack.Screen name="index" options={{ title: t("list.options.title") }} />
       <Stack.Screen name="[field]" />
     </Stack>
+  );
+}
+
+export default function ListOptionsLayout() {
+  return (
+    <SheetSurface>
+      <ListOptionsStack />
+    </SheetSurface>
   );
 }

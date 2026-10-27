@@ -46,7 +46,8 @@ main{padding:4px 16px 120px}
 .prose a{color:var(--tint);text-decoration:underline;text-underline-offset:3px}
 .prose blockquote{margin:0 0 10px;padding-left:12px;border-left:3px solid var(--border);color:var(--muted-foreground)}
 .prose code{font-family:ui-monospace,Menlo,monospace;font-size:0.85em;background:var(--muted);border-radius:4px;padding:1px 4px}
-.prose pre{background:var(--muted);border-radius:12px;padding:10px 12px;margin:0 0 10px;overflow-x:auto;white-space:pre}
+.prose pre{background:var(--muted);border-radius:12px;padding:10px 12px;margin:0 0 10px;overflow-x:auto}
+.ProseMirror.prose pre,.ProseMirror.prose pre code{white-space:pre;word-wrap:normal;overflow-wrap:normal}
 .prose pre code{background:transparent;padding:0;font-size:0.8em;line-height:1.45}
 .prose hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 .prose table{border-collapse:collapse;margin:0 0 10px;display:block;overflow-x:auto}

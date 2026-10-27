@@ -1,6 +1,7 @@
 import "@/runtime";
 import "@/i18n";
 import { pathBaseName } from "@cocurdex/shared";
+import { NavigationBar } from "expo-navigation-bar";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform, StyleSheet } from "react-native";
@@ -18,6 +19,8 @@ import { useHeaderOptions } from "@/ui";
 const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
+const SHEET_CORNER_RADIUS = Platform.OS === "android" ? 28 : -1;
+const VIEWER_ANIMATION = Platform.OS === "android" ? "fade" : "default";
 
 function fileScreenTitle(params: object | undefined) {
   const path = params && "path" in params ? params.path : undefined;
@@ -30,13 +33,14 @@ export default function RootLayout() {
   const colors = useThemeColors();
   const grouped = useGroupedColors();
   const headerOptions = useHeaderOptions();
+  const systemBarStyle = scheme === "dark" ? "light" : "dark";
   return (
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={navigationThemes[scheme]}>
         <Stack
           screenOptions={{
             ...headerOptions,
-            statusBarStyle: scheme === "dark" ? "light" : "dark",
+            statusBarStyle: systemBarStyle,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -115,6 +119,7 @@ export default function RootLayout() {
             options={{
               title: "",
               presentation: "fullScreenModal",
+              animation: VIEWER_ANIMATION,
               headerTransparent: true,
               headerTintColor: themeColors.dark.foreground,
               statusBarStyle: "light",
@@ -126,6 +131,7 @@ export default function RootLayout() {
             options={{
               title: "",
               presentation: "fullScreenModal",
+              animation: VIEWER_ANIMATION,
               headerTransparent: true,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -137,6 +143,7 @@ export default function RootLayout() {
               presentation: PAIR_PRESENTATION,
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -146,6 +153,7 @@ export default function RootLayout() {
               presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -155,6 +163,7 @@ export default function RootLayout() {
               presentation: "formSheet",
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -164,6 +173,7 @@ export default function RootLayout() {
               presentation: "formSheet",
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -182,6 +192,7 @@ export default function RootLayout() {
               presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -200,6 +211,7 @@ export default function RootLayout() {
               presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -240,6 +252,7 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+        <NavigationBar style={systemBarStyle} />
         <MermaidRendererHost />
       </ThemeProvider>
     </GestureHandlerRootView>

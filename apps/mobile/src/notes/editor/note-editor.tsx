@@ -6,13 +6,15 @@ import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView, PixelRatio, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import { highlightCode } from "@/files";
 import { useOpenLink } from "@/markdown";
 import { useTextScale } from "@/preferences";
-import { type ThemeColors, useThemeColors } from "@/theme";
+import { type ThemeColors, useThemeColors, useThemeName } from "@/theme";
 import { useBottomKeyboardOverlap, useOptionSheet } from "@/ui";
 import type { NoteDocSession } from "./note-doc-session";
 import {
   type NoteBlockStyle,
+  type NoteCodeRequest,
   type NoteEditorCommand,
   type NoteEditorFormatState,
   type NoteEditorInbound,
@@ -95,6 +97,7 @@ export function NoteEditor({
 }) {
   const { t } = useTranslation("notes");
   const colors = useThemeColors();
+  const scheme = useThemeName();
   const router = useRouter();
   const headerHeight = useHeaderHeight();
   const keyboardShown = useBottomKeyboardOverlap() > 0;
@@ -130,6 +133,14 @@ export function NoteEditor({
     sentMeta.current = meta;
     send({ type: "meta", meta });
   }
+
+  const highlight = (requests: readonly NoteCodeRequest[]) => {
+    for (const { id, code, language } of requests) {
+      highlightCode(code, language, scheme)
+        .catch(() => [])
+        .then((tokens) => send({ type: "highlighted", id, tokens }));
+    }
+  };
 
   const blockLabels: Record<NoteBlockStyle, string> = {
     paragraph: t("editor.block.paragraph"),
@@ -215,6 +226,9 @@ export function NoteEditor({
         return;
       case "openLink":
         openLink(message.href);
+        return;
+      case "highlight":
+        highlight(message.requests);
         return;
       case "openImage": {
         const fileName = parseDocImageUri(message.src);

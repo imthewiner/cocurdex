@@ -10,7 +10,7 @@ import {
   type ThemedToken,
 } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import { loadSourceLanguage } from "./source-language";
+import { codeFenceLanguage, loadSourceLanguage } from "./source-language";
 
 export type SourceScheme = "light" | "dark";
 export type SourceTokens = readonly (readonly ThemedToken[])[];
@@ -182,4 +182,39 @@ export function useSourceTokens(
     : NO_HIGHLIGHT;
   const tokens = useSyncExternalStore(store.subscribe, store.getSnapshot);
   return { tokens, request: store.request };
+}
+
+export interface CodeToken {
+  from: number;
+  to: number;
+  color: string;
+}
+
+export async function highlightCode(
+  code: string,
+  fence: string,
+  scheme: SourceScheme,
+): Promise<CodeToken[]> {
+  const language = codeFenceLanguage(fence);
+  const loader = language ? loadSourceLanguage(language) : null;
+  if (!language || !loader) return [];
+  const shiki = await loadHighlighter();
+  await shiki.loadLanguage(loader);
+  await nextTask();
+  const lines = shiki.codeToTokens(code, {
+    lang: language,
+    theme: THEMES[scheme],
+    tokenizeMaxLineLength: MAX_TOKENIZED_LINE_LENGTH,
+  }).tokens;
+  return lines.flat().flatMap((token) =>
+    token.color && token.content.length > 0
+      ? [
+          {
+            from: token.offset,
+            to: token.offset + token.content.length,
+            color: token.color,
+          },
+        ]
+      : [],
+  );
 }

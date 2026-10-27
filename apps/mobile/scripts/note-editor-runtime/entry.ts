@@ -17,6 +17,7 @@ import type {
   NoteEditorTheme,
   NoteInsertKind,
 } from "../../src/notes/editor/note-editor-protocol";
+import { createCodeHighlight } from "./code-highlight";
 
 declare global {
   interface Window {
@@ -45,6 +46,9 @@ const bodyHost = element<HTMLDivElement>("body");
 let doc: Y.Doc | null = null;
 let editor: EditorType | null = null;
 let lastFormat = "";
+const codeHighlight = createCodeHighlight((requests) =>
+  post({ type: "highlight", requests }),
+);
 
 function applyTheme({ colors, fontScale }: NoteEditorTheme) {
   const root = document.documentElement.style;
@@ -206,6 +210,7 @@ function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
       }),
       Collaboration.configure({ document: doc, field: NOTE_DOC_FIELD }),
       SlashTrigger,
+      codeHighlight.extension,
     ],
     editorProps: {
       attributes: { class: "prose", autocapitalize: "sentences" },
@@ -283,6 +288,9 @@ window.noteEditor = {
       setEditable(message.editable);
     } else if (message.type === "theme") {
       applyTheme(message.theme);
+      codeHighlight.reset();
+    } else if (message.type === "highlighted") {
+      codeHighlight.receive(message.id, message.tokens);
     } else {
       run(message.command);
     }
