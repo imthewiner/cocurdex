@@ -93,6 +93,8 @@ export const daemonProductApi: ProductRequestApi = {
     rpc("session.switchAgent", { sessionId, agentType }),
   listContextTransfers: (sessionId) =>
     rpc("session.contextTransfers", { sessionId }),
+  getSessionRuntimeState: (sessionId) =>
+    rpc("session.runtimeState", { sessionId }),
   getSessionExecutionTree: (sessionId) =>
     rpc("session.executionTree", { sessionId }),
   startScriptRun: (payload) => rpc("scriptRun.start", payload),

@@ -13,6 +13,7 @@ import type {
   AgentRunLimits,
   AgentSessionConfigOption,
   AgentSessionMode,
+  AgentSessionRuntimeState,
   AgentSlashCommand,
   AgentToolCallRecord,
   AgentToolCallResult,
@@ -399,6 +400,7 @@ export interface ProductApi {
     agentType: AgentId,
   ): Promise<SessionRecord>;
   listContextTransfers(sessionId: string): Promise<ContextTransferRecord[]>;
+  getSessionRuntimeState(sessionId: string): Promise<AgentSessionRuntimeState>;
   getSessionExecutionTree(
     sessionId: string,
   ): Promise<SessionExecutionTree | null>;

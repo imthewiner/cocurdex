@@ -1,7 +1,6 @@
 {
   "actions": {
     "details": "权限与连接",
-    "more": "{{host}} 的更多操作",
     "remove": "移除这台电脑",
     "rename": "重命名",
     "switch": "切换到这台电脑"

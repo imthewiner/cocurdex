@@ -10,6 +10,7 @@ import {
   ListNotice,
   PendingIndicator,
   useAgeLabel,
+  useScrollIndicatorWhileScrolling,
   useTransitionSettled,
 } from "@/ui";
 import { useNote, useNotes } from "./note-queries";
@@ -21,6 +22,7 @@ export function NoteScreen({
   host: SavedHost;
   noteId: string;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("notes");
   const colors = useThemeColors();
   const note = useNote(host.hostId, noteId);
@@ -56,6 +58,7 @@ export function NoteScreen({
     <>
       <Stack.Screen options={{ title: "" }} />
       <ScrollView
+        {...scrollIndicator}
         scrollsChildToFocus={false}
         style={styles.fill}
         contentInsetAdjustmentBehavior="automatic"

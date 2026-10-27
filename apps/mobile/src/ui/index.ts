@@ -15,6 +15,11 @@ export { useBottomKeyboardOverlap } from "./keyboard-overlap";
 export type { ListHeader, ListSearch } from "./list-header-props";
 export { ListNotice, ListSectionHeader, ListSeparator } from "./list-parts";
 export { ListSheet, type ListSheetItem } from "./list-sheet";
+export {
+  type OpenOptionSheet,
+  type OptionSheetRequest,
+  useOptionSheet,
+} from "./option-sheet";
 export { PendingIndicator } from "./pending-indicator";
 export {
   FolderIcon,
@@ -22,7 +27,9 @@ export {
   SelectedMark,
   ValueFormRow,
 } from "./row-accessory";
+export { useScrollIndicatorWhileScrolling } from "./scroll-indicator-while-scrolling";
 export { SheetAction } from "./sheet-action";
+export { useSheetStackOptions } from "./sheet-stack-options";
 export { ShimmerText } from "./shimmer-text";
 export { useTransitionSettled } from "./transition-settled";
 export { useAgeLabel } from "./use-age-label";

@@ -77,7 +77,7 @@ describe("createSessionStarter", () => {
       ([method]) => method === "session.create",
     );
     expect(creates).toHaveLength(1);
-    expect(started.id).toBe("session-1");
+    expect(started.session.id).toBe("session-1");
     const sends = fake.command.mock.calls as unknown as [
       string,
       { sessionId: string; messageId: string },
@@ -89,6 +89,7 @@ describe("createSessionStarter", () => {
       messageId: sends[0]?.[1].messageId,
     });
     expect(sends[1]?.[2].idempotencyKey).toBe(sends[0]?.[1].messageId);
+    expect(started.messageId).toBe(sends[1]?.[1].messageId);
   });
 
   it("creates a new session once the request changes after a failed send", async () => {
@@ -98,7 +99,7 @@ describe("createSessionStarter", () => {
     await expect(start(request)).rejects.toThrow("offline");
     const started = await start({ ...request, prompt: "Review tax rules" });
 
-    expect(started.id).toBe("session-2");
+    expect(started.session.id).toBe("session-2");
   });
 
   it("sends the picked images with the first message", async () => {

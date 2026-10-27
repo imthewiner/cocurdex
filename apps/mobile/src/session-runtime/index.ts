@@ -4,7 +4,7 @@ export {
   useRuntimeLabels,
 } from "./runtime-labels";
 export {
-  ChoiceSection,
+  ChoiceRow,
   type RuntimeChoice,
-  RuntimeSections,
+  RuntimeRows,
 } from "./runtime-sections";

@@ -76,3 +76,18 @@ export function applySessionRuntimeEvent(
       };
   }
 }
+
+export function seedSessionRuntimeState(
+  live: AgentSessionRuntimeState | undefined,
+  seeded: AgentSessionRuntimeState,
+): AgentSessionRuntimeState {
+  if (!live) return seeded;
+  return {
+    capabilities: live.capabilities ?? seeded.capabilities,
+    commands: live.commands ?? seeded.commands,
+    configOptions:
+      live.configOptions.length > 0 ? live.configOptions : seeded.configOptions,
+    mode: live.mode ?? seeded.mode,
+    runtime: live.runtime ?? seeded.runtime,
+  };
+}

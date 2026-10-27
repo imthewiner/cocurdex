@@ -114,12 +114,16 @@ export function Composer({
       return;
     }
     if (submitDisabled) return;
+    const sentText = text;
+    const sentDrafts = drafts;
     setSending(true);
-    const sent = await onSend(text.trim(), ready);
-    setSending(false);
-    if (!sent) return;
     setText("");
     setDrafts([]);
+    const sent = await onSend(sentText.trim(), ready);
+    setSending(false);
+    if (sent) return;
+    setText((current) => (current === "" ? sentText : current));
+    setDrafts((current) => (current.length === 0 ? sentDrafts : current));
   };
 
   return (

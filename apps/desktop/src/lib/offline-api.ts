@@ -4,6 +4,7 @@ import {
   DEFAULT_AGENT_RUN_LIMITS,
   DEFAULT_REMOTE_ACCESS_PORT,
   DEFAULT_SCRIPT_RUN_SETTINGS,
+  EMPTY_AGENT_SESSION_RUNTIME_STATE,
   emptyWorktreeEnvironment,
   getAgentSessionTitleStrategy,
   getFallbackAgentPermissionModes,
@@ -303,6 +304,7 @@ export const offlineApi: DesktopApi = {
     throw new Error("Switching agents needs the Cocurdex daemon");
   },
   listContextTransfers: async () => [],
+  getSessionRuntimeState: async () => EMPTY_AGENT_SESSION_RUNTIME_STATE,
   getSessionExecutionTree: async () => null,
   getScriptRun: async () => {
     throw new Error("Script runs require the desktop app");

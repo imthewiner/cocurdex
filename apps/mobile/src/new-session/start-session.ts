@@ -90,6 +90,6 @@ export function createSessionStarter(connection: StartConnection) {
         })
         .catch(() => undefined);
     }
-    return session;
+    return { session, messageId };
   };
 }

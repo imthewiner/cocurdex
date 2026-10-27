@@ -6,7 +6,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { control, layout, space, useThemeColors } from "@/theme";
-import { ActionButton, type ActionButtonVariant } from "@/ui";
+import {
+  ActionButton,
+  type ActionButtonVariant,
+  useScrollIndicatorWhileScrolling,
+} from "@/ui";
 import { PermissionPrompt } from "./permission-prompt";
 import type { PendingInteraction } from "./transcript";
 
@@ -104,6 +108,7 @@ function DockBody({
   pending: PendingInteraction;
   actions: InteractionActions;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   if (pending.kind === "permission") {
@@ -161,6 +166,7 @@ function DockBody({
       <DockTitle>{t("plan.title")}</DockTitle>
       {record.planContent ? (
         <ScrollView
+          {...scrollIndicator}
           scrollsChildToFocus={false}
           style={[styles.plan, { backgroundColor: colors.muted }]}
           contentContainerStyle={styles.planContent}

@@ -5,7 +5,10 @@ import type { CloseButtonProps } from "./close-button-props";
 export function CloseButton(_props: CloseButtonProps) {
   return (
     <Stack.Screen
-      options={{ headerBackVisible: true, headerBackImageSource: CloseIcon }}
+      options={{
+        headerBackVisible: true,
+        headerBackImageSource: CloseIcon,
+      }}
     />
   );
 }

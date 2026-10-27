@@ -10,6 +10,7 @@ import {
   ListSeparator,
   PendingIndicator,
   usePullToRefresh,
+  useScrollIndicatorWhileScrolling,
 } from "@/ui";
 import { useNotes } from "./note-queries";
 import { NoteRowView } from "./note-row";
@@ -24,6 +25,7 @@ export function NoteList({
   query: string;
   header?: ReactElement;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("notes");
   const router = useRouter();
   const notes = useNotes(host.hostId);
@@ -58,6 +60,7 @@ export function NoteList({
   const searching = query.trim() !== "";
   return (
     <SectionList<NoteRow>
+      {...scrollIndicator}
       style={styles.fill}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"

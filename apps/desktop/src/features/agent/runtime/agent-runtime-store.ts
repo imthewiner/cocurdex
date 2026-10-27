@@ -4,6 +4,7 @@ import {
   applySessionRuntimeEvent,
   EMPTY_AGENT_SESSION_RUNTIME_STATE,
   isSessionRuntimeEvent,
+  seedSessionRuntimeState,
 } from "@cocurdex/shared";
 import { atom } from "jotai";
 
@@ -23,6 +24,36 @@ export const applyAgentRuntimeEventAtom = atom(
       [event.sessionId]: applySessionRuntimeEvent(
         current[event.sessionId] ?? EMPTY_AGENT_SESSION_RUNTIME_STATE,
         event,
+      ),
+    });
+  },
+);
+
+function isUnreportedRuntimeState(state: AgentSessionRuntimeState) {
+  return (
+    state.capabilities === null &&
+    state.commands === null &&
+    state.configOptions.length === 0 &&
+    state.mode === null &&
+    state.runtime === null
+  );
+}
+
+export const seedAgentRuntimeAtom = atom(
+  null,
+  (
+    get,
+    set,
+    payload: { sessionId: string; state: AgentSessionRuntimeState },
+  ) => {
+    const current = get(agentRuntimeBySessionAtom);
+    const live = current[payload.sessionId];
+    if (!live && isUnreportedRuntimeState(payload.state)) return;
+    set(agentRuntimeBySessionAtom, {
+      ...current,
+      [payload.sessionId]: seedSessionRuntimeState(
+        current[payload.sessionId],
+        payload.state,
       ),
     });
   },

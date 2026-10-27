@@ -9,6 +9,7 @@ import {
   ListSeparator,
   PendingIndicator,
   usePullToRefresh,
+  useScrollIndicatorWhileScrolling,
 } from "@/ui";
 import { useIssueView } from "./issue-queries";
 import { IssueRowView } from "./issue-row";
@@ -25,6 +26,7 @@ export function IssueList({
   query: string;
   header?: ReactElement;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("issues");
   const router = useRouter();
   const view = useIssueView(host.hostId);
@@ -70,6 +72,7 @@ export function IssueList({
   const searching = query.trim() !== "";
   return (
     <SectionList
+      {...scrollIndicator}
       style={styles.fill}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"

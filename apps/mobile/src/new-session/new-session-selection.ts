@@ -65,9 +65,14 @@ export function useNewSessionSelection(host: SavedHost) {
     defaults,
     agent,
     role,
-    agentDetail: [role ? agent?.label : null, ...configDetail]
+    configSummary: [
+      role?.name,
+      defaults?.model?.name ?? agent?.label,
+      ...runtimeParts,
+    ]
       .filter(Boolean)
       .join(" · "),
+    modeLabel,
     roleDraft,
     roleSummary: [agent?.label, ...configDetail].filter(Boolean).join(" · "),
   };

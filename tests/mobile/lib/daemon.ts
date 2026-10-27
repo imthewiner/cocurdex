@@ -15,7 +15,6 @@ import {
 } from "@cocurdex/e2e/helpers/daemon-process";
 import { startStubLlmServer } from "@cocurdex/e2e/helpers/llm-stub";
 import {
-  type AgentId,
   buildDaemonAttachmentUploadUrl,
   buildHostPairingLink,
   entityUri,
@@ -192,12 +191,6 @@ export async function startPairingDaemon(
       },
       agentModelName: AGENT_MODEL_NAME,
       agentModelId: AGENT_MODEL_ID,
-      async agentLabel(agentId: AgentId) {
-        const agents = await requestDaemon("agent.list", daemon.options);
-        const agent = agents.find((candidate) => candidate.id === agentId);
-        if (!agent) throw new Error(`The daemon offers no ${agentId} agent`);
-        return agent.label;
-      },
       sessions: () => requestDaemon("session.list", daemon.options),
       async pairedDevices() {
         const devices = await requestDaemon(

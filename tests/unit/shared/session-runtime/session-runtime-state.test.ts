@@ -2,6 +2,7 @@ import {
   applySessionRuntimeEvent,
   EMPTY_AGENT_SESSION_RUNTIME_STATE,
   isSessionRuntimeEvent,
+  seedSessionRuntimeState,
 } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
 
@@ -71,5 +72,36 @@ describe("applySessionRuntimeEvent", () => {
       isSessionRuntimeEvent({ type: "session.config.updated" }),
     ).toBeTruthy();
     expect(isSessionRuntimeEvent({ type: "message.delta" })).toBeFalsy();
+  });
+});
+
+describe("seedSessionRuntimeState", () => {
+  const seeded = {
+    ...EMPTY_AGENT_SESSION_RUNTIME_STATE,
+    configOptions: [
+      {
+        id: "plan",
+        name: "Plan",
+        type: "boolean" as const,
+        currentValue: false,
+      },
+    ],
+    mode: { availableModes: [], currentModeId: "default" },
+  };
+
+  it("adopts the daemon's state when nothing was reported live", () => {
+    expect(seedSessionRuntimeState(undefined, seeded)).toEqual(seeded);
+  });
+
+  it("keeps what the agent reported live and fills the rest from the daemon", () => {
+    const live = applySessionRuntimeEvent(EMPTY_AGENT_SESSION_RUNTIME_STATE, {
+      type: "session.mode.updated",
+      sessionId: "s1",
+      currentModeId: "plan",
+    });
+    expect(seedSessionRuntimeState(live, seeded)).toEqual({
+      ...seeded,
+      mode: { availableModes: [], currentModeId: "plan" },
+    });
   });
 });

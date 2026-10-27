@@ -1,22 +1,11 @@
-import SearchIcon from "@expo/material-symbols/search.xml";
-import {
-  Text as ComposeText,
-  DockedSearchBar,
-  Icon,
-} from "@expo/ui/jetpack-compose";
-import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import { StyleSheet, Text, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
-import { BrandHost } from "./brand-host";
 import type { ListHeader, ListSearch } from "./list-header-props";
+import { useSearchBarOptions } from "./use-search-bar-options";
 
-function LargeListHeader({
-  title,
-  search,
-}: {
-  title: string;
-  search?: ListSearch;
-}) {
+const IGNORE_QUERY = () => undefined;
+
+function LargeListHeader({ title }: { title: string }) {
   const colors = useThemeColors();
   return (
     <View style={styles.header}>
@@ -26,35 +15,22 @@ function LargeListHeader({
       >
         {title}
       </Text>
-      {search ? (
-        <BrandHost matchContents={{ vertical: true }}>
-          <DockedSearchBar
-            onQueryChange={search.onQuery}
-            modifiers={[fillMaxWidth()]}
-          >
-            <DockedSearchBar.Placeholder>
-              <ComposeText color={colors.mutedForeground}>
-                {search.placeholder}
-              </ComposeText>
-            </DockedSearchBar.Placeholder>
-            <DockedSearchBar.LeadingIcon>
-              <Icon
-                source={SearchIcon}
-                tint={colors.mutedForeground}
-                size={24}
-              />
-            </DockedSearchBar.LeadingIcon>
-          </DockedSearchBar>
-        </BrandHost>
-      ) : null}
     </View>
   );
 }
 
 export function useListHeader(title: string, search?: ListSearch): ListHeader {
+  const searchBarOptions = useSearchBarOptions(
+    search?.placeholder ?? "",
+    search?.onQuery ?? IGNORE_QUERY,
+  );
   return {
-    options: { title: "", headerShadowVisible: false },
-    header: <LargeListHeader title={title} search={search} />,
+    options: {
+      title: "",
+      headerShadowVisible: false,
+      ...(search ? { headerSearchBarOptions: searchBarOptions } : {}),
+    },
+    header: <LargeListHeader title={title} />,
   };
 }
 
@@ -63,7 +39,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.sideMargin,
     paddingTop: space.xs,
     paddingBottom: space.md,
-    gap: space.md,
   },
   title: { fontSize: 28, lineHeight: 36 },
 });

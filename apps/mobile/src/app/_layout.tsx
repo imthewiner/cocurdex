@@ -34,6 +34,7 @@ export default function RootLayout() {
           screenOptions={{
             statusBarStyle: scheme === "dark" ? "light" : "dark",
             headerTitleAlign: "center",
+            headerTintColor: colors.foreground,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -163,8 +164,23 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="new-session"
-            options={{ headerShown: false, presentation: "modal" }}
+            name="new-session/index"
+            options={{
+              title: "",
+              headerBackButtonDisplayMode: "minimal",
+              headerBackTitle: t("tabs.sessions"),
+              animation: PUSH_ANIMATION,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <Stack.Screen
+            name="new-session/config"
+            options={{
+              headerShown: false,
+              presentation: SHEET_PRESENTATION,
+              sheetAllowedDetents: [0.75, 1],
+              sheetGrabberVisible: true,
+            }}
           />
           <Stack.Screen
             name="new-issue/[hostId]"

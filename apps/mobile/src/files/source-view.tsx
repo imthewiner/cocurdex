@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { MONO_FONT } from "@/markdown";
 import { layout, space, useThemeColors } from "@/theme";
+import { useScrollIndicatorWhileScrolling } from "@/ui";
 import { expandTabs, sourceColumns } from "./source-columns";
 import {
   type SourceScheme,
@@ -106,6 +107,7 @@ export function SourceView({
   focusLine: number | null;
   footer?: ReactElement | null;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { tokens, request } = useSourceTokens(fileKey, lines, language, scheme);
   const list = useRef<FlatList<string>>(null);
   const revealed = useRef(false);
@@ -173,6 +175,7 @@ export function SourceView({
       testID="source-horizontal-scroll"
     >
       <FlatList
+        {...scrollIndicator}
         ref={list}
         style={{ width: contentWidth }}
         data={rendered as string[]}

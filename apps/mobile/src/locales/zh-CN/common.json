@@ -30,6 +30,10 @@
     "diagram": "图表",
     "openDiagram": "全屏查看"
   },
+  "optionSearch": {
+    "empty": "没有匹配项",
+    "placeholder": "搜索"
+  },
   "screens": {
     "archived": "已归档会话",
     "computers": "电脑",

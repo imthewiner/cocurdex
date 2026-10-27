@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { MarkdownText } from "@/markdown";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
+import { useScrollIndicatorWhileScrolling } from "@/ui";
 import type { TranscriptItem } from "./transcript";
 import type { ActivityChild, CondensedItem } from "./transcript-activity";
 import { TurnActions } from "./turn-actions";
@@ -317,6 +318,7 @@ export function TranscriptView({
   footer?: React.ReactElement;
   actions: TranscriptActions;
 }) {
+  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const colors = useThemeColors();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
@@ -330,6 +332,7 @@ export function TranscriptView({
   };
   return (
     <FlatList
+      {...scrollIndicator}
       inverted
       scrollsChildToFocus={false}
       maintainVisibleContentPosition={

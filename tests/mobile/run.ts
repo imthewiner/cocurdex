@@ -27,6 +27,10 @@ const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
   "zh-CN": "继续",
 };
+const SEARCH_OPEN: Record<SupportedLocale, string> = {
+  "en-US": "Search",
+  "zh-CN": "搜索",
+};
 const SEARCH_DISMISS: Record<SupportedLocale, string> = {
   "en-US": "Cancel|Close",
   "zh-CN": "取消|关闭",
@@ -132,9 +136,9 @@ function flowLabels(locale: SupportedLocale) {
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
+    SEARCH_OPEN: SEARCH_OPEN[locale],
     SEARCH_DISMISS: SEARCH_DISMISS[locale],
     NEW_SESSION_ACTION: sessions.newSession.open,
-    NEW_SESSION_AGENT_ROW: sessions.newSession.agent,
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_ISSUE_ACTION: issues.create.open,
     NEW_ISSUE_SUBMIT: issues.create.submit,
@@ -305,7 +309,6 @@ async function main() {
             ...flowLabels(locale),
             ...send,
             SEND_SESSION_ID: replySession.id,
-            NEW_SESSION_AGENT: await daemon.agentLabel("pi"),
             NEW_SESSION_MODEL: daemon.agentModelName,
             AGENT_MODEL_ID: daemon.agentModelId,
             PAIRING_LINK: await daemon.createPairingLink(),
