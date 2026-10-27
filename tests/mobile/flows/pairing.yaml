@@ -95,6 +95,7 @@ appId: dev.cocurdex.mobile
 - scrollUntilVisible:
     element:
       text: ${SHOW_MORE}
+    centerElement: true
     optional: true
 - tapOn:
     text: ${SHOW_MORE}
