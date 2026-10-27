@@ -7,10 +7,10 @@ import { useHostSessions } from "@/sessions";
 import {
   ListNotice,
   ListSectionHeader,
-  ListSeparator,
   PendingIndicator,
   usePullToRefresh,
   useScrollIndicatorWhileScrolling,
+  useTabBarInset,
 } from "@/ui";
 import { useNotes } from "./note-queries";
 import { NoteRowView } from "./note-row";
@@ -18,6 +18,7 @@ import { type NoteRow, noteSections } from "./note-sections";
 
 export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
+  const tabBarInset = useTabBarInset();
   const { t } = useTranslation("notes");
   const router = useRouter();
   const notes = useNotes(host.hostId);
@@ -37,6 +38,7 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
     if (!notes.error) return <PendingIndicator />;
     return (
       <ListNotice
+        icon={{ ios: "wifi.slash", android: "cloud_off" }}
         title={t("unavailable.title", { host: host.name })}
         action={{
           label: t("unavailable.retry"),
@@ -50,6 +52,7 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   return (
     <SectionList<NoteRow>
       {...scrollIndicator}
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
       style={styles.fill}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
@@ -61,9 +64,13 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
       onRefresh={pull.onRefresh}
       ListEmptyComponent={
         searching ? (
-          <ListNotice title={t("noResults", { query: query.trim() })} />
+          <ListNotice
+            icon={{ ios: "magnifyingglass", android: "search" }}
+            title={t("noResults", { query: query.trim() })}
+          />
         ) : (
           <ListNotice
+            icon={{ ios: "doc.text", android: "description" }}
             title={t("empty.title")}
             description={t("empty.description", { host: host.name })}
           />
@@ -83,7 +90,6 @@ export function NoteList({ host, query }: { host: SavedHost; query: string }) {
           }
         />
       )}
-      ItemSeparatorComponent={ListSeparator}
     />
   );
 }

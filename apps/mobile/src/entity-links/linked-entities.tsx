@@ -3,7 +3,6 @@ import type {
   EntityLinkRelation,
   EntityRef,
 } from "@cocurdex/shared";
-import { Text as UiText } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { entityLinkHref } from "@/markdown";
@@ -75,9 +74,9 @@ export function LinkedEntitiesSection({
           key={row.key}
           testID={row.testID}
           onPress={row.onPress}
-          supportingText={row.detail}
+          supporting={row.detail}
         >
-          <UiText>{row.title}</UiText>
+          {row.title}
         </FormRow>
       ))}
     </FormSection>

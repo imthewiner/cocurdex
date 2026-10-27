@@ -11,6 +11,10 @@
   },
   "computers": "电脑",
   "language": {
+    "names": {
+      "enUS": "英语",
+      "zhCN": "简体中文"
+    },
     "system": "跟随系统",
     "title": "语言"
   },

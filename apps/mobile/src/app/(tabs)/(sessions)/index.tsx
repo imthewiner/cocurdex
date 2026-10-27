@@ -1,10 +1,7 @@
 import { type AgentId, countActiveSessionFilters } from "@cocurdex/shared";
-import EditSquareIcon from "@expo/material-symbols/edit_square.xml";
-import FilterIcon from "@expo/material-symbols/filter_list.xml";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { useAgents } from "@/agents";
 import {
   EmptyHosts,
@@ -14,14 +11,7 @@ import {
 } from "@/hosts";
 import { beginNewSession } from "@/new-session";
 import { SessionList, sessionsStore, useSessionListUi } from "@/sessions";
-import { emptyListOptions, type ListHeader, useListHeader } from "@/ui";
-
-function filterIcon(filtered: boolean) {
-  if (Platform.OS !== "ios") return FilterIcon;
-  return filtered
-    ? "line.3.horizontal.decrease.circle.fill"
-    : "line.3.horizontal.decrease.circle";
-}
+import { ListScreenHeader } from "@/ui";
 
 export default function SessionsScreen() {
   const { t } = useTranslation(["sessions", "common"]);
@@ -29,16 +19,10 @@ export default function SessionsScreen() {
   const router = useRouter();
   const host = useCurrentHost();
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader({
-    placeholder: t("search"),
-    onQuery: setQuery,
-  });
   if (!host) {
     return (
       <>
-        <Stack.Screen
-          options={emptyListOptions(t("common:screens.sessions"))}
-        />
+        <ListScreenHeader title={t("common:screens.sessions")} />
         <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
       </>
     );
@@ -48,7 +32,7 @@ export default function SessionsScreen() {
       key={host.hostId}
       host={host}
       query={query}
-      listHeader={listHeader}
+      onQuery={setQuery}
       onNewSession={() => {
         beginNewSession(host.hostId);
         router.push("/new-session");
@@ -60,15 +44,15 @@ export default function SessionsScreen() {
 function HostSessionsScreen({
   host,
   query,
-  listHeader,
+  onQuery,
   onNewSession,
 }: {
   host: NonNullable<ReturnType<typeof useCurrentHost>>;
   query: string;
-  listHeader: ListHeader;
+  onQuery(query: string): void;
   onNewSession(): void;
 }) {
-  const { t } = useTranslation("sessions");
+  const { t } = useTranslation(["sessions", "common"]);
   const router = useRouter();
   const { view } = useSessionListUi();
   const filtered = countActiveSessionFilters(view) > 0;
@@ -80,21 +64,30 @@ function HostSessionsScreen({
 
   return (
     <>
-      <Stack.Screen options={listHeader.options} />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={filterIcon(filtered)}
-          accessibilityLabel={t("list.menu")}
-          onPress={() => router.push("/list-options")}
-        >
-          {filtered ? <Stack.Toolbar.Badge /> : null}
-        </Stack.Toolbar.Button>
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "square.and.pencil" : EditSquareIcon}
-          accessibilityLabel={t("newSession.open")}
-          onPress={gate("execute", onNewSession)}
-        />
-      </Stack.Toolbar>
+      <ListScreenHeader
+        title={t("common:screens.sessions")}
+        search={{ placeholder: t("search"), onQuery }}
+        actions={[
+          {
+            key: "filter",
+            icon: {
+              ios: filtered
+                ? "line.3.horizontal.decrease.circle.fill"
+                : "line.3.horizontal.decrease.circle",
+              android: "filter_list",
+            },
+            label: t("list.menu"),
+            badge: filtered,
+            onPress: () => router.push("/list-options"),
+          },
+          {
+            key: "new",
+            icon: { ios: "square.and.pencil", android: "edit_square" },
+            label: t("newSession.open"),
+            onPress: gate("execute", onNewSession),
+          },
+        ]}
+      />
       <SessionList
         host={host}
         query={query}

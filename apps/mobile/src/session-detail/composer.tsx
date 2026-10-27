@@ -5,6 +5,7 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
+import { useFloatingSurface } from "@/ui";
 import { AttachmentStrip, type DraftImage } from "./attachment-strip";
 import { MAX_IMAGES_PER_MESSAGE, type PickedImage } from "./image-attachments";
 import {
@@ -58,6 +59,7 @@ export function Composer({
 }: ComposerProps) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
+  const floatingSurface = useFloatingSurface();
   const failureMessages = useUploadFailureMessages();
   const [text, setText] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -136,12 +138,7 @@ export function Composer({
           {failureMessages[failure]}
         </Text>
       ) : null}
-      <View
-        style={[
-          styles.bar,
-          { borderColor: colors.border, backgroundColor: colors.card },
-        ]}
-      >
+      <View style={[styles.bar, floatingSurface]}>
         <AttachmentStrip
           drafts={drafts}
           onRemove={(key) =>
@@ -221,7 +218,6 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     paddingBottom: space.sm,
     borderRadius: COMPOSER_RADIUS,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   input: {
     minHeight: 26,

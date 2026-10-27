@@ -11,6 +11,10 @@
   },
   "computers": "Computers",
   "language": {
+    "names": {
+      "enUS": "English",
+      "zhCN": "Chinese, Simplified"
+    },
     "system": "Match System",
     "title": "Language"
   },

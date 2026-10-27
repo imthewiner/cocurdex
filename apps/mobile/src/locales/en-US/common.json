@@ -1,4 +1,8 @@
 {
+  "actions": {
+    "cancel": "Cancel",
+    "search": "Search"
+  },
   "age": {
     "days_one": "{{count}}d",
     "days_other": "{{count}}d",
@@ -43,6 +47,7 @@
     "archived": "Archived Sessions",
     "computers": "Computers",
     "issues": "Issues",
+    "language": "Language",
     "newIssue": "New Issue",
     "notes": "Notes",
     "pair": "Pair a Computer",

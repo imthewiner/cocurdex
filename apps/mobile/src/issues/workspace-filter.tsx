@@ -1,52 +1,101 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { useTranslation } from "react-i18next";
+import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useHostSessions } from "@/sessions";
-import { ChoiceSheet } from "@/ui";
+import { layout, space, useThemeColors } from "@/theme";
 
-const ALL_WORKSPACES = "";
+const CHIP_HEIGHT = 34;
 
-export function useWorkspaceFilterLabel(
-  hostId: string,
-  workspaceId: string | null,
-) {
-  const { t } = useTranslation("issues");
-  const { workspaces } = useHostSessions(hostId);
-  const title =
-    workspaces.find((workspace) => workspace.id === workspaceId)?.name ??
-    t("allWorkspaces");
-  return t("workspaceFilter", { workspace: title });
+function WorkspaceChip({
+  label,
+  selected,
+  testID,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  testID: string;
+  onPress(): void;
+}) {
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[
+        styles.chip,
+        selected && {
+          backgroundColor: colors.muted,
+          borderColor: colors.border,
+        },
+      ]}
+      testID={testID}
+    >
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.label,
+          { color: selected ? colors.foreground : colors.mutedForeground },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
-export function WorkspaceFilterSheet({
+export function WorkspaceChips({
   host,
-  presented,
   workspaceId,
   onChange,
-  onDismiss,
 }: {
   host: SavedHost;
-  presented: boolean;
   workspaceId: string | null;
   onChange(workspaceId: string | null): void;
-  onDismiss(): void;
 }) {
   const { t } = useTranslation("issues");
   const { workspaces } = useHostSessions(host.hostId);
-  const choices = [
-    { value: ALL_WORKSPACES, label: t("allWorkspaces") },
-    ...workspaces.map((workspace) => ({
-      value: workspace.id,
-      label: workspace.name,
-    })),
-  ];
+  if (workspaces.length < 2) return null;
   return (
-    <ChoiceSheet
-      testID="workspace-filter-sheet"
-      title={presented ? t("field.workspace") : null}
-      choices={choices}
-      selected={workspaceId ?? ALL_WORKSPACES}
-      onSelect={(value) => onChange(value === ALL_WORKSPACES ? null : value)}
-      onDismiss={onDismiss}
-    />
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chips}
+      testID="workspace-chips"
+    >
+      <WorkspaceChip
+        label={t("allWorkspaces")}
+        selected={workspaceId === null}
+        testID="workspace-chip-all"
+        onPress={() => onChange(null)}
+      />
+      {workspaces.map((workspace) => (
+        <WorkspaceChip
+          key={workspace.id}
+          label={workspace.name}
+          selected={workspace.id === workspaceId}
+          testID={`workspace-chip-${workspace.id}`}
+          onPress={() => onChange(workspace.id)}
+        />
+      ))}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  chips: {
+    gap: space.xs,
+    paddingHorizontal: layout.sideMargin - space.sm,
+    paddingVertical: space.sm,
+  },
+  chip: {
+    height: CHIP_HEIGHT,
+    justifyContent: "center",
+    paddingHorizontal: space.md,
+    borderRadius: CHIP_HEIGHT / 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "transparent",
+  },
+  label: { fontSize: 15 },
+});

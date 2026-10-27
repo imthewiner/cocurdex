@@ -1,6 +1,16 @@
 import type { IssueRecord } from "@cocurdex/shared";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRef } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  type HostInstance,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
+import { type MenuAnchor, measureAnchor, menuAnchor } from "@/ui";
 import { IssueStatusMark } from "./issue-status-mark";
 
 export function IssueRowView({
@@ -8,20 +18,32 @@ export function IssueRowView({
   statusTitle,
   labelNames,
   onPress,
+  onMove,
 }: {
   issue: IssueRecord;
   statusTitle: string;
   labelNames: string[];
   onPress(): void;
+  onMove(anchor: MenuAnchor): void;
 }) {
+  const { t } = useTranslation("issues");
   const colors = useThemeColors();
+  const row = useRef<HostInstance>(null);
   const detail = [issue.identifier, ...labelNames].join(" · ");
   return (
     <Pressable
       accessibilityLabel={issue.title}
       accessibilityRole="button"
       accessibilityValue={{ text: `${statusTitle}, ${detail}` }}
+      accessibilityActions={[{ name: "move", label: t("move.action") }]}
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === "move") {
+          measureAnchor(row.current, onMove);
+        }
+      }}
       onPress={onPress}
+      onLongPress={(event) => onMove(menuAnchor(event))}
+      ref={row}
       style={({ pressed }) => [
         styles.row,
         pressed && { backgroundColor: colors.muted },
@@ -56,7 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space.md,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
     paddingHorizontal: layout.sideMargin,
   },
   mark: { height: 22, justifyContent: "center" },

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AgentIcon, RoleAvatar, type RoleAvatarSource } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
-import { useAgeLabel } from "@/ui";
+import { type MenuAnchor, menuAnchor, useAgeLabel } from "@/ui";
 import { type SessionRow, sessionRowStatus } from "./session-sections";
 import { SessionStatusMark } from "./session-status-mark";
 
@@ -98,7 +98,7 @@ export function SessionRowView({
   row: SessionRow;
   role: RoleAvatarSource | null;
   onPress(): void;
-  onLongPress(): void;
+  onLongPress(anchor: MenuAnchor): void;
 }) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
@@ -117,7 +117,7 @@ export function SessionRowView({
       accessibilityRole="button"
       accessibilityValue={{ text: summary }}
       onPress={onPress}
-      onLongPress={onLongPress}
+      onLongPress={(event) => onLongPress(menuAnchor(event))}
       style={({ pressed }) => [
         styles.row,
         { paddingStart: contentStart },
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: "center",
     gap: 2,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
     paddingEnd: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },

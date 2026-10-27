@@ -7,7 +7,7 @@ export default function SessionsLayout() {
     <Stack>
       <Stack.Screen
         name="index"
-        options={{ title: t("screens.sessions"), headerLargeTitle: true }}
+        options={{ title: t("screens.sessions"), headerShown: false }}
       />
     </Stack>
   );

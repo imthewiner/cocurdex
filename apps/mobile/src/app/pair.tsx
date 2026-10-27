@@ -1,16 +1,18 @@
-import { Button, Text, TextInput, type TextInputRef } from "@expo/ui";
+import { buildHostPairingLink } from "@cocurdex/shared";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { hosts, type PairFailure, selectHost, usePairingRoutes } from "@/hosts";
-import { useThemeColors } from "@/theme";
 import {
-  BrandHost,
   FieldSection,
   Form,
+  FormNote,
+  FormRow,
   FormSection,
+  FormText,
+  FormTextField,
   keyboardHidden,
   SheetAction,
 } from "@/ui";
@@ -25,14 +27,24 @@ function useFailureMessages(): Record<PairFailure, string> {
   };
 }
 
+function deepLinkPairingLink({ host, code }: { host?: string; code?: string }) {
+  if (!host || !code) return "";
+  try {
+    return buildHostPairingLink(host, code);
+  } catch {
+    return "";
+  }
+}
+
 export default function PairScreen() {
   const { t } = useTranslation("hosts");
   const failureMessages = useFailureMessages();
   const router = useRouter();
   const { switchToScan } = usePairingRoutes();
-  const colors = useThemeColors();
-  const linkInput = useRef<TextInputRef>(null);
-  const [link, setLink] = useState("");
+  const linkInput = useRef<TextInputInstance>(null);
+  const params = useLocalSearchParams<{ host?: string; code?: string }>();
+  const initialLink = deepLinkPairingLink(params);
+  const [link, setLink] = useState(initialLink);
   const [pairing, setPairing] = useState(false);
   const [failure, setFailure] = useState<PairFailure | null>(null);
   const canPair = !pairing && link.trim() !== "";
@@ -53,7 +65,8 @@ export default function PairScreen() {
     }
     selectHost(result.host.hostId);
     await keyboardHidden();
-    router.back();
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
   };
 
   const scanInstead = async () => {
@@ -69,49 +82,38 @@ export default function PairScreen() {
         disabled={!canPair}
         onPress={() => void pair()}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FieldSection
-            footer={
-              failure ? (
-                <Text textStyle={{ color: colors.destructive }}>
-                  {failureMessages[failure]}
-                </Text>
-              ) : (
-                <Text textStyle={{ color: colors.mutedForeground }}>
-                  {t("pair.hint")}
-                </Text>
-              )
-            }
-          >
-            <TextInput
-              ref={linkInput}
-              testID="pairing-link"
-              placeholder={t("pair.linkPlaceholder")}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-              keyboardType="url"
-              onChangeText={(value) => {
-                setLink(value);
-                setFailure(null);
-              }}
-              onSubmitEditing={() => void pair()}
-            />
-          </FieldSection>
-          <FormSection>
-            <Button
-              variant="text"
-              label={t("pair.scanInstead")}
-              onPress={() => void scanInstead()}
-            />
-          </FormSection>
-        </Form>
-      </BrandHost>
+      <Form adjustsForKeyboard>
+        <FieldSection
+          footer={
+            failure ? (
+              <FormNote tone="destructive">{failureMessages[failure]}</FormNote>
+            ) : (
+              <FormNote>{t("pair.hint")}</FormNote>
+            )
+          }
+        >
+          <FormTextField
+            ref={linkInput}
+            testID="pairing-link"
+            placeholder={t("pair.linkPlaceholder")}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            defaultValue={initialLink}
+            keyboardType="url"
+            onChangeText={(value) => {
+              setLink(value);
+              setFailure(null);
+            }}
+            onSubmitEditing={() => void pair()}
+          />
+        </FieldSection>
+        <FormSection>
+          <FormRow onPress={() => void scanInstead()}>
+            <FormText tone="tint">{t("pair.scanInstead")}</FormText>
+          </FormRow>
+        </FormSection>
+      </Form>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

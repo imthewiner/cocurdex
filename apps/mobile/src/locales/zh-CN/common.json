@@ -1,4 +1,8 @@
 {
+  "actions": {
+    "cancel": "取消",
+    "search": "搜索"
+  },
   "age": {
     "days_other": "{{count}}天",
     "hours_other": "{{count}}小时",
@@ -38,6 +42,7 @@
     "archived": "已归档会话",
     "computers": "电脑",
     "issues": "Issues",
+    "language": "语言",
     "newIssue": "新建 issue",
     "notes": "笔记",
     "pair": "配对电脑",

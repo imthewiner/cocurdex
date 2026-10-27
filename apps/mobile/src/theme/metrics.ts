@@ -12,7 +12,6 @@ export const layout = {
   sideMargin: 16,
   avatarTile: 36,
   bubbleMaxWidthRatio: 0.85,
-  boardColumnPeek: 90,
 } as const;
 
 export const control = {

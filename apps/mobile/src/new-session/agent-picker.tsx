@@ -3,10 +3,9 @@ import {
   type AgentAvailability,
   getSessionRuntimeAxes,
 } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 import {
   AgentIcon,
   RoleAvatar,
@@ -18,9 +17,7 @@ import {
 import { useSavedHosts } from "@/hosts";
 import { RuntimeRows } from "@/session-runtime";
 import { useHostSessions } from "@/sessions";
-import { useThemeColors } from "@/theme";
 import {
-  BrandHost,
   CloseButton,
   Form,
   FormSection,
@@ -59,7 +56,6 @@ function useAvailabilityLabels(): Record<AgentAvailability, string> {
 function Picker({ host }: { host: SavedHost }) {
   const { t } = useTranslation("sessions");
   const router = useRouter();
-  const colors = useThemeColors();
   const modeLabels = usePermissionModeLabels();
   const availability = useAvailabilityLabels();
   const { draft } = useNewSessionState();
@@ -216,89 +212,81 @@ function Picker({ host }: { host: SavedHost }) {
         disabled={false}
         onPress={done}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FormSection
-            footer={
-              <Text textStyle={{ color: colors.mutedForeground }}>
-                {t("newSession.runsOn", { host: host.name })}
-              </Text>
-            }
-          >
+      <Form>
+        <FormSection footer={t("newSession.runsOn", { host: host.name })}>
+          <ValueFormRow
+            testID="new-session-workspace"
+            label={t("newSession.workspace")}
+            value={workspace?.name ?? t("newSession.none")}
+            onPress={openWorkspaces}
+          />
+        </FormSection>
+        <FormSection>
+          {roles.length > 0 ? (
             <ValueFormRow
-              testID="new-session-workspace"
-              label={t("newSession.workspace")}
-              value={workspace?.name ?? t("newSession.none")}
-              onPress={openWorkspaces}
-            />
-          </FormSection>
-          <FormSection>
-            {roles.length > 0 ? (
-              <ValueFormRow
-                testID="new-session-role"
-                label={t("newSession.role")}
-                value={role?.name ?? t("newSession.none")}
-                icon={
-                  role ? (
-                    <RoleAvatar role={role} agentId={role.agentId} size={20} />
-                  ) : undefined
-                }
-                onPress={openRoles}
-              />
-            ) : null}
-            <ValueFormRow
-              testID="new-session-agent-row"
-              label={t("newSession.agent")}
-              value={agent?.label ?? t("newSession.none")}
+              testID="new-session-role"
+              label={t("newSession.role")}
+              value={role?.name ?? t("newSession.none")}
               icon={
-                agent ? <AgentIcon agentId={agent.id} size={16} /> : undefined
+                role ? (
+                  <RoleAvatar role={role} agentId={role.agentId} size={20} />
+                ) : undefined
               }
-              onPress={openAgents}
+              onPress={openRoles}
             />
-            {models.length > 0 ? (
-              <ValueFormRow
-                testID="new-session-model"
-                label={t("newSession.model")}
-                value={selectedModel?.name ?? t("newSession.none")}
-                onPress={openModels}
-              />
-            ) : null}
-            {shown.permissionModes.length > 0 ? (
-              <ValueFormRow
-                testID="new-session-mode"
-                label={t("newSession.mode")}
-                value={
-                  selectedMode
-                    ? modeLabels[selectedMode].label
-                    : t("newSession.none")
-                }
-                onPress={openModes}
-              />
-            ) : null}
-            {axes && agentType ? (
-              <RuntimeRows
-                axes={axes}
-                open={open}
-                onChange={(patch) =>
-                  updateNewSessionDraft((current) =>
-                    chooseRuntime(current, agentType, patch),
-                  )
-                }
-              />
-            ) : null}
-          </FormSection>
-          {defaults && host.scopes.includes("interact") ? (
-            <FormSection>
-              <ValueFormRow
-                testID="new-session-save-role"
-                label={t("saveRole.open")}
-                value=""
-                onPress={() => router.push("/new-session/config/save-role")}
-              />
-            </FormSection>
           ) : null}
-        </Form>
-      </BrandHost>
+          <ValueFormRow
+            testID="new-session-agent-row"
+            label={t("newSession.agent")}
+            value={agent?.label ?? t("newSession.none")}
+            icon={
+              agent ? <AgentIcon agentId={agent.id} size={16} /> : undefined
+            }
+            onPress={openAgents}
+          />
+          {models.length > 0 ? (
+            <ValueFormRow
+              testID="new-session-model"
+              label={t("newSession.model")}
+              value={selectedModel?.name ?? t("newSession.none")}
+              onPress={openModels}
+            />
+          ) : null}
+          {shown.permissionModes.length > 0 ? (
+            <ValueFormRow
+              testID="new-session-mode"
+              label={t("newSession.mode")}
+              value={
+                selectedMode
+                  ? modeLabels[selectedMode].label
+                  : t("newSession.none")
+              }
+              onPress={openModes}
+            />
+          ) : null}
+          {axes && agentType ? (
+            <RuntimeRows
+              axes={axes}
+              open={open}
+              onChange={(patch) =>
+                updateNewSessionDraft((current) =>
+                  chooseRuntime(current, agentType, patch),
+                )
+              }
+            />
+          ) : null}
+        </FormSection>
+        {defaults && host.scopes.includes("interact") ? (
+          <FormSection>
+            <ValueFormRow
+              testID="new-session-save-role"
+              label={t("saveRole.open")}
+              value=""
+              onPress={() => router.push("/new-session/config/save-role")}
+            />
+          </FormSection>
+        ) : null}
+      </Form>
       {optionSheet.sheet}
     </>
   );
@@ -309,7 +297,3 @@ export function AgentPicker() {
   const host = useSavedHosts().find((saved) => saved.hostId === hostId);
   return host ? <Picker host={host} /> : null;
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

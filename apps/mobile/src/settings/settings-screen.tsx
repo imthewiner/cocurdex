@@ -1,5 +1,3 @@
-import { type SupportedLocale, supportedLocales } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -7,9 +5,7 @@ import { useCurrentHost } from "@/hosts";
 import {
   APPEARANCE_PREFERENCES,
   type AppearancePreference,
-  type LanguagePreference,
   setAppearance,
-  setLanguage,
   usePreferences,
 } from "@/preferences";
 import {
@@ -17,20 +13,17 @@ import {
   useArchivedSessions,
   useHostSessions,
 } from "@/sessions";
-import { useThemeColors } from "@/theme";
+import { useGroupedColors } from "@/theme";
 import {
-  BrandHost,
   Form,
   FormRow,
   FormSection,
+  FormText,
+  ListScreenHeader,
   SelectedMark,
   ValueFormRow,
 } from "@/ui";
-
-const LOCALE_NAMES: Record<SupportedLocale, string> = {
-  "en-US": "English",
-  "zh-CN": "简体中文",
-};
+import { LOCALE_ENDONYMS } from "./locale-names";
 
 function useAppearanceLabels(): Record<AppearancePreference, string> {
   const { t } = useTranslation("settings");
@@ -59,20 +52,23 @@ function ArchivedRow({ hostId }: { hostId: string }) {
   );
 }
 
-function ValueText({ value }: { value: string }) {
-  const colors = useThemeColors();
-  return <Text textStyle={{ color: colors.mutedForeground }}>{value}</Text>;
-}
-
 export function SettingsScreen() {
   const router = useRouter();
-  const { t } = useTranslation("settings");
+  const { t } = useTranslation(["settings", "common"]);
   const preferences = usePreferences();
   const appearanceLabels = useAppearanceLabels();
   const host = useCurrentHost();
-  const languages: LanguagePreference[] = ["system", ...supportedLocales];
+  const grouped = useGroupedColors();
+  const language =
+    preferences.language === "system"
+      ? t("language.system")
+      : LOCALE_ENDONYMS[preferences.language];
   return (
-    <BrandHost style={{ flex: 1 }}>
+    <>
+      <ListScreenHeader
+        title={t("common:screens.settings")}
+        background={grouped.page}
+      />
       <Form>
         <FormSection>
           <ValueFormRow
@@ -94,27 +90,17 @@ export function SettingsScreen() {
                 />
               }
             >
-              <Text>{appearanceLabels[appearance]}</Text>
+              {appearanceLabels[appearance]}
             </FormRow>
           ))}
         </FormSection>
-        <FormSection title={t("language.title")}>
-          {languages.map((language) => (
-            <FormRow
-              key={language}
-              testID={`settings-language-${language}`}
-              onPress={() => setLanguage(language)}
-              trailing={
-                <SelectedMark selected={preferences.language === language} />
-              }
-            >
-              <Text>
-                {language === "system"
-                  ? t("language.system")
-                  : LOCALE_NAMES[language]}
-              </Text>
-            </FormRow>
-          ))}
+        <FormSection>
+          <ValueFormRow
+            testID="settings-language"
+            label={t("language.title")}
+            value={language}
+            onPress={() => router.push("/settings/language")}
+          />
         </FormSection>
         {host ? (
           <FormSection title={t("sessions.title")}>
@@ -123,12 +109,16 @@ export function SettingsScreen() {
         ) : null}
         <FormSection title={t("about.title")}>
           <FormRow
-            trailing={<ValueText value={Constants.expoConfig?.version ?? ""} />}
+            trailing={
+              <FormText tone="muted">
+                {Constants.expoConfig?.version ?? ""}
+              </FormText>
+            }
           >
-            <Text>{t("about.version")}</Text>
+            {t("about.version")}
           </FormRow>
         </FormSection>
       </Form>
-    </BrandHost>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import {
@@ -10,8 +9,13 @@ import {
   useSavedHosts,
 } from "@/hosts";
 import { layout, space, useThemeColors } from "@/theme";
-import { ListSeparator, useScrollIndicatorWhileScrolling } from "@/ui";
-import { ComputerActionsSheet } from "./computer-actions-sheet";
+import {
+  BrandHost,
+  type MenuAnchor,
+  menuAnchor,
+  useScrollIndicatorWhileScrolling,
+} from "@/ui";
+import { useComputerActions } from "./computer-actions-menu";
 
 function HostRow({
   host,
@@ -20,7 +24,7 @@ function HostRow({
 }: {
   host: SavedHost;
   current: boolean;
-  onMore(): void;
+  onMore(anchor: MenuAnchor): void;
 }) {
   const { t } = useTranslation("hosts");
   const colors = useThemeColors();
@@ -34,7 +38,7 @@ function HostRow({
       }}
       accessibilityState={{ selected: current }}
       onPress={() => selectHost(host.hostId)}
-      onLongPress={onMore}
+      onLongPress={(event) => onMore(menuAnchor(event))}
       style={({ pressed }) => [
         styles.row,
         pressed && { backgroundColor: colors.muted },
@@ -77,9 +81,7 @@ export function HostsList() {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
   const saved = useSavedHosts();
   const current = useCurrentHost();
-  const [actionsHostId, setActionsHostId] = useState<string | null>(null);
-  const actionsHost =
-    saved.find((host) => host.hostId === actionsHostId) ?? null;
+  const actions = useComputerActions();
   return (
     <>
       <FlatList
@@ -92,16 +94,16 @@ export function HostsList() {
           <HostRow
             host={item}
             current={item.hostId === current?.hostId}
-            onMore={() => setActionsHostId(item.hostId)}
+            onMore={(anchor) =>
+              actions.open(item, item.hostId === current?.hostId, anchor)
+            }
           />
         )}
-        ItemSeparatorComponent={ListSeparator}
       />
-      <ComputerActionsSheet
-        host={actionsHost}
-        current={actionsHost?.hostId === current?.hostId}
-        onDismiss={() => setActionsHostId(null)}
-      />
+      {actions.menu}
+      {actions.dialog ? (
+        <BrandHost matchContents>{actions.dialog}</BrandHost>
+      ) : null}
     </>
   );
 }
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space.md,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
     paddingLeft: layout.sideMargin,
     paddingRight: layout.sideMargin,
   },

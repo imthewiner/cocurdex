@@ -5,12 +5,12 @@ export function SheetAction({ label, disabled, onPress }: SheetActionProps) {
   return (
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.Button
+        icon="checkmark"
         variant="done"
+        accessibilityLabel={label}
         disabled={disabled}
         onPress={onPress}
-      >
-        {label}
-      </Stack.Toolbar.Button>
+      />
     </Stack.Toolbar>
   );
 }

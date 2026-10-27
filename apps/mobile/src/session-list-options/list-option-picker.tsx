@@ -9,11 +9,9 @@ import {
   SESSION_STATUS_BUCKETS,
   type SessionListView,
 } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
 import type { ReactElement, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
 import { AgentIcon } from "@/agents";
 import { useCurrentHost } from "@/hosts";
 import {
@@ -21,14 +19,7 @@ import {
   useSessionListLabels,
   useSessionListUi,
 } from "@/sessions";
-import {
-  BrandHost,
-  Form,
-  FormRow,
-  FormSection,
-  HostedAccessory,
-  SelectedMark,
-} from "@/ui";
+import { Form, FormRow, FormSection, SelectedMark } from "@/ui";
 import { type ListOptionField, toggledValue } from "./list-option-fields";
 import { useSessionAgentChoices } from "./session-agents";
 
@@ -54,14 +45,10 @@ function OptionSection({
           key={option.key}
           testID={`list-choice-${option.key}`}
           onPress={option.onPress}
-          leading={
-            option.leading ? (
-              <HostedAccessory>{option.leading}</HostedAccessory>
-            ) : undefined
-          }
+          leading={option.leading}
           trailing={<SelectedMark selected={option.selected} />}
         >
-          <Text>{option.label}</Text>
+          {option.label}
         </FormRow>
       ))}
     </FormSection>
@@ -200,9 +187,7 @@ function Picker({ host, field }: { host: SavedHost; field: ListOptionField }) {
   return (
     <>
       <Stack.Screen options={{ title }} />
-      <BrandHost style={styles.fill}>
-        <Form>{sections}</Form>
-      </BrandHost>
+      <Form adjustsForKeyboard>{sections}</Form>
     </>
   );
 }
@@ -211,7 +196,3 @@ export function ListOptionPicker({ field }: { field: ListOptionField }) {
   const host = useCurrentHost();
   return host ? <Picker host={host} field={field} /> : null;
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

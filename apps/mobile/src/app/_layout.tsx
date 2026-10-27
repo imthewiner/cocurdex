@@ -188,8 +188,8 @@ export default function RootLayout() {
             options={{
               title: t("screens.newIssue"),
               presentation: "modal",
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
+              headerStyle: { backgroundColor: colors.background },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen

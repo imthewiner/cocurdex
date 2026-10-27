@@ -1,15 +1,9 @@
 {
   "allWorkspaces": "All Workspaces",
-  "board": {
-    "move": "Move",
-    "moveFailed": "Couldn't move the issue. Check the connection and try again.",
-    "moveTitle": "Move to"
-  },
   "create": {
     "creating": "Creating…",
     "descriptionPlaceholder": "Add a description",
     "failed": "Couldn't create the issue. Check the connection and try again.",
-    "hint": "You can hand it to an agent once it's created.",
     "open": "New Issue",
     "submit": "Create",
     "titlePlaceholder": "Issue title"
@@ -25,21 +19,19 @@
     "status": "Status",
     "workspace": "Workspace"
   },
-  "layout": {
-    "showBoard": "Show as Board",
-    "showList": "Show as List"
-  },
   "missing": "This issue was deleted on the computer.",
+  "move": {
+    "action": "Move",
+    "failed": "Couldn't move the issue. Check the connection and try again.",
+    "title": "Move to"
+  },
   "noResults": "No issues match “{{query}}”",
   "search": "Search issues",
-  "sectionTitle_one": "{{status}} {{count}}",
-  "sectionTitle_other": "{{status}} {{count}}",
   "sessions": "Agent Sessions",
   "subIssues": "Sub-issues {{done}}/{{total}}",
   "unavailable": {
     "retry": "Try Again",
     "title": "Couldn’t load issues from {{host}}"
   },
-  "untitledSession": "Untitled session",
-  "workspaceFilter": "Workspace: {{workspace}}"
+  "untitledSession": "Untitled session"
 }
