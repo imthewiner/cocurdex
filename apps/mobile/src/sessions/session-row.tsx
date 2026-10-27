@@ -42,13 +42,16 @@ function MetaIcon({
 }
 
 const CHILD_INDENT = 20;
-const DISCLOSURE_SLOP = { top: 12, bottom: 12, left: 12, right: 8 };
 
-function ChildrenDisclosure({
-  expanded,
+export function sessionRowStart(row: SessionRow) {
+  return layout.sideMargin + row.depth * CHILD_INDENT;
+}
+
+export function ChildrenToggle({
+  row,
   onPress,
 }: {
-  expanded: boolean;
+  row: SessionRow;
   onPress(): void;
 }) {
   const { t } = useTranslation("sessions");
@@ -57,22 +60,31 @@ function ChildrenDisclosure({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={
-        expanded ? t("list.collapseChildren") : t("list.expandChildren")
+        row.expanded ? t("list.collapseChildren") : t("list.expandChildren")
       }
-      accessibilityState={{ expanded }}
-      hitSlop={DISCLOSURE_SLOP}
+      accessibilityState={{ expanded: row.expanded }}
       onPress={onPress}
-      style={styles.disclosure}
+      style={({ pressed }) => [
+        styles.toggle,
+        { paddingStart: sessionRowStart(row) },
+        pressed && { backgroundColor: colors.muted },
+      ]}
+      testID={`session-children-${row.id}`}
     >
       <SymbolView
         name={
-          expanded
-            ? { ios: "chevron.down", android: "keyboard_arrow_down" }
-            : { ios: "chevron.right", android: "keyboard_arrow_right" }
+          row.expanded
+            ? { ios: "chevron.up", android: "keyboard_arrow_up" }
+            : { ios: "chevron.down", android: "keyboard_arrow_down" }
         }
         size={14}
         tintColor={colors.mutedForeground}
       />
+      <Text style={[styles.toggleLabel, { color: colors.mutedForeground }]}>
+        {row.expanded
+          ? t("list.showLess")
+          : t("list.childSessions", { count: row.childCount })}
+      </Text>
     </Pressable>
   );
 }
@@ -82,13 +94,11 @@ export function SessionRowView({
   role,
   onPress,
   onLongPress,
-  onToggleChildren,
 }: {
   row: SessionRow;
   role: RoleAvatarSource | null;
   onPress(): void;
   onLongPress(): void;
-  onToggleChildren(): void;
 }) {
   const colors = useThemeColors();
   const age = useAgeLabel(row.activityAt);
@@ -100,6 +110,7 @@ export function SessionRowView({
     .filter(Boolean)
     .join(" · ");
   const summary = [role?.name, detail, age].filter(Boolean).join(", ");
+  const contentStart = sessionRowStart(row);
   return (
     <Pressable
       accessibilityLabel={row.title}
@@ -109,18 +120,12 @@ export function SessionRowView({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.row,
-        { paddingStart: layout.sideMargin + row.depth * CHILD_INDENT },
+        { paddingStart: contentStart },
         pressed && { backgroundColor: colors.muted },
       ]}
       testID={`session-row-${row.id}`}
     >
       <View style={styles.line}>
-        {row.hasChildren ? (
-          <ChildrenDisclosure
-            expanded={row.expanded}
-            onPress={onToggleChildren}
-          />
-        ) : null}
         <Text
           numberOfLines={1}
           style={[styles.title, { color: colors.foreground }]}
@@ -156,7 +161,14 @@ const styles = StyleSheet.create({
     paddingEnd: layout.sideMargin,
   },
   line: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  disclosure: { width: 16, alignItems: "center", marginEnd: -space.xs },
+  toggle: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.xs,
+    paddingEnd: layout.sideMargin,
+  },
+  toggleLabel: { fontSize: 14 },
   title: { flex: 1, fontSize: 16, lineHeight: 22 },
   age: { fontSize: 13, fontVariant: ["tabular-nums"] },
   meta: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },

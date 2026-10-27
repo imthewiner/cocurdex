@@ -3,6 +3,7 @@ import type {
   MessageAttachment,
   TeamTemplateRecord,
 } from "@cocurdex/shared";
+import { getThinkingLevelLabel } from "@cocurdex/shared";
 import { GitBranch } from "lucide-react";
 import { useId, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,7 +21,6 @@ import {
   buildAgentSelectOptions,
   defaultAgentDescriptors,
   getAgentDisplayLabel,
-  getThinkingLevelLabel,
   PermissionModeSubmenu,
   ProviderModelMenu,
   SessionModeSubmenu,

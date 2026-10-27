@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
+import { SessionConfigChips } from "@/session-config";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import { ShimmerText, useTransitionSettled } from "@/ui";
@@ -160,7 +161,14 @@ export function SessionDetailScreen({
     return attempt(() =>
       connection.command(
         "session.send",
-        { sessionId, messageId, content, attachments },
+        {
+          sessionId,
+          messageId,
+          content,
+          attachments,
+          thinkingLevel:
+            observation?.session.providerSnapshot?.thinkingLevel ?? undefined,
+        },
         { idempotencyKey: messageId },
       ),
     );
@@ -272,6 +280,9 @@ export function SessionDetailScreen({
               onStop={stop}
               onPickImages={pickImages}
               onUploadImage={(image) => uploadImage(host, image)}
+              accessory={
+                <SessionConfigChips host={host} sessionId={sessionId} />
+              }
             />
           )}
         </View>

@@ -1,7 +1,4 @@
-import type {
-  AgentProviderSnapshot,
-  ProviderModelRecord,
-} from "@cocurdex/shared";
+import type { AgentProviderSnapshot, ProviderModelRecord } from "../contracts";
 
 export interface OpenCodeRuntimeOptions {
   agents: string[];
@@ -42,8 +39,6 @@ function getOpenCodeCompat(value: string | null | undefined) {
 function getStringList(value: unknown) {
   if (!Array.isArray(value)) return [];
 
-  // OpenCode's own "default" entry is the empty selection in the picker, so it
-  // is folded into that row instead of being listed twice.
   return value.filter(
     (entry): entry is string =>
       typeof entry === "string" && entry.length > 0 && entry !== "default",

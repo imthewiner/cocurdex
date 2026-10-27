@@ -3,6 +3,7 @@ import {
   type AgentPermissionMode,
   isChatWorkspaceId,
   type SessionRecord,
+  type SessionRuntimeSelection,
   type WorkspaceRecord,
 } from "@cocurdex/shared";
 
@@ -17,6 +18,7 @@ export interface NewSessionDraft {
   roleId?: string;
   model?: ModelChoice;
   permissionMode?: AgentPermissionMode;
+  runtime?: SessionRuntimeSelection;
 }
 
 export interface WorkspaceChoice {
@@ -57,10 +59,41 @@ export function chooseModel(
   agentType: AgentId,
   model: ModelChoice,
 ): NewSessionDraft {
-  const { workspaceId, roleId } = draft;
-  return roleId
-    ? { workspaceId, agentType, roleId, model }
-    : { workspaceId, agentType, model };
+  const { workspaceId, roleId, runtime } = draft;
+  return {
+    workspaceId,
+    agentType,
+    model,
+    ...(roleId ? { roleId } : {}),
+    ...(runtime ? { runtime } : {}),
+  };
+}
+
+export function chooseRuntime(
+  draft: NewSessionDraft,
+  agentType: AgentId,
+  patch: SessionRuntimeSelection,
+): NewSessionDraft {
+  return { ...draft, agentType, runtime: { ...draft.runtime, ...patch } };
+}
+
+export function displayedRuntime(
+  draft: NewSessionDraft,
+  agentType: AgentId | null,
+  role: (SessionRuntimeSelection & { agentId: AgentId }) | undefined,
+): SessionRuntimeSelection {
+  const preset: SessionRuntimeSelection =
+    role && role.agentId === agentType
+      ? {
+          reasoningEffort: role.reasoningEffort,
+          serviceTier: role.serviceTier,
+          fastMode: role.fastMode,
+          thinkingLevel: role.thinkingLevel,
+          openCodeAgent: role.openCodeAgent,
+          openCodeVariant: role.openCodeVariant,
+        }
+      : {};
+  return { ...preset, ...draft.runtime };
 }
 
 export function choosePermissionMode(

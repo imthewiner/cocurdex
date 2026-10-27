@@ -7,6 +7,7 @@
     "deleteTitle": "Delete “{{title}}”?",
     "fork": "Fork Session",
     "markUnread": "Mark as Unread",
+    "more": "More",
     "pin": "Pin",
     "rename": "Rename",
     "unpin": "Unpin"
@@ -80,6 +81,8 @@
   },
   "list": {
     "agentFilter": "Agent",
+    "childSessions_one": "{{count}} child session",
+    "childSessions_other": "{{count}} child sessions",
     "clearFilters": "Clear Filters",
     "collapseChildren": "Collapse child sessions",
     "direction": {
@@ -104,8 +107,16 @@
     },
     "groupingLabel": "Group By",
     "markAllRead": "Mark All as Read",
-    "menu": "Group and filter sessions",
+    "menu": "Display Options",
     "noMatches": "No sessions match the filters",
+    "options": {
+      "any": "All",
+      "archived": "Archived Sessions",
+      "close": "Close",
+      "done": "Done",
+      "title": "Display Options",
+      "view": "View"
+    },
     "ordering": {
       "activity": "Recent Activity",
       "created": "Created",
@@ -238,7 +249,55 @@
     "save": "Save",
     "saving": "Saving"
   },
+  "runtime": {
+    "default": "Default",
+    "fastMode": "Fast mode",
+    "levels": {
+      "default": "Default",
+      "high": "High",
+      "low": "Low",
+      "max": "Max",
+      "medium": "Medium",
+      "minimal": "Minimal",
+      "off": "Off",
+      "ultra": "Ultra",
+      "xhigh": "XHigh"
+    },
+    "off": "Off",
+    "on": "On",
+    "openCodeAgent": "Collaboration mode",
+    "openCodeVariant": "Variant",
+    "speed": "Speed",
+    "standard": "Standard",
+    "thinking": "Reasoning effort"
+  },
+  "saveRole": {
+    "description": "Description",
+    "descriptionPlaceholder": "Optional",
+    "failed": "Couldn't save the role. Try again.",
+    "name": "Name",
+    "namePlaceholder": "Role name",
+    "open": "Save as Role…",
+    "save": "Save",
+    "saving": "Saving…",
+    "title": "Save as Role"
+  },
   "search": "Search sessions",
+  "sessionConfig": {
+    "close": "Close",
+    "done": "Done",
+    "mcp": "MCP servers",
+    "mcpNone": "This session reports no MCP servers.",
+    "mcpStatus": {
+      "connected": "Connected",
+      "connecting": "Connecting",
+      "disabled": "Disabled",
+      "failed": "Failed"
+    },
+    "modeNeedsExecute": "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.",
+    "open": "Agent settings: {{summary}}",
+    "openMode": "Permission mode: {{mode}}"
+  },
   "status": {
     "needsYou": "Needs you",
     "running": "Running",

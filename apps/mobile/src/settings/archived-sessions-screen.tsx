@@ -3,6 +3,7 @@ import type { SavedHost } from "@cocurdex/client-runtime";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { AgentIcon } from "@/agents";
 import { hostConnection } from "@/connection";
 import {
   type ArchivedSessionRow,
@@ -46,12 +47,15 @@ function ArchivedRow({
         >
           {row.title}
         </Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.meta, { color: colors.mutedForeground }]}
-        >
-          {meta}
-        </Text>
+        <View style={styles.metaLine}>
+          <AgentIcon agentId={row.agentType} size={14} />
+          <Text
+            numberOfLines={1}
+            style={[styles.meta, { color: colors.mutedForeground }]}
+          >
+            {meta}
+          </Text>
+        </View>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -155,7 +159,8 @@ const styles = StyleSheet.create({
   },
   text: { flex: 1, gap: 2 },
   title: { fontSize: 16, lineHeight: 22 },
-  meta: { fontSize: 13, lineHeight: 18 },
+  metaLine: { flexDirection: "row", alignItems: "center", gap: 6 },
+  meta: { flex: 1, fontSize: 13, lineHeight: 18 },
   restore: {
     minHeight: 32,
     borderRadius: 16,

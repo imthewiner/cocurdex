@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "@cocurdex/shared";
 import { randomUUID } from "expo-crypto";
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { layout, space, useThemeColors } from "@/theme";
@@ -27,6 +27,7 @@ export interface ComposerProps {
   placeholder?: string;
   inputTestID?: string;
   autoFocus?: boolean;
+  accessory?: ReactNode;
 }
 
 function uploadFailure(error: unknown): ImageUploadFailure {
@@ -53,6 +54,7 @@ export function Composer({
   placeholder,
   inputTestID = "composer-input",
   autoFocus = false,
+  accessory,
 }: ComposerProps) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
@@ -171,7 +173,7 @@ export function Composer({
               tintColor={colors.mutedForeground}
             />
           </Pressable>
-          <View style={styles.spacer} />
+          <View style={styles.spacer}>{accessory}</View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   actions: { flexDirection: "row", alignItems: "center", gap: space.xs },
-  spacer: { flex: 1 },
+  spacer: { flex: 1, minWidth: 0 },
   round: {
     width: ROUND_SIZE,
     height: ROUND_SIZE,

@@ -3,6 +3,7 @@ import {
   type AgentId,
   type AgentPermissionMode,
   type AgentRoleRecord,
+  applySessionRuntime,
   type CompatibleProviderModel,
   type CreateSessionPayload,
   createProviderSnapshotForModel,
@@ -11,6 +12,7 @@ import {
   type NewSessionDefaults,
   type SessionConfiguration,
   type SessionRecord,
+  type SessionRuntimeSelection,
 } from "@cocurdex/shared";
 
 export interface NewSessionContext {
@@ -130,15 +132,38 @@ function resolvePermissionMode(
 
 function rolePreset(role: AgentRoleRecord | null, agentId: AgentId) {
   if (!role || role.agentId !== agentId) {
-    return { model: null, permissionMode: null };
+    return { model: null, permissionMode: null, runtime: {} };
   }
+  const runtime: SessionRuntimeSelection = {
+    reasoningEffort: role.reasoningEffort,
+    serviceTier: role.serviceTier,
+    fastMode: role.fastMode,
+    thinkingLevel: role.thinkingLevel,
+    openCodeAgent: role.openCodeAgent,
+    openCodeVariant: role.openCodeVariant,
+  };
   return {
     model:
       role.providerId && role.modelId
         ? { providerId: role.providerId, modelId: role.modelId }
         : null,
     permissionMode: role.permissionMode,
+    runtime,
   };
+}
+
+function providerSnapshot(
+  agentId: AgentId,
+  model: CompatibleProviderModel | null,
+  runtime: SessionRuntimeSelection,
+) {
+  if (!model) return null;
+  return applySessionRuntime(
+    createProviderSnapshotForModel(model),
+    agentId,
+    model.model.supportsFastMode ?? false,
+    runtime,
+  );
 }
 
 async function resolveChoices(
@@ -161,7 +186,8 @@ async function resolveChoices(
     permissionModes,
     context.workspaceSessions,
   );
-  return { agent, model, permissionModes, permissionMode };
+  const runtime = { ...preset.runtime, ...input.runtime };
+  return { agent, model, permissionModes, permissionMode, runtime };
 }
 
 export async function resolveNewSessionDefaults(
@@ -189,7 +215,10 @@ export async function resolveNewSession(
   id: string,
   context: NewSessionContext,
 ): Promise<SessionConfiguration> {
-  const { agent, model, permissionMode } = await resolveChoices(input, context);
+  const { agent, model, permissionMode, runtime } = await resolveChoices(
+    input,
+    context,
+  );
   return {
     id,
     workspaceId: input.workspaceId,
@@ -200,7 +229,7 @@ export async function resolveNewSession(
     sessionModeId: null,
     permissionMode,
     agentRoleId: context.role?.id ?? null,
-    providerSnapshot: model ? createProviderSnapshotForModel(model) : null,
+    providerSnapshot: providerSnapshot(agent.id, model, runtime),
     worktreePath: null,
   };
 }

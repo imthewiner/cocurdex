@@ -49,6 +49,7 @@ import type {
   TurnChangeFileContentRequest,
   UndoTurnChangesInput,
   UpdateSessionAttentionPayload,
+  UpdateSessionRuntimePayload,
   UpdateSessionTitlePayload,
   WorkspaceRecord,
   WorkspaceWorktreeEnvironment,
@@ -68,6 +69,7 @@ import {
   isChatSession,
   isChatWorkspaceId,
   isHandoffVisibleMessage,
+  isSessionRuntimeEvent,
   isToolCallId,
   type MessageAttachment,
   messageAgentLookup,
@@ -164,6 +166,8 @@ import {
   resolveNewSession,
   resolveNewSessionDefaults,
 } from "./session-control/create-session";
+import { SessionRuntimeStates } from "./session-control/runtime-states";
+import { resolveRuntimeUpdate } from "./session-control/update-runtime";
 import { DaemonSkillLibraryService } from "./skills";
 import { DaemonSkillsService } from "./skills-service";
 import { DaemonState } from "./state";
@@ -285,6 +289,7 @@ export class CocurdexDaemonService {
   readonly runs: SessionRunCoordinator;
   private readonly worktreeSetups = new WorktreeSetupRuns();
   private readonly queuedFollowUps = new Map<string, QueuedFollowUp[]>();
+  private readonly sessionRuntimeStates = new SessionRuntimeStates();
   private readonly runCapacity: RunCapacity;
   private readonly workflowWorkerScheduler: WorkflowWorkerScheduler;
   private shutdownPromise: Promise<void> | null = null;
@@ -518,6 +523,7 @@ export class CocurdexDaemonService {
     this.runtime.configureAgentEventPersistence(async (event, context) => {
       const persisted = await this.state.persistAgentEvent(event, context);
       await this.state.sessionAttention.applyEvent(event);
+      if (isSessionRuntimeEvent(event)) this.sessionRuntimeStates.apply(event);
       if (event.type === "session.mode.updated" && event.availableModes) {
         await this.state.cacheSessionModes(
           event.sessionId,
@@ -1674,6 +1680,25 @@ export class CocurdexDaemonService {
     };
   }
 
+  async updateSessionRuntime(
+    input: UpdateSessionRuntimePayload,
+    principal: HostPrincipal,
+  ) {
+    const session = await this.state.getSession(input.sessionId);
+    if (!session) throw new Error(`Session ${input.sessionId} was not found.`);
+    const agent = (await this.listAgents()).find(
+      (candidate) => candidate.id === session.agentType,
+    );
+    const configuration = resolveRuntimeUpdate(session, input, {
+      compatibleModels: await this.providerService.listCompatibleProviderModels(
+        session.agentType,
+      ),
+      permissionModes:
+        agent?.capabilities.permissionModes.map((option) => option.id) ?? [],
+    });
+    return this.saveSessionConfiguration(configuration, principal);
+  }
+
   async resolveNewSessionDefaults(input: CreateSessionPayload) {
     return resolveNewSessionDefaults(
       input,
@@ -1797,11 +1822,17 @@ export class CocurdexDaemonService {
     return { session, ...(await this.requireWorkspacePaths(sessionId)) };
   }
 
+  getSessionRuntimeState(sessionId: string) {
+    validateSessionId(sessionId);
+    return this.sessionRuntimeStates.get(sessionId);
+  }
+
   async deleteSession(sessionId: string) {
     const session = await this.state.getSession(sessionId);
     if (!session) {
       return;
     }
+    this.sessionRuntimeStates.forget(sessionId);
     await this.team.onLeadStopped(sessionId);
     await this.scriptRuns.cancelForRequester(sessionId);
 

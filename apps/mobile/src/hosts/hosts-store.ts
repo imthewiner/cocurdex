@@ -61,6 +61,13 @@ export function createHostsStore(storage: KeyValueStorage) {
       store.save({ ...saved, scopes });
       publish();
     },
+    rename(hostId: string, name: string) {
+      const saved = snapshot.find((host) => host.hostId === hostId);
+      const trimmed = name.trim();
+      if (!saved || trimmed === "" || trimmed === saved.name) return;
+      store.save({ ...saved, name: trimmed });
+      publish();
+    },
     remove(hostId: string) {
       store.remove(hostId);
       publish();

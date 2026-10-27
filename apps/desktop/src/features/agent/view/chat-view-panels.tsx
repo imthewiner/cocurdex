@@ -10,6 +10,7 @@ import type {
   AgentSlashCommand,
   AgentThinkingLevel,
   MessageAttachment,
+  ThinkingLevelOption,
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { useAtomValue } from "jotai";
@@ -25,11 +26,7 @@ import {
   ComposerSurfaceBody,
   composerFooterControlClassName,
 } from "@/features/composer";
-import {
-  ScriptRunPanel,
-  TeamPanel,
-  type ThinkingLevelOption,
-} from "@/features/sessions";
+import { ScriptRunPanel, TeamPanel } from "@/features/sessions";
 import { WorkspaceRootsTooltip, workspaceIconFor } from "@/features/workspaces";
 import { desktopApi } from "@/lib";
 import { PermissionCard, permissionsBySessionAtom } from "../permission";

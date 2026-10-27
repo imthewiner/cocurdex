@@ -46,6 +46,52 @@ appId: dev.cocurdex.mobile
     timeout: 15000
 - assertNotVisible: ${LINK_PLACEHOLDER}
 - takeScreenshot: sessions
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${LIST_OPTIONS_ACTION}
+      - extendedWaitUntil:
+          visible:
+            id: list-option-statuses
+          timeout: 5000
+- waitForAnimationToEnd
+- takeScreenshot: list-options
+- tapOn:
+    id: list-option-grouping
+- extendedWaitUntil:
+    visible:
+      id: list-choice-none
+    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: list-choice-none
+      - extendedWaitUntil:
+          visible:
+            id: list-option-grouping
+          timeout: 5000
+- tapOn:
+    id: list-option-grouping
+- extendedWaitUntil:
+    visible:
+      id: list-choice-workspace
+    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - waitForAnimationToEnd
+      - tapOn:
+          id: list-choice-workspace
+      - extendedWaitUntil:
+          visible:
+            id: list-option-grouping
+          timeout: 5000
+- tapOn: ${LIST_OPTIONS_DONE}
+- extendedWaitUntil:
+    visible: ${WORKSPACE_NAME}
+    timeout: 5000
 - scrollUntilVisible:
     element:
       text: ${SHOW_MORE}
@@ -152,6 +198,8 @@ appId: dev.cocurdex.mobile
           visible: ${FILE_SOURCE_TEXT}
           timeout: 10000
 - waitForAnimationToEnd
+- assertVisible:
+    id: source-horizontal-scroll
 - takeScreenshot: file-source
 - runFlow:
     when:
@@ -293,6 +341,8 @@ appId: dev.cocurdex.mobile
       - back
 - scrollUntilVisible:
     element: ${SEND_SESSION_TITLE}
+    direction: UP
+    centerElement: true
 - retry:
     maxRetries: 2
     commands:
@@ -318,6 +368,41 @@ appId: dev.cocurdex.mobile
 - tapOn: ${SEND_REPLY}
 - waitForAnimationToEnd
 - takeScreenshot: session-reply
+- tapOn:
+    id: "session-config-chip"
+- extendedWaitUntil:
+    visible:
+      id: "session-config-model-${AGENT_MODEL_ID}"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: session-config
+- tapOn:
+    id: "session-config-model-${AGENT_MODEL_ID}"
+- scrollUntilVisible:
+    element:
+      id: "session-config-save-role"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "session-config-save-role"
+- extendedWaitUntil:
+    visible:
+      id: "save-role-name"
+    timeout: 10000
+- inputText: "E2E Reviewer"
+- waitForAnimationToEnd
+- takeScreenshot: save-role
+- tapOn: ${SAVE_ROLE_SAVE}
+- extendedWaitUntil:
+    visible:
+      id: "session-config-save-role"
+    timeout: 10000
+- tapOn: ${SESSION_CONFIG_DONE}
+- extendedWaitUntil:
+    visible:
+      id: "session-config-chip"
+      text: "(?s).*${NEW_SESSION_MODEL}.*"
+    timeout: 10000
 - runFlow:
     when:
       platform: iOS
@@ -434,15 +519,16 @@ appId: dev.cocurdex.mobile
           timeout: 5000
 - runFlow:
     when:
-      platform: iOS
-    commands:
-      - tapOn: ${SEARCH_PLACEHOLDER}
-- runFlow:
-    when:
       platform: Android
     commands:
-      - tapOn:
-          id: ".*search_button"
+      - repeat:
+          times: 3
+          commands:
+            - swipe:
+                start: 50%, 35%
+                end: 50%, 85%
+      - waitForAnimationToEnd
+- tapOn: ${SEARCH_PLACEHOLDER}
 - inputText: ${SEARCH_QUERY}
 - extendedWaitUntil:
     visible: ${SEARCHED_SESSION_TITLE}
@@ -486,8 +572,10 @@ appId: dev.cocurdex.mobile
 - runFlow:
     when:
       platform: Android
+      visible: ${SEARCH_QUERY}
     commands:
-      - back
+      - tapOn: ${SEARCH_QUERY}
+      - eraseText: 40
 - extendedWaitUntil:
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
@@ -663,6 +751,58 @@ appId: dev.cocurdex.mobile
           visible: ".*${HOST_ADDRESS}.*"
           timeout: 5000
 - takeScreenshot: paired
+- tapOn:
+    id: "host-more-.*"
+- extendedWaitUntil:
+    visible:
+      id: computer-action-details
+    timeout: 5000
+- takeScreenshot: computer-actions
+- tapOn:
+    id: computer-action-details
+- extendedWaitUntil:
+    visible:
+      id: computer-scope-read
+    timeout: 5000
+- takeScreenshot: computer-detail
+- tapOn:
+    id: computer-rename
+- tapOn:
+    id: rename-computer-name
+- eraseText: 80
+- inputText: ${RENAMED_COMPUTER}
+- tapOn: ${RENAME_COMPUTER_SAVE}
+- extendedWaitUntil:
+    visible: ${RENAMED_COMPUTER}
+    timeout: 5000
+- extendedWaitUntil:
+    notVisible:
+      id: rename-computer-name
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - retry:
+          maxRetries: 3
+          commands:
+            - waitForAnimationToEnd
+            - tapOn:
+                point: 5%, 9%
+            - extendedWaitUntil:
+                visible:
+                  id: "host-more-.*"
+                timeout: 3000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "host-more-.*"
+    timeout: 5000
+- assertVisible: ${RENAMED_COMPUTER}
 - retry:
     maxRetries: 2
     commands:
@@ -670,6 +810,48 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${SEND_SESSION_TITLE}
           timeout: 5000
+- tapOn: ".*${RENAMED_COMPUTER}.*"
+- extendedWaitUntil:
+    visible:
+      id: host-switcher-pair
+    timeout: 5000
+- takeScreenshot: host-switcher
+- tapOn:
+    id: "host-switcher-(?!pair).*"
+- extendedWaitUntil:
+    notVisible:
+      id: host-switcher-pair
+    timeout: 5000
+- swipe:
+    from: ${SEND_SESSION_TITLE}
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: "session-swipe-archive-${SEND_SESSION_ID}"
+    timeout: 5000
+- takeScreenshot: session-swipe
+- tapOn:
+    id: "session-swipe-more-${SEND_SESSION_ID}"
+- extendedWaitUntil:
+    visible:
+      id: session-action-archive
+    timeout: 5000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 50%, 70%
+          end: 50%, 98%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    notVisible:
+      id: session-action-archive
+    timeout: 5000
 - longPressOn: ${SEND_SESSION_TITLE}
 - extendedWaitUntil:
     visible:

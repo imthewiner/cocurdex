@@ -7,6 +7,7 @@
     "deleteTitle": "删除「{{title}}」？",
     "fork": "分叉会话",
     "markUnread": "标为未读",
+    "more": "更多",
     "pin": "置顶",
     "rename": "重命名",
     "unpin": "取消置顶"
@@ -69,6 +70,7 @@
   },
   "list": {
     "agentFilter": "Agent",
+    "childSessions_other": "{{count}} 个子会话",
     "clearFilters": "清除筛选",
     "collapseChildren": "折叠子会话",
     "direction": {
@@ -92,8 +94,16 @@
     },
     "groupingLabel": "分组",
     "markAllRead": "全部标为已读",
-    "menu": "会话分组与筛选",
+    "menu": "显示选项",
     "noMatches": "没有符合筛选条件的会话",
+    "options": {
+      "any": "全部",
+      "archived": "已归档会话",
+      "close": "关闭",
+      "done": "完成",
+      "title": "显示选项",
+      "view": "视图"
+    },
     "ordering": {
       "activity": "最近活动",
       "created": "创建时间",
@@ -223,7 +233,55 @@
     "save": "保存",
     "saving": "正在保存"
   },
+  "runtime": {
+    "default": "默认",
+    "fastMode": "快速模式",
+    "levels": {
+      "default": "默认",
+      "high": "高",
+      "low": "低",
+      "max": "最高",
+      "medium": "中",
+      "minimal": "极低",
+      "off": "关闭",
+      "ultra": "极高",
+      "xhigh": "超高"
+    },
+    "off": "关闭",
+    "on": "开启",
+    "openCodeAgent": "协作模式",
+    "openCodeVariant": "变体",
+    "speed": "速度",
+    "standard": "标准",
+    "thinking": "推理强度"
+  },
+  "saveRole": {
+    "description": "描述",
+    "descriptionPlaceholder": "可选",
+    "failed": "无法保存角色，请重试。",
+    "name": "名称",
+    "namePlaceholder": "角色名称",
+    "open": "另存为角色…",
+    "save": "保存",
+    "saving": "正在保存…",
+    "title": "另存为角色"
+  },
   "search": "搜索会话",
+  "sessionConfig": {
+    "close": "关闭",
+    "done": "完成",
+    "mcp": "MCP 服务器",
+    "mcpNone": "此会话没有报告 MCP 服务器。",
+    "mcpStatus": {
+      "connected": "已连接",
+      "connecting": "连接中",
+      "disabled": "已停用",
+      "failed": "失败"
+    },
+    "modeNeedsExecute": "修改权限模式需要此设备拥有「启动任务」权限，请在电脑上授予。",
+    "open": "Agent 设置：{{summary}}",
+    "openMode": "权限模式：{{mode}}"
+  },
   "status": {
     "needsYou": "需要处理",
     "running": "运行中",

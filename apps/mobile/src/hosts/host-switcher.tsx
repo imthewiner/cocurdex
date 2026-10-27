@@ -1,10 +1,9 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import ComputerIcon from "@expo/material-symbols/computer.xml";
 import { Stack } from "expo-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import { headerLeading } from "@/ui";
-import { selectHost, useSavedHosts } from "./hosts";
+import { HostSwitcherSheet } from "./host-switcher-sheet";
 
 export function HostSwitcher({
   current,
@@ -14,32 +13,26 @@ export function HostSwitcher({
   onPair(): void;
 }) {
   const { t } = useTranslation("hosts");
-  const saved = useSavedHosts();
+  const [presented, setPresented] = useState(false);
   return (
-    <Stack.Toolbar placement="left">
-      {headerLeading(
-        <Stack.Toolbar.Menu
-          title={current.name}
-          icon={Platform.OS === "ios" ? "laptopcomputer" : ComputerIcon}
-          accessibilityLabel={t("switcher.label", { host: current.name })}
-        >
-          {saved.map((host) => (
-            <Stack.Toolbar.MenuAction
-              key={host.hostId}
-              isOn={host.hostId === current.hostId}
-              onPress={() => selectHost(host.hostId)}
-            >
-              {host.name}
-            </Stack.Toolbar.MenuAction>
-          ))}
-          <Stack.Toolbar.MenuAction
-            icon={Platform.OS === "ios" ? "plus" : undefined}
-            onPress={onPair}
+    <>
+      <Stack.Toolbar placement="left">
+        {headerLeading(
+          <Stack.Toolbar.Button
+            icon="laptopcomputer"
+            accessibilityLabel={t("switcher.label", { host: current.name })}
+            onPress={() => setPresented(true)}
           >
-            {t("empty.pair")}
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>,
-      )}
-    </Stack.Toolbar>
+            {current.name}
+          </Stack.Toolbar.Button>,
+        )}
+      </Stack.Toolbar>
+      <HostSwitcherSheet
+        current={current}
+        presented={presented}
+        onPair={onPair}
+        onDismiss={() => setPresented(false)}
+      />
+    </>
   );
 }

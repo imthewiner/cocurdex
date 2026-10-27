@@ -1,4 +1,5 @@
-import type { AgentSessionConfigOption } from "@cocurdex/shared";
+import { supportsInSessionRuntimeAxis } from "../agent-runtime-capabilities";
+import type { AgentId, AgentSessionConfigOption } from "../contracts";
 
 export type OccupiedSessionConfigAxis =
   | "model"
@@ -69,8 +70,6 @@ export function getComposerSessionConfigOptions(
 
 const BASELINE_SPEED_VALUES = new Set(["default", "normal", "standard"]);
 
-// The rung a session speed option rests at by default (Devin's "standard")
-// maps to the picker's built-in standard row, not a named tier.
 export function isBaselineSpeedOptionValue(
   value: string | null | undefined,
 ): boolean {
@@ -113,4 +112,24 @@ export function getSessionConfigTriggerValues(
       return [selected.name];
     },
   );
+}
+
+const IN_SESSION_AXES = [
+  "thinking",
+  "permission",
+  "speed",
+  "agent",
+  "variant",
+] as const satisfies readonly OccupiedSessionConfigAxis[];
+
+export function getOccupiedSessionConfigAxes(
+  agentId: AgentId,
+): OccupiedSessionConfigAxis[] {
+  return [
+    "model",
+    "mode",
+    ...IN_SESSION_AXES.filter((axis) =>
+      supportsInSessionRuntimeAxis(agentId, axis),
+    ),
+  ];
 }

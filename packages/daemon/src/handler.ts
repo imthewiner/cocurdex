@@ -451,6 +451,8 @@ export async function handleDaemonRequest(
       );
     case "session.get":
       return service.getSession(request.params.sessionId);
+    case "session.runtimeState":
+      return service.getSessionRuntimeState(request.params.sessionId);
     case "session.listPeers":
       return service.peerMessaging.listPeers(request.params.sessionId);
     case "session.sendPeerMessage":
@@ -662,6 +664,8 @@ export async function handleDaemonRequest(
         request.params.modeId,
       );
       return null;
+    case "session.updateRuntime":
+      return service.updateSessionRuntime(request.params, context.principal);
     case "session.stop":
       return service.stopSession(request.params.sessionId);
     case "session.undoTurnChanges":

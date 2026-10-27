@@ -46,6 +46,8 @@ export async function handleHostRequest(
         request.params.deviceId,
         context.principal,
       );
+    case "host.devices.revokeSelf":
+      return hostAccess.revokeSelf(context.principal);
     case "host.devices.updateScopes":
       return hostAccess.updateDeviceScopes(
         request.params.deviceId,

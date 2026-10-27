@@ -6,11 +6,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Keyboard, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAgentRoles } from "@/agents";
+import { AgentIcon, RoleAvatar } from "@/agents";
 import { hostConnection } from "@/connection";
 import { useSavedHosts } from "@/hosts";
 import { Composer, pickImages, uploadImage } from "@/session-detail";
-import { useHostSessions } from "@/sessions";
 import { space, useGroupedColors, useThemeColors } from "@/theme";
 import {
   BrandHost,
@@ -20,10 +19,8 @@ import {
   useBottomKeyboardOverlap,
   ValueFormRow,
 } from "@/ui";
-import { draftWorkspaceId, workspaceChoices } from "./new-session-draft";
-import { useAgents, useNewSessionDefaults } from "./new-session-queries";
+import { useNewSessionSelection } from "./new-session-selection";
 import { useNewSessionState } from "./new-session-store";
-import { usePermissionModeLabels } from "./permission-mode-labels";
 import { createSessionStarter, shownSessionPayload } from "./start-session";
 
 function Sheet({ host }: { host: SavedHost }) {
@@ -33,21 +30,8 @@ function Sheet({ host }: { host: SavedHost }) {
   const grouped = useGroupedColors();
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const keyboardOverlap = useBottomKeyboardOverlap();
-  const { draft } = useNewSessionState();
-  const { workspaces, sessions } = useHostSessions(host.hostId);
-  const choices = workspaceChoices(workspaces, sessions);
-  const workspaceId = draftWorkspaceId(draft, choices);
-  const workspace = choices.find(
-    (choice) => choice.workspace.id === workspaceId,
-  );
-  const defaults = useNewSessionDefaults(host.hostId, workspaceId, draft).data;
-  const agent = useAgents(host.hostId).data?.find(
-    (entry) => entry.id === defaults?.agentType,
-  );
-  const role = useAgentRoles(host.hostId).data?.find(
-    (entry) => entry.id === draft.roleId,
-  );
-  const modeLabels = usePermissionModeLabels();
+  const { draft, workspaceId, workspace, defaults, agent, role, agentDetail } =
+    useNewSessionSelection(host);
   const [startSession] = useState(() =>
     createSessionStarter(hostConnection(host.hostId)),
   );
@@ -58,13 +42,6 @@ function Sheet({ host }: { host: SavedHost }) {
     workspaceId !== null &&
     defaults !== undefined &&
     host.scopes.includes("execute");
-  const agentDetail = [
-    role ? agent?.label : null,
-    defaults?.model?.name,
-    defaults?.permissionMode ? modeLabels[defaults.permissionMode].label : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
 
   const start = async (prompt: string, attachments: ImageAttachment[]) => {
     if (!canStart || !workspaceId || !defaults) return false;
@@ -72,7 +49,12 @@ function Sheet({ host }: { host: SavedHost }) {
     setFailed(false);
     try {
       const session = await startSession({
-        payload: shownSessionPayload(workspaceId, defaults, role?.id ?? null),
+        payload: shownSessionPayload(
+          workspaceId,
+          defaults,
+          role?.id ?? null,
+          draft.runtime,
+        ),
         prompt,
         attachments,
         fallbackTitle: role?.name ?? agent?.label ?? t("newSession.title"),
@@ -125,6 +107,13 @@ function Sheet({ host }: { host: SavedHost }) {
               label={t("newSession.agent")}
               value={role?.name ?? agent?.label ?? t("newSession.none")}
               detail={agentDetail}
+              icon={
+                role ? (
+                  <RoleAvatar role={role} agentId={role.agentId} size={20} />
+                ) : agent ? (
+                  <AgentIcon agentId={agent.id} size={16} />
+                ) : undefined
+              }
               onPress={() => void open("/new-session/agent")}
             />
           </FormSection>

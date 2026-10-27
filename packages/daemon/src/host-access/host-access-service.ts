@@ -298,6 +298,20 @@ export class HostAccessService {
     return device;
   }
 
+  revokeSelf(principal: HostPrincipal) {
+    if (principal.kind !== "device") {
+      throw new Error("Only a paired device can unpair itself");
+    }
+    const device = this.options.repository.revokeDevice(
+      principal.deviceId,
+      this.now().toISOString(),
+    );
+    if (!device) return null;
+    this.audit("device.revoked", principalActor(principal), device.id);
+    this.forgetDeviceTokens(device.id);
+    return device;
+  }
+
   updateDeviceScopes(
     deviceId: string,
     scopes: HostAccessScope[],
@@ -314,9 +328,17 @@ export class HostAccessService {
   }
 
   private deviceAccessChanged(deviceId: string) {
+    this.forgetDeviceTokens(deviceId);
+    this.disconnectDevice(deviceId);
+  }
+
+  private forgetDeviceTokens(deviceId: string) {
     for (const [tokenHash, cached] of this.devicesByTokenHash) {
       if (cached.id === deviceId) this.devicesByTokenHash.delete(tokenHash);
     }
+  }
+
+  disconnectDevice(deviceId: string) {
     for (const listener of this.accessListeners) listener(deviceId);
   }
 

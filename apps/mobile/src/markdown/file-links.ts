@@ -120,7 +120,7 @@ export function linkFilePaths(
   });
 }
 
-const CODE_PAD = " ";
+const CODE_PAD = "\u202f\u202f";
 const LABEL_CODE = /^`([^`\n]+)`$/;
 
 function paddedCode(code: string) {

@@ -255,6 +255,49 @@ describe("resolveNewSession", () => {
   });
 });
 
+describe("resolveNewSession runtime options", () => {
+  it("applies the requested effort, thinking level, and speed to the agent's snapshot", async () => {
+    const session = await resolveNewSession(
+      {
+        workspaceId: "workspace-1",
+        agentType: "codex",
+        runtime: {
+          reasoningEffort: "high",
+          thinkingLevel: "low",
+          serviceTier: "fast",
+          openCodeAgent: "build",
+        },
+      },
+      "new-1",
+      context(),
+    );
+
+    expect(session.providerSnapshot).toMatchObject({
+      reasoningEffort: "high",
+      thinkingLevel: "low",
+      serviceTier: "fast",
+      openCodeAgent: null,
+    });
+  });
+
+  it("treats the default thinking level as unset", async () => {
+    const session = await resolveNewSession(
+      {
+        workspaceId: "workspace-1",
+        agentType: "claude-agent",
+        runtime: { thinkingLevel: "default", reasoningEffort: "high" },
+      },
+      "new-1",
+      context(),
+    );
+
+    expect(session.providerSnapshot).toMatchObject({
+      thinkingLevel: null,
+      reasoningEffort: null,
+    });
+  });
+});
+
 describe("resolveNewSession with a role", () => {
   it("starts with the role's agent, model, and permission mode and records the role", async () => {
     const session = await resolveNewSession(
@@ -271,6 +314,31 @@ describe("resolveNewSession with a role", () => {
       agentRoleId: "role-reviewer",
       permissionMode: "claude-default",
       providerSnapshot: { providerId: "anthropic", modelId: "claude-haiku-4" },
+    });
+  });
+
+  it("starts with the role's runtime options unless the request overrides them", async () => {
+    const reviewer = role({
+      agentId: "codex",
+      providerId: "openai",
+      modelId: "gpt",
+      permissionMode: null,
+      reasoningEffort: "xhigh",
+      thinkingLevel: "medium",
+    });
+    const session = await resolveNewSession(
+      {
+        workspaceId: "workspace-1",
+        agentRoleId: "role-reviewer",
+        runtime: { thinkingLevel: "off" },
+      },
+      "new-1",
+      context({ role: reviewer }),
+    );
+
+    expect(session.providerSnapshot).toMatchObject({
+      reasoningEffort: "xhigh",
+      thinkingLevel: "off",
     });
   });
 

@@ -433,6 +433,27 @@ describe("remote host access", () => {
     });
   });
 
+  it("lets a paired device unpair itself and refuses the local principal", async () => {
+    const daemon = await spawnDaemon();
+    daemons.push(daemon);
+    const port = await enableRemoteAccess(daemon);
+    const { paired } = await pairDevice(daemon, port);
+    const { paired: other } = await pairDevice(daemon, port);
+
+    const revoked = await remoteClient(port, paired.token).request(
+      "host.devices.revokeSelf",
+      undefined,
+    );
+
+    expect(revoked).toMatchObject({ id: paired.deviceId });
+    expect(revoked?.revokedAt).not.toBeNull();
+    expect((await checkSession(port, paired.token)).status).toBe(401);
+    expect((await checkSession(port, other.token)).status).toBe(200);
+    await expect(
+      requestDaemon("host.devices.revokeSelf", daemon.options),
+    ).rejects.toThrow();
+  });
+
   it("disconnects a device as soon as it is revoked", async () => {
     const daemon = await spawnDaemon();
     daemons.push(daemon);

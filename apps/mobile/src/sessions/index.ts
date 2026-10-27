@@ -8,6 +8,9 @@ export {
 } from "./archived-sessions-queries";
 export { RenameSessionForm } from "./rename-session-form";
 export { SessionList } from "./session-list";
-export { SessionListViewMenu } from "./session-list-view-menu";
-export { useSessionListUi } from "./session-list-view-store";
+export { useSessionListLabels } from "./session-list-labels";
+export {
+  updateSessionListView,
+  useSessionListUi,
+} from "./session-list-view-store";
 export { sessionsStore, useHostSessions, useViewedSession } from "./sessions";

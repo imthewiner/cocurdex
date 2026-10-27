@@ -6,13 +6,13 @@ import RenameIcon from "@expo/material-symbols/edit.xml";
 import PinIcon from "@expo/material-symbols/keep.xml";
 import UnpinIcon from "@expo/material-symbols/keep_off.xml";
 import MarkUnreadIcon from "@expo/material-symbols/mark_chat_unread.xml";
-import { BottomSheet, Column, Icon, type IconName, Text } from "@expo/ui";
+import { type IconName, Text } from "@expo/ui";
 import { router } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { hostConnection } from "@/connection";
-import { space, useThemeColors } from "@/theme";
-import { SHEET_TITLE_INSET, SheetRow, useConfirm } from "@/ui";
+import { useThemeColors } from "@/theme";
+import { ListSheet, useConfirm } from "@/ui";
 import { reloadArchivedSessions } from "./archived-sessions-queries";
 import type { SessionRow } from "./session-sections";
 import { sessionsStore } from "./sessions";
@@ -35,28 +35,6 @@ const ACTION_ICONS: Record<SessionAction, IconName> = {
   archive: { ios: "archivebox", android: ArchiveIcon },
   delete: { ios: "trash", android: DeleteIcon },
 };
-
-function ActionRow({
-  action,
-  label,
-  onPress,
-}: {
-  action: SessionAction;
-  label: string;
-  onPress(): void;
-}) {
-  const colors = useThemeColors();
-  const color = action === "delete" ? colors.destructive : colors.foreground;
-  return (
-    <SheetRow
-      testID={`session-action-${action}`}
-      label={label}
-      color={color}
-      onPress={onPress}
-      leading={<Icon name={ACTION_ICONS[action]} size={22} color={color} />}
-    />
-  );
-}
 
 export function SessionActionsSheet({
   host,
@@ -165,53 +143,33 @@ export function SessionActionsSheet({
   ];
 
   return (
-    <BottomSheet
-      isPresented={row !== null}
-      onDismiss={() => {
-        setFailed(false);
-        onDismiss();
-      }}
-      containerColor={colors.background}
-      testID="session-actions"
-    >
-      {row ? (
-        <Column spacing={space.xs}>
-          <Column spacing={2} style={{ paddingHorizontal: SHEET_TITLE_INSET }}>
-            <Text
-              numberOfLines={2}
-              textStyle={{
-                color: colors.foreground,
-                fontSize: 17,
-                fontWeight: "600",
-              }}
-            >
-              {row.title}
-            </Text>
-            {detail ? (
-              <Text
-                numberOfLines={1}
-                textStyle={{ color: colors.mutedForeground, fontSize: 13 }}
-              >
-                {detail}
-              </Text>
-            ) : null}
-          </Column>
-          {actions.map((action) => (
-            <ActionRow
-              key={action}
-              action={action}
-              label={labels[action]}
-              onPress={handlers[action]}
-            />
-          ))}
+    <ListSheet
+      presented={row !== null}
+      title={row?.title ?? ""}
+      subtitle={detail}
+      items={actions.map((action) => ({
+        key: action,
+        testID: `session-action-${action}`,
+        label: labels[action],
+        icon: ACTION_ICONS[action],
+        destructive: action === "delete",
+        onPress: handlers[action],
+      }))}
+      footer={
+        <>
           {failed ? (
             <Text textStyle={{ color: colors.destructive, fontSize: 13 }}>
               {t("detail.actionFailed")}
             </Text>
           ) : null}
           {dialog}
-        </Column>
-      ) : null}
-    </BottomSheet>
+        </>
+      }
+      onDismiss={() => {
+        setFailed(false);
+        onDismiss();
+      }}
+      testID="session-actions"
+    />
   );
 }

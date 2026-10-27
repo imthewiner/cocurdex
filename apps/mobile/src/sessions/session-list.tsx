@@ -1,10 +1,11 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { AgentId } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { type ReactElement, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, SectionList, StyleSheet, Text } from "react-native";
 import { useAgentRoles } from "@/agents";
+import { hostConnection } from "@/connection";
 import { layout, space, useThemeColors } from "@/theme";
 import {
   ListNotice,
@@ -12,6 +13,7 @@ import {
   ListSeparator,
   PendingIndicator,
 } from "@/ui";
+import { reloadArchivedSessions } from "./archived-sessions-queries";
 import { SessionActionsSheet } from "./session-actions-sheet";
 import { useSessionListLabels } from "./session-list-labels";
 import {
@@ -19,14 +21,15 @@ import {
   toggleSessionChildren,
   useSessionListUi,
 } from "./session-list-view-store";
-import { SessionRowView } from "./session-row";
+import { ChildrenToggle, SessionRowView } from "./session-row";
 import {
   buildSessionSections,
   type SessionRow,
   type SessionSection,
   type SessionSectionHeading,
 } from "./session-sections";
-import { useHostSessions } from "./sessions";
+import { SessionSwipeActions } from "./session-swipe-actions";
+import { sessionsStore, useHostSessions } from "./sessions";
 import type { HostSessionsSnapshot } from "./sessions-store";
 
 const OFFLINE_STATES = new Set<HostSessionsSnapshot["connection"]>([
@@ -85,11 +88,13 @@ export function SessionList({
   query,
   agentLabels,
   onReload,
+  header,
 }: {
   host: SavedHost;
   query: string;
   agentLabels: ReadonlyMap<AgentId, string>;
   onReload(): void;
+  header?: ReactElement;
 }) {
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
@@ -100,6 +105,15 @@ export function SessionList({
   const roleById = new Map(roles?.map((role) => [role.id, role]));
   const headingTitle = useHeadingTitle(agentLabels);
   const [actionTarget, setActionTarget] = useState<SessionRow | null>(null);
+  const canInteract = host.scopes.includes("interact");
+  const archive = (row: SessionRow) =>
+    void hostConnection(host.hostId)
+      .request("session.archive", { sessionId: row.id })
+      .then(() => {
+        void sessionsStore(host.hostId).reload();
+        void reloadArchivedSessions(host.hostId);
+      })
+      .catch(() => setActionTarget(row));
   const sections = useMemo(
     () =>
       buildSessionSections({
@@ -145,11 +159,14 @@ export function SessionList({
         keyExtractor={(row) => row.id}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
-          offline ? (
-            <Text style={[styles.offline, { color: colors.mutedForeground }]}>
-              {t("offline", { host: host.name })}
-            </Text>
-          ) : undefined
+          <>
+            {header}
+            {offline ? (
+              <Text style={[styles.offline, { color: colors.mutedForeground }]}>
+                {t("offline", { host: host.name })}
+              </Text>
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           searching ? (
@@ -171,18 +188,31 @@ export function SessionList({
           <SectionFooter section={section} />
         )}
         renderItem={({ item }) => (
-          <SessionRowView
-            row={item}
-            role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
-            onLongPress={() => setActionTarget(item)}
-            onToggleChildren={() => toggleSessionChildren(item.id)}
-            onPress={() =>
-              router.push({
-                pathname: "/session/[hostId]/[sessionId]",
-                params: { hostId: host.hostId, sessionId: item.id },
-              })
-            }
-          />
+          <>
+            <SessionSwipeActions
+              sessionId={item.id}
+              onMore={() => setActionTarget(item)}
+              onArchive={canInteract ? () => archive(item) : null}
+            >
+              <SessionRowView
+                row={item}
+                role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
+                onLongPress={() => setActionTarget(item)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/session/[hostId]/[sessionId]",
+                    params: { hostId: host.hostId, sessionId: item.id },
+                  })
+                }
+              />
+            </SessionSwipeActions>
+            {item.hasChildren ? (
+              <ChildrenToggle
+                row={item}
+                onPress={() => toggleSessionChildren(item.id)}
+              />
+            ) : null}
+          </>
         )}
         ItemSeparatorComponent={ListSeparator}
       />

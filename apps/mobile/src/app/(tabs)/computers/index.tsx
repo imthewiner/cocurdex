@@ -3,21 +3,25 @@ import SettingsIcon from "@expo/material-symbols/settings.xml";
 import { router, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import {
-  EmptyHosts,
-  HostsList,
-  usePairingRoutes,
-  useSavedHosts,
-} from "@/hosts";
-import { headerLeading } from "@/ui";
+import { HostsList } from "@/computers";
+import { EmptyHosts, usePairingRoutes, useSavedHosts } from "@/hosts";
+import { emptyListOptions, headerLeading, useListHeader } from "@/ui";
 
 export default function ComputersScreen() {
   const { t } = useTranslation();
   const { openPaste, openScan } = usePairingRoutes();
   const hasHosts = useSavedHosts().length > 0;
+  const listHeader = useListHeader(t("screens.computers"));
 
   return (
     <>
+      <Stack.Screen
+        options={
+          hasHosts
+            ? listHeader.options
+            : emptyListOptions(t("screens.computers"))
+        }
+      />
       <Stack.Toolbar placement="left">
         {headerLeading(
           <Stack.Toolbar.Button
@@ -35,7 +39,7 @@ export default function ComputersScreen() {
         />
       </Stack.Toolbar>
       {hasHosts ? (
-        <HostsList />
+        <HostsList header={listHeader.header} />
       ) : (
         <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
       )}

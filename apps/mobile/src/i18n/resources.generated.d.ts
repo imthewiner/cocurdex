@@ -45,6 +45,7 @@ export default interface Resources {
       newNote: "New Note";
       notes: "Notes";
       pair: "Pair a Computer";
+      renameComputer: "Rename Computer";
       renameSession: "Rename Session";
       sessions: "Sessions";
       settings: "Settings";
@@ -68,6 +69,20 @@ export default interface Resources {
     truncated: "Showing the first 512 KB of this file.";
   };
   hosts: {
+    actions: {
+      details: "Permissions and Connection";
+      more: "More for {{host}}";
+      remove: "Remove This Computer";
+      rename: "Rename";
+      switch: "Switch to This Computer";
+    };
+    detail: {
+      address: "Address";
+      name: "Name";
+      pairedAt: "Paired";
+      scopes: "This Phone Can";
+      scopesFooter: "The computer grants these permissions. To change them, open Settings › Devices on the computer.";
+    };
     empty: {
       description: "On your computer, open Cocurdex Settings › Devices, create a pairing QR code, and scan it with this phone.";
       pair: "Pair a Computer";
@@ -91,6 +106,17 @@ export default interface Resources {
       pairing: "Pairing…";
       scanInstead: "Scan Instead";
     };
+    remove: {
+      cancel: "Cancel";
+      confirm: "Remove";
+      message: "This phone loses access and the computer revokes its pairing. If the computer is offline, revoke it later in Settings › Devices.";
+      title: "Remove {{host}}?";
+    };
+    rename: {
+      footer: "Only changes the name on this phone.";
+      placeholder: "Computer name";
+      save: "Save";
+    };
     scan: {
       blocked: {
         description: "Allow camera access in Settings to scan a pairing code, or paste the pairing link instead.";
@@ -107,14 +133,29 @@ export default interface Resources {
       viewfinder: "Viewfinder";
     };
     scope: {
+      approvals: "Approvals";
       execute: "Start tasks";
+      filesRead: "Read Files";
+      filesWrite: "Write Files";
+      gitDestructive: "Destructive Git";
       interact: "Interact";
       missingMessage: "To do this here, open Cocurdex on {{host}}, go to Settings › Devices, and turn on “{{scope}}” for this device.";
       missingTitle: "Not Allowed on This Device";
       ok: "OK";
+      read: "Read";
+    };
+    scopeDetail: {
+      approvals: "Answer permission requests, questions, and plan approvals.";
+      execute: "Start sessions, teams, script runs, and workflows.";
+      filesRead: "Read workspace files, diffs, and Git status.";
+      filesWrite: "Edit workspace files, stage, and commit.";
+      gitDestructive: "Discard changes, switch branches, and push.";
+      interact: "Send messages, stop sessions, and edit notes and issues.";
+      read: "View sessions, messages, notes, and issues.";
     };
     switcher: {
       label: "Computer: {{host}}";
+      title: "Switch Computer";
     };
   };
   issues: {
@@ -187,6 +228,7 @@ export default interface Resources {
       deleteTitle: "Delete “{{title}}”?";
       fork: "Fork Session";
       markUnread: "Mark as Unread";
+      more: "More";
       pin: "Pin";
       rename: "Rename";
       unpin: "Unpin";
@@ -260,6 +302,8 @@ export default interface Resources {
     };
     list: {
       agentFilter: "Agent";
+      childSessions_one: "{{count}} child session";
+      childSessions_other: "{{count}} child sessions";
       clearFilters: "Clear Filters";
       collapseChildren: "Collapse child sessions";
       direction: {
@@ -284,8 +328,16 @@ export default interface Resources {
       };
       groupingLabel: "Group By";
       markAllRead: "Mark All as Read";
-      menu: "Group and filter sessions";
+      menu: "Display Options";
       noMatches: "No sessions match the filters";
+      options: {
+        any: "All";
+        archived: "Archived Sessions";
+        close: "Close";
+        done: "Done";
+        title: "Display Options";
+        view: "View";
+      };
       ordering: {
         activity: "Recent Activity";
         created: "Created";
@@ -418,7 +470,55 @@ export default interface Resources {
       save: "Save";
       saving: "Saving";
     };
+    runtime: {
+      default: "Default";
+      fastMode: "Fast mode";
+      levels: {
+        default: "Default";
+        high: "High";
+        low: "Low";
+        max: "Max";
+        medium: "Medium";
+        minimal: "Minimal";
+        off: "Off";
+        ultra: "Ultra";
+        xhigh: "XHigh";
+      };
+      off: "Off";
+      on: "On";
+      openCodeAgent: "Collaboration mode";
+      openCodeVariant: "Variant";
+      speed: "Speed";
+      standard: "Standard";
+      thinking: "Reasoning effort";
+    };
+    saveRole: {
+      description: "Description";
+      descriptionPlaceholder: "Optional";
+      failed: "Couldn't save the role. Try again.";
+      name: "Name";
+      namePlaceholder: "Role name";
+      open: "Save as Role…";
+      save: "Save";
+      saving: "Saving…";
+      title: "Save as Role";
+    };
     search: "Search sessions";
+    sessionConfig: {
+      close: "Close";
+      done: "Done";
+      mcp: "MCP servers";
+      mcpNone: "This session reports no MCP servers.";
+      mcpStatus: {
+        connected: "Connected";
+        connecting: "Connecting";
+        disabled: "Disabled";
+        failed: "Failed";
+      };
+      modeNeedsExecute: "Changing the permission mode needs the “Start tasks” permission for this device. Grant it on the computer.";
+      open: "Agent settings: {{summary}}";
+      openMode: "Permission mode: {{mode}}";
+    };
     status: {
       needsYou: "Needs you";
       running: "Running";

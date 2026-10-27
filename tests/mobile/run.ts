@@ -99,6 +99,8 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_TITLE: OPENED_NOTE.title,
     NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
+    LIST_OPTIONS_ACTION: sessions.list.menu,
+    LIST_OPTIONS_DONE: sessions.list.options.done,
     SHOW_MORE: sessions.list.showMore_other.replace("{{count}}", "\\d+"),
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
@@ -120,7 +122,7 @@ function flowLabels(locale: SupportedLocale) {
     IMAGE_NAME: IMAGE_SESSION.imageName,
     IMAGE_CLOSE: sessions.image.close,
     TOOL_INPUT_TITLE: sessions.tool.input,
-    FILE_LINK_TEXT: "(?s)(.*\\n)?.?src/cart\\.ts.?",
+    FILE_LINK_TEXT: "(?s)(.*\\n)?.{0,2}src/cart\\.ts.{0,2}",
     FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
@@ -136,10 +138,13 @@ function flowLabels(locale: SupportedLocale) {
     NEW_SESSION_TITLE: sessions.newSession.title,
     NEW_ISSUE_ACTION: issues.create.open,
     NEW_ISSUE_SUBMIT: issues.create.submit,
+    RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,
     NEW_NOTE_SUBMIT: notes.create.submit,
     SETTINGS_ACTION: common.screens.settings,
     ARCHIVE_ACTION: sessions.actions.archive,
+    SESSION_CONFIG_DONE: sessions.sessionConfig.done,
+    SAVE_ROLE_SAVE: sessions.saveRole.save,
   };
 }
 
@@ -152,6 +157,7 @@ function sendLabels(locale: SupportedLocale) {
     SEND_REPLY_END: `Totals are stored in cents ${locale}`,
     NEW_SESSION_PROMPT: `Review the checkout totals ${locale}`,
     NEW_ISSUE_TITLE: `Export last week's orders ${locale}`,
+    RENAMED_COMPUTER: `Studio Mac ${locale}`,
     NEW_NOTE_TITLE: `Release checklist ${locale}`,
     NEW_NOTE_BODY: `Ship the order export ${locale}`,
   };
@@ -285,7 +291,7 @@ async function main() {
     try {
       for (const { appearance, locale } of RUNS) {
         const send = sendLabels(locale);
-        await daemon.createReplyingSession(
+        const replySession = await daemon.createReplyingSession(
           send.SEND_SESSION_TITLE,
           streamedReply(send),
         );
@@ -298,8 +304,10 @@ async function main() {
           {
             ...flowLabels(locale),
             ...send,
+            SEND_SESSION_ID: replySession.id,
             NEW_SESSION_AGENT: await daemon.agentLabel("pi"),
             NEW_SESSION_MODEL: daemon.agentModelName,
+            AGENT_MODEL_ID: daemon.agentModelId,
             PAIRING_LINK: await daemon.createPairingLink(),
             HOST_ADDRESS: daemon.hostAddress,
             LINK_NOTE_TITLE,
@@ -327,10 +335,14 @@ async function main() {
           throw new Error(`The agent never received "${SEND_PROMPT}"`);
         }
       }
+      const replySessionTitles = RUNS.map(
+        ({ locale }) => sendLabels(locale).SEND_SESSION_TITLE,
+      );
       const started = (await daemon.sessions()).filter(
         (session) =>
           session.agentType === "pi" &&
-          session.providerSnapshot?.modelName === daemon.agentModelName,
+          session.providerSnapshot?.modelName === daemon.agentModelName &&
+          !replySessionTitles.includes(session.title),
       );
       if (started.length !== RUNS.length) {
         throw new Error(

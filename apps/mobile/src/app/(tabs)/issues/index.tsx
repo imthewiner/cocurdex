@@ -17,23 +17,32 @@ import {
   useWorkspaceFilterLabel,
   WorkspaceFilterSheet,
 } from "@/issues";
-import { useSearchBarOptions } from "@/ui";
+import { emptyListOptions, useListHeader } from "@/ui";
 
 export default function IssuesScreen() {
+  const { t } = useTranslation();
   const { openPaste, openScan } = usePairingRoutes();
   const host = useCurrentHost();
   if (!host) {
-    return <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />;
+    return (
+      <>
+        <Stack.Screen options={emptyListOptions(t("screens.issues"))} />
+        <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
+      </>
+    );
   }
   return <HostIssues host={host} onPair={openPaste} />;
 }
 
 function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
-  const { t } = useTranslation("issues");
+  const { t } = useTranslation(["issues", "common"]);
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const searchBarOptions = useSearchBarOptions(t("search"), setQuery);
+  const listHeader = useListHeader(t("common:screens.issues"), {
+    placeholder: t("search"),
+    onQuery: setQuery,
+  });
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [pickingWorkspace, setPickingWorkspace] = useState(false);
   const workspaceFilterLabel = useWorkspaceFilterLabel(
@@ -43,11 +52,7 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerSearchBarOptions: searchBarOptions,
-        }}
-      />
+      <Stack.Screen options={listHeader.options} />
       <HostSwitcher current={host} onPair={onPair} />
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
@@ -68,7 +73,12 @@ function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
           )}
         />
       </Stack.Toolbar>
-      <IssueList host={host} workspaceId={workspaceId} query={query} />
+      <IssueList
+        host={host}
+        workspaceId={workspaceId}
+        query={query}
+        header={listHeader.header}
+      />
       <WorkspaceFilterSheet
         host={host}
         presented={pickingWorkspace}

@@ -1,5 +1,6 @@
 import { Text as LabelText } from "@expo/ui";
 import { SymbolView } from "expo-symbols";
+import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { space, useThemeColors } from "@/theme";
 import { FormRow } from "./form-row";
@@ -22,16 +23,19 @@ export function SelectedMark({ selected }: { selected: boolean }) {
 export function RowValue({
   value,
   detail,
+  icon,
   onPress,
 }: {
   value: string;
   detail?: string | null;
+  icon?: ReactNode;
   onPress?(): void;
 }) {
   const colors = useThemeColors();
   return (
     <HostedAccessory onPress={onPress}>
       <View style={styles.row}>
+        {icon}
         <View style={styles.values}>
           <Text
             numberOfLines={1}
@@ -83,19 +87,23 @@ export function ValueFormRow({
   label,
   value,
   detail,
+  icon,
   onPress,
 }: {
   testID: string;
   label: string;
   value: string;
   detail?: string | null;
+  icon?: ReactNode;
   onPress(): void;
 }) {
   return (
     <FormRow
       testID={testID}
       onPress={onPress}
-      trailing={<RowValue value={value} detail={detail} onPress={onPress} />}
+      trailing={
+        <RowValue value={value} detail={detail} icon={icon} onPress={onPress} />
+      }
     >
       <LabelText>{label}</LabelText>
     </FormRow>

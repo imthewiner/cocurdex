@@ -13,6 +13,7 @@ import type {
   AgentRunLimits,
   AgentSessionConfigOption,
   AgentSessionMode,
+  AgentSessionRuntimeState,
   AgentSlashCommand,
   AgentToolCallRecord,
   AgentToolCallResult,
@@ -215,6 +216,7 @@ import type {
   UpdateIssuePayload,
   UpdateNotePayload,
   UpdateSessionAttentionPayload,
+  UpdateSessionRuntimePayload,
   UpdateSessionTitlePayload,
   UpdateViewPayload,
   ViewColumnRecord,
@@ -395,6 +397,7 @@ export type DaemonRequestPayloadByMethod = {
   "session.create": CreateSessionPayload;
   "session.resolveNew": CreateSessionPayload;
   "session.get": { sessionId: string };
+  "session.runtimeState": { sessionId: string };
   "session.listPeers": { sessionId: string };
   "session.sendPeerMessage": SendPeerMessagePayload;
   "session.setPeerInbound": { sessionId: string; policy: PeerInboundPolicy };
@@ -486,6 +489,7 @@ export type DaemonRequestPayloadByMethod = {
     value: boolean | string;
   };
   "session.setMode": { sessionId: string; modeId: string };
+  "session.updateRuntime": UpdateSessionRuntimePayload;
   "session.stop": { sessionId: string };
   "session.undoTurnChanges": UndoTurnChangesInput;
   "session.getTurnChangeFile": TurnChangeFileContentRequest;
@@ -679,6 +683,7 @@ export type DaemonRequestPayloadByMethod = {
   "host.pairing.cancel": { pairingId: string };
   "host.devices.list": undefined;
   "host.devices.revoke": { deviceId: string };
+  "host.devices.revokeSelf": undefined;
   "host.devices.updateScopes": { deviceId: string; scopes: HostAccessScope[] };
   "host.audit.list": { limit?: number };
 };
@@ -749,6 +754,7 @@ export type DaemonResultByMethod = {
   "session.create": SessionRecord;
   "session.resolveNew": NewSessionDefaults;
   "session.get": SessionRecord | null;
+  "session.runtimeState": AgentSessionRuntimeState;
   "session.delete": null;
   "session.archive": SessionRecord | null;
   "session.restore": SessionRecord[];
@@ -796,6 +802,7 @@ export type DaemonResultByMethod = {
   "session.sendQueuedNow": MessageRecord;
   "session.setConfig": AgentSessionConfigOption[];
   "session.setMode": null;
+  "session.updateRuntime": SessionRecord;
   "session.stop": null;
   "session.undoTurnChanges": UndoTurnChangesResult;
   "session.getTurnChangeFile": TurnChangeFileContent;
@@ -961,6 +968,7 @@ export type DaemonResultByMethod = {
   "host.pairing.cancel": HostPairingRecord | null;
   "host.devices.list": PairedDeviceRecord[];
   "host.devices.revoke": PairedDeviceRecord | null;
+  "host.devices.revokeSelf": PairedDeviceRecord | null;
   "host.devices.updateScopes": PairedDeviceRecord | null;
   "host.audit.list": HostAccessAuditEntry[];
 };
@@ -991,6 +999,7 @@ export const DAEMON_NO_PARAM_METHODS = {
   "host.remoteAccess.get": true,
   "host.pairing.list": true,
   "host.devices.list": true,
+  "host.devices.revokeSelf": true,
   "issue.listViews": true,
   "issue.listLabels": true,
   "issue.listLinkedSessionIds": true,
