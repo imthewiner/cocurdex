@@ -33,6 +33,7 @@ export {
   EMPTY_AGENT_SESSION_RUNTIME_STATE,
   isSessionRuntimeEvent,
   type SessionRuntimeEvent,
+  seedSessionRuntimeState,
 } from "./session-runtime-state";
 export {
   getConfigOptionThinkingLevels,
