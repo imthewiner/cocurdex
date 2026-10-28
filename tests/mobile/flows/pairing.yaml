@@ -670,8 +670,10 @@ appId: dev.cocurdex.mobile
 - waitForAnimationToEnd
 - takeScreenshot: issues
 - tapOn: ${NEW_ISSUE_ACTION}
-- tapOn:
-    id: new-issue-title
+- extendedWaitUntil:
+    visible:
+      id: note-format-bold
+    timeout: 10000
 - inputText: ${NEW_ISSUE_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: new-issue

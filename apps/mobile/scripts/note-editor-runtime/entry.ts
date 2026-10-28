@@ -1,4 +1,9 @@
-import { buildNoteDocExtensions, NOTE_DOC_FIELD } from "@cocurdex/note-doc";
+import {
+  buildNoteDocExtensions,
+  NOTE_DOC_FIELD,
+  parseNoteMarkdown,
+  serializeNoteMarkdown,
+} from "@cocurdex/note-doc";
 import {
   decodeNoteDocBytes,
   encodeNoteDocBytes,
@@ -11,6 +16,7 @@ import * as Y from "yjs";
 import type {
   NoteBlockStyle,
   NoteEditorCommand,
+  NoteEditorContent,
   NoteEditorFormatState,
   NoteEditorInbound,
   NoteEditorOutbound,
@@ -28,6 +34,7 @@ declare global {
 
 const REMOTE_ORIGIN = Symbol("note-doc-remote");
 const BASE_FONT_SIZE = 17;
+const CARET_MARGIN = 16;
 
 function post(message: NoteEditorOutbound) {
   window.ReactNativeWebView.postMessage(JSON.stringify(message));
@@ -46,6 +53,7 @@ const bodyHost = element<HTMLDivElement>("body");
 let doc: Y.Doc | null = null;
 let editor: EditorType | null = null;
 let lastFormat = "";
+let markdownFrame: number | null = null;
 const codeHighlight = createCodeHighlight((requests) =>
   post({ type: "highlight", requests }),
 );
@@ -185,30 +193,56 @@ function linkTarget(event: MouseEvent) {
   return target.closest("a")?.getAttribute("href") ?? null;
 }
 
+function bindDoc(content: Extract<NoteEditorContent, { kind: "doc" }>) {
+  const created = new Y.Doc();
+  Y.applyUpdate(created, decodeNoteDocBytes(content.state), REMOTE_ORIGIN);
+  created.on("update", (update: Uint8Array, origin: unknown) => {
+    if (origin === REMOTE_ORIGIN) return;
+    post({ type: "update", update: encodeNoteDocBytes(update) });
+  });
+  doc = created;
+  return Collaboration.configure({ document: created, field: NOTE_DOC_FIELD });
+}
+
+function postMarkdownNextFrame() {
+  if (markdownFrame !== null) return;
+  markdownFrame = requestAnimationFrame(() => {
+    markdownFrame = null;
+    if (!editor) return;
+    post({
+      type: "markdown",
+      markdown: serializeNoteMarkdown(editor.getJSON()),
+    });
+  });
+}
+
 function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
   applyTheme(message.theme);
   titleField.value = message.title;
   titleField.placeholder = message.titlePlaceholder;
+  metaButton.hidden = message.meta === null;
   metaButton.textContent = message.meta;
   titleField.readOnly = !message.editable;
   metaButton.disabled = !message.interactive;
   fitTitle();
-  doc = new Y.Doc();
-  Y.applyUpdate(doc, decodeNoteDocBytes(message.state), REMOTE_ORIGIN);
-  doc.on("update", (update: Uint8Array, origin: unknown) => {
-    if (origin === REMOTE_ORIGIN) return;
-    post({ type: "update", update: encodeNoteDocBytes(update) });
-  });
+  const { content } = message;
+  const collaborative = content.kind === "doc";
+  const collaboration = content.kind === "doc" ? [bindDoc(content)] : [];
+  const initial =
+    content.kind === "markdown"
+      ? parseNoteMarkdown(content.markdown)
+      : undefined;
   editor = new Editor({
     element: bodyHost,
     editable: message.editable,
+    content: initial,
     extensions: [
-      ...buildNoteDocExtensions({ collaborative: true, imageView }),
+      ...buildNoteDocExtensions({ collaborative, imageView }),
       Placeholder.configure({
         placeholder: ({ node }) =>
           node.type.name === "paragraph" ? message.bodyPlaceholder : "",
       }),
-      Collaboration.configure({ document: doc, field: NOTE_DOC_FIELD }),
+      ...collaboration,
       SlashTrigger,
       codeHighlight.extension,
     ],
@@ -223,6 +257,9 @@ function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
       },
     },
     onTransaction: ({ editor: current }) => reportFormat(current),
+    onUpdate: () => {
+      if (!collaborative) postMarkdownNextFrame();
+    },
     onFocus: ({ editor: current }) => {
       post({ type: "focus", focused: true });
       reportFormat(current);
@@ -267,7 +304,33 @@ titleField.addEventListener("blur", () => {
   if (!editor?.isFocused) post({ type: "focus", focused: false });
 });
 metaButton.addEventListener("click", () => post({ type: "properties" }));
-window.addEventListener("resize", fitTitle);
+function caretRect() {
+  if (document.activeElement === titleField) {
+    return titleField.getBoundingClientRect();
+  }
+  if (!editor?.isFocused) return null;
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+  if (rect.height > 0) return rect;
+  const node = range.startContainer;
+  const owner = node instanceof Element ? node : node.parentElement;
+  return owner?.getBoundingClientRect() ?? null;
+}
+
+function releaseExcessScroll() {
+  const rect = caretRect();
+  if (!rect) return;
+  const caretBottom = rect.bottom + window.scrollY + CARET_MARGIN;
+  const needed = Math.max(0, caretBottom - window.innerHeight);
+  if (needed < window.scrollY) window.scrollTo(0, needed);
+}
+
+window.addEventListener("resize", () => {
+  fitTitle();
+  releaseExcessScroll();
+});
 
 window.noteEditor = {
   receive(message) {
@@ -284,6 +347,7 @@ window.noteEditor = {
       }
     } else if (message.type === "meta") {
       metaButton.textContent = message.meta;
+      metaButton.hidden = false;
     } else if (message.type === "editable") {
       setEditable(message.editable);
     } else if (message.type === "theme") {

@@ -218,7 +218,7 @@ export function NoteScreen({
     return (
       <NoteEditor
         hostId={host.hostId}
-        session={doc.session}
+        body={{ kind: "doc", session: doc.session }}
         title={shown.title}
         meta={meta}
         editable={interactive && editing}

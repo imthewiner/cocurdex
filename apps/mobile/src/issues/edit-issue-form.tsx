@@ -1,27 +1,24 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { IssueRecord } from "@cocurdex/shared";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  type TextInputInstance,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { layout, space, useThemeColors } from "@/theme";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { NoteEditor, type NoteEditorHandle } from "@/notes";
+import { layout, useThemeColors } from "@/theme";
 import {
   keyboardHidden,
   ModalCloseButton,
   PendingIndicator,
   SheetAction,
-  useBottomKeyboardOverlap,
 } from "@/ui";
-import { issueTextPatch } from "./issue-patch";
-import { useIssueDetail } from "./issue-queries";
+import {
+  type IssueField,
+  NO_WORKSPACE,
+  useIssueFieldChips,
+} from "./issue-field-chips";
+import { type IssuePatch, issueTextPatch } from "./issue-patch";
+import { useIssueDetail, useIssueView } from "./issue-queries";
 import { useIssueUpdate } from "./issue-update";
 
 export function EditIssueForm({
@@ -36,36 +33,69 @@ export function EditIssueForm({
   return <Editor host={host} issue={issue} />;
 }
 
+function fieldPatch(field: IssueField, value: string): IssuePatch {
+  if (field === "workspace") {
+    return { workspaceId: value === NO_WORKSPACE ? null : value };
+  }
+  return { [field]: value };
+}
+
+function textRevision(initial: IssueRecord, current: IssueRecord) {
+  const textChanged =
+    current.title !== initial.title ||
+    current.description !== initial.description;
+  return textChanged ? initial.revision : current.revision;
+}
+
 function Editor({ host, issue }: { host: SavedHost; issue: IssueRecord }) {
   const { t } = useTranslation("issues");
   const router = useRouter();
   const colors = useThemeColors();
   const update = useIssueUpdate(host, issue.id);
-  const bottomInset = useSafeAreaInsets().bottom;
-  const keyboardOverlap = useBottomKeyboardOverlap();
-  const titleInput = useRef<TextInputInstance>(null);
-  const descriptionInput = useRef<TextInputInstance>(null);
-  const [revision] = useState(issue.revision);
+  const view = useIssueView(host.hostId, { cached: true }).data;
+  const editor = useRef<NoteEditorHandle>(null);
+  const [initial] = useState(issue);
   const [title, setTitle] = useState(issue.title);
   const [description, setDescription] = useState(issue.description ?? "");
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const interactive = host.scopes.includes("interact");
   const patch = issueTextPatch(issue, title, description);
   const canSave =
     !saving &&
     title.trim() !== "" &&
     Object.keys(patch).length > 0 &&
-    host.scopes.includes("interact");
+    interactive;
+
+  const hideKeyboard = async () => {
+    editor.current?.blur();
+    await keyboardHidden();
+  };
+
+  const fields = useIssueFieldChips({
+    hostId: host.hostId,
+    options: view ?? undefined,
+    values: {
+      workspace: issue.workspaceId ?? NO_WORKSPACE,
+      status: issue.status,
+      priority: issue.priority,
+    },
+    testIDPrefix: "edit-issue",
+    enabled: interactive && view != null,
+    beforePick: hideKeyboard,
+    onChange: (field, value) =>
+      void update(fieldPatch(field, value)).catch(() =>
+        Alert.alert(t("update.failed")),
+      ),
+  });
 
   const save = async () => {
     if (!canSave) return;
-    titleInput.current?.blur();
-    descriptionInput.current?.blur();
     setSaving(true);
     setFailed(false);
     try {
-      await update(patch, revision);
-      await keyboardHidden();
+      await update(patch, textRevision(initial, issue));
+      await hideKeyboard();
       router.back();
     } catch {
       setSaving(false);
@@ -75,73 +105,51 @@ function Editor({ host, issue }: { host: SavedHost; issue: IssueRecord }) {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ headerTitle: () => fields.chip("workspace") }} />
       <ModalCloseButton />
       <SheetAction
         label={saving ? t("edit.saving") : t("edit.save")}
         disabled={!canSave}
         onPress={() => void save()}
       />
-      <ScrollView
-        style={styles.fill}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: (keyboardOverlap || bottomInset) + space.md },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
-        <TextInput
-          ref={titleInput}
-          testID="edit-issue-title"
-          value={title}
-          placeholder={t("create.titlePlaceholder")}
-          placeholderTextColor={colors.mutedForeground}
-          selectionColor={colors.tint}
-          multiline
-          scrollEnabled={false}
-          submitBehavior="submit"
-          returnKeyType="next"
-          onSubmitEditing={() => descriptionInput.current?.focus()}
-          onChangeText={setTitle}
-          style={[styles.title, { color: colors.foreground }]}
-        />
-        <TextInput
-          ref={descriptionInput}
-          testID="edit-issue-description"
-          value={description}
-          placeholder={t("create.descriptionPlaceholder")}
-          placeholderTextColor={colors.mutedForeground}
-          selectionColor={colors.tint}
-          multiline
-          scrollEnabled={false}
-          onChangeText={setDescription}
-          style={[styles.description, { color: colors.foreground }]}
-        />
-        {failed ? (
-          <Text style={[styles.failed, { color: colors.destructive }]}>
-            {t("edit.failed")}
-          </Text>
-        ) : null}
-      </ScrollView>
+      <NoteEditor
+        ref={editor}
+        testID="edit-issue-editor"
+        hostId={host.hostId}
+        body={{
+          kind: "markdown",
+          markdown: initial.description ?? "",
+          onChange: setDescription,
+        }}
+        title={initial.title}
+        meta={null}
+        titlePlaceholder={t("create.titlePlaceholder")}
+        bodyPlaceholder={t("create.descriptionPlaceholder")}
+        focusTitle={false}
+        editable={interactive}
+        interactive={interactive}
+        onTitle={setTitle}
+        accessory={
+          <>
+            {failed ? (
+              <Text style={[styles.failed, { color: colors.destructive }]}>
+                {t("edit.failed")}
+              </Text>
+            ) : null}
+            {fields.bar}
+          </>
+        }
+      />
+      {fields.menu}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: layout.sideMargin, gap: space.sm },
-  title: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: "600",
-    paddingVertical: space.xs,
+  failed: {
+    fontSize: 13,
+    lineHeight: 18,
+    paddingHorizontal: layout.sideMargin,
   },
-  description: {
-    fontSize: 16,
-    lineHeight: 22,
-    minHeight: 160,
-    textAlignVertical: "top",
-    paddingVertical: space.xs,
-  },
-  failed: { fontSize: 13, lineHeight: 18 },
 });

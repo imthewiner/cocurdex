@@ -1,9 +1,16 @@
 import { parseDocImageUri } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { useHeaderHeight } from "expo-router/react-navigation";
-import { type ComponentRef, useCallback, useRef, useState } from "react";
+import {
+  type ComponentRef,
+  type ReactNode,
+  type Ref,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
-import { KeyboardAvoidingView, PixelRatio, StyleSheet } from "react-native";
+import { PixelRatio, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { highlightCode } from "@/files";
@@ -16,6 +23,7 @@ import {
   type NoteBlockStyle,
   type NoteCodeRequest,
   type NoteEditorCommand,
+  type NoteEditorContent,
   type NoteEditorFormatState,
   type NoteEditorInbound,
   type NoteInsertKind,
@@ -26,6 +34,19 @@ import { NOTE_EDITOR_RUNTIME_HTML } from "./note-editor-runtime.generated";
 import { NoteFormatBar } from "./note-format-bar";
 
 type EditorWebView = ComponentRef<typeof WebView>;
+
+export interface NoteEditorHandle {
+  blur(): void;
+}
+
+export type NoteEditorBody =
+  | { kind: "doc"; session: NoteDocSession }
+  | { kind: "markdown"; markdown: string; onChange(markdown: string): void };
+
+function initialContent(body: NoteEditorBody): NoteEditorContent {
+  if (body.kind === "doc") return { kind: "doc", state: body.session.state() };
+  return { kind: "markdown", markdown: body.markdown };
+}
 
 const BLOCK_STYLES: readonly NoteBlockStyle[] = [
   "paragraph",
@@ -74,33 +95,43 @@ function insertKey(choice: InsertChoice) {
 
 export function NoteEditor({
   hostId,
-  session,
+  body,
   title,
   meta,
+  titlePlaceholder,
+  bodyPlaceholder,
   focusTitle,
   editable,
   interactive,
+  accessory,
+  testID = "note-editor",
+  ref,
   onTitle,
   onProperties,
   onFocusChange,
 }: {
   hostId: string;
-  session: NoteDocSession;
+  body: NoteEditorBody;
   title: string;
-  meta: string;
+  meta: string | null;
+  titlePlaceholder?: string;
+  bodyPlaceholder?: string;
   focusTitle: boolean;
   editable: boolean;
   interactive: boolean;
+  accessory?: ReactNode;
+  testID?: string;
+  ref?: Ref<NoteEditorHandle>;
   onTitle(title: string): void;
-  onProperties(): void;
-  onFocusChange(focused: boolean): void;
+  onProperties?(): void;
+  onFocusChange?(focused: boolean): void;
 }) {
   const { t } = useTranslation("notes");
   const colors = useThemeColors();
   const scheme = useThemeName();
   const router = useRouter();
-  const headerHeight = useHeaderHeight();
-  const keyboardShown = useBottomKeyboardOverlap() > 0;
+  const keyboardOverlap = useBottomKeyboardOverlap();
+  const keyboardShown = keyboardOverlap > 0;
   const bottomInset = useSafeAreaInsets().bottom;
   const openLink = useOpenLink(hostId, undefined);
   const openSheet = useOptionSheet();
@@ -118,6 +149,7 @@ export function NoteEditor({
     webView.current?.injectJavaScript(noteEditorScript(message));
   const run = (command: NoteEditorCommand) =>
     send({ type: "command", command });
+  useImperativeHandle(ref, () => ({ blur: () => run({ name: "blur" }) }));
 
   if (sentTheme.current !== null && sentTheme.current !== themeKey) {
     sentTheme.current = themeKey;
@@ -129,7 +161,7 @@ export function NoteEditor({
     send({ type: "editable", editable });
   }
 
-  if (sentMeta.current !== meta) {
+  if (meta !== null && sentMeta.current !== meta) {
     sentMeta.current = meta;
     send({ type: "meta", meta });
   }
@@ -194,11 +226,11 @@ export function NoteEditor({
         sentTheme.current = themeKey;
         send({
           type: "init",
-          state: session.state(),
+          content: initialContent(body),
           title,
           meta: sentMeta.current,
-          titlePlaceholder: t("editor.titlePlaceholder"),
-          bodyPlaceholder: t("editor.bodyPlaceholder"),
+          titlePlaceholder: titlePlaceholder ?? t("editor.titlePlaceholder"),
+          bodyPlaceholder: bodyPlaceholder ?? t("editor.bodyPlaceholder"),
           theme,
           focusTitle,
           editable: sentEditable.current,
@@ -206,14 +238,17 @@ export function NoteEditor({
         });
         return;
       case "update":
-        session.applyLocal(message.update);
+        if (body.kind === "doc") body.session.applyLocal(message.update);
+        return;
+      case "markdown":
+        if (body.kind === "markdown") body.onChange(message.markdown);
         return;
       case "title":
         onTitle(message.title);
         return;
       case "focus":
         setFocused(message.focused);
-        onFocusChange(message.focused);
+        onFocusChange?.(message.focused);
         return;
       case "format":
         setFormat(message.format);
@@ -222,7 +257,7 @@ export function NoteEditor({
         openInsert(true);
         return;
       case "properties":
-        onProperties();
+        onProperties?.();
         return;
       case "openLink":
         openLink(message.href);
@@ -242,15 +277,16 @@ export function NoteEditor({
     }
   };
 
+  const session = body.kind === "doc" ? body.session : null;
   const attach = useCallback(
     (view: EditorWebView | null): (() => void) | undefined => {
       webView.current = view;
       if (!view) return undefined;
-      const stopRemote = session.onRemoteUpdate((update) =>
+      const stopRemote = session?.onRemoteUpdate((update) =>
         view.injectJavaScript(noteEditorScript({ type: "remote", update })),
       );
       return () => {
-        stopRemote();
+        stopRemote?.();
         webView.current = null;
       };
     },
@@ -258,14 +294,15 @@ export function NoteEditor({
   );
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.fill, { backgroundColor: colors.background }]}
-      behavior="padding"
-      keyboardVerticalOffset={headerHeight}
+    <View
+      style={[
+        styles.fill,
+        { backgroundColor: colors.background, paddingBottom: keyboardOverlap },
+      ]}
     >
       <WebView
         ref={attach}
-        testID="note-editor"
+        testID={testID}
         source={{ html: NOTE_EDITOR_RUNTIME_HTML }}
         originWhitelist={["about:blank"]}
         onShouldStartLoadWithRequest={({ url }) => url === "about:blank"}
@@ -277,6 +314,15 @@ export function NoteEditor({
         textZoom={100}
         style={[styles.fill, { backgroundColor: colors.background }]}
       />
+      {accessory ? (
+        <View
+          style={{
+            paddingBottom: focused || keyboardShown ? 0 : bottomInset,
+          }}
+        >
+          {accessory}
+        </View>
+      ) : null}
       {focused ? (
         <NoteFormatBar
           format={format}
@@ -289,7 +335,7 @@ export function NoteEditor({
           onHideKeyboard={() => run({ name: "blur" })}
         />
       ) : null}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

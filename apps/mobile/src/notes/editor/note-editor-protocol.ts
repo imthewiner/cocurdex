@@ -49,12 +49,16 @@ export interface NoteEditorFormatState {
   link: string | null;
 }
 
+export type NoteEditorContent =
+  | { kind: "doc"; state: string }
+  | { kind: "markdown"; markdown: string };
+
 export type NoteEditorInbound =
   | {
       type: "init";
-      state: string;
+      content: NoteEditorContent;
       title: string;
-      meta: string;
+      meta: string | null;
       titlePlaceholder: string;
       bodyPlaceholder: string;
       theme: NoteEditorTheme;
@@ -73,6 +77,7 @@ export type NoteEditorInbound =
 export type NoteEditorOutbound =
   | { type: "ready" }
   | { type: "update"; update: string }
+  | { type: "markdown"; markdown: string }
   | { type: "title"; title: string }
   | { type: "focus"; focused: boolean }
   | { type: "format"; format: NoteEditorFormatState }
@@ -85,6 +90,7 @@ export type NoteEditorOutbound =
 const OUTBOUND_TYPES = new Set<NoteEditorOutbound["type"]>([
   "ready",
   "update",
+  "markdown",
   "title",
   "focus",
   "format",
