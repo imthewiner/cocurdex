@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useThemeColors, useThemeName } from "@/theme";
 import { CloseButton } from "@/ui";
@@ -13,18 +13,9 @@ import {
 import { diagramSource, useDiagram } from "./mermaid-store";
 
 function FittedPreview({ diagram }: { diagram: RenderedDiagram }) {
-  const window = useWindowDimensions();
-  const scale = Math.min(
-    window.width / diagram.width,
-    window.height / diagram.height,
-  );
   return (
-    <View style={styles.center} pointerEvents="none">
-      <View
-        style={{ width: diagram.width * scale, height: diagram.height * scale }}
-      >
-        <DiagramPreview diagram={diagram} />
-      </View>
+    <View style={styles.loading} pointerEvents="none">
+      <DiagramPreview diagram={diagram} />
     </View>
   );
 }
@@ -36,13 +27,20 @@ function ZoomableDiagram({
   diagram: RenderedDiagram;
   background: string;
 }) {
+  const [loaded, setLoaded] = useState(false);
+  const source = useMemo(
+    () => ({ html: mermaidViewerDocument(diagram.svg, background) }),
+    [diagram.svg, background],
+  );
   return (
     <>
-      <FittedPreview diagram={diagram} />
       <WebView
-        source={{ html: mermaidViewerDocument(diagram.svg, background) }}
+        source={source}
+        onLoad={() => setLoaded(true)}
         originWhitelist={["about:blank"]}
         javaScriptEnabled={false}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
         setSupportMultipleWindows={false}
         allowsLinkPreview={false}
         setBuiltInZoomControls
@@ -50,6 +48,14 @@ function ZoomableDiagram({
         onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
         style={styles.webView}
       />
+      {loaded ? null : (
+        <View
+          style={[styles.loading, { backgroundColor: background }]}
+          pointerEvents="none"
+        >
+          <FittedPreview diagram={diagram} />
+        </View>
+      )}
     </>
   );
 }
@@ -63,7 +69,13 @@ function ThemedDiagram({
 }) {
   const entry = useDiagram(source, useThemeName());
   if (entry?.kind !== "rendered") return null;
-  return <ZoomableDiagram diagram={entry.diagram} background={background} />;
+  return (
+    <ZoomableDiagram
+      key={`${entry.id}:${background}`}
+      diagram={entry.diagram}
+      background={background}
+    />
+  );
 }
 
 export function MermaidViewerScreen({
@@ -100,9 +112,5 @@ export function MermaidViewerScreen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   webView: { flex: 1, backgroundColor: "transparent" },
-  center: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  loading: { ...StyleSheet.absoluteFill },
 });

@@ -5,7 +5,9 @@ description: Develop Cocurdex itself - verify a mobile app change on an iOS simu
 
 # Verify a mobile change
 
-The loop is: isolated daemon + simulator, debug build with Metro, pair by deep link, drive with `agent-device`, edit and let Fast Refresh apply, screenshot both themes. Maestro (`pnpm --filter @cocurdex/mobile-e2e flows`) runs in CI's `Mobile e2e` job; run it locally only after editing a flow or to reproduce a CI failure.
+The user authorizes using the running Cocurdex-dev daemon and its real session data for debugging and verification, including paired mobile clients. Do not require isolated data or ask again merely because the data is real. Prefer the real session when reproducing a reported issue and restore temporary UI changes afterward. Use isolated fixtures for automated checks that reset or repeatedly mutate data.
+
+For an isolated check, use an isolated daemon and simulator. For a real-session reproduction, reuse the paired development daemon. In either case, use a debug build with Metro, drive with `agent-device`, edit through Fast Refresh, and screenshot both themes. Maestro (`pnpm --filter @cocurdex/mobile-e2e flows`) runs in CI's `Mobile e2e` job; run it locally only after editing a flow or to reproduce a CI failure.
 
 ## 1. Daemon and device
 
