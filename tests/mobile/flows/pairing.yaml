@@ -554,6 +554,33 @@ appId: dev.cocurdex.mobile
 - assertVisible:
     id: "new-session-agent"
     text: "(?s).*${ROLE_NAME}.*"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: ${NEW_SESSION_ACTION}
+    timeout: 10000
+- tapOn: ${NEW_SESSION_ACTION}
+- extendedWaitUntil:
+    visible:
+      id: "new-session-agent"
+      text: "(?s).*${ROLE_NAME}.*"
+    timeout: 10000
+- tapOn:
+    id: "new-session-agent"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-workspace"
+      text: "(?s).*${WORKSPACE_NAME}.*"
+    timeout: 5000
+- assertVisible:
+    id: "new-session-model"
+    text: "(?s).*${NEW_SESSION_MODEL}.*"
+- takeScreenshot: new-session-restored
+- tapOn: ${SESSION_CONFIG_CLOSE}
+- extendedWaitUntil:
+    visible:
+      id: "new-session-prompt"
+    timeout: 5000
 - tapOn:
     id: "new-session-prompt"
 - inputText: ${NEW_SESSION_PROMPT}
