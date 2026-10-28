@@ -29,6 +29,14 @@ const [initial, filled, jumped, afterJump] = await Promise.all(
   Array.from({ length: 4 }, (_, index) => nodes(process.argv[index + 2])),
 );
 assert(initial && filled && jumped && afterJump);
+assert(
+  !initial.some((node) => node.label === "跳到最新消息"),
+  "Anchor space must not show a latest-message button before content fills the viewport",
+);
+assert(
+  filled.some((node) => node.label === "跳到最新消息"),
+  "Content beyond the viewport must show the latest-message button",
+);
 const prompt = initial.find((node) =>
   node.identifier?.startsWith("transcript-user-"),
 );

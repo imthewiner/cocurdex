@@ -59,9 +59,22 @@ export function resolveStickyUserMessage(
   return { id: stickyId ?? fallbackId };
 }
 
+export function getTranscriptContentHeight(viewport: HTMLDivElement) {
+  const end = viewport.querySelector<HTMLElement>(
+    "[data-transcript-content-end]",
+  );
+  if (!end) return viewport.scrollHeight;
+  return Math.max(
+    0,
+    end.getBoundingClientRect().bottom -
+      viewport.getBoundingClientRect().top +
+      viewport.scrollTop,
+  );
+}
+
 export function isViewportNearBottom(viewport: HTMLDivElement) {
   return isScrollNearBottom(
-    viewport.scrollHeight,
+    getTranscriptContentHeight(viewport),
     viewport.clientHeight,
     viewport.scrollTop,
     SCROLL_BOTTOM_THRESHOLD,
@@ -70,7 +83,7 @@ export function isViewportNearBottom(viewport: HTMLDivElement) {
 
 export function isViewportAtBottom(viewport: HTMLDivElement) {
   return isScrollNearBottom(
-    viewport.scrollHeight,
+    getTranscriptContentHeight(viewport),
     viewport.clientHeight,
     viewport.scrollTop,
     SCROLL_RESUME_BOTTOM_THRESHOLD,

@@ -469,7 +469,7 @@ export function ChatView({
         </RenderReadinessContext>
         <JumpControls
           streaming={isRunning && shouldShowJumpToLatest}
-          onJumpToLatest={scrollToLatest}
+          onJumpToLatest={() => scrollToLatest(true)}
           onJumpToTop={scrollToTop}
           showJumpToLatest={shouldShowJumpToLatest}
           showJumpToTop={shouldShowJumpToTop}

@@ -397,6 +397,23 @@ runScenario("chat-streaming", {
             jumpLayout,
           );
           await clickByRole(session, { role: "button", name: jumpLabel });
+          await session.run(async () => {
+            const end = document.querySelector("[data-transcript-content-end]");
+            const viewport = end?.closest("[data-slot=scroll-area-viewport]");
+            if (!viewport) throw new Error("Missing transcript viewport");
+            let previous = viewport.scrollTop;
+            let stableSince = performance.now();
+            const deadline = performance.now() + 5000;
+            while (performance.now() < deadline) {
+              await new Promise(requestAnimationFrame);
+              const next = viewport.scrollTop;
+              if (Math.abs(next - previous) > 0.5)
+                stableSince = performance.now();
+              if (performance.now() - stableSince > 200) return;
+              previous = next;
+            }
+            throw new Error("Explicit jump did not settle");
+          });
           const jumped = await session.run(readingState);
           check(
             jumped.top > grown.top,

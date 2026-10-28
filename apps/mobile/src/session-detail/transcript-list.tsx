@@ -14,6 +14,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { layout, space } from "@/theme";
 import { useScrollIndicatorWhileScrolling } from "@/ui";
 import { JumpButton } from "./jump-button";
@@ -21,7 +22,6 @@ import type { CondensedItem } from "./transcript-activity";
 import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
-  isFarFromLatest,
   isFarFromOldest,
   nextJumpState,
   type ScrollMetrics,
@@ -45,11 +45,13 @@ export function TranscriptList({
   sentMessageId?: string;
   ref?: Ref<TranscriptHandle>;
 }) {
+  const reducedMotion = useReducedMotion();
   const indicator = useScrollIndicatorWhileScrolling();
   const list = useRef<FlatList<TranscriptTurn>>(null);
   const metrics = useRef<ScrollMetrics | null>(null);
   const latestView = useRef<ComponentRef<typeof View>>(null);
   const indexFailed = useRef(false);
+  const latestContent = useRef<{ id: string; height: number } | null>(null);
   const latestLayout = useRef<{ id: string; height: number } | null>(null);
   const navigation = useRef({
     sentMessageId,
@@ -77,10 +79,36 @@ export function TranscriptList({
       (item.kind === "assistant" && item.streaming),
   );
   const directionOffset = useRef(0);
+  const readingMetrics = (current: ScrollMetrics): ScrollMetrics => {
+    const outer = latestLayout.current;
+    const inner = latestContent.current;
+    if (!latest || outer?.id !== latest.id || inner?.id !== latest.id) {
+      return {
+        ...current,
+        contentHeight: current.offset + current.viewportHeight,
+      };
+    }
+    return {
+      ...current,
+      contentHeight: Math.max(
+        0,
+        current.contentHeight -
+          Math.max(0, outer.height - inner.height) -
+          space.md,
+      ),
+    };
+  };
+  const refreshJump = () => {
+    if (!metrics.current) return;
+    const current = readingMetrics(metrics.current);
+    setJump((state) =>
+      nextJumpState(state, current, current.offset, items.length, streaming),
+    );
+  };
   const currentJump = metrics.current
     ? nextJumpState(
         jump,
-        metrics.current,
+        readingMetrics(metrics.current),
         metrics.current.offset,
         items.length,
         streaming,
@@ -155,17 +183,23 @@ export function TranscriptList({
       directionOffset.current = next.offset;
     metrics.current = next;
     setJump((current) =>
-      nextJumpState(current, next, previous, items.length, streaming),
+      nextJumpState(
+        current,
+        readingMetrics(next),
+        previous,
+        items.length,
+        streaming,
+      ),
     );
   };
   const jumpToLatest = () => {
     navigation.current.target = undefined;
     navigation.current.initialPosition = false;
-    const current = metrics.current;
+    const current = metrics.current && readingMetrics(metrics.current);
     if (current)
       list.current?.scrollToOffset({
         offset: Math.max(0, current.contentHeight - current.viewportHeight),
-        animated: !isFarFromLatest(current),
+        animated: !reducedMotion,
       });
   };
   const jumpToOldest = () => {
@@ -203,6 +237,7 @@ export function TranscriptList({
             resized ? height : Math.max(previous, height),
           );
           if (metrics.current) metrics.current.viewportHeight = height;
+          refreshJump();
         }}
         onContentSizeChange={(_width, height) => {
           const previous = metrics.current;
@@ -213,7 +248,13 @@ export function TranscriptList({
           };
           metrics.current = next;
           setJump((current) =>
-            nextJumpState(current, next, next.offset, items.length, streaming),
+            nextJumpState(
+              current,
+              readingMetrics(next),
+              next.offset,
+              items.length,
+              streaming,
+            ),
           );
           align();
         }}
@@ -247,11 +288,23 @@ export function TranscriptList({
                   id: latest.id,
                   height: event.nativeEvent.layout.height,
                 };
+                refreshJump();
                 align();
               }}
             >
-              {latest.items.map(renderRow)}
-              {footer}
+              <View
+                style={styles.turn}
+                onLayout={(event) => {
+                  latestContent.current = {
+                    id: latest.id,
+                    height: event.nativeEvent.layout.height,
+                  };
+                  refreshJump();
+                }}
+              >
+                {latest.items.map(renderRow)}
+                {footer}
+              </View>
             </View>
           ) : (
             footer

@@ -72,12 +72,18 @@ export function ChatVirtualTimeline({
                   : undefined,
               }}
             >
-              <ChatConversationItem
-                {...conversationProps}
-                activity={isLatestConversation ? activity : undefined}
-                conversationGroup={group}
-                isLatestConversation={isLatestConversation}
-              />
+              <div
+                data-transcript-content-end={
+                  isLatestConversation ? "" : undefined
+                }
+              >
+                <ChatConversationItem
+                  {...conversationProps}
+                  activity={isLatestConversation ? activity : undefined}
+                  conversationGroup={group}
+                  isLatestConversation={isLatestConversation}
+                />
+              </div>
             </div>
           );
         })}

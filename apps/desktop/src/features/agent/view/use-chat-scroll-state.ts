@@ -5,6 +5,7 @@ import {
 } from "@cocurdex/shared";
 import { type RefObject, useCallback, useRef, useState } from "react";
 import {
+  getTranscriptContentHeight,
   isViewportAtBottom,
   isViewportNearTop,
   resolveStickyUserMessage,
@@ -191,25 +192,39 @@ export function useChatScrollState({
     [timelineScrollRef],
   );
 
-  const scrollToLatest = useCallback(() => {
-    timelineScrollRef?.current?.cancelNavigation();
-    clearPendingUserMessage();
-    const viewport = viewportRef.current;
+  const scrollToLatest = useCallback(
+    (smooth = false) => {
+      timelineScrollRef?.current?.cancelNavigation();
+      clearPendingUserMessage();
+      const viewport = viewportRef.current;
 
-    if (!viewport) {
-      return;
-    }
+      if (!viewport) {
+        return;
+      }
 
-    viewport.scrollTop = viewport.scrollHeight;
-    timelineScrollRef?.current?.syncScrollOffset();
-    initialPositionPendingRef.current = false;
-    setNearBottomState(true);
-  }, [
-    clearPendingUserMessage,
-    setNearBottomState,
-    timelineScrollRef,
-    viewportRef,
-  ]);
+      const top = Math.max(
+        0,
+        getTranscriptContentHeight(viewport) - viewport.clientHeight,
+      );
+      if (
+        smooth &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        viewport.scrollTo({ top, behavior: "smooth" });
+      } else {
+        viewport.scrollTop = top;
+      }
+      timelineScrollRef?.current?.syncScrollOffset();
+      initialPositionPendingRef.current = false;
+      setNearBottomState(isViewportAtBottom(viewport));
+    },
+    [
+      clearPendingUserMessage,
+      setNearBottomState,
+      timelineScrollRef,
+      viewportRef,
+    ],
+  );
 
   const scrollToTop = useCallback(() => {
     timelineScrollRef?.current?.cancelNavigation();

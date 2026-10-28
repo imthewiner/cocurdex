@@ -84,17 +84,6 @@ export function nextJumpState(
 
 const ANIMATED_JUMP_SCREENS = 1;
 
-export function isFarFromLatest({
-  offset,
-  contentHeight,
-  viewportHeight,
-}: ScrollMetrics) {
-  return (
-    contentHeight - viewportHeight - offset >
-    viewportHeight * ANIMATED_JUMP_SCREENS
-  );
-}
-
 export function isFarFromOldest({ offset, viewportHeight }: ScrollMetrics) {
   return offset > viewportHeight * ANIMATED_JUMP_SCREENS;
 }

@@ -97,7 +97,12 @@ export function useChatBottomStick({
   useLayoutEffect(() => {
     const chatContent = chatContentRef.current;
     const viewport = viewportRef.current;
-    if (!chatContent || !viewport || typeof ResizeObserver === "undefined") {
+    if (
+      !chatContent ||
+      !viewport ||
+      timelineGroupCount === 0 ||
+      typeof ResizeObserver === "undefined"
+    ) {
       return;
     }
 
@@ -107,8 +112,12 @@ export function useChatBottomStick({
 
     observer.observe(chatContent);
     observer.observe(viewport);
+    const contentEnd = chatContent.querySelector(
+      "[data-transcript-content-end]",
+    );
+    if (contentEnd) observer.observe(contentEnd);
     return () => {
       observer.disconnect();
     };
-  }, [chatContentRef, syncViewportLayout, viewportRef]);
+  }, [chatContentRef, syncViewportLayout, viewportRef, timelineGroupCount]);
 }

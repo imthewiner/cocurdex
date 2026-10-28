@@ -2,7 +2,6 @@ import type { CondensedItem } from "@cocurdex/mobile/internal/session-detail/tra
 import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
-  isFarFromLatest,
   isFarFromOldest,
   type JumpState,
   nextJumpState,
@@ -119,23 +118,6 @@ describe("promptOutline", () => {
 
 describe("jump distance", () => {
   const viewport = 800;
-
-  it("animates only within one screen of the latest", () => {
-    expect(
-      isFarFromLatest({
-        offset: 5000,
-        contentHeight: 9000,
-        viewportHeight: viewport,
-      }),
-    ).toBe(true);
-    expect(
-      isFarFromLatest({
-        offset: 7600,
-        contentHeight: 9000,
-        viewportHeight: viewport,
-      }),
-    ).toBe(false);
-  });
 
   it("animates only within one screen of the oldest", () => {
     expect(
