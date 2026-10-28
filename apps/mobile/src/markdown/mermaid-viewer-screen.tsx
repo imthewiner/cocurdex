@@ -36,9 +36,12 @@ function ZoomableDiagram({
     <>
       <WebView
         source={source}
-        onLoad={() => setLoaded(true)}
+        injectedJavaScript="requestAnimationFrame(() => requestAnimationFrame(() => window.ReactNativeWebView.postMessage('painted')));true;"
+        onMessage={({ nativeEvent }) => {
+          if (nativeEvent.data === "painted") setLoaded(true);
+        }}
         originWhitelist={["about:blank"]}
-        javaScriptEnabled={false}
+        javaScriptEnabled
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
         setSupportMultipleWindows={false}
@@ -52,6 +55,7 @@ function ZoomableDiagram({
         <View
           style={[styles.loading, { backgroundColor: background }]}
           pointerEvents="none"
+          testID="mermaid-viewer-preview"
         >
           <FittedPreview diagram={diagram} />
         </View>
