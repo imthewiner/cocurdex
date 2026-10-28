@@ -123,6 +123,14 @@ runScenario("entity-links", {
           session,
           `[role="dialog"] ${linkSelector("note", noteId)}`,
         );
+        await session.waitUntil(
+          () =>
+            [...document.querySelectorAll('[role="dialog"] img')].every(
+              (image) => image.complete,
+            ),
+          null,
+          UI_TIMEOUT_MS,
+        );
         await clickSelector(
           session,
           `[role="dialog"] ${linkSelector("note", noteId)}`,
