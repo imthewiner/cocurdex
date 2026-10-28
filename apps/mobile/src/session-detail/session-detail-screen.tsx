@@ -256,6 +256,7 @@ export function SessionDetailScreen({
         ) : (
           <TranscriptView
             ref={transcript}
+            sentMessageId={sends.at(-1)?.id}
             items={items}
             actions={{
               hostId: host.hostId,

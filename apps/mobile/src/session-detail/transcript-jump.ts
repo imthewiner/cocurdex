@@ -25,12 +25,12 @@ export const INITIAL_JUMP_STATE: JumpState = {
   awayFromLatestAt: null,
 };
 
-export function invertedScrollDirection(
+export function transcriptScrollDirection(
   delta: number,
   current: ScrollDirection,
 ): ScrollDirection {
-  if (delta > 0) return "up";
-  if (delta < 0) return "down";
+  if (delta > 0) return "down";
+  if (delta < 0) return "up";
   return current;
 }
 
@@ -41,8 +41,8 @@ export function transcriptEdges({
 }: ScrollMetrics) {
   const threshold = viewportHeight;
   return {
-    nearLatest: offset <= threshold,
-    nearOldest: contentHeight - viewportHeight - offset <= threshold,
+    nearLatest: contentHeight - viewportHeight - offset <= threshold,
+    nearOldest: offset <= threshold,
   };
 }
 
@@ -53,7 +53,10 @@ export function nextJumpState(
   itemCount: number,
 ): JumpState {
   const direction = state.userScrolled
-    ? invertedScrollDirection(metrics.offset - previousOffset, state.direction)
+    ? transcriptScrollDirection(
+        metrics.offset - previousOffset,
+        state.direction,
+      )
     : state.direction;
   const { nearLatest, nearOldest } = transcriptEdges(metrics);
   const kind = resolveJumpButton({
@@ -78,17 +81,19 @@ export function nextJumpState(
 
 const ANIMATED_JUMP_SCREENS = 1;
 
-export function isFarFromLatest({ offset, viewportHeight }: ScrollMetrics) {
-  return offset > viewportHeight * ANIMATED_JUMP_SCREENS;
-}
-
-export function isFarFromOldest({
+export function isFarFromLatest({
   offset,
   contentHeight,
   viewportHeight,
 }: ScrollMetrics) {
-  const end = Math.max(0, contentHeight - viewportHeight);
-  return offset < end - viewportHeight * ANIMATED_JUMP_SCREENS;
+  return (
+    contentHeight - viewportHeight - offset >
+    viewportHeight * ANIMATED_JUMP_SCREENS
+  );
+}
+
+export function isFarFromOldest({ offset, viewportHeight }: ScrollMetrics) {
+  return offset > viewportHeight * ANIMATED_JUMP_SCREENS;
 }
 
 export function hasUnseenLatest(state: JumpState, itemCount: number) {

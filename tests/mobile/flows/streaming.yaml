@@ -12,6 +12,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: Stream complete.
     timeout: 5000
+- assertVisible: Show the streaming fixture
 - assertVisible: const total = 42;
 - assertVisible: Stream starts immediately.
 - assertVisible: 中文内容与 emoji 👩🏽‍💻 保持完整。
