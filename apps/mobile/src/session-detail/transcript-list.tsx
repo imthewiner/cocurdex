@@ -1,4 +1,5 @@
 import {
+  type ComponentRef,
   type ReactElement,
   type Ref,
   useImperativeHandle,
@@ -47,6 +48,7 @@ export function TranscriptList({
   const indicator = useScrollIndicatorWhileScrolling();
   const list = useRef<FlatList<TranscriptTurn>>(null);
   const metrics = useRef<ScrollMetrics | null>(null);
+  const latestView = useRef<ComponentRef<typeof View>>(null);
   const indexFailed = useRef(false);
   const latestLayout = useRef<{ id: string; height: number } | null>(null);
   const navigation = useRef({
@@ -76,15 +78,20 @@ export function TranscriptList({
       );
       if (index === turns.length - 1 && metrics.current) {
         if (!latest || latestLayout.current?.id !== latest.id) return;
-        list.current?.scrollToOffset({
-          offset: Math.max(
-            0,
-            metrics.current.contentHeight -
-              latestLayout.current.height -
-              space.md * 2,
-          ),
-          animated: false,
-        });
+        const content = list.current?.getNativeScrollRef()?.getInnerViewRef();
+        if (!content) return;
+        const target = state.target;
+        latestView.current?.measureLayout(
+          content,
+          (_x, y) => {
+            if (navigation.current.target !== target) return;
+            list.current?.scrollToOffset({
+              offset: Math.max(0, y - space.md),
+              animated: false,
+            });
+          },
+          () => {},
+        );
       } else if (index >= 0) {
         indexFailed.current = false;
         list.current?.scrollToIndex({
@@ -167,7 +174,12 @@ export function TranscriptList({
           indicator.onScrollBeginDrag();
           setJump((current) => ({ ...current, userScrolled: true }));
         }}
-        onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
+        onLayout={(event) => {
+          const height = event.nativeEvent.layout.height;
+          setViewportHeight(height);
+          if (metrics.current) metrics.current.viewportHeight = height;
+          align();
+        }}
         onContentSizeChange={(_width, height) => {
           const previous = metrics.current;
           const next = {
@@ -200,6 +212,7 @@ export function TranscriptList({
           latest ? (
             <View
               key={latest.id}
+              ref={latestView}
               testID={`transcript-turn-${latest.id}`}
               style={[
                 styles.turn,
