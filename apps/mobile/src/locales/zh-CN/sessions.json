@@ -60,11 +60,8 @@
     "planReady": "计划已写好，等你决定",
     "promptNumber": "第 {{number}} 次提问",
     "prompts": "提问目录",
-    "responding": "回复中",
     "sending": "发送中",
-    "thinking": "思考中",
-    "usingTools": "工具调用中",
-    "working": "正在运行…"
+    "working": "正在工作"
   },
   "empty": {
     "description": "在 {{host}} 上开始的会话会显示在这里。",

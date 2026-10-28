@@ -105,14 +105,18 @@ export function useChatScrollState({
         USER_SCROLL_INTENT_WINDOW_MS;
       const scrollTop = viewport.scrollTop;
       const scrollDelta = scrollTop - lastScrollTopRef.current;
-      lastScrollTopRef.current = scrollTop;
+      if (Math.abs(scrollDelta) >= 12 || !hasRecentUserScrollIntent) {
+        lastScrollTopRef.current = scrollTop;
+      }
       setScrollDirection((current) =>
-        resolveScrollDirection({
-          current,
-          scrollDelta,
-          inputDirection: inputDirectionRef.current,
-          hasRecentUserScrollIntent,
-        }),
+        Math.abs(scrollDelta) < 12
+          ? current
+          : resolveScrollDirection({
+              current,
+              scrollDelta,
+              inputDirection: inputDirectionRef.current,
+              hasRecentUserScrollIntent,
+            }),
       );
 
       setNearBottomState(nextIsNearBottom);

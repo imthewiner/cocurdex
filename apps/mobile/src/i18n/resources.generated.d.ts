@@ -354,10 +354,7 @@ export default interface Resources {
       planReady: "Plan ready for review";
       promptNumber: "Prompt {{number}}";
       prompts: "Prompts";
-      responding: "Replying";
       sending: "Sending";
-      thinking: "Thinking";
-      usingTools: "Using tools";
       working: "Working…";
     };
     empty: {

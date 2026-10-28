@@ -20,6 +20,7 @@ export type CondensedItem =
       items: ActivityChild[];
       summary: ToolActionSummary;
       replies: number;
+      running?: boolean;
     };
 
 type Turn = { prompt: UserItem | null; items: ActivityChild[] };
@@ -85,6 +86,27 @@ function condenseTurn(
   live: boolean,
   records: ReadonlyMap<string, AgentToolCallRecord>,
 ): CondensedItem[] {
+  if (live) {
+    const tools = turn.items.filter((item) => item.kind === "tool");
+    const calls = tools.flatMap((item) => {
+      const call = records.get(item.id);
+      return call ? [call] : [];
+    });
+    return [
+      ...(turn.prompt ? [turn.prompt] : []),
+      {
+        kind: "activity",
+        id: `activity:${turn.prompt?.id ?? "active"}`,
+        items: tools,
+        summary: summarizeToolActions(calls),
+        replies: 0,
+        running: true,
+      },
+      ...turn.items.flatMap((item) =>
+        item.kind === "assistant" ? [{ ...item, turnEnd: false }] : [],
+      ),
+    ];
+  }
   const answerId = live
     ? null
     : (turn.items.findLast((item) => item.kind === "assistant")?.id ?? null);

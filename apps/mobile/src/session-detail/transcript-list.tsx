@@ -66,10 +66,27 @@ export function TranscriptList({
     };
   }
   const [viewportHeight, setViewportHeight] = useState(0);
+  const viewportWidth = useRef(0);
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const turns = useMemo(() => transcriptTurns(items), [items]);
   const history = useMemo(() => turns.slice(0, -1), [turns]);
   const latest = turns.at(-1);
+  const streaming = items.some(
+    (item) =>
+      (item.kind === "activity" && item.running) ||
+      (item.kind === "assistant" && item.streaming),
+  );
+  const directionOffset = useRef(0);
+  const currentJump = metrics.current
+    ? nextJumpState(
+        jump,
+        metrics.current,
+        metrics.current.offset,
+        items.length,
+        streaming,
+      )
+    : jump;
+
   const align = () => {
     const state = navigation.current;
     if (state.target) {
@@ -133,9 +150,13 @@ export function TranscriptList({
       contentHeight: contentSize.height,
       viewportHeight: layoutMeasurement.height,
     };
-    const previous = metrics.current?.offset ?? next.offset;
+    const previous = directionOffset.current;
+    if (Math.abs(next.offset - previous) >= 12)
+      directionOffset.current = next.offset;
     metrics.current = next;
-    setJump((current) => nextJumpState(current, next, previous, items.length));
+    setJump((current) =>
+      nextJumpState(current, next, previous, items.length, streaming),
+    );
   };
   const jumpToLatest = () => {
     navigation.current.target = undefined;
@@ -175,21 +196,24 @@ export function TranscriptList({
           setJump((current) => ({ ...current, userScrolled: true }));
         }}
         onLayout={(event) => {
-          const height = event.nativeEvent.layout.height;
-          setViewportHeight(height);
+          const { width, height } = event.nativeEvent.layout;
+          const resized = viewportWidth.current !== width;
+          viewportWidth.current = width;
+          setViewportHeight((previous) =>
+            resized ? height : Math.max(previous, height),
+          );
           if (metrics.current) metrics.current.viewportHeight = height;
-          align();
         }}
         onContentSizeChange={(_width, height) => {
           const previous = metrics.current;
           const next = {
             offset: previous?.offset ?? 0,
             contentHeight: height,
-            viewportHeight,
+            viewportHeight: previous?.viewportHeight ?? viewportHeight,
           };
           metrics.current = next;
           setJump((current) =>
-            nextJumpState(current, next, next.offset, items.length),
+            nextJumpState(current, next, next.offset, items.length, streaming),
           );
           align();
         }}
@@ -234,14 +258,14 @@ export function TranscriptList({
           )
         }
       />
-      {jump.kind ? (
+      {currentJump.kind ? (
         <JumpButton
-          target={jump.kind}
-          streaming={items.some(
-            (item) => item.kind === "assistant" && item.streaming,
-          )}
-          unseen={jump.kind === "latest" && hasUnseenLatest(jump, items.length)}
-          onPress={jump.kind === "latest" ? jumpToLatest : jumpToOldest}
+          target={currentJump.kind}
+          streaming={streaming}
+          unseen={
+            currentJump.kind === "latest" && hasUnseenLatest(jump, items.length)
+          }
+          onPress={currentJump.kind === "latest" ? jumpToLatest : jumpToOldest}
         />
       ) : null}
     </View>

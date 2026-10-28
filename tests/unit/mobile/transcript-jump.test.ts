@@ -33,14 +33,14 @@ describe("nextJumpState", () => {
     );
   });
 
-  it("keeps the latest-content entry available while reading history", () => {
+  it("follows reading direction after streaming stops", () => {
     const towardOlder = nextJumpState(
       scrolled,
       at(4000),
       CONTENT - VIEWPORT - 3000,
       20,
     );
-    expect(towardOlder.kind).toBe("latest");
+    expect(towardOlder.kind).toBe("top");
     const towardLatest = nextJumpState(
       towardOlder,
       at(3000),
@@ -153,4 +153,23 @@ describe("jump distance", () => {
       }),
     ).toBe(false);
   });
+});
+
+it("returns to the reading direction when a stream stops without another scroll", () => {
+  const streaming = nextJumpState(
+    scrolled,
+    at(4000),
+    at(3000).offset,
+    20,
+    true,
+  );
+  expect(streaming.kind).toBe("latest");
+  expect(
+    nextJumpState(streaming, at(4000), at(4000).offset, 20, false).kind,
+  ).toBe("top");
+});
+
+it("ignores small reverse movement", () => {
+  const state = nextJumpState(scrolled, at(4000), at(3000).offset, 20);
+  expect(nextJumpState(state, at(3997), at(4000).offset, 20).kind).toBe("top");
 });

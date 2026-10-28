@@ -6,16 +6,20 @@ export function resolveJumpButton({
   isNearTop,
   isNearBottom,
   scrollDirection,
+  streaming = false,
 }: {
   isReady: boolean;
   hasUserScrolled: boolean;
   isNearTop: boolean;
   isNearBottom: boolean;
   scrollDirection: "up" | "down";
+  streaming?: boolean;
 }): JumpButtonKind {
   if (!isReady || (isNearTop && isNearBottom)) {
     return null;
   }
+
+  if (streaming && !isNearBottom) return "latest";
 
   if (isNearTop) {
     return "latest";

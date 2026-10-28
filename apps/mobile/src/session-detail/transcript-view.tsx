@@ -23,6 +23,7 @@ export type { TranscriptHandle } from "./transcript-list";
 
 import { TurnActions } from "./turn-actions";
 import { useActivityLabel } from "./use-activity-label";
+import { WorkingMark } from "./working-mark";
 
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
@@ -168,11 +169,13 @@ function ActivityRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ expanded }}
+        accessibilityState={{ expanded, busy: item.running }}
+        disabled={item.items.length === 0}
         onPress={onToggle}
         style={styles.tool}
         testID={`transcript-activity-${item.id}`}
       >
+        {item.running ? <WorkingMark /> : null}
         <Text
           numberOfLines={1}
           style={[styles.activityText, { color: colors.mutedForeground }]}

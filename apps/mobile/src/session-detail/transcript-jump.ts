@@ -29,6 +29,7 @@ export function transcriptScrollDirection(
   delta: number,
   current: ScrollDirection,
 ): ScrollDirection {
+  if (Math.abs(delta) < 12) return current;
   if (delta > 0) return "down";
   if (delta < 0) return "up";
   return current;
@@ -51,6 +52,7 @@ export function nextJumpState(
   metrics: ScrollMetrics,
   previousOffset: number,
   itemCount: number,
+  streaming = false,
 ): JumpState {
   const direction = state.userScrolled
     ? transcriptScrollDirection(
@@ -59,16 +61,14 @@ export function nextJumpState(
       )
     : state.direction;
   const { nearLatest, nearOldest } = transcriptEdges(metrics);
-  const kind =
-    !nearLatest && itemCount > 0
-      ? "latest"
-      : resolveJumpButton({
-          isReady: itemCount > 0,
-          hasUserScrolled: state.userScrolled,
-          isNearTop: nearOldest,
-          isNearBottom: nearLatest,
-          scrollDirection: direction,
-        });
+  const kind = resolveJumpButton({
+    streaming,
+    isReady: itemCount > 0,
+    hasUserScrolled: state.userScrolled,
+    isNearTop: nearOldest,
+    isNearBottom: nearLatest,
+    scrollDirection: direction,
+  });
   const awayFromLatestAt = nearLatest
     ? null
     : (state.awayFromLatestAt ?? itemCount);

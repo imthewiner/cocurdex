@@ -118,7 +118,7 @@ describe("condenseTranscript", () => {
     ).toEqual(["u1", "activity(t1,t2)", "a1!"]);
   });
 
-  it("keeps replies visible and groups only tool runs while a turn runs", () => {
+  it("keeps replies visible beneath one stable running group", () => {
     const items = [
       user("u1"),
       reply("a0"),
@@ -132,9 +132,24 @@ describe("condenseTranscript", () => {
       "u1",
       "a0!",
       "u2",
-      "activity(t1,t2)",
+      "activity(t1,t2,t3)",
       "a1",
-      "t3",
     ]);
   });
+});
+
+it("keeps the same running heading before and after tool events", () => {
+  for (const items of [
+    [user("u1")],
+    [user("u1"), tool("t1")],
+    [user("u1"), tool("t1"), reply("a1"), tool("t2")],
+  ]) {
+    const result = condenseTranscript(items, records, true);
+    expect(result[1]).toMatchObject({
+      kind: "activity",
+      id: "activity:u1",
+      running: true,
+    });
+    expect(result.filter((item) => item.kind === "activity")).toHaveLength(1);
+  }
 });

@@ -85,3 +85,15 @@ describe("resolveScrollDirection", () => {
     expect(resolveScrollDirection({ ...base, current: "down" })).toBe("down");
   });
 });
+
+it("prioritizes incoming content only while running", () => {
+  const state = {
+    isReady: true,
+    hasUserScrolled: true,
+    isNearTop: false,
+    isNearBottom: false,
+    scrollDirection: "up" as const,
+  };
+  expect(resolveJumpButton({ ...state, streaming: true })).toBe("latest");
+  expect(resolveJumpButton({ ...state, streaming: false })).toBe("top");
+});

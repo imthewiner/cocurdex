@@ -296,16 +296,14 @@ export function ChatView({
   );
   const activeUserNavigationMessageId =
     activeUserMessageId ?? stickyUserMessages.at(-1)?.id ?? null;
-  const jumpButton =
-    !isNearBottom && isInitialBottomSettled
-      ? "latest"
-      : resolveJumpButton({
-          isReady: isInitialBottomSettled && timelineGroups.length > 0,
-          hasUserScrolled,
-          isNearTop,
-          isNearBottom,
-          scrollDirection,
-        });
+  const jumpButton = resolveJumpButton({
+    streaming: isRunning,
+    isReady: isInitialBottomSettled && timelineGroups.length > 0,
+    hasUserScrolled,
+    isNearTop,
+    isNearBottom,
+    scrollDirection,
+  });
   const shouldShowJumpToLatest = jumpButton === "latest";
   const shouldShowJumpToTop = jumpButton === "top";
   // Latest values for diagnostics only — kept in a ref so the scroll handler

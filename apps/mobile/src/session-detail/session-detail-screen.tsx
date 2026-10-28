@@ -35,7 +35,7 @@ import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
 import { StatusLine } from "./status-line";
 import { buildTranscript, pendingInteraction } from "./transcript";
-import { type CondensedItem, condenseTranscript } from "./transcript-activity";
+import { condenseTranscript } from "./transcript-activity";
 import { type TranscriptHandle, TranscriptView } from "./transcript-view";
 
 function sessionSubtitle(
@@ -45,25 +45,6 @@ function sessionSubtitle(
   const model = observation?.session.providerSnapshot?.modelName;
   const parts = [workspace?.name, model].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : null;
-}
-
-type LivePhase = "thinking" | "usingTools" | "responding";
-
-function livePhase(items: readonly CondensedItem[]): LivePhase {
-  const last = items.at(-1);
-  if (last?.kind === "assistant") return "responding";
-  const tools =
-    last?.kind === "activity"
-      ? last.items
-      : last?.kind === "tool"
-        ? [last]
-        : [];
-  const active = tools.some(
-    (item) =>
-      item.kind === "tool" &&
-      (item.status === "pending" || item.status === "in_progress"),
-  );
-  return active ? "usingTools" : "thinking";
 }
 
 export function SessionDetailScreen({
@@ -120,7 +101,7 @@ export function SessionDetailScreen({
           ...unconfirmed.map(pendingSendItem),
         ],
         observation?.toolCalls ?? [],
-        running,
+        running || unconfirmed.length > 0,
       ),
     [observation, workspacePath, running, unconfirmed],
   );
@@ -213,14 +194,7 @@ export function SessionDetailScreen({
   };
 
   const title = observation?.session.title ?? listed?.title ?? "";
-  const liveLabels: Record<LivePhase, string | null> = {
-    thinking: t("detail.thinking"),
-    usingTools: t("detail.usingTools"),
-    responding: null,
-  };
-  const sendingStatus = unconfirmed.length > 0 ? t("detail.sending") : null;
-  const runningStatus = running ? liveLabels[livePhase(items)] : sendingStatus;
-  const status = failed ? t("detail.failed") : runningStatus;
+  const status = failed ? t("detail.failed") : null;
 
   return (
     <>
