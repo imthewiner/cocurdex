@@ -19,7 +19,6 @@ import { DocImage } from "./doc-image";
 import { splitDocImages } from "./doc-image-segments";
 import { entityLinkHref, entityLinkRef } from "./entity-link";
 import { externalLinkUrl } from "./external-link";
-import { FadeInBlock } from "./fade-in-block";
 import { useExistingFiles } from "./file-link-queries";
 import {
   collectFileLinkTargets,
@@ -32,7 +31,6 @@ import { splitMermaidBlocks } from "./markdown-segments";
 import { MermaidDiagram } from "./mermaid-diagram";
 import { MONO_FONT } from "./mono-font";
 import { type StreamingBlock, streamingBlocks } from "./streaming-blocks";
-import { useStreamingReveal } from "./use-streaming-reveal";
 
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
@@ -289,9 +287,8 @@ export function MarkdownText({
   fileRoot?: string | null;
   testID?: string;
 }) {
-  const { content, live } = useStreamingReveal(markdown, streaming);
   const [split] = useState(streaming);
-  const settled = live ? hidePendingTableStart(content) : content;
+  const settled = streaming ? hidePendingTableStart(markdown) : markdown;
   const linked = useFileLinkedMarkdown(settled, hostId, fileRoot);
   const openLink = useOpenLink(hostId, fileRoot);
   const colors = useThemeColors();
@@ -306,21 +303,20 @@ export function MarkdownText({
     () =>
       streamingBlocks(
         splitDocImages(splitMermaidBlocks(padInlineCode(linked))),
-        { live, split },
+        { live: streaming, split },
       ),
-    [linked, live, split],
+    [linked, streaming, split],
   );
   return (
     <View testID={testID} style={{ gap: space.sm }}>
       {blocks.map((block) => (
-        <FadeInBlock key={block.key} fade={live}>
-          <SegmentView
-            block={block}
-            style={style}
-            hostId={hostId}
-            onOpenLink={openLink}
-          />
-        </FadeInBlock>
+        <SegmentView
+          key={block.key}
+          block={block}
+          style={style}
+          hostId={hostId}
+          onOpenLink={openLink}
+        />
       ))}
     </View>
   );
