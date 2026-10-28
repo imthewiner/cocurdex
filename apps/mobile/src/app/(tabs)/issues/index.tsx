@@ -60,7 +60,7 @@ function HostIssues({ host }: { host: SavedHost }) {
           },
           {
             key: "new",
-            icon: { ios: "plus", android: "add" },
+            icon: { ios: "square.and.pencil", android: "edit_square" },
             label: t("create.open"),
             onPress: gate("interact", () =>
               router.push({
