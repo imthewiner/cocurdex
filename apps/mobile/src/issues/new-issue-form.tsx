@@ -1,29 +1,49 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { Text, TextInput, type TextInputRef } from "@expo/ui";
-import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { Stack, useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { type ReactElement, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import {
+  type HostInstance,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hostConnection } from "@/connection";
 import { useHostSessions } from "@/sessions";
-import { useThemeColors } from "@/theme";
+import { layout, space, useThemeColors } from "@/theme";
 import {
-  BrandHost,
   type Choice,
   ChoiceSheet,
-  FieldSection,
-  Form,
-  FormSection,
   keyboardHidden,
+  type MenuAnchor,
+  ModalCloseButton,
+  measureAnchor,
   SheetAction,
-  ValueFormRow,
+  useAnchoredMenu,
+  useBottomKeyboardOverlap,
 } from "@/ui";
+import { IssuePriorityMark } from "./issue-priority-mark";
 import { useIssueView } from "./issue-queries";
+import { IssueStatusMark } from "./issue-status-mark";
 import { defaultIssuePriority, defaultIssueStatus } from "./new-issue-defaults";
 
 const NO_WORKSPACE = "";
+const UNSET_VALUES: Record<IssueField, string | null> = {
+  status: null,
+  priority: "none",
+  workspace: NO_WORKSPACE,
+};
 
 type IssueField = "workspace" | "status" | "priority";
+
+const CHIP_FIELDS: readonly IssueField[] = ["status", "priority"];
+const MENU_LIMIT = 6;
 
 export function NewIssueForm({
   host,
@@ -35,8 +55,11 @@ export function NewIssueForm({
   const { t } = useTranslation("issues");
   const router = useRouter();
   const colors = useThemeColors();
-  const titleInput = useRef<TextInputRef>(null);
-  const descriptionInput = useRef<TextInputRef>(null);
+  const menu = useAnchoredMenu("new-issue-menu");
+  const bottomInset = useSafeAreaInsets().bottom;
+  const keyboardOverlap = useBottomKeyboardOverlap();
+  const titleInput = useRef<TextInputInstance>(null);
+  const descriptionInput = useRef<TextInputInstance>(null);
   const view = useIssueView(host.hostId);
   const { workspaces } = useHostSessions(host.hostId);
   const [title, setTitle] = useState("");
@@ -122,72 +145,125 @@ export function NewIssueForm({
     choices[field].find((choice) => choice.value === values[field])?.label ??
     t("field.none");
 
-  const pick = async (field: IssueField) => {
+  const pickInSheet = async (field: IssueField) => {
     titleInput.current?.blur();
     descriptionInput.current?.blur();
     await keyboardHidden();
     setPicking(field);
   };
 
+  const pick = (field: IssueField, anchor: MenuAnchor) => {
+    if (choices[field].length > MENU_LIMIT) return void pickInSheet(field);
+    menu.open(anchor, {
+      title: titles[field],
+      items: choices[field].map((choice) => ({
+        key: choice.value,
+        label: choice.label,
+        leading: markOf(field, choice.value, choice.label),
+        selected: choice.value === values[field],
+        testID: `new-issue-choice-${choice.value || "none"}`,
+        onPress: () => setters[field](choice.value),
+      })),
+    });
+  };
+
+  const markOf = (field: IssueField, value: string | null, label: string) => {
+    if (field === "status") {
+      const option = data?.statusOptions.find((entry) => entry.id === value);
+      return (
+        <IssueStatusMark category={option?.category ?? null} label={label} />
+      );
+    }
+    if (field === "priority" && value) {
+      return <IssuePriorityMark priority={value} label={label} />;
+    }
+    return undefined;
+  };
+
+  const chipMarkOf = (field: IssueField) =>
+    field === "workspace" ? (
+      <SymbolView
+        name={{ ios: "folder", android: "folder" }}
+        size={16}
+        tintColor={colors.mutedForeground}
+      />
+    ) : (
+      markOf(field, values[field], labelOf(field))
+    );
+
+  const fieldChip = (field: IssueField) => {
+    const unset = UNSET_VALUES[field] === values[field];
+    return (
+      <PropertyChip
+        key={field}
+        testID={`new-issue-${field}`}
+        label={unset ? titles[field] : labelOf(field)}
+        unset={unset}
+        accessibilityLabel={`${titles[field]}, ${labelOf(field)}`}
+        leading={chipMarkOf(field)}
+        onPress={(anchor) => pick(field, anchor)}
+      />
+    );
+  };
+
   return (
-    <>
+    <View style={[styles.fill, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ headerTitle: () => fieldChip("workspace") }} />
+      <ModalCloseButton />
       <SheetAction
         label={creating ? t("create.creating") : t("create.submit")}
         disabled={!canCreate}
         onPress={() => void create()}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FieldSection>
-            <TextInput
-              ref={titleInput}
-              testID="new-issue-title"
-              placeholder={t("create.titlePlaceholder")}
-              autoFocus
-              onChangeText={setTitle}
-            />
-            <TextInput
-              ref={descriptionInput}
-              testID="new-issue-description"
-              placeholder={t("create.descriptionPlaceholder")}
-              multiline
-              onChangeText={setDescription}
-            />
-          </FieldSection>
-          <FormSection
-            footer={
-              failed ? (
-                <Text textStyle={{ color: colors.destructive }}>
-                  {t("create.failed")}
-                </Text>
-              ) : (
-                <Text textStyle={{ color: colors.mutedForeground }}>
-                  {t("create.hint")}
-                </Text>
-              )
-            }
-          >
-            <ValueFormRow
-              testID="new-issue-workspace"
-              label={t("field.workspace")}
-              value={labelOf("workspace")}
-              onPress={() => void pick("workspace")}
-            />
-            <ValueFormRow
-              testID="new-issue-status"
-              label={t("field.status")}
-              value={labelOf("status")}
-              onPress={() => void pick("status")}
-            />
-            <ValueFormRow
-              testID="new-issue-priority"
-              label={t("field.priority")}
-              value={labelOf("priority")}
-              onPress={() => void pick("priority")}
-            />
-          </FormSection>
-        </Form>
-      </BrandHost>
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        <TextInput
+          ref={titleInput}
+          testID="new-issue-title"
+          placeholder={t("create.titlePlaceholder")}
+          placeholderTextColor={colors.mutedForeground}
+          selectionColor={colors.tint}
+          autoFocus
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => descriptionInput.current?.focus()}
+          onChangeText={setTitle}
+          style={[styles.title, { color: colors.foreground }]}
+        />
+        <TextInput
+          ref={descriptionInput}
+          testID="new-issue-description"
+          placeholder={t("create.descriptionPlaceholder")}
+          placeholderTextColor={colors.mutedForeground}
+          selectionColor={colors.tint}
+          multiline
+          scrollEnabled={false}
+          onChangeText={setDescription}
+          style={[styles.description, { color: colors.foreground }]}
+        />
+        {failed ? (
+          <Text style={[styles.failed, { color: colors.destructive }]}>
+            {t("create.failed")}
+          </Text>
+        ) : null}
+      </ScrollView>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        style={styles.chipBar}
+        contentContainerStyle={[
+          styles.chips,
+          { paddingBottom: (keyboardOverlap || bottomInset) + space.sm },
+        ]}
+      >
+        {CHIP_FIELDS.map(fieldChip)}
+      </ScrollView>
+      {menu.menu}
       <ChoiceSheet
         title={picking ? titles[picking] : null}
         choices={picking ? choices[picking] : []}
@@ -198,10 +274,80 @@ export function NewIssueForm({
         onDismiss={() => setPicking(null)}
         testID="new-issue-choices"
       />
-    </>
+    </View>
+  );
+}
+
+function PropertyChip({
+  label,
+  unset,
+  accessibilityLabel,
+  leading,
+  onPress,
+  testID,
+}: {
+  label: string;
+  unset: boolean;
+  accessibilityLabel: string;
+  leading?: ReactElement;
+  onPress(anchor: MenuAnchor): void;
+  testID: string;
+}) {
+  const colors = useThemeColors();
+  const chip = useRef<HostInstance>(null);
+  return (
+    <Pressable
+      ref={chip}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={() => measureAnchor(chip.current, onPress)}
+      style={({ pressed }) => [
+        styles.chip,
+        { backgroundColor: colors.muted },
+        pressed && styles.pressed,
+      ]}
+      testID={testID}
+    >
+      {leading ?? null}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.chipLabel,
+          { color: unset ? colors.mutedForeground : colors.foreground },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  content: { padding: layout.sideMargin, gap: space.sm },
+  title: { fontSize: 22, lineHeight: 28, paddingVertical: space.xs },
+  description: {
+    fontSize: 16,
+    lineHeight: 22,
+    minHeight: 120,
+    textAlignVertical: "top",
+    paddingVertical: space.xs,
+  },
+  failed: { fontSize: 13, lineHeight: 18 },
+  chipBar: { flexGrow: 0 },
+  chips: {
+    gap: space.sm,
+    paddingHorizontal: layout.sideMargin,
+    paddingTop: space.sm,
+  },
+  chip: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: space.md,
+    borderRadius: 18,
+  },
+  pressed: { opacity: 0.7 },
+  chipLabel: { fontSize: 14, lineHeight: 20 },
 });

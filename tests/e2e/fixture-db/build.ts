@@ -1,5 +1,5 @@
-import { mkdtempSync, realpathSync, rmSync } from "node:fs";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { existsSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -43,6 +43,7 @@ const FIXTURE_CREATED_AT = "2026-01-01T09:00:00.000Z";
 const RUN_TIMEOUT_MS = 30_000;
 
 export const FIXTURE_MANIFEST_FILENAME = "fixture.json";
+export const FIXTURE_DATA_DIRECTORIES = ["image-attachments"];
 
 export interface FixtureManifest {
   workspaceId: string;
@@ -461,6 +462,11 @@ export async function buildFixtureDb(outDir: string): Promise<FixtureManifest> {
       path.join(outDir, DATABASE_FILENAME),
       scratch,
     );
+    for (const directory of FIXTURE_DATA_DIRECTORIES) {
+      const source = path.join(userDataPath, directory);
+      if (!existsSync(source)) continue;
+      await cp(source, path.join(outDir, directory), { recursive: true });
+    }
     const manifest: FixtureManifest = {
       workspaceId: FIXTURE_WORKSPACE_ID,
       workspaceName: FIXTURE_WORKSPACE_NAME,

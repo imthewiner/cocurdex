@@ -1,31 +1,24 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { useRouter } from "expo-router";
-import { type ReactElement, useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { SectionList, StyleSheet } from "react-native";
 import { useHostSessions } from "@/sessions";
 import {
   ListNotice,
   ListSectionHeader,
-  ListSeparator,
   PendingIndicator,
   usePullToRefresh,
   useScrollIndicatorWhileScrolling,
+  useTabBarInset,
 } from "@/ui";
 import { useNotes } from "./note-queries";
 import { NoteRowView } from "./note-row";
 import { type NoteRow, noteSections } from "./note-sections";
 
-export function NoteList({
-  host,
-  query,
-  header,
-}: {
-  host: SavedHost;
-  query: string;
-  header?: ReactElement;
-}) {
+export function NoteList({ host, query }: { host: SavedHost; query: string }) {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
+  const tabBarInset = useTabBarInset();
   const { t } = useTranslation("notes");
   const router = useRouter();
   const notes = useNotes(host.hostId);
@@ -44,16 +37,14 @@ export function NoteList({
   if (!notes.data) {
     if (!notes.error) return <PendingIndicator />;
     return (
-      <>
-        {header}
-        <ListNotice
-          title={t("unavailable.title", { host: host.name })}
-          action={{
-            label: t("unavailable.retry"),
-            onPress: () => void notes.mutate(),
-          }}
-        />
-      </>
+      <ListNotice
+        icon={{ ios: "wifi.slash", android: "cloud_off" }}
+        title={t("unavailable.title", { host: host.name })}
+        action={{
+          label: t("unavailable.retry"),
+          onPress: () => void notes.mutate(),
+        }}
+      />
     );
   }
 
@@ -61,6 +52,7 @@ export function NoteList({
   return (
     <SectionList<NoteRow>
       {...scrollIndicator}
+      contentContainerStyle={{ paddingBottom: tabBarInset }}
       style={styles.fill}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
@@ -68,14 +60,17 @@ export function NoteList({
       sections={sections}
       keyExtractor={(row) => row.note.id}
       stickySectionHeadersEnabled={false}
-      ListHeaderComponent={header}
       refreshing={pull.refreshing}
       onRefresh={pull.onRefresh}
       ListEmptyComponent={
         searching ? (
-          <ListNotice title={t("noResults", { query: query.trim() })} />
+          <ListNotice
+            icon={{ ios: "magnifyingglass", android: "search" }}
+            title={t("noResults", { query: query.trim() })}
+          />
         ) : (
           <ListNotice
+            icon={{ ios: "doc.text", android: "description" }}
             title={t("empty.title")}
             description={t("empty.description", { host: host.name })}
           />
@@ -95,7 +90,6 @@ export function NoteList({
           }
         />
       )}
-      ItemSeparatorComponent={ListSeparator}
     />
   );
 }

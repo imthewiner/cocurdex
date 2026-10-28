@@ -6,6 +6,7 @@ import {
   EnrichedMarkdownText,
   type MarkdownStyle,
 } from "react-native-enriched-markdown";
+import { scaledSize, useCodeScale, useTextScale } from "@/preferences";
 import {
   type SyntaxColors,
   space,
@@ -40,10 +41,13 @@ const INLINE_CODE_TINT_ALPHA = "1f";
 function markdownStyle(
   colors: ThemeColors,
   syntaxColors: SyntaxColors,
+  { text, code }: { text: number; code: number },
 ): MarkdownStyle {
+  const textSize = (size: number) => scaledSize(size, text);
+  const codeSize = (size: number) => scaledSize(size, code);
   const block = {
-    fontSize: BODY_SIZE,
-    lineHeight: BODY_LINE_HEIGHT,
+    fontSize: textSize(BODY_SIZE),
+    lineHeight: textSize(BODY_LINE_HEIGHT),
     color: colors.foreground,
     marginBottom: space.sm,
   };
@@ -54,15 +58,35 @@ function markdownStyle(
       bulletColor: colors.mutedForeground,
       markerColor: colors.mutedForeground,
     },
-    h1: { ...block, fontSize: 22, lineHeight: 28, fontWeight: "600" },
-    h2: { ...block, fontSize: 19, lineHeight: 26, fontWeight: "600" },
-    h3: { ...block, fontSize: 17, lineHeight: 24, fontWeight: "500" },
+    h1: {
+      ...block,
+      fontSize: textSize(22),
+      lineHeight: textSize(28),
+      fontWeight: "600",
+    },
+    h2: {
+      ...block,
+      fontSize: textSize(19),
+      lineHeight: textSize(26),
+      fontWeight: "600",
+    },
+    h3: {
+      ...block,
+      fontSize: textSize(17),
+      lineHeight: textSize(24),
+      fontWeight: "500",
+    },
     h4: { ...block, fontWeight: "600" },
-    h5: { ...block, fontSize: 15, lineHeight: 22, fontWeight: "600" },
+    h5: {
+      ...block,
+      fontSize: textSize(15),
+      lineHeight: textSize(22),
+      fontWeight: "600",
+    },
     h6: {
       ...block,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: textSize(14),
+      lineHeight: textSize(20),
       fontWeight: "600",
       color: colors.mutedForeground,
     },
@@ -89,15 +113,15 @@ function markdownStyle(
     inlineMath: { color: colors.foreground },
     code: {
       fontFamily: MONO_FONT,
-      fontSize: 14,
+      fontSize: codeSize(14),
       color: syntaxColors.function,
       backgroundColor: `${syntaxColors.function}${INLINE_CODE_TINT_ALPHA}`,
       borderColor: `${syntaxColors.function}00`,
     },
     codeBlock: {
       fontFamily: MONO_FONT,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: codeSize(13),
+      lineHeight: codeSize(19),
       color: colors.foreground,
       backgroundColor: colors.chatCodeBlock,
       borderColor: colors.chatBorder,
@@ -108,7 +132,7 @@ function markdownStyle(
       syntaxColors,
     },
     table: {
-      fontSize: 14,
+      fontSize: textSize(14),
       color: colors.foreground,
       borderColor: colors.chatBorder,
       headerBackgroundColor: colors.muted,
@@ -137,7 +161,7 @@ function fileTargetOf(url: string, fileRoot: string | null | undefined) {
     : localFileLinkTarget(url, fileRoot);
 }
 
-function useOpenLink(
+export function useOpenLink(
   hostId: string | undefined,
   fileRoot: string | null | undefined,
 ) {
@@ -272,9 +296,11 @@ export function MarkdownText({
   const openLink = useOpenLink(hostId, fileRoot);
   const colors = useThemeColors();
   const syntaxColors = useSyntaxColors();
+  const text = useTextScale();
+  const code = useCodeScale();
   const style = useMemo(
-    () => markdownStyle(colors, syntaxColors),
-    [colors, syntaxColors],
+    () => markdownStyle(colors, syntaxColors, { text, code }),
+    [colors, syntaxColors, text, code],
   );
   const blocks = useMemo(
     () =>

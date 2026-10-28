@@ -1,3 +1,4 @@
+import { NavigationBar } from "expo-navigation-bar";
 import { useTranslation } from "react-i18next";
 import {
   Image,
@@ -29,7 +30,12 @@ export function ImageViewerScreen({
   const { width, height } = useWindowDimensions();
   return (
     <>
-      <CloseButton accessibilityLabel={t("image.close")} onPress={onClose} />
+      <NavigationBar style="light" />
+      <CloseButton
+        accessibilityLabel={t("image.close")}
+        onPress={onClose}
+        scheme="dark"
+      />
       <ScrollView
         style={styles.fill}
         contentContainerStyle={styles.center}

@@ -1,5 +1,6 @@
-import { useColorScheme } from "react-native";
+import { useColorSchemeName } from "@/preferences";
 import generated from "./colors.generated.json";
+import { type Surface, useSurface } from "./surface";
 import syntax from "./syntax-colors.generated.json";
 
 export type ThemeName = keyof typeof generated;
@@ -24,7 +25,7 @@ export const themeColors: Record<ThemeName, ThemeColors> = {
 export type SyntaxColors = (typeof syntax)[ThemeName];
 
 export function useThemeName(): ThemeName {
-  return useColorScheme() === "dark" ? "dark" : "light";
+  return useColorSchemeName();
 }
 
 export function useThemeColors(): ThemeColors {
@@ -40,11 +41,17 @@ export interface GroupedColors {
   cell: string;
 }
 
-const GROUPED: Record<ThemeName, GroupedColors> = {
-  light: { page: generated.light.muted, cell: generated.light.card },
-  dark: { page: generated.dark.background, cell: generated.dark.card },
+const GROUPED: Record<Surface, Record<ThemeName, GroupedColors>> = {
+  page: {
+    light: { page: generated.light.muted, cell: generated.light.card },
+    dark: { page: generated.dark.background, cell: generated.dark.card },
+  },
+  sheet: {
+    light: { page: generated.light.muted, cell: generated.light.card },
+    dark: { page: generated.dark.popover, cell: generated.dark.muted },
+  },
 };
 
 export function useGroupedColors(): GroupedColors {
-  return GROUPED[useThemeName()];
+  return GROUPED[useSurface()][useThemeName()];
 }

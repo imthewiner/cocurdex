@@ -1,8 +1,10 @@
-import { type RefObject, useCallback, useRef, useState } from "react";
 import {
   resolveScrollDirection,
   type ScrollDirection,
   scrollDirectionOfDelta,
+} from "@cocurdex/shared";
+import { type RefObject, useCallback, useRef, useState } from "react";
+import {
   shouldFollowStreamOnResize,
   shouldReleaseStickOnUserScroll,
 } from "@/components/chat";

@@ -1,16 +1,15 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { AgentRoleDraft, AgentRoleRecord } from "@cocurdex/shared";
-import { Text, TextInput, type TextInputRef } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { hostConnection } from "@/connection";
-import { useThemeColors } from "@/theme";
 import {
-  BrandHost,
   FieldSection,
   Form,
+  FormNote,
+  FormTextField,
   keyboardHidden,
   SheetAction,
 } from "@/ui";
@@ -29,10 +28,9 @@ export function SaveRoleForm({
 }) {
   const { t } = useTranslation("sessions");
   const router = useRouter();
-  const colors = useThemeColors();
   const roles = useAgentRoles(host.hostId);
-  const nameInput = useRef<TextInputRef>(null);
-  const descriptionInput = useRef<TextInputRef>(null);
+  const nameInput = useRef<TextInputInstance>(null);
+  const descriptionInput = useRef<TextInputInstance>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
@@ -73,49 +71,39 @@ export function SaveRoleForm({
         disabled={!canSave}
         onPress={() => void save()}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FieldSection
-            title={t("saveRole.name")}
-            footer={
-              <Text textStyle={{ color: colors.mutedForeground }}>
-                {summary}
-              </Text>
-            }
-          >
-            <TextInput
-              ref={nameInput}
-              testID="save-role-name"
-              placeholder={t("saveRole.namePlaceholder")}
-              autoFocus
-              returnKeyType="next"
-              onSubmitEditing={() => descriptionInput.current?.focus()}
-              onChangeText={setName}
-            />
-          </FieldSection>
-          <FieldSection
-            title={t("saveRole.description")}
-            footer={
-              <Text textStyle={{ color: colors.destructive }}>
-                {failed ? t("saveRole.failed") : ""}
-              </Text>
-            }
-          >
-            <TextInput
-              ref={descriptionInput}
-              testID="save-role-description"
-              placeholder={t("saveRole.descriptionPlaceholder")}
-              returnKeyType="done"
-              onSubmitEditing={() => void save()}
-              onChangeText={setDescription}
-            />
-          </FieldSection>
-        </Form>
-      </BrandHost>
+      <Form adjustsForKeyboard>
+        <FieldSection
+          title={t("saveRole.name")}
+          footer={<FormNote>{summary}</FormNote>}
+        >
+          <FormTextField
+            ref={nameInput}
+            testID="save-role-name"
+            placeholder={t("saveRole.namePlaceholder")}
+            autoFocus
+            returnKeyType="next"
+            onSubmitEditing={() => descriptionInput.current?.focus()}
+            onChangeText={setName}
+          />
+        </FieldSection>
+        <FieldSection
+          title={t("saveRole.description")}
+          footer={
+            failed ? (
+              <FormNote tone="destructive">{t("saveRole.failed")}</FormNote>
+            ) : null
+          }
+        >
+          <FormTextField
+            ref={descriptionInput}
+            testID="save-role-description"
+            placeholder={t("saveRole.descriptionPlaceholder")}
+            returnKeyType="done"
+            onSubmitEditing={() => void save()}
+            onChangeText={setDescription}
+          />
+        </FieldSection>
+      </Form>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

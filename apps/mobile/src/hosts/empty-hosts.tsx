@@ -2,14 +2,15 @@ import { Button, Column, Text } from "@expo/ui";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
 import { space, useThemeColors } from "@/theme";
-import { BrandHost } from "@/ui";
+import { BrandHost, useTabBarInset } from "@/ui";
 import type { EmptyHostsProps } from "./empty-hosts-props";
 
 export function EmptyHosts({ onScan, onPaste }: EmptyHostsProps) {
   const { t } = useTranslation("hosts");
   const colors = useThemeColors();
+  const tabBarInset = useTabBarInset();
   return (
-    <View style={styles.center}>
+    <View style={[styles.center, { paddingBottom: tabBarInset }]}>
       <BrandHost matchContents={{ vertical: true }}>
         <Column alignment="center" spacing={space.md}>
           <Text textStyle={{ fontWeight: "600" }}>{t("empty.title")}</Text>

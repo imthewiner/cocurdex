@@ -62,10 +62,15 @@
     "completedUnread": "Finished",
     "connecting": "Connecting…",
     "failed": "Run failed",
+    "imagePrompt": "Image",
+    "jumpToLatest": "Jump to latest",
+    "jumpToOldest": "Jump to first message",
     "missing": "This session is no longer on the computer.",
     "monitoring": "Working in the background",
     "pendingApproval": "Waiting for your approval",
     "planReady": "Plan ready for review",
+    "promptNumber": "Prompt {{number}}",
+    "prompts": "Prompts",
     "responding": "Replying",
     "sending": "Sending",
     "thinking": "Thinking",
@@ -113,7 +118,6 @@
       "any": "All",
       "archived": "Archived Sessions",
       "close": "Close",
-      "done": "Done",
       "title": "Display Options",
       "view": "View"
     },
@@ -282,7 +286,6 @@
   "search": "Search sessions",
   "sessionConfig": {
     "close": "Close",
-    "done": "Done",
     "mcp": "MCP servers",
     "mcpNone": "This session reports no MCP servers.",
     "mcpStatus": {

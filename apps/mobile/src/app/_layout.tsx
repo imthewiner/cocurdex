@@ -1,9 +1,10 @@
 import "@/runtime";
 import "@/i18n";
 import { pathBaseName } from "@cocurdex/shared";
+import { NavigationBar } from "expo-navigation-bar";
 import { Stack, ThemeProvider } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet, useColorScheme } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MermaidRendererHost } from "@/markdown";
 import {
@@ -11,11 +12,15 @@ import {
   themeColors,
   useGroupedColors,
   useThemeColors,
+  useThemeName,
 } from "@/theme";
+import { useHeaderOptions } from "@/ui";
 
-const SHEET_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
+const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
+const SHEET_CORNER_RADIUS = Platform.OS === "android" ? 28 : -1;
+const VIEWER_ANIMATION = Platform.OS === "android" ? "fade" : "default";
 
 function fileScreenTitle(params: object | undefined) {
   const path = params && "path" in params ? params.path : undefined;
@@ -24,17 +29,18 @@ function fileScreenTitle(params: object | undefined) {
 
 export default function RootLayout() {
   const { t } = useTranslation();
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const scheme = useThemeName();
   const colors = useThemeColors();
   const grouped = useGroupedColors();
+  const headerOptions = useHeaderOptions();
+  const systemBarStyle = scheme === "dark" ? "light" : "dark";
   return (
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={navigationThemes[scheme]}>
         <Stack
           screenOptions={{
-            statusBarStyle: scheme === "dark" ? "light" : "dark",
-            headerTitleAlign: "center",
-            headerTintColor: colors.foreground,
+            ...headerOptions,
+            statusBarStyle: systemBarStyle,
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -42,7 +48,6 @@ export default function RootLayout() {
             name="session/[hostId]/[sessionId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.sessions"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -52,7 +57,6 @@ export default function RootLayout() {
             name="note/[hostId]/[noteId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.notes"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -62,7 +66,6 @@ export default function RootLayout() {
             name="issue/[hostId]/[issueId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.issues"),
               animation: PUSH_ANIMATION,
               headerStyle: { backgroundColor: grouped.page },
@@ -70,20 +73,18 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="settings"
+            name="computers"
             options={{
-              title: t("screens.settings"),
-              headerBackButtonDisplayMode: "minimal",
+              title: t("screens.computers"),
+              headerBackTitle: t("tabs.settings"),
               animation: PUSH_ANIMATION,
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen
             name="computer/[hostId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               headerStyle: { backgroundColor: grouped.page },
               contentStyle: { backgroundColor: grouped.page },
@@ -93,7 +94,6 @@ export default function RootLayout() {
             name="archived/[hostId]"
             options={{
               title: t("screens.archived"),
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -102,7 +102,6 @@ export default function RootLayout() {
             name="tool-call/[hostId]/[sessionId]/[toolCallId]"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -111,7 +110,6 @@ export default function RootLayout() {
             name="file/[hostId]"
             options={({ route }) => ({
               title: fileScreenTitle(route.params),
-              headerBackButtonDisplayMode: "minimal",
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
             })}
@@ -121,6 +119,7 @@ export default function RootLayout() {
             options={{
               title: "",
               presentation: "fullScreenModal",
+              animation: VIEWER_ANIMATION,
               headerTransparent: true,
               headerTintColor: themeColors.dark.foreground,
               statusBarStyle: "light",
@@ -132,6 +131,7 @@ export default function RootLayout() {
             options={{
               title: "",
               presentation: "fullScreenModal",
+              animation: VIEWER_ANIMATION,
               headerTransparent: true,
               contentStyle: { backgroundColor: colors.background },
             }}
@@ -140,34 +140,65 @@ export default function RootLayout() {
             name="pair"
             options={{
               title: t("screens.pair"),
-              presentation: SHEET_PRESENTATION,
+              presentation: PAIR_PRESENTATION,
               sheetAllowedDetents: [0.6, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
             name="list-options"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
+            }}
+          />
+          <Stack.Screen
+            name="issue-filters"
+            options={{
+              headerShown: false,
+              presentation: "formSheet",
+              sheetAllowedDetents: [0.6, 1],
+              sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
+            }}
+          />
+          <Stack.Screen
+            name="issue-labels"
+            options={{
+              headerShown: false,
+              presentation: "formSheet",
+              sheetAllowedDetents: [0.6, 1],
+              sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
+            }}
+          />
+          <Stack.Screen
+            name="edit-issue/[hostId]/[issueId]"
+            options={{
+              title: t("screens.editIssue"),
+              presentation: "modal",
+              headerStyle: { backgroundColor: colors.background },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen
             name="session-config/[hostId]/[sessionId]"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
             name="new-session/index"
             options={{
               title: "",
-              headerBackButtonDisplayMode: "minimal",
               headerBackTitle: t("tabs.sessions"),
               animation: PUSH_ANIMATION,
               contentStyle: { backgroundColor: colors.background },
@@ -177,9 +208,10 @@ export default function RootLayout() {
             name="new-session/config"
             options={{
               headerShown: false,
-              presentation: SHEET_PRESENTATION,
+              presentation: "formSheet",
               sheetAllowedDetents: [0.75, 1],
               sheetGrabberVisible: true,
+              sheetCornerRadius: SHEET_CORNER_RADIUS,
             }}
           />
           <Stack.Screen
@@ -187,17 +219,8 @@ export default function RootLayout() {
             options={{
               title: t("screens.newIssue"),
               presentation: "modal",
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
-            }}
-          />
-          <Stack.Screen
-            name="new-note/[hostId]"
-            options={{
-              title: t("screens.newNote"),
-              presentation: "modal",
-              headerStyle: { backgroundColor: grouped.page },
-              contentStyle: { backgroundColor: grouped.page },
+              headerStyle: { backgroundColor: colors.background },
+              contentStyle: { backgroundColor: colors.background },
             }}
           />
           <Stack.Screen
@@ -229,6 +252,7 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+        <NavigationBar style={systemBarStyle} />
         <MermaidRendererHost />
       </ThemeProvider>
     </GestureHandlerRootView>

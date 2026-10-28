@@ -3,12 +3,6 @@
 // Keep this module small and dependency-free — anything that pulls Jotai
 // atoms or feature-specific types belongs in the feature.
 export { CollapsibleUserMessageBody } from "./collapsible-user-message-body";
-export type { JumpButtonKind, ScrollDirection } from "./jump-button";
-export {
-  resolveJumpButton,
-  resolveScrollDirection,
-  scrollDirectionOfDelta,
-} from "./jump-button";
 export { JumpControls } from "./jump-controls";
 export { LinkifiedText } from "./linkified-text";
 export {

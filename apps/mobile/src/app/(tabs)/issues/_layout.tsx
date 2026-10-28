@@ -7,7 +7,7 @@ export default function IssuesLayout() {
     <Stack>
       <Stack.Screen
         name="index"
-        options={{ title: t("screens.issues"), headerLargeTitle: true }}
+        options={{ title: t("screens.issues"), headerShown: false }}
       />
     </Stack>
   );

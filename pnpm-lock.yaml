@@ -632,6 +632,9 @@ importers:
       expo-localization:
         specifier: ~58.0.5
         version: 58.0.5(expo@58.0.17)(react@19.3.0)
+      expo-navigation-bar:
+        specifier: ~58.0.4
+        version: 58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)
       expo-network:
         specifier: ~58.0.4
         version: 58.0.4(expo@58.0.17)(react@19.3.0)
@@ -698,7 +701,28 @@ importers:
       swr:
         specifier: ^2.5.1
         version: 2.5.1(react@19.3.0)
+      yjs:
+        specifier: ^13.6.33
+        version: 13.6.33
     devDependencies:
+      '@cocurdex/note-doc':
+        specifier: workspace:*
+        version: link:../../packages/note-doc
+      '@tiptap/core':
+        specifier: ^3.32.0
+        version: 3.32.0(@tiptap/pm@3.32.0)
+      '@tiptap/extension-collaboration':
+        specifier: ^3.32.0
+        version: 3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0)(@tiptap/y-tiptap@3.0.10(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33))(yjs@13.6.33)
+      '@tiptap/extensions':
+        specifier: ^3.32.0
+        version: 3.32.0(@tiptap/core@3.32.0(@tiptap/pm@3.32.0))(@tiptap/pm@3.32.0)
+      '@tiptap/pm':
+        specifier: ^3.32.0
+        version: 3.32.0
+      '@tiptap/y-tiptap':
+        specifier: ^3.0.10
+        version: 3.0.10(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(y-protocols@1.0.7(yjs@13.6.33))(yjs@13.6.33)
       '@types/culori':
         specifier: 4.0.1
         version: 4.0.1
@@ -1046,6 +1070,9 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      agent-device:
+        specifier: ^0.21.31
+        version: 0.21.31
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -1365,6 +1392,9 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/shared
     devDependencies:
+      '@cocurdex/note-doc':
+        specifier: workspace:*
+        version: link:../../../packages/note-doc
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -1374,6 +1404,9 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.19.2)(jsdom@26.1.0(supports-color@7.2.0))(vite@7.3.5(@types/node@24.19.2)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.15)(yaml@2.9.1))
+      yjs:
+        specifier: ^13.6.33
+        version: 13.6.33
 
   tests/unit/note-doc:
     dependencies:
@@ -4843,6 +4876,16 @@ packages:
     engines: {node: '>=18.18'}
     hasBin: true
 
+  agent-device@0.21.31:
+    resolution: {integrity: sha512-541X/tXHqQS3Xg5PutPSek1nQFLgEJEXFdLPiZ9jTvSb+SMHr/Z4kzVCnBkGza59R+EHO1atLWx0ZAW5vK84IQ==}
+    engines: {node: '>=22.12'}
+    hasBin: true
+    peerDependencies:
+      ai: ^6.0.0 || ^7.0.0
+    peerDependenciesMeta:
+      ai:
+        optional: true
+
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
     peerDependencies:
@@ -6099,6 +6142,13 @@ packages:
 
   expo-modules-macros@0.22.0:
     resolution: {integrity: sha512-IHY+FkILfG19qsyf9G/z7dcWVgsyqdkWsvvob3n5nWKa2meCCAGeEjp42N68fG8Ta6dn/bsceuma7uh2i6ho9g==}
+
+  expo-navigation-bar@58.0.4:
+    resolution: {integrity: sha512-XO1Ljy9MlmVLYlmIGUNHxTCcHN8TjlbYQnf+jqjoxpbPxDCXDCSaX0+F7rKh0G4CUehKsfoebbMO/VIy87qSqg==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
 
   expo-network@58.0.4:
     resolution: {integrity: sha512-E3dYtnku+LDal+4OtKdxGotX7DLjaq+GOvrtN0RiYDTNum8lhMB7dK4GqGgBqHjwsC0awEds5DhTkm+w7O1TtQ==}
@@ -13500,6 +13550,8 @@ snapshots:
 
   agent-cli-detector@0.1.7: {}
 
+  agent-device@0.21.31: {}
+
   ajv-formats@2.1.1(ajv@8.20.0):
     optionalDependencies:
       ajv: 8.20.0
@@ -14890,6 +14942,15 @@ snapshots:
       '@expo/modules-macros-linux-x64': 0.22.0
       '@expo/modules-macros-win32-arm64': 0.22.0
       '@expo/modules-macros-win32-x64': 0.22.0
+
+  expo-navigation-bar@58.0.4(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0):
+    dependencies:
+      debug: 4.4.3(supports-color@7.2.0)
+      expo: 58.0.17(f9b613a595dd71e36a9620f051972210)
+      react: 19.3.0
+      react-native: 0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - supports-color
 
   expo-network@58.0.4(expo@58.0.17)(react@19.3.0):
     dependencies:

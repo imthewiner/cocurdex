@@ -5,21 +5,17 @@ import {
   type SessionRuntimeSelection,
   sessionConfigurationOf,
 } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet } from "react-native";
 import { usePermissionModeLabels } from "@/agents";
 import { hostConnection } from "@/connection";
 import { RuntimeRows } from "@/session-runtime";
-import { useThemeColors } from "@/theme";
 import {
-  BrandHost,
   CloseButton,
   Form,
+  FormNote,
   FormSection,
-  SheetAction,
   useOptionSheet,
   ValueFormRow,
 } from "@/ui";
@@ -35,7 +31,6 @@ export function SessionConfigScreen({
   sessionId: string;
 }) {
   const { t } = useTranslation("sessions");
-  const colors = useThemeColors();
   const router = useRouter();
   const done = () => router.dismiss();
   const modeLabels = usePermissionModeLabels();
@@ -95,127 +90,111 @@ export function SessionConfigScreen({
   return (
     <>
       <Stack.Screen options={{ title: agent?.label ?? "" }} />
-      {Platform.OS === "android" ? (
-        <CloseButton
-          accessibilityLabel={t("sessionConfig.close")}
-          onPress={done}
-        />
-      ) : null}
-      <SheetAction
-        label={t("sessionConfig.done")}
-        disabled={false}
+      <CloseButton
+        accessibilityLabel={t("sessionConfig.close")}
         onPress={done}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          {failed ? (
-            <FormSection
-              footer={
-                <Text
-                  testID="session-config-failed"
-                  textStyle={{ color: colors.destructive }}
-                >
-                  {t("detail.actionFailed")}
-                </Text>
-              }
-            />
-          ) : null}
+      <Form>
+        {failed ? (
           <FormSection
             footer={
-              canConfigure || permissionModes.length === 0 ? undefined : (
-                <Text textStyle={{ color: colors.mutedForeground }}>
-                  {t("sessionConfig.modeNeedsExecute")}
-                </Text>
-              )
+              <FormNote testID="session-config-failed" tone="destructive">
+                {t("detail.actionFailed")}
+              </FormNote>
             }
-          >
+          />
+        ) : null}
+        <FormSection
+          footer={
+            canConfigure || permissionModes.length === 0 ? undefined : (
+              <FormNote>{t("sessionConfig.modeNeedsExecute")}</FormNote>
+            )
+          }
+        >
+          <ValueFormRow
+            testID="session-config-model"
+            label={t("newSession.model")}
+            value={snapshot?.modelName ?? t("newSession.agentDefaultModel")}
+            onPress={() =>
+              open({
+                title: t("newSession.model"),
+                items: models.map(({ provider, model }) => ({
+                  key: `${provider.id}/${model.modelId}`,
+                  testID: `session-config-model-${model.modelId}`,
+                  label: model.name,
+                  supporting: provider.name,
+                  selected:
+                    snapshot?.providerId === provider.id &&
+                    snapshot.modelId === model.modelId,
+                  onPress: () => {
+                    if (!canInteract) return;
+                    void updateRuntime({
+                      model: {
+                        providerId: provider.id,
+                        modelId: model.modelId,
+                      },
+                    });
+                  },
+                })),
+              })
+            }
+          />
+          {axes && canInteract ? (
+            <RuntimeRows
+              axes={axes}
+              open={open}
+              onChange={(runtime) => void updateRuntime({ runtime })}
+            />
+          ) : null}
+          {canInteract && configOptions.length > 0 ? (
+            <ConfigOptionRows
+              options={configOptions}
+              open={open}
+              onChange={setConfigOption}
+            />
+          ) : null}
+          {permissionModes.length > 0 ? (
             <ValueFormRow
-              testID="session-config-model"
-              label={t("newSession.model")}
-              value={snapshot?.modelName ?? t("newSession.agentDefaultModel")}
+              testID="session-config-mode"
+              label={t("newSession.mode")}
+              value={selectedMode ? modeLabels[selectedMode].label : ""}
               onPress={() =>
                 open({
-                  title: t("newSession.model"),
-                  items: models.map(({ provider, model }) => ({
-                    key: `${provider.id}/${model.modelId}`,
-                    testID: `session-config-model-${model.modelId}`,
-                    label: model.name,
-                    supporting: provider.name,
-                    selected:
-                      snapshot?.providerId === provider.id &&
-                      snapshot.modelId === model.modelId,
+                  title: t("newSession.mode"),
+                  items: permissionModes.map((mode) => ({
+                    key: mode.id,
+                    testID: `session-config-mode-${mode.id}`,
+                    label: modeLabels[mode.id].label,
+                    supporting: modeLabels[mode.id].description,
+                    destructive: mode.risk === "dangerous",
+                    selected: mode.id === selectedMode,
                     onPress: () => {
-                      if (!canInteract) return;
-                      void updateRuntime({
-                        model: {
-                          providerId: provider.id,
-                          modelId: model.modelId,
-                        },
-                      });
+                      if (canConfigure) choosePermissionMode(mode.id);
                     },
                   })),
                 })
               }
             />
-            {axes && canInteract ? (
-              <RuntimeRows
-                axes={axes}
-                open={open}
-                onChange={(runtime) => void updateRuntime({ runtime })}
-              />
-            ) : null}
-            {canInteract && configOptions.length > 0 ? (
-              <ConfigOptionRows
-                options={configOptions}
-                open={open}
-                onChange={setConfigOption}
-              />
-            ) : null}
-            {permissionModes.length > 0 ? (
-              <ValueFormRow
-                testID="session-config-mode"
-                label={t("newSession.mode")}
-                value={selectedMode ? modeLabels[selectedMode].label : ""}
-                onPress={() =>
-                  open({
-                    title: t("newSession.mode"),
-                    items: permissionModes.map((mode) => ({
-                      key: mode.id,
-                      testID: `session-config-mode-${mode.id}`,
-                      label: modeLabels[mode.id].label,
-                      supporting: modeLabels[mode.id].description,
-                      destructive: mode.risk === "dangerous",
-                      selected: mode.id === selectedMode,
-                      onPress: () => {
-                        if (canConfigure) choosePermissionMode(mode.id);
-                      },
-                    })),
-                  })
-                }
-              />
-            ) : null}
-          </FormSection>
-          {mcpServers ? <McpSection servers={mcpServers} /> : null}
-          {canInteract && session ? (
-            <FormSection>
-              <ValueFormRow
-                testID="session-config-save-role"
-                label={t("saveRole.open")}
-                value=""
-                onPress={() =>
-                  router.push({
-                    pathname: "/session-config/[hostId]/[sessionId]/save-role",
-                    params: { hostId: host.hostId, sessionId },
-                  })
-                }
-              />
-            </FormSection>
           ) : null}
-        </Form>
-      </BrandHost>
+        </FormSection>
+        {mcpServers ? <McpSection servers={mcpServers} /> : null}
+        {canInteract && session ? (
+          <FormSection>
+            <ValueFormRow
+              testID="session-config-save-role"
+              label={t("saveRole.open")}
+              value=""
+              onPress={() =>
+                router.push({
+                  pathname: "/session-config/[hostId]/[sessionId]/save-role",
+                  params: { hostId: host.hostId, sessionId },
+                })
+              }
+            />
+          </FormSection>
+        ) : null}
+      </Form>
       {optionSheet.sheet}
     </>
   );
 }
-
-const styles = StyleSheet.create({ fill: { flex: 1 } });

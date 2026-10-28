@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { WebView } from "react-native-webview";
-import { useThemeColors } from "@/theme";
+import { useThemeColors, useThemeName } from "@/theme";
 import { CloseButton } from "@/ui";
 import { DiagramPreview } from "./diagram-preview";
 import type { RenderedDiagram } from "./mermaid-cache";
@@ -10,7 +10,7 @@ import {
   allowsMermaidNavigation,
   mermaidViewerDocument,
 } from "./mermaid-document";
-import { useDiagramById } from "./mermaid-store";
+import { diagramSource, useDiagram } from "./mermaid-store";
 
 function FittedPreview({ diagram }: { diagram: RenderedDiagram }) {
   const window = useWindowDimensions();
@@ -36,10 +36,9 @@ function ZoomableDiagram({
   diagram: RenderedDiagram;
   background: string;
 }) {
-  const [loaded, setLoaded] = useState(false);
   return (
     <>
-      {loaded ? null : <FittedPreview diagram={diagram} />}
+      <FittedPreview diagram={diagram} />
       <WebView
         source={{ html: mermaidViewerDocument(diagram.svg, background) }}
         originWhitelist={["about:blank"]}
@@ -49,14 +48,22 @@ function ZoomableDiagram({
         setBuiltInZoomControls
         setDisplayZoomControls={false}
         onShouldStartLoadWithRequest={({ url }) => allowsMermaidNavigation(url)}
-        onLoadEnd={() => setLoaded(true)}
-        style={[
-          styles.fill,
-          { backgroundColor: background, opacity: loaded ? 1 : 0 },
-        ]}
+        style={styles.webView}
       />
     </>
   );
+}
+
+function ThemedDiagram({
+  source,
+  background,
+}: {
+  source: string;
+  background: string;
+}) {
+  const entry = useDiagram(source, useThemeName());
+  if (entry?.kind !== "rendered") return null;
+  return <ZoomableDiagram diagram={entry.diagram} background={background} />;
 }
 
 export function MermaidViewerScreen({
@@ -68,7 +75,7 @@ export function MermaidViewerScreen({
 }) {
   const { t } = useTranslation();
   const colors = useThemeColors();
-  const entry = useDiagramById(diagramId);
+  const [source] = useState(() => diagramSource(diagramId));
   return (
     <>
       <CloseButton
@@ -82,12 +89,9 @@ export function MermaidViewerScreen({
         accessibilityLabel={t("markdown.diagram")}
         testID="mermaid-viewer"
       >
-        {entry?.kind === "rendered" ? (
-          <ZoomableDiagram
-            diagram={entry.diagram}
-            background={colors.background}
-          />
-        ) : null}
+        {source === null ? null : (
+          <ThemedDiagram source={source} background={colors.background} />
+        )}
       </View>
     </>
   );
@@ -95,6 +99,7 @@ export function MermaidViewerScreen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  webView: { flex: 1, backgroundColor: "transparent" },
   center: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",

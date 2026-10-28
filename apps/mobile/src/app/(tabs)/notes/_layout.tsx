@@ -7,7 +7,7 @@ export default function NotesLayout() {
     <Stack>
       <Stack.Screen
         name="index"
-        options={{ title: t("screens.notes"), headerLargeTitle: true }}
+        options={{ title: t("screens.notes"), headerShown: false }}
       />
     </Stack>
   );

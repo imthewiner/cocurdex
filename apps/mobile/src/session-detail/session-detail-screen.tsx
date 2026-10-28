@@ -6,9 +6,9 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { randomUUID } from "expo-crypto";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { KeyboardAvoidingView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,13 +29,14 @@ import {
   pendingSendItem,
   unconfirmedSends,
 } from "./pending-send";
+import { PromptOutline } from "./prompt-outline";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
 import { StatusLine } from "./status-line";
 import { buildTranscript, pendingInteraction } from "./transcript";
 import { type CondensedItem, condenseTranscript } from "./transcript-activity";
-import { TranscriptView } from "./transcript-view";
+import { type TranscriptHandle, TranscriptView } from "./transcript-view";
 
 function sessionSubtitle(
   observation: SessionObservationSnapshot | null,
@@ -76,11 +77,13 @@ export function SessionDetailScreen({
   entered?: boolean;
   pendingSend?: PendingSend;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const headerHeight = useHeaderHeight();
   const bottomInset = Math.max(useSafeAreaInsets().bottom - space.sm, 0);
   const detail = useSessionDetail(host.hostId, sessionId);
+  const transcript = useRef<TranscriptHandle>(null);
   const [actionFailed, setActionFailed] = useState(false);
   const transitionSettled = useTransitionSettled();
   const settled = entered || transitionSettled;
@@ -233,6 +236,10 @@ export function SessionDetailScreen({
           ),
         }}
       />
+      <PromptOutline
+        items={items}
+        onJump={(id) => transcript.current?.jumpToItem(id)}
+      />
       <KeyboardAvoidingView
         style={[styles.fill, { backgroundColor: colors.background }]}
         behavior="padding"
@@ -248,6 +255,7 @@ export function SessionDetailScreen({
           <View style={styles.fill} />
         ) : (
           <TranscriptView
+            ref={transcript}
             items={items}
             actions={{
               hostId: host.hostId,

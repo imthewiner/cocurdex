@@ -107,6 +107,18 @@ export function sourceLanguage(fileName: string): string | null {
   return EXTENSION_LANGUAGES[name.slice(dot + 1)] ?? null;
 }
 
+const FENCE_ALIASES: Record<string, string> = {
+  docker: "dockerfile",
+  golang: "go",
+  shell: "shellscript",
+};
+
+export function codeFenceLanguage(fence: string): string | null {
+  const name = fence.trim().toLowerCase();
+  if (name in LOADERS) return name;
+  return EXTENSION_LANGUAGES[name] ?? FENCE_ALIASES[name] ?? null;
+}
+
 export function loadSourceLanguage(language: string) {
   return LOADERS[language]?.() ?? null;
 }

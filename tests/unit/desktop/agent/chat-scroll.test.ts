@@ -5,9 +5,6 @@ import {
   resolveStickyUserMessage,
 } from "@/features/agent/view/chat-scroll";
 
-// resolveJumpButton lives in components/chat and is covered there; this file
-// keeps agent-specific sticky / near-top behaviour.
-
 describe("isViewportNearTop", () => {
   const nearTopViewport = (scrollTop: number) =>
     ({ scrollTop }) as HTMLDivElement;

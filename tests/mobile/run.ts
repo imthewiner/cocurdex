@@ -58,6 +58,12 @@ function lastPrompt(id: string) {
   return prompt;
 }
 
+function firstTurn(id: string) {
+  const turn = fixtureSession(id).turns[0];
+  if (!turn) throw new Error(`Fixture session ${id} has no turns`);
+  return turn;
+}
+
 function fixtureIssue(title: string) {
   const issue = FIXTURE_ISSUES.find((candidate) => candidate.title === title);
   if (!issue) throw new Error(`Fixture issue ${title} is missing`);
@@ -89,7 +95,7 @@ function flowLabels(locale: SupportedLocale) {
   const issues = readMessages(locale, "issues");
   const notes = readMessages(locale, "notes");
   return {
-    TAB_COMPUTERS: common.tabs.computers,
+    TAB_SETTINGS: common.tabs.settings,
     TAB_SESSIONS: common.tabs.sessions,
     TAB_ISSUES: common.tabs.issues,
     TAB_NOTES: common.tabs.notes,
@@ -104,7 +110,7 @@ function flowLabels(locale: SupportedLocale) {
     NOTE_BODY_TEXT: "(?s).*Apply at most one discount code.*",
     SEARCH_PLACEHOLDER: sessions.search,
     LIST_OPTIONS_ACTION: sessions.list.menu,
-    LIST_OPTIONS_DONE: sessions.list.options.done,
+    LIST_OPTIONS_CLOSE: sessions.list.options.close,
     SHOW_MORE: sessions.list.showMore_other.replace("{{count}}", "\\d+"),
     SEND_ACTION: sessions.composer.send,
     ATTACH_ACTION: sessions.composer.attach,
@@ -112,6 +118,9 @@ function flowLabels(locale: SupportedLocale) {
     SEARCH_QUERY: "percentage",
     SEARCHED_SESSION_TITLE: fixtureSession(SEARCHED_SESSION).title,
     SEARCHED_SESSION_LAST_PROMPT: lastPrompt(SEARCHED_SESSION),
+    SEARCHED_SESSION_FIRST_PROMPT: firstTurn(SEARCHED_SESSION).prompt,
+    SEARCHED_SESSION_FIRST_PROMPT_ID: firstTurn(SEARCHED_SESSION).messageId,
+    PROMPTS_ACTION: sessions.detail.prompts,
     OTHER_SESSION_TITLE: fixtureSession("fixture-session-checkout-bug").title,
     ROLE_ID: FIXTURE_ROLES[0].id,
     ROLE_NAME: FIXTURE_ROLES[0].name,
@@ -144,10 +153,9 @@ function flowLabels(locale: SupportedLocale) {
     NEW_ISSUE_SUBMIT: issues.create.submit,
     RENAME_COMPUTER_SAVE: hosts.rename.save,
     NEW_NOTE_ACTION: notes.create.open,
-    NEW_NOTE_SUBMIT: notes.create.submit,
-    SETTINGS_ACTION: common.screens.settings,
+    DEFAULT_NOTE_TITLE: "Untitled",
     ARCHIVE_ACTION: sessions.actions.archive,
-    SESSION_CONFIG_DONE: sessions.sessionConfig.done,
+    SESSION_CONFIG_CLOSE: sessions.sessionConfig.close,
     SAVE_ROLE_SAVE: sessions.saveRole.save,
   };
 }

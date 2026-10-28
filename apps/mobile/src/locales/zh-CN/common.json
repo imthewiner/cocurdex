@@ -1,4 +1,10 @@
 {
+  "actions": {
+    "back": "返回",
+    "cancel": "取消",
+    "close": "关闭",
+    "search": "搜索"
+  },
   "age": {
     "days_other": "{{count}}天",
     "hours_other": "{{count}}小时",
@@ -37,9 +43,11 @@
   "screens": {
     "archived": "已归档会话",
     "computers": "电脑",
+    "editIssue": "编辑 issue",
+    "fontSize": "字号",
     "issues": "Issues",
+    "language": "语言",
     "newIssue": "新建 issue",
-    "newNote": "新建笔记",
     "notes": "笔记",
     "pair": "配对电脑",
     "renameComputer": "重命名电脑",
@@ -48,9 +56,9 @@
     "settings": "设置"
   },
   "tabs": {
-    "computers": "电脑",
     "issues": "Issues",
     "notes": "笔记",
-    "sessions": "会话"
+    "sessions": "会话",
+    "settings": "设置"
   }
 }

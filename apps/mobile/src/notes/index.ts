@@ -1,3 +1,3 @@
-export { NewNoteForm } from "./new-note-form";
+export { createBlankNote } from "./create-note";
 export { NoteList } from "./note-list";
 export { NoteScreen } from "./note-screen";

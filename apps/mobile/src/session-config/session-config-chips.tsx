@@ -1,5 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { AgentIcon, usePermissionModeLabels } from "@/agents";
 import { runtimeSummary, useRuntimeLabels } from "@/session-runtime";
 import { ConfigTrigger } from "./config-trigger";
@@ -12,6 +12,7 @@ export function SessionConfigChips({
   host: SavedHost;
   sessionId: string;
 }) {
+  const router = useRouter();
   const runtimeLabels = useRuntimeLabels();
   const modeLabels = usePermissionModeLabels();
   const { session, agent, snapshot, axes } = useSessionConfigState(

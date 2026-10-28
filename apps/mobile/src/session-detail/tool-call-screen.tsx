@@ -3,9 +3,8 @@ import {
   type AgentToolCallRecord,
   resolveCandidatePath,
 } from "@cocurdex/shared";
-import ContentCopyIcon from "@expo/material-symbols/content_copy.xml";
 import * as Clipboard from "expo-clipboard";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,9 +16,14 @@ import {
   View,
 } from "react-native";
 import { useSavedHosts } from "@/hosts";
+import { scaledSize, useCodeScale } from "@/preferences";
 import { useViewedSession } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
-import { useScrollIndicatorWhileScrolling, useTransitionSettled } from "@/ui";
+import {
+  HeaderButtons,
+  useScrollIndicatorWhileScrolling,
+  useTransitionSettled,
+} from "@/ui";
 import { preloadFileContent } from "@/workspace-files";
 import { useSessionDetail } from "./session-detail-stores";
 import { SessionTitle } from "./session-title";
@@ -50,6 +54,9 @@ function toolCallSubtitle(call: AgentToolCallRecord, t: TFunction<"sessions">) {
   return `${status} · ${t("tool.duration", { seconds })}`;
 }
 
+const CODE_SIZE = 12.5;
+const CODE_LINE_HEIGHT = 19;
+
 function CodeSection({
   title,
   note,
@@ -62,6 +69,7 @@ function CodeSection({
   testID: string;
 }) {
   const colors = useThemeColors();
+  const codeScale = useCodeScale();
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -81,7 +89,14 @@ function CodeSection({
         <Text
           selectable
           testID={testID}
-          style={[styles.codeText, { color: colors.foreground }]}
+          style={[
+            styles.codeText,
+            {
+              color: colors.foreground,
+              fontSize: scaledSize(CODE_SIZE, codeScale),
+              lineHeight: scaledSize(CODE_LINE_HEIGHT, codeScale),
+            },
+          ]}
         >
           {text}
         </Text>
@@ -104,6 +119,7 @@ function FilesSection({
   locations: readonly AgentToolCallLocation[];
   root: string | null;
 }) {
+  const router = useRouter();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   return (
@@ -225,13 +241,16 @@ export function ToolCallScreen({
         }}
       />
       {outputText ? (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button
-            icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
-            accessibilityLabel={t("tool.copyOutput")}
-            onPress={() => void Clipboard.setStringAsync(outputText)}
-          />
-        </Stack.Toolbar>
+        <HeaderButtons
+          items={[
+            {
+              key: "copy",
+              icon: { ios: "doc.on.doc", android: "content_copy" },
+              label: t("tool.copyOutput"),
+              onPress: () => void Clipboard.setStringAsync(outputText),
+            },
+          ]}
+        />
       ) : null}
       <ScrollView
         {...scrollIndicator}
@@ -301,8 +320,8 @@ const styles = StyleSheet.create({
   },
   codeText: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),
-    fontSize: 12.5,
-    lineHeight: 19,
+    fontSize: CODE_SIZE,
+    lineHeight: CODE_LINE_HEIGHT,
   },
   empty: { fontSize: 15 },
   fileRow: { minHeight: 44, justifyContent: "center", gap: 2 },

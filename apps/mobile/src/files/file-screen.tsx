@@ -1,25 +1,20 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import { pathBaseName, workspaceImageMimeType } from "@cocurdex/shared";
-import CodeIcon from "@expo/material-symbols/code.xml";
-import ContentCopyIcon from "@expo/material-symbols/content_copy.xml";
-import VisibilityIcon from "@expo/material-symbols/visibility.xml";
 import * as Clipboard from "expo-clipboard";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  useColorScheme,
   useWindowDimensions,
   View,
 } from "react-native";
 import { MarkdownText } from "@/markdown";
-import { layout, space, useThemeColors } from "@/theme";
+import { layout, space, useThemeColors, useThemeName } from "@/theme";
 import {
+  HeaderButtons,
   ListNotice,
   PendingIndicator,
   useScrollIndicatorWhileScrolling,
@@ -76,6 +71,12 @@ function useFailureText(): Record<FileLoadFailure, string> {
   };
 }
 
+const SOURCE_ICON = {
+  ios: "chevron.left.forwardslash.chevron.right",
+  android: "code",
+} as const;
+const PREVIEW_ICON = { ios: "eye", android: "visibility" } as const;
+
 function FileToolbar({
   markdown,
   preview,
@@ -89,32 +90,27 @@ function FileToolbar({
 }) {
   const { t } = useTranslation("files");
   return (
-    <Stack.Toolbar placement="right">
-      {markdown ? (
-        <Stack.Toolbar.Button
-          icon={
-            Platform.OS === "ios"
-              ? preview
-                ? "chevron.left.forwardslash.chevron.right"
-                : "eye"
-              : preview
-                ? CodeIcon
-                : VisibilityIcon
-          }
-          accessibilityLabel={preview ? t("showSource") : t("showPreview")}
-          disabled={text === null}
-          onPress={onTogglePreview}
-        />
-      ) : null}
-      <Stack.Toolbar.Button
-        icon={Platform.OS === "ios" ? "doc.on.doc" : ContentCopyIcon}
-        accessibilityLabel={t("copy")}
-        disabled={text === null}
-        onPress={() => {
-          if (text !== null) void Clipboard.setStringAsync(text);
-        }}
-      />
-    </Stack.Toolbar>
+    <HeaderButtons
+      items={[
+        {
+          key: "preview",
+          icon: preview ? SOURCE_ICON : PREVIEW_ICON,
+          label: preview ? t("showSource") : t("showPreview"),
+          hidden: !markdown,
+          disabled: text === null,
+          onPress: onTogglePreview,
+        },
+        {
+          key: "copy",
+          icon: { ios: "doc.on.doc", android: "content_copy" },
+          label: t("copy"),
+          disabled: text === null,
+          onPress: () => {
+            if (text !== null) void Clipboard.setStringAsync(text);
+          },
+        },
+      ]}
+    />
   );
 }
 
@@ -130,7 +126,7 @@ function TextFile({
   const scrollIndicator = useScrollIndicatorWhileScrolling();
   const { t } = useTranslation("files");
   const colors = useThemeColors();
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const scheme = useThemeName();
   const content = useFileContent(host, filePath);
   const settled = useTransitionSettled();
   const failures = useFailureText();

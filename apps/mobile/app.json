@@ -15,7 +15,8 @@
           "NSAllowsLocalNetworking": true
         },
         "NSLocalNetworkUsageDescription": "Cocurdex connects to the computers you pair on your local network.",
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "UIViewControllerBasedStatusBarAppearance": true
       }
     },
     "android": {

@@ -1,23 +1,22 @@
-import { Text, TextInput, type TextInputRef } from "@expo/ui";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { hosts, useSavedHosts } from "@/hosts";
-import { useThemeColors } from "@/theme";
 import {
-  BrandHost,
   FieldSection,
   Form,
+  FormNote,
+  FormTextField,
   keyboardHidden,
+  ModalCloseButton,
   SheetAction,
 } from "@/ui";
 
 export function RenameComputerForm({ hostId }: { hostId: string }) {
   const { t } = useTranslation("hosts");
   const router = useRouter();
-  const colors = useThemeColors();
-  const input = useRef<TextInputRef>(null);
+  const input = useRef<TextInputInstance>(null);
   const host = useSavedHosts().find((saved) => saved.hostId === hostId);
   const initialName = host?.name ?? "";
   const [name, setName] = useState(initialName);
@@ -35,38 +34,27 @@ export function RenameComputerForm({ hostId }: { hostId: string }) {
 
   return (
     <>
+      <ModalCloseButton />
       <SheetAction
         label={t("rename.save")}
         disabled={!canSave}
         onPress={() => void save()}
       />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FieldSection
-            footer={
-              <Text textStyle={{ color: colors.mutedForeground }}>
-                {t("rename.footer")}
-              </Text>
-            }
-          >
-            <TextInput
-              ref={input}
-              testID="rename-computer-name"
-              placeholder={t("rename.placeholder")}
-              defaultValue={initialName}
-              autoFocus
-              selectTextOnFocus
-              returnKeyType="done"
-              onSubmitEditing={() => void save()}
-              onChangeText={setName}
-            />
-          </FieldSection>
-        </Form>
-      </BrandHost>
+      <Form adjustsForKeyboard>
+        <FieldSection footer={<FormNote>{t("rename.footer")}</FormNote>}>
+          <FormTextField
+            ref={input}
+            testID="rename-computer-name"
+            placeholder={t("rename.placeholder")}
+            defaultValue={initialName}
+            autoFocus
+            selectTextOnFocus
+            returnKeyType="done"
+            onSubmitEditing={() => void save()}
+            onChangeText={setName}
+          />
+        </FieldSection>
+      </Form>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

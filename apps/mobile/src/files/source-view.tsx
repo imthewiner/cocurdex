@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { MONO_FONT } from "@/markdown";
+import { scaledSize, useCodeScale } from "@/preferences";
 import { layout, space, useThemeColors } from "@/theme";
 import { useScrollIndicatorWhileScrolling } from "@/ui";
 import { expandTabs, sourceColumns } from "./source-columns";
@@ -24,16 +25,36 @@ const LINES_ABOVE_FOCUS = 40;
 const LINES_PER_PREPEND = 200;
 const LINES_BELOW_FIRST_SCREEN = 40;
 const FOCUS_VIEW_POSITION = 0.3;
-const LINE_HEIGHT = 20;
+const BASE_LINE_HEIGHT = 20;
 const LINES_HIGHLIGHTED_AHEAD = 80;
 const WINDOW_SCREENS = 5;
-const CODE_FONT_SIZE = 13;
-const CHAR_WIDTH = CODE_FONT_SIZE * 0.61;
+const BASE_CODE_FONT_SIZE = 13;
+const BASE_NUMBER_FONT_SIZE = 12;
+const CHAR_WIDTH_PER_POINT = 0.61;
 const MAX_COLUMNS = 400;
 const GUTTER_DIGIT_WIDTH = 8;
 
-function gutterWidth(digits: number) {
-  return digits * GUTTER_DIGIT_WIDTH + space.sm;
+interface SourceMetrics {
+  code: number;
+  number: number;
+  lineHeight: number;
+  charWidth: number;
+  digitWidth: number;
+}
+
+function sourceMetrics(scale: number): SourceMetrics {
+  const code = scaledSize(BASE_CODE_FONT_SIZE, scale);
+  return {
+    code,
+    number: scaledSize(BASE_NUMBER_FONT_SIZE, scale),
+    lineHeight: scaledSize(BASE_LINE_HEIGHT, scale),
+    charWidth: code * CHAR_WIDTH_PER_POINT,
+    digitWidth: GUTTER_DIGIT_WIDTH * scale,
+  };
+}
+
+function gutterWidth(digits: number, metrics: SourceMetrics) {
+  return digits * metrics.digitWidth + space.sm;
 }
 
 const SourceLine = memo(function SourceLine({
@@ -42,12 +63,14 @@ const SourceLine = memo(function SourceLine({
   tokens,
   digits,
   focused,
+  metrics,
 }: {
   index: number;
   line: string;
   tokens: SourceTokens[number] | undefined;
   digits: number;
   focused: boolean;
+  metrics: SourceMetrics;
 }) {
   const colors = useThemeColors();
   return (
@@ -58,12 +81,27 @@ const SourceLine = memo(function SourceLine({
       <Text
         style={[
           styles.number,
-          { width: gutterWidth(digits), color: colors.mutedForeground },
+          {
+            width: gutterWidth(digits, metrics),
+            color: colors.mutedForeground,
+            fontSize: metrics.number,
+            lineHeight: metrics.lineHeight,
+          },
         ]}
       >
         {index + 1}
       </Text>
-      <Text selectable style={[styles.code, { color: colors.foreground }]}>
+      <Text
+        selectable
+        style={[
+          styles.code,
+          {
+            color: colors.foreground,
+            fontSize: metrics.code,
+            lineHeight: metrics.lineHeight,
+          },
+        ]}
+      >
         {tokens
           ? tokens.map((token, at) => (
               <Text
@@ -113,6 +151,8 @@ export function SourceView({
   const revealed = useRef(false);
   const digits = String(lines.length).length;
   const { width: windowWidth } = useWindowDimensions();
+  const codeScale = useCodeScale();
+  const metrics = useMemo(() => sourceMetrics(codeScale), [codeScale]);
   const columns = useMemo(
     () => Math.min(sourceColumns(lines), MAX_COLUMNS),
     [lines],
@@ -121,9 +161,9 @@ export function SourceView({
     windowWidth,
     Math.ceil(
       space.sm +
-        gutterWidth(digits) +
+        gutterWidth(digits, metrics) +
         space.md +
-        columns * CHAR_WIDTH +
+        columns * metrics.charWidth +
         layout.sideMargin,
     ),
   );
@@ -157,7 +197,7 @@ export function SourceView({
   const highlightThrough = (offset: number, viewport: number) =>
     request(
       firstLine +
-        Math.ceil((offset + viewport) / LINE_HEIGHT) +
+        Math.ceil((offset + viewport) / metrics.lineHeight) +
         LINES_HIGHLIGHTED_AHEAD,
     );
 
@@ -179,7 +219,7 @@ export function SourceView({
         ref={list}
         style={{ width: contentWidth }}
         data={rendered as string[]}
-        extraData={tokens}
+        extraData={[tokens, metrics]}
         keyExtractor={(_line, row) => String(firstLine + row)}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}
@@ -222,6 +262,7 @@ export function SourceView({
               tokens={tokens[index]}
               digits={digits}
               focused={index === focusIndex}
+              metrics={metrics}
             />
           );
         }}
@@ -239,15 +280,11 @@ const styles = StyleSheet.create({
   },
   number: {
     fontFamily: MONO_FONT,
-    fontSize: 12,
-    lineHeight: LINE_HEIGHT,
     textAlign: "right",
     marginRight: space.md,
   },
   code: {
     flex: 1,
     fontFamily: MONO_FONT,
-    fontSize: CODE_FONT_SIZE,
-    lineHeight: LINE_HEIGHT,
   },
 });

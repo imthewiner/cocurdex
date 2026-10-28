@@ -1,21 +1,19 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { HostAccessScope } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
-import { router, Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { StyleSheet } from "react-native";
 import {
   hostAddress,
   selectHost,
   useCurrentHost,
   useSavedHosts,
 } from "@/hosts";
-import { useThemeColors } from "@/theme";
 import {
   BrandHost,
   Form,
   FormRow,
   FormSection,
+  FormText,
   SelectedMark,
   ValueFormRow,
 } from "@/ui";
@@ -60,84 +58,72 @@ function useScopeLabels() {
 }
 
 function Detail({ host, current }: { host: SavedHost; current: boolean }) {
+  const router = useRouter();
   const { t, i18n } = useTranslation("hosts");
-  const colors = useThemeColors();
   const scopeLabels = useScopeLabels();
   const { unpair, dialog } = useUnpairHost();
   const pairedAt = new Date(host.pairedAt).toLocaleString(i18n.language, {
     dateStyle: "medium",
     timeStyle: "short",
   });
-  const muted = (text: string) => (
-    <Text textStyle={{ color: colors.mutedForeground }}>{text}</Text>
-  );
+  const muted = (text: string) => <FormText tone="muted">{text}</FormText>;
   return (
     <>
       <Stack.Screen options={{ title: host.name }} />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FormSection>
-            <ValueFormRow
-              testID="computer-rename"
-              label={t("detail.name")}
-              value={host.name}
-              onPress={() =>
-                router.push({
-                  pathname: "/rename-computer/[hostId]",
-                  params: { hostId: host.hostId },
-                })
-              }
-            />
-            <FormRow trailing={muted(hostAddress(host))}>
-              <Text>{t("detail.address")}</Text>
-            </FormRow>
-            <FormRow trailing={muted(pairedAt)}>
-              <Text>{t("detail.pairedAt")}</Text>
-            </FormRow>
-          </FormSection>
-          <FormSection
-            title={t("detail.scopes")}
-            footer={muted(t("detail.scopesFooter"))}
-          >
-            {SHOWN_SCOPES.map((scope) => (
-              <FormRow
-                key={scope}
-                testID={`computer-scope-${scope}`}
-                supportingText={muted(scopeLabels[scope].detail)}
-                trailing={
-                  <SelectedMark selected={host.scopes.includes(scope)} />
-                }
-              >
-                <Text>{scopeLabels[scope].title}</Text>
-              </FormRow>
-            ))}
-          </FormSection>
-          <FormSection>
-            {current ? null : (
-              <FormRow
-                testID="computer-switch"
-                onPress={() => {
-                  selectHost(host.hostId);
-                  router.back();
-                }}
-              >
-                <Text textStyle={{ color: colors.tint }}>
-                  {t("actions.switch")}
-                </Text>
-              </FormRow>
-            )}
+      <Form>
+        <FormSection>
+          <ValueFormRow
+            testID="computer-rename"
+            label={t("detail.name")}
+            value={host.name}
+            onPress={() =>
+              router.push({
+                pathname: "/rename-computer/[hostId]",
+                params: { hostId: host.hostId },
+              })
+            }
+          />
+          <FormRow trailing={muted(hostAddress(host))}>
+            {t("detail.address")}
+          </FormRow>
+          <FormRow trailing={muted(pairedAt)}>{t("detail.pairedAt")}</FormRow>
+        </FormSection>
+        <FormSection
+          title={t("detail.scopes")}
+          footer={t("detail.scopesFooter")}
+        >
+          {SHOWN_SCOPES.map((scope) => (
             <FormRow
-              testID="computer-remove"
-              onPress={() => unpair(host, () => router.back())}
+              key={scope}
+              testID={`computer-scope-${scope}`}
+              supporting={scopeLabels[scope].detail}
+              trailing={<SelectedMark selected={host.scopes.includes(scope)} />}
             >
-              <Text textStyle={{ color: colors.destructive }}>
-                {t("actions.remove")}
-              </Text>
+              {scopeLabels[scope].title}
             </FormRow>
-          </FormSection>
-        </Form>
-        {dialog}
-      </BrandHost>
+          ))}
+        </FormSection>
+        <FormSection>
+          {current ? null : (
+            <FormRow
+              testID="computer-switch"
+              onPress={() => {
+                selectHost(host.hostId);
+                router.back();
+              }}
+            >
+              <FormText tone="tint">{t("actions.switch")}</FormText>
+            </FormRow>
+          )}
+          <FormRow
+            testID="computer-remove"
+            onPress={() => unpair(host, () => router.back())}
+          >
+            <FormText tone="destructive">{t("actions.remove")}</FormText>
+          </FormRow>
+        </FormSection>
+      </Form>
+      {dialog ? <BrandHost matchContents>{dialog}</BrandHost> : null}
     </>
   );
 }
@@ -149,7 +135,3 @@ export function ComputerDetailScreen({ hostId }: { hostId: string }) {
     <Detail host={host} current={host.hostId === current?.hostId} />
   ) : null;
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-});

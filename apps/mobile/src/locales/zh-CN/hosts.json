@@ -14,7 +14,6 @@
   },
   "empty": {
     "description": "在电脑上打开 Cocurdex 的 设置 › 设备，生成配对二维码，再用这台手机扫一下。",
-    "pair": "配对电脑",
     "paste": "粘贴配对链接",
     "scan": "扫码配对",
     "title": "还没有电脑"
@@ -81,9 +80,5 @@
     "gitDestructive": "丢弃更改、切换分支和推送。",
     "interact": "发送消息、停止会话、编辑笔记和 issue。",
     "read": "查看会话、消息、笔记和 issue。"
-  },
-  "switcher": {
-    "label": "电脑：{{host}}",
-    "title": "切换电脑"
   }
 }

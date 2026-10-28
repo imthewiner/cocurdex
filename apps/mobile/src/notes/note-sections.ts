@@ -67,3 +67,21 @@ export function noteSections(
     })
     .filter((section) => section.rows.length > 0);
 }
+
+export function parentNoteChoices(
+  notes: readonly NoteSummary[],
+  noteId: string,
+): NoteSummary[] {
+  const self = notes.find((note) => note.id === noteId);
+  if (!self) return [];
+  const peers = notes.filter((note) => note.workspaceId === self.workspaceId);
+  const excluded = new Set([noteId]);
+  for (const row of treeRows(peers)) {
+    if (row.note.parentId && excluded.has(row.note.parentId)) {
+      excluded.add(row.note.id);
+    }
+  }
+  return treeRows(peers)
+    .map((row) => row.note)
+    .filter((note) => !excluded.has(note.id));
+}

@@ -1,23 +1,20 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
-import AddIcon from "@expo/material-symbols/add.xml";
-import FolderIcon from "@expo/material-symbols/folder.xml";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
 import {
   EmptyHosts,
-  HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
   useScopeGate,
 } from "@/hosts";
 import {
+  IssueFilterChips,
   IssueList,
-  useWorkspaceFilterLabel,
-  WorkspaceFilterSheet,
+  singleWorkspaceFilter,
+  useIssueFilters,
 } from "@/issues";
-import { emptyListOptions, useListHeader } from "@/ui";
+import { ListScreenHeader } from "@/ui";
 
 export default function IssuesScreen() {
   const { t } = useTranslation();
@@ -26,65 +23,60 @@ export default function IssuesScreen() {
   if (!host) {
     return (
       <>
-        <Stack.Screen options={emptyListOptions(t("screens.issues"))} />
+        <ListScreenHeader title={t("screens.issues")} />
         <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
       </>
     );
   }
-  return <HostIssues host={host} onPair={openPaste} />;
+  return <HostIssues host={host} />;
 }
 
-function HostIssues({ host, onPair }: { host: SavedHost; onPair(): void }) {
+function HostIssues({ host }: { host: SavedHost }) {
   const { t } = useTranslation(["issues", "common"]);
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader(t("common:screens.issues"), {
-    placeholder: t("search"),
-    onQuery: setQuery,
-  });
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
-  const [pickingWorkspace, setPickingWorkspace] = useState(false);
-  const workspaceFilterLabel = useWorkspaceFilterLabel(
-    host.hostId,
-    workspaceId,
-  );
+  const filters = useIssueFilters(host.hostId);
+  const workspaceId = singleWorkspaceFilter(filters);
+  const filtered = Object.values(filters).some((values) => values.length > 0);
 
   return (
     <>
-      <Stack.Screen options={listHeader.options} />
-      <HostSwitcher current={host} onPair={onPair} />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "folder" : FolderIcon}
-          accessibilityLabel={workspaceFilterLabel}
-          onPress={() => setPickingWorkspace(true)}
-        />
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "plus" : AddIcon}
-          accessibilityLabel={t("create.open")}
-          onPress={gate("interact", () =>
-            router.push({
-              pathname: "/new-issue/[hostId]",
-              params: workspaceId
-                ? { hostId: host.hostId, workspaceId }
-                : { hostId: host.hostId },
-            }),
-          )}
-        />
-      </Stack.Toolbar>
+      <ListScreenHeader
+        title={t("common:screens.issues")}
+        search={{ placeholder: t("search"), onQuery: setQuery }}
+        actions={[
+          {
+            key: "filter",
+            icon: {
+              ios: filtered
+                ? "line.3.horizontal.decrease.circle.fill"
+                : "line.3.horizontal.decrease.circle",
+              android: "filter_list",
+            },
+            label: t("filter.title"),
+            badge: filtered,
+            onPress: () => router.push("/issue-filters"),
+          },
+          {
+            key: "new",
+            icon: { ios: "plus", android: "add" },
+            label: t("create.open"),
+            onPress: gate("interact", () =>
+              router.push({
+                pathname: "/new-issue/[hostId]",
+                params: workspaceId
+                  ? { hostId: host.hostId, workspaceId }
+                  : { hostId: host.hostId },
+              }),
+            ),
+          },
+        ]}
+      />
       <IssueList
         host={host}
-        workspaceId={workspaceId}
         query={query}
-        header={listHeader.header}
-      />
-      <WorkspaceFilterSheet
-        host={host}
-        presented={pickingWorkspace}
-        workspaceId={workspaceId}
-        onChange={setWorkspaceId}
-        onDismiss={() => setPickingWorkspace(false)}
+        header={<IssueFilterChips host={host} />}
       />
     </>
   );

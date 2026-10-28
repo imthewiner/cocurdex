@@ -1,6 +1,5 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { EntityLink, IssueSummary } from "@cocurdex/shared";
-import { RNHostView, Text as UiText } from "@expo/ui";
 import { Stack, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
@@ -8,16 +7,17 @@ import { LinkedEntitiesSection } from "@/entity-links";
 import { MarkdownText } from "@/markdown";
 import { space, useThemeColors } from "@/theme";
 import {
-  BrandHost,
   Form,
   FormRow,
   FormSection,
+  HeaderButtons,
   ListNotice,
   PendingIndicator,
   useTransitionSettled,
 } from "@/ui";
+import { IssueProperties } from "./issue-properties";
 import { useIssueDetail, useIssueView } from "./issue-queries";
-import { IssueStatusIcon } from "./issue-status-mark";
+import { IssueStatusMark } from "./issue-status-mark";
 
 function isShownAsIssueStructure(link: EntityLink) {
   if (link.removable) return false;
@@ -36,11 +36,11 @@ function SubIssueRow({
       testID={`issue-child-${issue.id}`}
       onPress={onPress}
       leading={
-        <IssueStatusIcon category={issue.statusCategory} label={issue.status} />
+        <IssueStatusMark category={issue.statusCategory} label={issue.status} />
       }
-      supportingText={issue.identifier}
+      supporting={issue.identifier}
     >
-      <UiText>{issue.title}</UiText>
+      {issue.title}
     </FormRow>
   );
 }
@@ -79,135 +79,105 @@ export function IssueScreen({
 
   const children = detail.data?.children ?? [];
   const sessions = detail.data?.sessions ?? [];
-  const status = view?.statusOptions.find((entry) => entry.id === issue.status);
-  const priority = view?.priorityOptions.find(
-    (entry) => entry.id === issue.priority,
-  );
-  const labels = issue.labelIds.flatMap(
-    (id) => view?.labels.find((label) => label.id === id)?.name ?? [],
-  );
   const doneChildren = children.filter(
     (child) => child.statusCategory === "completed",
   ).length;
   const description = issue.description?.trim() ?? "";
-  const muted = { color: colors.mutedForeground };
 
   return (
     <>
       <Stack.Screen options={{ title: issue.identifier }} />
-      <BrandHost style={styles.fill}>
-        <Form>
-          <FormSection
-            header={
-              <RNHostView matchContents={{ vertical: true }}>
-                <View style={styles.header}>
-                  <Text
-                    accessibilityRole="header"
-                    selectable
-                    style={[styles.title, { color: colors.foreground }]}
-                  >
-                    {issue.title}
-                  </Text>
-                  {description ? (
-                    <MarkdownText
-                      markdown={description}
-                      hostId={host.hostId}
-                      testID="issue-description"
-                    />
-                  ) : null}
-                </View>
-              </RNHostView>
-            }
-          >
-            <FormRow
-              leading={
-                <IssueStatusIcon
-                  category={issue.statusCategory}
-                  label={status?.title ?? issue.status}
+      <HeaderButtons
+        items={[
+          {
+            key: "edit",
+            icon: { ios: "pencil", android: "edit" },
+            label: t("edit.action"),
+            hidden: !host.scopes.includes("interact") || !detail.data,
+            onPress: () =>
+              router.push({
+                pathname: "/edit-issue/[hostId]/[issueId]",
+                params: { hostId: host.hostId, issueId: issue.id },
+              }),
+          },
+        ]}
+      />
+      <Form>
+        <FormSection
+          header={
+            <View style={styles.header}>
+              <Text
+                accessibilityRole="header"
+                selectable
+                style={[styles.title, { color: colors.foreground }]}
+              >
+                {issue.title}
+              </Text>
+              {description ? (
+                <MarkdownText
+                  markdown={description}
+                  hostId={host.hostId}
+                  testID="issue-description"
                 />
-              }
-              trailing={
-                <UiText textStyle={muted}>
-                  {status?.title ?? issue.status}
-                </UiText>
-              }
-            >
-              <UiText>{t("field.status")}</UiText>
-            </FormRow>
-            <FormRow
-              trailing={
-                <UiText textStyle={muted}>
-                  {priority?.title ?? issue.priority}
-                </UiText>
-              }
-            >
-              <UiText>{t("field.priority")}</UiText>
-            </FormRow>
-            <FormRow
-              trailing={
-                <UiText textStyle={muted}>
-                  {labels.length > 0 ? labels.join(", ") : t("field.none")}
-                </UiText>
-              }
-            >
-              <UiText>{t("field.labels")}</UiText>
-            </FormRow>
+              ) : null}
+            </View>
+          }
+        >
+          <IssueProperties host={host} issue={issue} view={view ?? undefined} />
+        </FormSection>
+        {sessions.length > 0 ? (
+          <FormSection title={t("sessions")}>
+            {sessions.map((session) => (
+              <FormRow
+                key={session.sessionId}
+                testID={`issue-session-${session.sessionId}`}
+                onPress={() =>
+                  router.push({
+                    pathname: "/session/[hostId]/[sessionId]",
+                    params: {
+                      hostId: host.hostId,
+                      sessionId: session.sessionId,
+                    },
+                  })
+                }
+              >
+                {session.title ?? t("untitledSession")}
+              </FormRow>
+            ))}
           </FormSection>
-          {sessions.length > 0 ? (
-            <FormSection title={t("sessions")}>
-              {sessions.map((session) => (
-                <FormRow
-                  key={session.sessionId}
-                  testID={`issue-session-${session.sessionId}`}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/session/[hostId]/[sessionId]",
-                      params: {
-                        hostId: host.hostId,
-                        sessionId: session.sessionId,
-                      },
-                    })
-                  }
-                >
-                  <UiText>{session.title ?? t("untitledSession")}</UiText>
-                </FormRow>
-              ))}
-            </FormSection>
-          ) : null}
-          {children.length > 0 ? (
-            <FormSection
-              title={t("subIssues", {
-                done: doneChildren,
-                total: children.length,
-              })}
-            >
-              {children.map((child) => (
-                <SubIssueRow
-                  key={child.id}
-                  issue={child}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/issue/[hostId]/[issueId]",
-                      params: { hostId: host.hostId, issueId: child.id },
-                    })
-                  }
-                />
-              ))}
-            </FormSection>
-          ) : null}
-          <LinkedEntitiesSection
-            hostId={host.hostId}
-            entity={{ kind: "issue", id: issue.id }}
-            hideLink={isShownAsIssueStructure}
-          />
-        </Form>
-      </BrandHost>
+        ) : null}
+        {children.length > 0 ? (
+          <FormSection
+            title={t("subIssues", {
+              done: doneChildren,
+              total: children.length,
+            })}
+          >
+            {children.map((child) => (
+              <SubIssueRow
+                key={child.id}
+                issue={child}
+                onPress={() =>
+                  router.push({
+                    pathname: "/issue/[hostId]/[issueId]",
+                    params: { hostId: host.hostId, issueId: child.id },
+                  })
+                }
+              />
+            ))}
+          </FormSection>
+        ) : null}
+        <LinkedEntitiesSection
+          hostId={host.hostId}
+          entity={{ kind: "issue", id: issue.id }}
+          hideLink={isShownAsIssueStructure}
+        />
+      </Form>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
   header: { paddingBottom: space.sm, gap: space.sm },
   title: { fontSize: 28, lineHeight: 34, fontWeight: "600" },
 });

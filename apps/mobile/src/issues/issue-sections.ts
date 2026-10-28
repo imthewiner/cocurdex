@@ -2,7 +2,9 @@ import type {
   IssueFieldOption,
   IssueRecord,
   IssueStatusCategory,
+  ViewFull,
 } from "@cocurdex/shared";
+import { type IssueFilters, issueMatchesFilters } from "./issue-filters";
 
 export interface IssueSection {
   status: IssueFieldOption;
@@ -33,14 +35,12 @@ function matches(issue: IssueRecord, needle: string) {
 export function issueSections(
   issues: readonly IssueRecord[],
   statusOptions: readonly IssueFieldOption[],
-  workspaceId: string | null,
+  filters: IssueFilters,
   query: string,
 ): IssueSection[] {
   const needle = query.trim().toLocaleLowerCase();
   const shown = issues.filter(
-    (issue) =>
-      (workspaceId === null || issue.workspaceId === workspaceId) &&
-      matches(issue, needle),
+    (issue) => issueMatchesFilters(issue, filters) && matches(issue, needle),
   );
   return statusOptions
     .map((status, order) => ({ status, order }))
@@ -56,4 +56,21 @@ export function issueSections(
         .sort((left, right) => left.sortOrder - right.sortOrder),
     }))
     .filter((section) => section.issues.length > 0);
+}
+
+export function withIssueStatus(
+  view: ViewFull,
+  issueId: string,
+  statusId: string,
+): ViewFull {
+  const status = view.statusOptions.find((option) => option.id === statusId);
+  if (!status) return view;
+  return {
+    ...view,
+    issues: view.issues.map((issue) =>
+      issue.id === issueId
+        ? { ...issue, status: status.id, statusCategory: status.category }
+        : issue,
+    ),
+  };
 }

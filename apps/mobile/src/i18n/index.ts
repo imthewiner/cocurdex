@@ -34,4 +34,5 @@ AppState.addEventListener("change", (state) => {
 });
 subscribePreferences(followPreferredLocale);
 
+export { getSystemLocale } from "./language";
 export { i18n };

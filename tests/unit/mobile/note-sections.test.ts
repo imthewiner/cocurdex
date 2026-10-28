@@ -1,4 +1,7 @@
-import { noteSections } from "@cocurdex/mobile/internal/notes/note-sections";
+import {
+  noteSections,
+  parentNoteChoices,
+} from "@cocurdex/mobile/internal/notes/note-sections";
 import type { NoteSummary, WorkspaceRecord } from "@cocurdex/shared";
 import { describe, expect, it } from "vitest";
 
@@ -76,5 +79,29 @@ describe("noteSections", () => {
         section.rows.map((row) => `${row.depth}:${row.note.id}`),
       ),
     ).toEqual([["0:coupon-rules"]]);
+  });
+});
+
+describe("parentNoteChoices", () => {
+  it("offers notes in the same workspace except the note and its descendants", () => {
+    const tree = [
+      ...notes,
+      note("coupon-edge-cases", "shop", { parentId: "coupon-rules" }),
+    ];
+
+    expect(
+      parentNoteChoices(tree, "coupon-rules").map((choice) => choice.id),
+    ).toEqual(["checkout-prd", "member-price", "release-notes"]);
+  });
+
+  it("offers notes without a workspace for a note without one", () => {
+    expect(
+      parentNoteChoices(notes, "weekly").map((choice) => choice.id),
+    ).toEqual([]);
+    expect(
+      parentNoteChoices([...notes, note("draft", null)], "draft").map(
+        (choice) => choice.id,
+      ),
+    ).toEqual(["weekly"]);
   });
 });

@@ -1,4 +1,10 @@
 {
+  "actions": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "search": "Search"
+  },
   "age": {
     "days_one": "{{count}}d",
     "days_other": "{{count}}d",
@@ -42,9 +48,11 @@
   "screens": {
     "archived": "Archived Sessions",
     "computers": "Computers",
+    "editIssue": "Edit Issue",
+    "fontSize": "Text Size",
     "issues": "Issues",
+    "language": "Language",
     "newIssue": "New Issue",
-    "newNote": "New Note",
     "notes": "Notes",
     "pair": "Pair a Computer",
     "renameComputer": "Rename Computer",
@@ -53,9 +61,9 @@
     "settings": "Settings"
   },
   "tabs": {
-    "computers": "Computers",
     "issues": "Issues",
     "notes": "Notes",
-    "sessions": "Sessions"
+    "sessions": "Sessions",
+    "settings": "Settings"
   }
 }

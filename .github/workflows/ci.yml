@@ -129,6 +129,8 @@ jobs:
         run: pnpm --filter @cocurdex/mobile check:theme-colors
       - name: Check mobile mermaid runtime is up to date
         run: pnpm --filter @cocurdex/mobile check:mermaid-runtime
+      - name: Check mobile note editor runtime is up to date
+        run: pnpm --filter @cocurdex/mobile check:note-editor-runtime
       - name: Bundle mobile app
         working-directory: apps/mobile
         run: |

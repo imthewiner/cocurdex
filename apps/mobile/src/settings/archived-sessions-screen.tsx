@@ -16,7 +16,6 @@ import {
 import { layout, space, useThemeColors } from "@/theme";
 import {
   ListNotice,
-  ListSeparator,
   useAgeLabel,
   useScrollIndicatorWhileScrolling,
 } from "@/ui";
@@ -120,7 +119,6 @@ export function ArchivedSessionsScreen({ host }: { host: SavedHost }) {
       data={rows}
       keyExtractor={(row) => row.id}
       contentInsetAdjustmentBehavior="automatic"
-      ItemSeparatorComponent={ListSeparator}
       ListHeaderComponent={
         rows.length > 0 ? (
           <Text
@@ -136,7 +134,12 @@ export function ArchivedSessionsScreen({ host }: { host: SavedHost }) {
         ) : undefined
       }
       ListEmptyComponent={
-        archived.data ? <ListNotice title={t("archived.empty")} /> : undefined
+        archived.data ? (
+          <ListNotice
+            icon={{ ios: "archivebox", android: "archive" }}
+            title={t("archived.empty")}
+          />
+        ) : undefined
       }
       renderItem={({ item }) => (
         <ArchivedRow
@@ -154,7 +157,7 @@ const styles = StyleSheet.create({
   count: {
     fontSize: 13,
     paddingHorizontal: layout.sideMargin,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
   },
   row: {
     flexDirection: "row",
@@ -162,7 +165,7 @@ const styles = StyleSheet.create({
     gap: space.md,
     minHeight: 64,
     paddingHorizontal: layout.sideMargin,
-    paddingVertical: space.sm,
+    paddingVertical: space.md,
   },
   text: { flex: 1, gap: 2 },
   title: { fontSize: 16, lineHeight: 22 },

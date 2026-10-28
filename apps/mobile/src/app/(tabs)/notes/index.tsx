@@ -1,17 +1,15 @@
-import AddIcon from "@expo/material-symbols/add.xml";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
+import { Alert } from "react-native";
 import {
   EmptyHosts,
-  HostSwitcher,
   useCurrentHost,
   usePairingRoutes,
   useScopeGate,
 } from "@/hosts";
-import { NoteList } from "@/notes";
-import { emptyListOptions, useListHeader } from "@/ui";
+import { createBlankNote, NoteList } from "@/notes";
+import { ListScreenHeader } from "@/ui";
 
 export default function NotesScreen() {
   const { t } = useTranslation(["notes", "common"]);
@@ -20,14 +18,11 @@ export default function NotesScreen() {
   const router = useRouter();
   const gate = useScopeGate(host);
   const [query, setQuery] = useState("");
-  const listHeader = useListHeader(t("common:screens.notes"), {
-    placeholder: t("search"),
-    onQuery: setQuery,
-  });
+  const [creating, setCreating] = useState(false);
   if (!host) {
     return (
       <>
-        <Stack.Screen options={emptyListOptions(t("common:screens.notes"))} />
+        <ListScreenHeader title={t("common:screens.notes")} />
         <EmptyHosts onScan={() => void openScan()} onPaste={openPaste} />
       </>
     );
@@ -35,21 +30,35 @@ export default function NotesScreen() {
 
   return (
     <>
-      <Stack.Screen options={listHeader.options} />
-      <HostSwitcher current={host} onPair={openPaste} />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon={Platform.OS === "ios" ? "square.and.pencil" : AddIcon}
-          accessibilityLabel={t("create.open")}
-          onPress={gate("interact", () =>
-            router.push({
-              pathname: "/new-note/[hostId]",
-              params: { hostId: host.hostId },
+      <ListScreenHeader
+        title={t("common:screens.notes")}
+        search={{ placeholder: t("search"), onQuery: setQuery }}
+        actions={[
+          {
+            key: "new",
+            icon: { ios: "square.and.pencil", android: "edit_square" },
+            label: t("create.open"),
+            disabled: creating,
+            onPress: gate("interact", () => {
+              setCreating(true);
+              createBlankNote(host.hostId)
+                .then((note) =>
+                  router.push({
+                    pathname: "/note/[hostId]/[noteId]",
+                    params: {
+                      hostId: host.hostId,
+                      noteId: note.id,
+                      created: "1",
+                    },
+                  }),
+                )
+                .catch(() => Alert.alert(t("create.failed")))
+                .finally(() => setCreating(false));
             }),
-          )}
-        />
-      </Stack.Toolbar>
-      <NoteList host={host} query={query} header={listHeader.header} />
+          },
+        ]}
+      />
+      <NoteList host={host} query={query} />
     </>
   );
 }

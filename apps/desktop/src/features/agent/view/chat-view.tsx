@@ -1,6 +1,7 @@
-import type {
-  AgentQuestionRequestRecord,
-  MessageAttachment,
+import {
+  type AgentQuestionRequestRecord,
+  type MessageAttachment,
+  resolveJumpButton,
 } from "@cocurdex/shared";
 import { useAtomValue } from "jotai";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -28,7 +29,7 @@ import {
 import { useChatReadingPosition } from "@/lib/use-chat-reading-position";
 import type { ToolCallPreviewLocation } from "../tool-call";
 import { getActivityState } from "./chat-activity-state";
-import { isDisclosureToggle, resolveJumpButton } from "./chat-scroll";
+import { isDisclosureToggle } from "./chat-scroll";
 import { getCachedTranscriptModel } from "./chat-transcript-model";
 import {
   type UserMessageAnchor,

@@ -1,19 +1,20 @@
 import type { SavedHost } from "@cocurdex/client-runtime";
 import type { AgentId } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
-import { type ReactElement, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, SectionList, StyleSheet, Text } from "react-native";
 import { useAgentRoles } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
 import {
+  BrandHost,
   ListNotice,
   ListSectionHeader,
-  ListSeparator,
   PendingIndicator,
   useScrollIndicatorWhileScrolling,
+  useTabBarInset,
 } from "@/ui";
-import { SessionActionsSheet } from "./session-actions-sheet";
+import { useSessionActions } from "./session-actions-menu";
 import { useSessionListLabels } from "./session-list-labels";
 import {
   toggleSectionExpanded,
@@ -86,15 +87,14 @@ export function SessionList({
   query,
   agentLabels,
   onReload,
-  header,
 }: {
   host: SavedHost;
   query: string;
   agentLabels: ReadonlyMap<AgentId, string>;
   onReload(): void;
-  header?: ReactElement;
 }) {
   const scrollIndicator = useScrollIndicatorWhileScrolling();
+  const tabBarInset = useTabBarInset();
   const { t } = useTranslation("sessions");
   const colors = useThemeColors();
   const router = useRouter();
@@ -103,7 +103,7 @@ export function SessionList({
   const roles = useAgentRoles(host.hostId).data;
   const roleById = new Map(roles?.map((role) => [role.id, role]));
   const headingTitle = useHeadingTitle(agentLabels);
-  const [actionTarget, setActionTarget] = useState<SessionRow | null>(null);
+  const actions = useSessionActions(host);
   const sections = useMemo(
     () =>
       buildSessionSections({
@@ -123,6 +123,7 @@ export function SessionList({
     if (!snapshot.failed) return <PendingIndicator />;
     return (
       <ListNotice
+        icon={{ ios: "wifi.slash", android: "cloud_off" }}
         title={t("unavailable.title", { host: host.name })}
         description={t("unavailable.description")}
         action={{ label: t("unavailable.retry"), onPress: onReload }}
@@ -142,6 +143,7 @@ export function SessionList({
     <>
       <SectionList<SessionRow, SessionSection>
         {...scrollIndicator}
+        contentContainerStyle={{ paddingBottom: tabBarInset }}
         style={styles.fill}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
@@ -150,22 +152,26 @@ export function SessionList({
         keyExtractor={(row) => row.id}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={
-          <>
-            {header}
-            {offline ? (
-              <Text style={[styles.offline, { color: colors.mutedForeground }]}>
-                {t("offline", { host: host.name })}
-              </Text>
-            ) : null}
-          </>
+          offline ? (
+            <Text style={[styles.offline, { color: colors.mutedForeground }]}>
+              {t("offline", { host: host.name })}
+            </Text>
+          ) : undefined
         }
         ListEmptyComponent={
           searching ? (
-            <ListNotice title={t("noResults", { query: query.trim() })} />
+            <ListNotice
+              icon={{ ios: "magnifyingglass", android: "search" }}
+              title={t("noResults", { query: query.trim() })}
+            />
           ) : filtering ? (
-            <ListNotice title={t("list.noMatches")} />
+            <ListNotice
+              icon={{ ios: "magnifyingglass", android: "search" }}
+              title={t("list.noMatches")}
+            />
           ) : (
             <ListNotice
+              icon={{ ios: "bubble.left.and.bubble.right", android: "forum" }}
               title={t("empty.title")}
               description={t("empty.description", { host: host.name })}
             />
@@ -183,7 +189,7 @@ export function SessionList({
             <SessionRowView
               row={item}
               role={item.roleId ? (roleById.get(item.roleId) ?? null) : null}
-              onLongPress={() => setActionTarget(item)}
+              onLongPress={(anchor) => actions.open(item, anchor)}
               onPress={() =>
                 router.push({
                   pathname: "/session/[hostId]/[sessionId]",
@@ -199,20 +205,11 @@ export function SessionList({
             ) : null}
           </>
         )}
-        ItemSeparatorComponent={ListSeparator}
       />
-      <SessionActionsSheet
-        host={host}
-        row={actionTarget}
-        detail={
-          actionTarget
-            ? [actionTarget.workspaceName, actionTarget.model]
-                .filter(Boolean)
-                .join(" · ")
-            : null
-        }
-        onDismiss={() => setActionTarget(null)}
-      />
+      {actions.menu}
+      {actions.dialog ? (
+        <BrandHost matchContents>{actions.dialog}</BrandHost>
+      ) : null}
     </>
   );
 }

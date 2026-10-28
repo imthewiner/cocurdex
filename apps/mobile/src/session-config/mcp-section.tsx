@@ -3,10 +3,8 @@ import {
   getMcpStatusKind,
   type McpStatusKind,
 } from "@cocurdex/shared";
-import { Text } from "@expo/ui";
 import { useTranslation } from "react-i18next";
-import { useThemeColors } from "@/theme";
-import { FormRow, FormSection } from "@/ui";
+import { FormRow, FormSection, FormSupportingText } from "@/ui";
 
 function useStatusLabels(): Record<Exclude<McpStatusKind, "unknown">, string> {
   const { t } = useTranslation("sessions");
@@ -24,18 +22,11 @@ export function McpSection({
   servers: readonly AgentMcpServerRuntime[];
 }) {
   const { t } = useTranslation("sessions");
-  const colors = useThemeColors();
   const labels = useStatusLabels();
   return (
     <FormSection
       title={t("sessionConfig.mcp")}
-      footer={
-        servers.length === 0 ? (
-          <Text textStyle={{ color: colors.mutedForeground }}>
-            {t("sessionConfig.mcpNone")}
-          </Text>
-        ) : undefined
-      }
+      footer={servers.length === 0 ? t("sessionConfig.mcpNone") : undefined}
     >
       {servers.map((server) => {
         const kind = getMcpStatusKind(server.status);
@@ -43,20 +34,15 @@ export function McpSection({
           <FormRow
             key={server.name}
             testID={`session-config-mcp-${server.name}`}
-            supportingText={
-              <Text
-                textStyle={{
-                  color:
-                    kind === "failed"
-                      ? colors.destructive
-                      : colors.mutedForeground,
-                }}
+            supporting={
+              <FormSupportingText
+                tone={kind === "failed" ? "destructive" : "muted"}
               >
                 {kind === "unknown" ? server.status : labels[kind]}
-              </Text>
+              </FormSupportingText>
             }
           >
-            <Text>{server.name}</Text>
+            {server.name}
           </FormRow>
         );
       })}
