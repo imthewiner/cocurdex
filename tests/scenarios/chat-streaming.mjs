@@ -259,6 +259,10 @@ runScenario("chat-streaming", {
       async ({ session, workspaceId, providerSnapshot }) => {
         const reports = [];
         const jumpLabel = await translate(session, "common:jumpToLatest");
+        const respondingLabel = await translate(
+          session,
+          "agent:activity.responding",
+        );
         for (const theme of ["light", "dark"]) {
           await emulateColorScheme(session, theme);
           const title = `Reading control ${theme}`;
@@ -308,6 +312,18 @@ runScenario("chat-streaming", {
             },
             null,
             30_000,
+          );
+          const hasRespondingLabel = await session.run((label) => {
+            const timeline = document.querySelector(
+              '[data-testid="chat-timeline"]',
+            );
+            return [...(timeline?.querySelectorAll("span") ?? [])].some(
+              (node) => node.textContent === label,
+            );
+          }, respondingLabel);
+          check(
+            !hasRespondingLabel,
+            "streaming text must not have a redundant responding status line",
           );
           const before = await session.run(readingState);
           await session.waitUntil(

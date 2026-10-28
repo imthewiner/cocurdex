@@ -805,7 +805,7 @@ export const ChatConversationItem = memo(function ChatConversationItem({
               })}
             </div>
           ))}
-          {showActivity && activity ? (
+          {showActivity && activity && activity.kind !== "responding" ? (
             <ActivityLine activity={activity} runStartedAt={runStartedAt} />
           ) : null}
           {isStopped && !showStoppedInActions ? <TurnStoppedNote /> : null}
