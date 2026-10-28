@@ -56,6 +56,40 @@ async function latestIosRuntime() {
   return { runtime: runtime.identifier, deviceType: deviceType.identifier };
 }
 
+const SIMULATOR_PREFIX = "cocurdex-e2e-";
+
+function processAlive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+async function deleteOrphanedSimulators() {
+  const output = await runCommand("xcrun", [
+    "simctl",
+    "list",
+    "--json",
+    "devices",
+  ]);
+  const { devices } = JSON.parse(output) as {
+    devices: Record<string, { udid: string; name: string }[]>;
+  };
+  const orphans = Object.values(devices)
+    .flat()
+    .filter(({ name }) => {
+      if (!name.startsWith(SIMULATOR_PREFIX)) return false;
+      const pid = Number(name.slice(SIMULATOR_PREFIX.length));
+      return Number.isInteger(pid) && !processAlive(pid);
+    });
+  for (const { udid } of orphans) {
+    await runCommand("xcrun", ["simctl", "shutdown", udid]).catch(() => "");
+    await runCommand("xcrun", ["simctl", "delete", udid]).catch(() => "");
+  }
+}
+
 export async function buildIosApp(mobileDir: string) {
   await runCommand("pnpm", ["exec", "expo", "prebuild", "--platform", "ios"], {
     cwd: mobileDir,
@@ -97,12 +131,13 @@ export async function startIosTarget(
   if (install && !existsSync(appPath)) {
     throw new Error(`Missing ${appPath}; run with --build first`);
   }
+  await deleteOrphanedSimulators();
   const { runtime, deviceType } = await latestIosRuntime();
   const udid = (
     await runCommand("xcrun", [
       "simctl",
       "create",
-      `cocurdex-e2e-${process.pid}`,
+      `${SIMULATOR_PREFIX}${process.pid}`,
       deviceType,
       runtime,
     ])

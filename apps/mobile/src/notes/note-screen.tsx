@@ -37,7 +37,7 @@ function useNoteProperties(
   notes: readonly NoteSummary[],
 ) {
   const { t } = useTranslation("notes");
-  const sheet = useOptionSheet();
+  const openSheet = useOptionSheet();
   const { workspaces } = useHostSessions(host.hostId);
   const list = useNotes(host.hostId, { cached: true });
   const self = notes.find((entry) => entry.id === noteId);
@@ -60,7 +60,7 @@ function useNoteProperties(
   };
 
   const pickWorkspace = () =>
-    sheet.open({
+    openSheet({
       title: t("workspace"),
       items: [null, ...workspaces.map((entry) => entry.id)].map((id) => ({
         key: id ?? "none",
@@ -72,7 +72,7 @@ function useNoteProperties(
     });
 
   const pickParent = () =>
-    sheet.open({
+    openSheet({
       title: t("properties.parent"),
       items: [
         {
@@ -93,7 +93,7 @@ function useNoteProperties(
     });
 
   const open = () =>
-    sheet.open({
+    openSheet({
       title: t("properties.title"),
       items: [
         {
@@ -115,15 +115,15 @@ function useNoteProperties(
       ],
     });
 
-  return { sheet: sheet.sheet, open, workspaceName };
+  return { open, workspaceName };
 }
 
 function useNoteLinks(hostId: string, noteId: string) {
   const { t } = useTranslation("common");
-  const sheet = useOptionSheet();
+  const openSheet = useOptionSheet();
   const rows = useLinkedEntityRows(hostId, { kind: "note", id: noteId });
   const open = () =>
-    sheet.open({
+    openSheet({
       title: t("links.title"),
       items: rows.map((row) => ({
         key: row.key,
@@ -137,7 +137,6 @@ function useNoteLinks(hostId: string, noteId: string) {
     label: t("links.title"),
     empty: rows.length === 0,
     open,
-    sheet: sheet.sheet,
   };
 }
 
@@ -190,8 +189,6 @@ export function NoteScreen({
         ]}
       />
       {content}
-      {links.sheet}
-      {properties.sheet}
     </>
   );
 
@@ -221,7 +218,7 @@ export function NoteScreen({
     return (
       <NoteEditor
         hostId={host.hostId}
-        session={doc.session}
+        body={{ kind: "doc", session: doc.session }}
         title={shown.title}
         meta={meta}
         editable={interactive && editing}

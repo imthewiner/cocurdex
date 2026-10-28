@@ -1,0 +1,16 @@
+appId: dev.cocurdex.mobile
+---
+- launchApp
+- tapOn: Streaming display check
+- tapOn:
+    id: composer-input
+- inputText: Show the streaming fixture
+- tapOn: Send
+- extendedWaitUntil:
+    visible: Stream starts immediately.
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Stream complete.
+    timeout: 5000
+- assertVisible: const total = 42;
+- takeScreenshot: streaming-complete

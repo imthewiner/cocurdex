@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SheetSurface } from "@/theme";
-import { useSheetStackOptions } from "@/ui";
+import { OptionSheetRouteProvider, useSheetStackOptions } from "@/ui";
 
 function NewSessionConfigStack() {
   const { t } = useTranslation("sessions");
@@ -10,6 +10,7 @@ function NewSessionConfigStack() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" options={{ title: t("newSession.title") }} />
       <Stack.Screen name="save-role" options={{ title: t("saveRole.title") }} />
+      <Stack.Screen name="options/[id]" />
     </Stack>
   );
 }
@@ -17,7 +18,9 @@ function NewSessionConfigStack() {
 export default function NewSessionConfigLayout() {
   return (
     <SheetSurface>
-      <NewSessionConfigStack />
+      <OptionSheetRouteProvider pathname="/new-session/config/options/[id]">
+        <NewSessionConfigStack />
+      </OptionSheetRouteProvider>
     </SheetSurface>
   );
 }

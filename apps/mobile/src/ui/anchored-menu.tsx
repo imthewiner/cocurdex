@@ -14,15 +14,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { layout, space, useThemeColors } from "@/theme";
 import { useFloatingSurface } from "./floating-surface";
+import { type MenuAnchor, menuTop } from "./menu-placement";
+
+export type { MenuAnchor } from "./menu-placement";
 
 const MENU_WIDTH = 260;
-const ANCHOR_GAP = 8;
 const RADIUS = 16;
-
-export interface MenuAnchor {
-  x: number;
-  y: number;
-}
+const SETTLE_FRAMES = 30;
 
 export interface AnchoredMenuItem {
   key: string;
@@ -45,13 +43,29 @@ export function menuAnchor(event: GestureResponderEvent): MenuAnchor {
   return { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY };
 }
 
+function sameAnchor(a: MenuAnchor | null, b: MenuAnchor) {
+  return a !== null && a.x === b.x && a.y === b.y && a.top === b.top;
+}
+
 export function measureAnchor(
   view: HostInstance | null,
   onAnchor: (anchor: MenuAnchor) => void,
 ) {
-  view?.measureInWindow((x, y, width, height) =>
-    onAnchor({ x: x + width / 2, y: y + height }),
-  );
+  if (!view) return;
+  let previous: MenuAnchor | null = null;
+  let frames = 0;
+  const measure = () =>
+    view.measureInWindow((x, y, width, height) => {
+      const anchor = { x: x + width / 2, y: y + height, top: y };
+      frames += 1;
+      if (sameAnchor(previous, anchor) || frames >= SETTLE_FRAMES) {
+        onAnchor(anchor);
+        return;
+      }
+      previous = anchor;
+      requestAnimationFrame(measure);
+    });
+  measure();
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -67,14 +81,19 @@ function useMenuFrame(anchor: MenuAnchor, height: number | null) {
     layout.sideMargin,
     window.width - layout.sideMargin - width,
   );
-  const top = insets.top + layout.sideMargin;
-  const bottom = window.height - insets.bottom - layout.sideMargin;
-  const below = anchor.y + ANCHOR_GAP;
-  if (height === null) return { left, width, top: below, maxHeight: undefined };
-  const fitsBelow = below + height <= bottom;
-  const flipped = anchor.y - ANCHOR_GAP - height;
-  const y = fitsBelow ? below : clamp(flipped, top, bottom - height);
-  return { left, width, top: y, maxHeight: bottom - top };
+  const bounds = {
+    top: insets.top + layout.sideMargin,
+    bottom: window.height - insets.bottom - layout.sideMargin,
+  };
+  if (height === null) {
+    return { left, width, top: anchor.y, maxHeight: undefined };
+  }
+  return {
+    left,
+    width,
+    top: menuTop(anchor, height, bounds),
+    maxHeight: bounds.bottom - bounds.top,
+  };
 }
 
 const MENU_ITEM_ROLE = Platform.OS === "ios" ? "button" : "menuitem";

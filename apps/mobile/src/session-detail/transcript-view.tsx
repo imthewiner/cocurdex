@@ -370,7 +370,7 @@ function toggledSet(current: ReadonlySet<string>, id: string) {
   return next;
 }
 
-const MAX_INDEX_RETRIES = 3;
+const MAX_INDEX_RETRIES = 12;
 
 function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
   const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -400,6 +400,8 @@ export function TranscriptView({
   const rowActions = useStableActions(actions);
   const seekingOldest = useRef(false);
   const indexRetries = useRef(0);
+  const indexFailed = useRef(false);
+  const [landing, setLanding] = useState(false);
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
@@ -426,15 +428,20 @@ export function TranscriptView({
     ),
     [colors, rowActions, expanded, toggle],
   );
-  const scrollToIndex = (index: number) =>
-    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: true });
+  const landOn = (index: number) => {
+    indexFailed.current = false;
+    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: false });
+    if (!indexFailed.current) {
+      requestAnimationFrame(() => setLanding(false));
+    }
+  };
   useImperativeHandle(ref, () => ({
     jumpToItem: (id) => {
       const index = newestFirst.findIndex((item) => item.id === id);
       if (index < 0) return;
       seekingOldest.current = false;
       indexRetries.current = 0;
-      scrollToIndex(index);
+      landOn(index);
     },
   }));
   const jumpToLatest = () => {
@@ -469,7 +476,7 @@ export function TranscriptView({
     );
   };
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, landing && styles.hidden]}>
       <FlatList
         {...scrollIndicator}
         ref={listRef}
@@ -495,13 +502,18 @@ export function TranscriptView({
           }
         }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
-          if (indexRetries.current >= MAX_INDEX_RETRIES) return;
+          indexFailed.current = true;
+          setLanding(true);
+          if (indexRetries.current >= MAX_INDEX_RETRIES) {
+            setLanding(false);
+            return;
+          }
           indexRetries.current += 1;
           listRef.current?.scrollToOffset({
             offset: averageItemLength * index,
             animated: false,
           });
-          requestAnimationFrame(() => scrollToIndex(index));
+          requestAnimationFrame(() => landOn(index));
         }}
         renderItem={renderItem}
       />
@@ -518,6 +530,7 @@ export function TranscriptView({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  hidden: { opacity: 0 },
   content: {
     paddingHorizontal: layout.sideMargin,
     paddingVertical: space.md,

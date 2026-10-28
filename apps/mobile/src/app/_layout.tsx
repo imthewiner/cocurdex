@@ -20,6 +20,20 @@ const PAIR_PRESENTATION = Platform.OS === "ios" ? "formSheet" : "modal";
 const PUSH_ANIMATION =
   Platform.OS === "android" ? "slide_from_right" : "default";
 const SHEET_CORNER_RADIUS = Platform.OS === "android" ? 28 : -1;
+const SHEET_PRESENTATION = {
+  headerShown: false,
+  presentation: "formSheet",
+  sheetGrabberVisible: true,
+  sheetCornerRadius: SHEET_CORNER_RADIUS,
+} as const;
+const SHEET_TALL = {
+  ...SHEET_PRESENTATION,
+  sheetAllowedDetents: [0.75, 1],
+};
+const SHEET_MEDIUM = {
+  ...SHEET_PRESENTATION,
+  sheetAllowedDetents: [0.6, 1],
+};
 const VIEWER_ANIMATION = Platform.OS === "android" ? "fade" : "default";
 
 function fileScreenTitle(params: object | undefined) {
@@ -35,7 +49,9 @@ export default function RootLayout() {
   const headerOptions = useHeaderOptions();
   const systemBarStyle = scheme === "dark" ? "light" : "dark";
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView
+      style={[styles.root, { backgroundColor: colors.background }]}
+    >
       <ThemeProvider value={navigationThemes[scheme]}>
         <Stack
           screenOptions={{
@@ -149,33 +165,22 @@ export default function RootLayout() {
           <Stack.Screen
             name="list-options"
             options={{
-              headerShown: false,
-              presentation: "formSheet",
-              sheetAllowedDetents: [0.75, 1],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: SHEET_CORNER_RADIUS,
+              ...SHEET_TALL,
             }}
           />
           <Stack.Screen
             name="issue-filters"
             options={{
-              headerShown: false,
-              presentation: "formSheet",
-              sheetAllowedDetents: [0.6, 1],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: SHEET_CORNER_RADIUS,
+              ...SHEET_MEDIUM,
             }}
           />
           <Stack.Screen
             name="issue-labels"
             options={{
-              headerShown: false,
-              presentation: "formSheet",
-              sheetAllowedDetents: [0.6, 1],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: SHEET_CORNER_RADIUS,
+              ...SHEET_MEDIUM,
             }}
           />
+          <Stack.Screen name="options" options={SHEET_MEDIUM} />
           <Stack.Screen
             name="edit-issue/[hostId]/[issueId]"
             options={{
@@ -188,11 +193,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="session-config/[hostId]/[sessionId]"
             options={{
-              headerShown: false,
-              presentation: "formSheet",
-              sheetAllowedDetents: [0.75, 1],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: SHEET_CORNER_RADIUS,
+              ...SHEET_TALL,
             }}
           />
           <Stack.Screen
@@ -207,11 +208,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="new-session/config"
             options={{
-              headerShown: false,
-              presentation: "formSheet",
-              sheetAllowedDetents: [0.75, 1],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: SHEET_CORNER_RADIUS,
+              ...SHEET_TALL,
             }}
           />
           <Stack.Screen

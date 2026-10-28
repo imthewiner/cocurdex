@@ -16,6 +16,7 @@ const { values } = parseArgs({
     avd: { type: "string" },
     build: { type: "boolean", default: false },
     dev: { type: "boolean", default: false },
+    stream: { type: "boolean", default: false },
   },
 });
 const platform = values.platform === "android" ? "android" : "ios";
@@ -46,6 +47,12 @@ async function main() {
   const tempDirs = createTempDirs();
   const daemon = await startPairingDaemon(platform, tempDirs);
   try {
+    if (values.stream) {
+      await daemon.createReplyingSession(
+        "Streaming display check",
+        "Stream starts immediately.\n\n中文内容与 emoji 👩🏽‍💻 保持完整。\n\n- First item\n- Second item\n\n```ts\nconst total = 42;\n```\n\nStream complete.",
+      );
+    }
     const target =
       platform === "ios"
         ? await startIosTarget(mobileDir, { install: !values.dev })

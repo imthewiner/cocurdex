@@ -88,8 +88,7 @@ function Picker({ host }: { host: SavedHost }) {
     (choice) => choice.workspace.id === workspaceId,
   )?.workspace;
   const agent = agents.find((entry) => entry.id === agentType);
-  const optionSheet = useOptionSheet();
-  const open = optionSheet.open;
+  const open = useOptionSheet();
   const done = () => router.dismiss();
 
   const openWorkspaces = () =>
@@ -278,7 +277,6 @@ function Picker({ host }: { host: SavedHost }) {
           </FormSection>
         ) : null}
       </Form>
-      {optionSheet.sheet}
     </>
   );
 }

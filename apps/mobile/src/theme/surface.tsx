@@ -1,24 +1,24 @@
-import { createContext, type ReactNode, use } from "react";
+import type { ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 import {
   SafeAreaInsetsContext,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-export type Surface = "page" | "sheet";
-
-const SurfaceContext = createContext<Surface>("page");
+import { SheetGrabber } from "./sheet-grabber";
+import { SurfaceContext } from "./surface-context";
 
 export function SheetSurface({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <SurfaceContext value="sheet">
       <SafeAreaInsetsContext value={{ ...insets, top: 0 }}>
-        {children}
+        <View style={styles.fill}>
+          <SheetGrabber />
+          {children}
+        </View>
       </SafeAreaInsetsContext>
     </SurfaceContext>
   );
 }
 
-export function useSurface(): Surface {
-  return use(SurfaceContext);
-}
+const styles = StyleSheet.create({ fill: { flex: 1 } });
