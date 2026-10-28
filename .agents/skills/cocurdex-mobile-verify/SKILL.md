@@ -5,7 +5,7 @@ description: Develop Cocurdex itself - verify a mobile app change on an iOS simu
 
 # Verify a mobile change
 
-The user authorizes using the running Cocurdex-dev daemon and its real session data for debugging and verification, including paired mobile clients. Do not require isolated data or ask again merely because the data is real. Prefer the real session when reproducing a reported issue and restore temporary UI changes afterward. Use isolated fixtures for automated checks that reset or repeatedly mutate data.
+The user authorizes read-only testing against real sessions in both Cocurdex and Cocurdex-dev, including pairing test devices, browsing, recording, and measurement. Do not require isolated data or ask again merely because the data is real. Identify which host owns the reported session before pairing or reproducing it. This authorization does not include sending messages or modifying session content. Restore temporary UI changes afterward and revoke temporary test pairings. Use isolated fixtures for automated checks that reset or repeatedly mutate data.
 
 For an isolated check, use an isolated daemon and simulator. For a real-session reproduction, reuse the paired development daemon. In either case, use a debug build with Metro, drive with `agent-device`, edit through Fast Refresh, and screenshot both themes. Maestro (`pnpm --filter @cocurdex/mobile-e2e flows`) runs in CI's `Mobile e2e` job; run it locally only after editing a flow or to reproduce a CI failure.
 
