@@ -4,6 +4,33 @@ import { runCommand } from "./lib/command";
 
 const video = process.argv[2];
 assert(video, "Pass a dark Mermaid fullscreen transition recording");
+const backgroundCrop = process.argv[3];
+if (backgroundCrop) {
+  assert.match(backgroundCrop, /^\d+:\d+:\d+:\d+$/);
+  const background = await runCommand("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-i",
+    path.resolve(video),
+    "-vf",
+    `crop=${backgroundCrop},signalstats,metadata=print:file=-`,
+    "-an",
+    "-f",
+    "null",
+    "-",
+  ]);
+  const luminance = [
+    ...background.matchAll(/lavfi.signalstats.YAVG=([\d.]+)/g),
+  ].map((match) => Number(match[1]));
+  assert(
+    luminance.length > 1,
+    "Recording must contain multiple background frames",
+  );
+  const variation = Math.max(...luminance) - Math.min(...luminance);
+  console.log(JSON.stringify({ backgroundCrop, variation }));
+  assert(variation <= 3, "Background flashes during fullscreen entry");
+}
 const metadata = await runCommand("ffmpeg", [
   "-hide_banner",
   "-loglevel",

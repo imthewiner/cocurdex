@@ -49,7 +49,9 @@ export default function RootLayout() {
   const headerOptions = useHeaderOptions();
   const systemBarStyle = scheme === "dark" ? "light" : "dark";
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView
+      style={[styles.root, { backgroundColor: colors.background }]}
+    >
       <ThemeProvider value={navigationThemes[scheme]}>
         <Stack
           screenOptions={{
