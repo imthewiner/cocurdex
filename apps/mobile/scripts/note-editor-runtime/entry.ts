@@ -248,13 +248,6 @@ function start(message: Extract<NoteEditorInbound, { type: "init" }>) {
     ],
     editorProps: {
       attributes: { class: "prose", autocapitalize: "sentences" },
-      handleClick(_view, _pos, event) {
-        const href = linkTarget(event);
-        if (!href) return false;
-        event.preventDefault();
-        post({ type: "openLink", href });
-        return true;
-      },
     },
     onTransaction: ({ editor: current }) => reportFormat(current),
     onUpdate: () => {
@@ -304,6 +297,16 @@ titleField.addEventListener("blur", () => {
   if (!editor?.isFocused) post({ type: "focus", focused: false });
 });
 metaButton.addEventListener("click", () => post({ type: "properties" }));
+document.addEventListener(
+  "click",
+  (event) => {
+    const href = linkTarget(event);
+    if (!href) return;
+    event.preventDefault();
+    post({ type: "openLink", href });
+  },
+  true,
+);
 function caretRect() {
   if (document.activeElement === titleField) {
     return titleField.getBoundingClientRect();

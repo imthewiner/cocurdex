@@ -867,6 +867,9 @@ appId: dev.cocurdex.mobile
     when:
       platform: iOS
     commands:
+      - extendedWaitUntil:
+          visible: ${ISSUE_LINK_TEXT}
+          timeout: 10000
       - tapOn: ${ISSUE_LINK_TEXT}
 - runFlow:
     when:
