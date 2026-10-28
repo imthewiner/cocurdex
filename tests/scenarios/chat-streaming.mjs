@@ -330,16 +330,61 @@ runScenario("chat-streaming", {
             "stream moved the reading position",
             { before, grown },
           );
-          const pulse = await session.run((label) => {
+          const ring = await session.run((label) => {
             const button = [...document.querySelectorAll("button")].find(
               (node) => node.getAttribute("aria-label") === label,
             );
+            const indicator = button?.querySelector("[data-stream-indicator]");
             const icon = button?.querySelector("svg");
-            return icon ? getComputedStyle(icon).animationName : null;
+            if (!indicator || !icon) return null;
+            const style = getComputedStyle(indicator);
+            return {
+              animation: style.animationName,
+              duration: style.animationDuration,
+              arcColor: style.borderTopColor,
+              arrowAnimation: getComputedStyle(icon).animationName,
+            };
           }, jumpLabel);
-          check(pulse === "pulse", "offscreen streaming icon is not animated", {
-            pulse,
+          check(
+            ring?.animation === "spin" &&
+              ring.duration === "2s" &&
+              ring.arrowAnimation === "none",
+            "streaming must rotate only the colored border",
+            ring,
+          );
+          const ringArtifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+          if (ringArtifacts) {
+            const shot = await session.send("Page.captureScreenshot", {
+              format: "png",
+            });
+            await writeFile(
+              path.join(ringArtifacts, `stream-ring-${theme}.png`),
+              Buffer.from(shot.data, "base64"),
+            );
+          }
+          await session.send("Emulation.setEmulatedMedia", {
+            features: [
+              { name: "prefers-color-scheme", value: theme },
+              { name: "prefers-reduced-motion", value: "reduce" },
+            ],
           });
+          const reduced = await session.run(() => {
+            const indicator = document.querySelector("[data-stream-indicator]");
+            const border = getComputedStyle(indicator.parentElement);
+            return {
+              display: getComputedStyle(indicator).display,
+              top: border.borderTopColor,
+              right: border.borderRightColor,
+            };
+          });
+          check(
+            reduced.display === "none" &&
+              reduced.top === ring.arcColor &&
+              reduced.right === ring.arcColor,
+            "reduced motion must use a static colored border",
+            reduced,
+          );
+          await emulateColorScheme(session, theme);
           const jumpLayout = await session.run(jumpControlLayout, jumpLabel);
           check(
             jumpLayout && Math.abs(jumpLayout.endGap - 16) <= 1,
@@ -393,12 +438,15 @@ runScenario("chat-streaming", {
             const button = [...document.querySelectorAll("button")].find(
               (node) => node.getAttribute("aria-label") === label,
             );
-            const icon = button?.querySelector("svg");
-            return icon ? getComputedStyle(icon).animationName : null;
+            return button?.querySelector("[data-stream-indicator]") !== null;
           }, jumpLabel);
-          check(stopped === "none", "completed reply kept the icon animated", {
-            stopped,
-          });
+          check(
+            stopped === false,
+            "completed reply kept the streaming border",
+            {
+              stopped,
+            },
+          );
           const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
           if (artifacts) {
             const shot = await session.send("Page.captureScreenshot", {

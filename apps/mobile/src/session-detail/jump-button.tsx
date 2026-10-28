@@ -47,17 +47,17 @@ export function JumpButton({
           pressed && styles.pressed,
         ]}
       >
-        <JumpIcon animated={latest && streaming}>
-          <SymbolView
-            name={
-              latest
-                ? { ios: "arrow.down", android: "arrow_downward" }
-                : { ios: "arrow.up", android: "arrow_upward" }
-            }
-            size={18}
-            tintColor={colors.foreground}
-          />
-        </JumpIcon>
+        {latest && streaming ? <StreamingRing color={colors.tint} /> : null}
+        <SymbolView
+          name={
+            latest
+              ? { ios: "arrow.down", android: "arrow_downward" }
+              : { ios: "arrow.up", android: "arrow_upward" }
+          }
+          size={18}
+          tintColor={colors.foreground}
+        />
+
         {latest && unseen && !streaming ? (
           <View
             style={[
@@ -71,43 +71,27 @@ export function JumpButton({
   );
 }
 
-function JumpIcon({
-  animated,
-  children,
-}: {
-  animated: boolean;
-  children: React.ReactNode;
-}) {
-  return animated ? <PulsingIcon>{children}</PulsingIcon> : children;
-}
-
-function PulsingIcon({ children }: { children: React.ReactNode }) {
-  const [opacity] = useState(() => new Animated.Value(1));
+function StreamingRing({ color }: { color: string }) {
+  const [rotation] = useState(() => new Animated.Value(0));
+  const [reduceMotion, setReduceMotion] = useState(true);
   const [attach] = useState(() => (node: unknown) => {
     if (!node) return;
     let active = true;
     let animation: Animated.CompositeAnimation | undefined;
-    const update = (reduceMotion: boolean) => {
+    const update = (reduced: boolean) => {
+      if (!active) return;
       animation?.stop();
-      opacity.setValue(1);
-      if (!active || reduceMotion) return;
+      rotation.setValue(0);
+      setReduceMotion(reduced);
+      if (reduced) return;
       animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(opacity, {
-            toValue: 0.4,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-        ]),
+        Animated.timing(rotation, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+          isInteraction: false,
+        }),
       );
       animation.start();
     };
@@ -123,9 +107,38 @@ function PulsingIcon({ children }: { children: React.ReactNode }) {
     };
   });
   return (
-    <Animated.View ref={attach} style={{ opacity }}>
-      {children}
-    </Animated.View>
+    <View
+      ref={attach}
+      pointerEvents="none"
+      accessible={false}
+      style={StyleSheet.absoluteFill}
+    >
+      <View
+        style={[
+          styles.ring,
+          { borderColor: color, opacity: reduceMotion ? 1 : 0.2 },
+        ]}
+      />
+      {!reduceMotion ? (
+        <Animated.View
+          style={[
+            styles.ring,
+            {
+              borderColor: "transparent",
+              borderTopColor: color,
+              transform: [
+                {
+                  rotate: rotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0deg", "360deg"],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -141,6 +154,11 @@ const styles = StyleSheet.create({
     borderRadius: SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
+  },
+  ring: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: SIZE / 2,
+    borderWidth: 2,
   },
   pressed: { opacity: 0.6 },
   dot: {
