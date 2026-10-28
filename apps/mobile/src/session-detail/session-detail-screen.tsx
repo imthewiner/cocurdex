@@ -51,7 +51,7 @@ type LivePhase = "thinking" | "usingTools" | "responding";
 
 function livePhase(items: readonly CondensedItem[]): LivePhase {
   const last = items.at(-1);
-  if (last?.kind === "assistant" && last.streaming) return "responding";
+  if (last?.kind === "assistant") return "responding";
   const tools =
     last?.kind === "activity"
       ? last.items
@@ -213,10 +213,10 @@ export function SessionDetailScreen({
   };
 
   const title = observation?.session.title ?? listed?.title ?? "";
-  const liveLabels: Record<LivePhase, string> = {
+  const liveLabels: Record<LivePhase, string | null> = {
     thinking: t("detail.thinking"),
     usingTools: t("detail.usingTools"),
-    responding: t("detail.responding"),
+    responding: null,
   };
   const sendingStatus = unconfirmed.length > 0 ? t("detail.sending") : null;
   const runningStatus = running ? liveLabels[livePhase(items)] : sendingStatus;
