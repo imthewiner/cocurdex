@@ -1,0 +1,72 @@
+{
+  "session": {
+    "alreadySaved": "这段对话已经在记忆里了",
+    "save": "保存到记忆",
+    "saved": "对话已保存到记忆",
+    "saveFailed": "无法保存对话",
+    "saving": "正在保存…"
+  },
+  "settings": {
+    "actions": {
+      "doctor": "运行体检",
+      "install": "安装",
+      "verify": "验证"
+    },
+    "agentContext": {
+      "description": "每轮 agent 回答前召回相关记忆，并加入提示词。",
+      "title": "Agent 会话自动召回"
+    },
+    "agentTools": {
+      "description": "为 agent 会话提供 memory_recall、memory_show、memory_remember、memory_policy 工具。",
+      "title": "Agent 记忆工具"
+    },
+    "chatRecall": {
+      "description": "每次 chat 回答前召回相关记忆。",
+      "title": "Chat 会话自动召回"
+    },
+    "chatSaveOnEnd": {
+      "description": "会话归档或删除时，总结整段对话并写入记忆。",
+      "title": "会话结束时保存"
+    },
+    "chatSaveTurns": {
+      "description": "每轮对话完成后追加到当天的记忆日记。",
+      "title": "每轮对话保存"
+    },
+    "cliPath": {
+      "description": "可选的 rsrs 可执行文件路径；留空则使用已安装的二进制或 PATH。",
+      "placeholder": "自动检测",
+      "title": "rsrs 可执行文件"
+    },
+    "connectionTitle": "连接",
+    "doctorFailed": "rsrs 体检发现问题",
+    "doctorPassed": "rsrs 体检：{{status}}",
+    "enabled": {
+      "description": "回答前召回，结束后把有价值的结果写入长期记忆。",
+      "title": "启用记忆"
+    },
+    "groupTitle": "长期记忆",
+    "installFailed": "无法安装 rsrs",
+    "installReady": "rsrs 已就绪",
+    "saveFailed": "无法保存记忆设置",
+    "status": {
+      "available": "rsrs {{version}}",
+      "doctor": "体检：{{status}} · 通过 {{pass}} · 警告 {{warn}} · 失败 {{fail}}",
+      "installing": "正在安装 rsrs…",
+      "missing": "rsrs 尚未安装",
+      "title": "状态",
+      "unknown": "未知版本"
+    }
+  },
+  "status": {
+    "checking": "正在检查 rsrs…",
+    "failed": "rsrs 不可用",
+    "installing": "正在安装 rsrs…",
+    "missing": "rsrs 尚未安装",
+    "ready": "rsrs {{version}}",
+    "readyUnknown": "rsrs 已就绪"
+  },
+  "switch": {
+    "label": "记忆",
+    "toggleFailed": "无法修改记忆开关"
+  }
+}

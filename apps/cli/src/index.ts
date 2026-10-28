@@ -26,6 +26,7 @@ import { handleImageCommand, imageUsageLines } from "./image-commands";
 import { handleIssueCommand } from "./issue-commands";
 import { handleLinkCommand } from "./link-commands";
 import { handleMcpCommand, mcpUsageLines } from "./mcp-commands";
+import { handleMemoryCommand, memoryUsageLines } from "./memory-commands";
 import { handleNoteCommand } from "./note-commands";
 import {
   assertDirectory,
@@ -114,6 +115,13 @@ async function main(rawArgs: string[]) {
 
   if (resource === "note") {
     const handled = await handleNoteCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
+  }
+
+  if (resource === "memory") {
+    const handled = await handleMemoryCommand(action, args, parsed);
     if (handled) {
       return;
     }
@@ -544,6 +552,7 @@ function printUsage() {
       "  cocurdex --version | -v | version       Print CLI version",
       "  cocurdex note list|show|create|update|move|delete|backlinks|tags [--json]",
       "  cocurdex note create|update ... [--body <markdown> | --body - | --body-file <path>]",
+      ...memoryUsageLines(),
       "  cocurdex note update <id> ... [--expected-revision <n>]",
       ...imageUsageLines(),
       "  cocurdex link list <ref> [--json]",

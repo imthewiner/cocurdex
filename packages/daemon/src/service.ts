@@ -33,6 +33,7 @@ import type {
   ForkSessionPayload,
   GetToolCallResultInput,
   GitCommitResult,
+  MemorySettings,
   MessageRecord,
   NetworkProxySettings,
   QueuedAgentInputRecord,
@@ -71,6 +72,7 @@ import {
   isHandoffVisibleMessage,
   isSessionRuntimeEvent,
   isToolCallId,
+  MEMORY_SETTINGS_KEY,
   type MessageAttachment,
   messageAgentLookup,
   newAssistantSessionId,
@@ -97,6 +99,7 @@ import { AcpRegistryService } from "./acp-registry";
 import {
   AgentToolBridge,
   registerHistoryTools,
+  registerMemoryTools,
   registerMessagingTools,
   registerScriptRunTools,
   registerSettingsTools,
@@ -122,6 +125,7 @@ import {
   listHostAddresses,
 } from "./host-access";
 import { DaemonMcpService } from "./mcp-service";
+import { MemoryService } from "./memory";
 import { probeNetworkProxy } from "./network-proxy-probe";
 import {
   assertTestableNetworkProxySettings,
@@ -219,6 +223,7 @@ export interface CocurdexDaemonServiceOptions {
   userDataPath: string;
   agentToolsUrl?: string;
   localToken?: string;
+  autoStartMemory?: boolean;
 }
 
 export interface CocurdexDaemonStatus {
@@ -265,6 +270,7 @@ export class CocurdexDaemonService {
   private startupRecovery: Promise<void> | null = null;
   private stopping = false;
   readonly commitMessageService: DaemonCommitMessageService;
+  readonly memory: MemoryService;
   readonly mcp: DaemonMcpService;
   readonly pdfAnnotationsService: DaemonPdfAnnotationsService;
   readonly attachments: DaemonAttachmentStore;
@@ -334,6 +340,14 @@ export class CocurdexDaemonService {
       this.state,
       (snapshot) => this.providerCredentials.resolveSnapshot(snapshot),
     );
+    this.memory = new MemoryService({
+      userDataPath: options.userDataPath,
+      state: this.state,
+      broadcast: (event) => this.events.emit("daemon.event", event),
+      resolveSessionProvider: (session) =>
+        this.providerCredentials.forSession(session),
+      autoInstall: options.autoStartMemory === true,
+    });
     this.scanPolicy = createWorkspaceScanPolicy(this.state);
     this.searchService = new DaemonSearchService({
       broadcast: (event) => this.events.emit("daemon.event", event),
@@ -377,6 +391,8 @@ export class CocurdexDaemonService {
       getSession: (sessionId) => this.state.getSession(sessionId),
       getTeamId: (sessionId) => this.team.teamIdForSession(sessionId),
       getLeadRoster: (sessionId) => this.team.rosterForLead(sessionId),
+      memoryInstructions: (hasMemoryTools) =>
+        hasMemoryTools ? this.memory.agentInstructions(true) : undefined,
     });
     this.peerMessaging = new PeerMessagingService({
       getSession: (sessionId) => this.state.getSession(sessionId),
@@ -435,6 +451,13 @@ export class CocurdexDaemonService {
           caller.sessionId,
           sessionId,
         ),
+    });
+    registerMemoryTools(this.agentTools.registry, {
+      isEnabled: () => this.memory.areToolsEnabledSync(),
+      recall: (input) => this.memory.recall(input),
+      show: (id) => this.memory.show(id),
+      remember: (input) => this.memory.remember(input),
+      policy: () => this.memory.policy(),
     });
     this.scriptRuns = new ScriptRunModule({
       repository: this.state.scriptRuns,
@@ -556,6 +579,10 @@ export class CocurdexDaemonService {
           sessionId: event.sessionId,
           messageId: event.messageId,
         });
+        const completedSession = await this.state.getSession(event.sessionId);
+        if (completedSession && isChatSession(completedSession)) {
+          void this.memory.captureTurn(event.sessionId, event.messageId);
+        }
       }
       await this.team.onAgentEvent(event);
       // Only a terminal error ends the turn; a mid-turn "error" event can be
@@ -587,6 +614,9 @@ export class CocurdexDaemonService {
       concurrency: 4,
     });
     this.wakeWorkflowWorker();
+    if (options.autoStartMemory === true) {
+      void this.memory.initializeOnStartup();
+    }
   }
 
   private async agentSupportsSteering(session: SessionRecord) {
@@ -628,6 +658,10 @@ export class CocurdexDaemonService {
     validateSessionId(sessionId);
     await this.team.onLeadStopped(sessionId);
     await this.scriptRuns.cancelForRequester(sessionId);
+    const session = await this.state.getSession(sessionId);
+    if (session && isChatSession(session)) {
+      void this.memory.saveSession({ sessionId });
+    }
     return this.sessionCommands.run(sessionId, async () => {
       await this.stopSessionTurn(sessionId);
       this.queuedFollowUps.delete(sessionId);
@@ -1117,6 +1151,9 @@ export class CocurdexDaemonService {
 
   private async readDaemonSetting(key: string): Promise<unknown> {
     if (key === AGENT_RUN_LIMITS_SETTING_KEY) return this.readAgentRunLimits();
+    if (key === MEMORY_SETTINGS_KEY) {
+      return this.memory.getSettings();
+    }
     if (key === "git.commitMessageModel") {
       return this.commitMessageService.getModelSetting();
     }
@@ -1126,6 +1163,10 @@ export class CocurdexDaemonService {
   private async writeDaemonSetting(key: string, value: unknown): Promise<void> {
     if (key === AGENT_RUN_LIMITS_SETTING_KEY) {
       await this.setAgentRunLimits(value as AgentRunLimits);
+      return;
+    }
+    if (key === MEMORY_SETTINGS_KEY) {
+      await this.memory.setSettings(value as MemorySettings);
       return;
     }
     if (key === "git.commitMessageModel") {
@@ -1831,6 +1872,22 @@ export class CocurdexDaemonService {
     const session = await this.state.getSession(sessionId);
     if (!session) {
       return;
+    }
+    if (isChatSession(session)) {
+      try {
+        await Promise.race([
+          this.memory.saveSession({ sessionId }),
+          new Promise<void>((resolve) => {
+            const timer = setTimeout(resolve, 45_000);
+            timer.unref?.();
+          }),
+        ]);
+      } catch (error) {
+        logDaemonDiagnostic("warn", "memory.deleteCaptureFailed", {
+          error: errorMessage(error, "Unknown error"),
+          sessionId,
+        });
+      }
     }
     this.sessionRuntimeStates.forget(sessionId);
     await this.team.onLeadStopped(sessionId);
@@ -2970,6 +3027,17 @@ export class CocurdexDaemonService {
     const priorMessages = history.filter(
       (message) => message.id !== userMessage.id,
     );
+    const memoryContext =
+      (session.sessionKind ?? "main") === "subagent"
+        ? null
+        : await this.memory.buildTurnContext(
+            session,
+            userMessage.content,
+            isChatSession(session) ? "chat" : "agent",
+          );
+    const memoryPrefix = memoryContext?.brief
+      ? `${memoryContext.brief}\n\n`
+      : "";
     const resolution = resolveStartContext({
       targetAgentType: session.agentType,
       priorMessages,
@@ -2982,7 +3050,7 @@ export class CocurdexDaemonService {
         this.consumeNativeFork(pending, session, userMessage, priorMessages);
       }
       return {
-        content: userMessage.content,
+        content: `${memoryPrefix}${userMessage.content}`,
         history,
         contextHandoff: undefined,
       };
@@ -3043,7 +3111,7 @@ export class CocurdexDaemonService {
       areas: ["agent"],
     });
     return {
-      content: userMessage.content,
+      content: `${memoryPrefix}${userMessage.content}`,
       history: resolution.freshProviderThread ? [userMessage] : history,
       contextHandoff: {
         text: handoff.text,

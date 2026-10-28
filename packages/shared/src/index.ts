@@ -38,6 +38,7 @@ export * from "./locales";
 export * from "./logging";
 export * from "./mcp";
 export * from "./mcp-agents";
+export * from "./memory";
 export {
   MERMAID_THEME_CSS,
   MERMAID_THEME_VARIABLES,

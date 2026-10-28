@@ -32,7 +32,9 @@ export interface SessionTitleDeps {
   ): Promise<AgentRuntimeProviderConfig | null>;
 }
 
-function buildSnapshotProviderRecords(runtime: AgentRuntimeProviderConfig): {
+export function buildSnapshotProviderRecords(
+  runtime: AgentRuntimeProviderConfig,
+): {
   provider: ProviderConfigRecord;
   model: ProviderModelRecord;
 } {

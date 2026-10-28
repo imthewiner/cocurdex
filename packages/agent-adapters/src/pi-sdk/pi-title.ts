@@ -64,6 +64,43 @@ function normalizeTitle(raw: string): string | null {
   return chars.length > 64 ? `${chars.slice(0, 60).join("")}…` : trimmed;
 }
 
+export async function generatePiText(params: {
+  provider: ProviderConfigRecord;
+  model: ProviderModelRecord;
+  apiKey: string | null;
+  systemPrompt: string;
+  message: string;
+  maxTokens: number;
+  signal?: AbortSignal;
+}): Promise<string | null> {
+  const model = buildPiTitleModel(params.provider, params.model);
+  const context: Context = {
+    systemPrompt: params.systemPrompt,
+    messages: [
+      { role: "user", content: params.message, timestamp: Date.now() },
+    ],
+  };
+
+  const result = await completeSimple(model, context, {
+    apiKey: params.apiKey ?? undefined,
+    signal: params.signal,
+    maxTokens: params.maxTokens,
+  });
+
+  if (result.stopReason === "error" || result.stopReason === "aborted") {
+    throw new Error(
+      result.errorMessage || `Text generation ${result.stopReason}`,
+    );
+  }
+
+  return (
+    result.content
+      .flatMap((block) => (block.type === "text" ? [block.text] : []))
+      .join(" ")
+      .trim() || null
+  );
+}
+
 // Single-shot title synthesis through the pi ai layer. Returns null when the
 // model produced no usable text; the caller keeps its fallback title.
 export async function generatePiConversationTitle(params: {
@@ -73,29 +110,14 @@ export async function generatePiConversationTitle(params: {
   message: string;
   signal?: AbortSignal;
 }): Promise<string | null> {
-  const model = buildPiTitleModel(params.provider, params.model);
-  const context: Context = {
+  const text = await generatePiText({
+    provider: params.provider,
+    model: params.model,
+    apiKey: params.apiKey,
     systemPrompt: TITLE_PROMPT,
-    messages: [
-      { role: "user", content: params.message, timestamp: Date.now() },
-    ],
-  };
-
-  const result = await completeSimple(model, context, {
-    apiKey: params.apiKey ?? undefined,
-    signal: params.signal,
+    message: params.message,
     maxTokens: TITLE_MAX_TOKENS,
+    signal: params.signal,
   });
-
-  if (result.stopReason === "error" || result.stopReason === "aborted") {
-    throw new Error(
-      result.errorMessage || `Title generation ${result.stopReason}`,
-    );
-  }
-
-  const text = result.content
-    .flatMap((block) => (block.type === "text" ? [block.text] : []))
-    .join(" ");
-
-  return normalizeTitle(text);
+  return text ? normalizeTitle(text) : null;
 }

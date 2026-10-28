@@ -15,12 +15,13 @@ import {
   newChatComposerDraftKey,
   WelcomeHeading,
 } from "@/features/composer";
+// Sub-entry, not the settings barrel: that barrel reaches SettingsScreen ->
+// @/app/layout, closing an initialization cycle back onto this module.
+import { MemorySwitch } from "@/features/memory";
 import {
   bootstrapProviderModelsAtom,
   providerModelsAtom,
 } from "@/features/sessions";
-// Sub-entry, not the settings barrel: that barrel reaches SettingsScreen ->
-// @/app/layout, closing an initialization cycle back onto this module.
 import { openSettings } from "@/features/settings/settings-navigation";
 import { useMountEffect } from "@/lib";
 import { chatProviderModelsAtom } from "./chat-models";
@@ -137,6 +138,7 @@ export function NewChatCard({ onStartChat }: NewChatCardProps) {
           });
         }}
       />
+      <MemorySwitch className="mt-3" />
     </ComposerSurfaceBody>
   );
 }
