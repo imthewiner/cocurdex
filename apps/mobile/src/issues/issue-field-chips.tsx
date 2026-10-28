@@ -113,9 +113,7 @@ export function useIssueFieldChips({
     await beforePick();
     const request = { title: titles[field], items: choiceItems(field) };
     if (choices[field].length > MENU_LIMIT) return openSheet(request);
-    requestAnimationFrame(() =>
-      measureAnchor(chip, (anchor) => menu.open(anchor, request)),
-    );
+    measureAnchor(chip, (anchor) => menu.open(anchor, request));
   };
 
   const chipMarkOf = (field: IssueField) =>
