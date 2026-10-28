@@ -10,7 +10,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { space, useThemeColors, useThemeName } from "@/theme";
+import { layout, space, useThemeColors, useThemeName } from "@/theme";
 
 const SIZE = 40;
 const DOT = 10;
@@ -132,10 +132,8 @@ function PulsingIcon({ children }: { children: React.ReactNode }) {
 const styles = StyleSheet.create({
   slot: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: space.md,
-    alignItems: "center",
+    end: layout.sideMargin,
+    bottom: space.lg,
   },
   button: {
     width: SIZE,

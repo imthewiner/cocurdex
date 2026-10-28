@@ -40,7 +40,7 @@ export function JumpControls({
   const { Icon, label, onJump } = jumpControl;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center">
+    <div className="pointer-events-none absolute end-4 bottom-4 z-20">
       <button
         aria-label={label}
         className="pointer-events-auto flex size-9 cursor-default items-center justify-center rounded-full bg-chat-surface-control text-chat-fg transition-colors hover:bg-chat-surface-control-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"

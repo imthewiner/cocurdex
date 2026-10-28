@@ -66,7 +66,8 @@ function jumpControlLayout(label) {
   const control = button.getBoundingClientRect();
   const area = viewport.getBoundingClientRect();
   return {
-    centerOffset: control.x + control.width / 2 - area.x - area.width / 2,
+    endGap:
+      viewport.closest("section").getBoundingClientRect().right - control.right,
     bottomGap: area.bottom - control.bottom,
     width: control.width,
     height: control.height,
@@ -341,8 +342,8 @@ runScenario("chat-streaming", {
           });
           const jumpLayout = await session.run(jumpControlLayout, jumpLabel);
           check(
-            jumpLayout && Math.abs(jumpLayout.centerOffset) <= 1,
-            "jump control must be centered over the conversation",
+            jumpLayout && Math.abs(jumpLayout.endGap - 16) <= 1,
+            "jump control must sit at the bottom end of the conversation",
             jumpLayout,
           );
           check(
@@ -452,9 +453,9 @@ runScenario("chat-streaming", {
             );
             const topLayout = await session.run(jumpControlLayout, topLabel);
             check(
-              Math.abs(topLayout.centerOffset) <= 1 &&
+              Math.abs(topLayout.endGap - 16) <= 1 &&
                 topLayout.bottomGap === 16,
-              "top control must retain the centered slot after resize",
+              "top control must retain the bottom-end slot after resize",
               { width, topLayout },
             );
             await clickByRole(session, { role: "button", name: topLabel });
@@ -473,7 +474,7 @@ runScenario("chat-streaming", {
               jumpLabel,
             );
             check(
-              Math.abs(latestLayout.centerOffset) <= 1 &&
+              Math.abs(latestLayout.endGap - 16) <= 1 &&
                 latestLayout.bottomGap === topLayout.bottomGap,
               "both directions must share the same slot",
               { width, topLayout, latestLayout },
