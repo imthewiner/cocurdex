@@ -1,6 +1,6 @@
 import { useColorSchemeName } from "@/preferences";
 import generated from "./colors.generated.json";
-import { type Surface, useSurface } from "./surface";
+import { type Surface, useSurface } from "./surface-context";
 import syntax from "./syntax-colors.generated.json";
 
 export type ThemeName = keyof typeof generated;

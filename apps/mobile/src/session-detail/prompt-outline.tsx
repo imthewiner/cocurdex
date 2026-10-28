@@ -13,10 +13,10 @@ export function PromptOutline({
   onJump(id: string): void;
 }) {
   const { t } = useTranslation("sessions");
-  const optionSheet = useOptionSheet();
+  const openSheet = useOptionSheet();
   const prompts = promptOutline(items);
   const open = () =>
-    optionSheet.open({
+    openSheet({
       title: t("detail.prompts"),
       items: prompts.map((prompt, position) => ({
         key: prompt.id,
@@ -27,19 +27,16 @@ export function PromptOutline({
       })),
     });
   return (
-    <>
-      <HeaderButtons
-        items={[
-          {
-            key: "prompts",
-            icon: { ios: "list.bullet", android: "toc" },
-            label: t("detail.prompts"),
-            hidden: prompts.length < MIN_PROMPTS,
-            onPress: open,
-          },
-        ]}
-      />
-      {optionSheet.sheet}
-    </>
+    <HeaderButtons
+      items={[
+        {
+          key: "prompts",
+          icon: { ios: "list.bullet", android: "toc" },
+          label: t("detail.prompts"),
+          hidden: prompts.length < MIN_PROMPTS,
+          onPress: open,
+        },
+      ]}
+    />
   );
 }

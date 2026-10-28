@@ -103,7 +103,7 @@ export function NoteEditor({
   const keyboardShown = useBottomKeyboardOverlap() > 0;
   const bottomInset = useSafeAreaInsets().bottom;
   const openLink = useOpenLink(hostId, undefined);
-  const optionSheet = useOptionSheet();
+  const openSheet = useOptionSheet();
   const webView = useRef<EditorWebView | null>(null);
   const sentMeta = useRef(meta);
   const sentEditable = useRef(editable);
@@ -163,7 +163,7 @@ export function NoteEditor({
       : insertLabels[choice.kind];
 
   const openBlockStyles = () =>
-    optionSheet.open({
+    openSheet({
       title: t("editor.format.text"),
       items: BLOCK_STYLES.map((style) => ({
         key: style,
@@ -175,7 +175,7 @@ export function NoteEditor({
     });
 
   const openInsert = (fromSlash: boolean) =>
-    optionSheet.open({
+    openSheet({
       title: t("editor.format.insert"),
       items: INSERT_CHOICES.map((choice) => ({
         key: insertKey(choice),
@@ -289,7 +289,6 @@ export function NoteEditor({
           onHideKeyboard={() => run({ name: "blur" })}
         />
       ) : null}
-      {optionSheet.sheet}
     </KeyboardAvoidingView>
   );
 }

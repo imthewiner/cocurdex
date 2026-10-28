@@ -23,7 +23,7 @@ export function IssueProperties({
 }) {
   const { t } = useTranslation("issues");
   const router = useRouter();
-  const sheet = useOptionSheet();
+  const openSheet = useOptionSheet();
   const update = useIssueUpdate(host, issue.id);
   const { workspaces } = useHostSessions(host.hostId);
   const interactive = host.scopes.includes("interact") && view !== undefined;
@@ -40,7 +40,7 @@ export function IssueProperties({
     update(patch).catch(() => Alert.alert(t("update.failed")));
 
   const pickStatus = () =>
-    sheet.open({
+    openSheet({
       title: t("field.status"),
       items: statuses.map((option) => ({
         key: option.id,
@@ -55,7 +55,7 @@ export function IssueProperties({
     });
 
   const pickPriority = () =>
-    sheet.open({
+    openSheet({
       title: t("field.priority"),
       items: priorities.map((option) => ({
         key: option.id,
@@ -70,7 +70,7 @@ export function IssueProperties({
     });
 
   const pickWorkspace = () =>
-    sheet.open({
+    openSheet({
       title: t("field.workspace"),
       items: [{ id: NO_WORKSPACE, name: t("field.none") }, ...workspaces].map(
         (entry) => {
@@ -142,7 +142,6 @@ export function IssueProperties({
       >
         {t("field.labels")}
       </FormRow>
-      {sheet.sheet}
     </>
   );
 }

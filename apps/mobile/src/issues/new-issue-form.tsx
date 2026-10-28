@@ -18,8 +18,6 @@ import { hostConnection } from "@/connection";
 import { useHostSessions } from "@/sessions";
 import { layout, space, useThemeColors } from "@/theme";
 import {
-  type Choice,
-  ChoiceSheet,
   keyboardHidden,
   type MenuAnchor,
   ModalCloseButton,
@@ -27,6 +25,7 @@ import {
   SheetAction,
   useAnchoredMenu,
   useBottomKeyboardOverlap,
+  useOptionSheet,
 } from "@/ui";
 import { IssuePriorityMark } from "./issue-priority-mark";
 import { useIssueView } from "./issue-queries";
@@ -45,6 +44,11 @@ type IssueField = "workspace" | "status" | "priority";
 const CHIP_FIELDS: readonly IssueField[] = ["status", "priority"];
 const MENU_LIMIT = 6;
 
+interface Choice {
+  value: string;
+  label: string;
+}
+
 export function NewIssueForm({
   host,
   initialWorkspaceId,
@@ -56,6 +60,7 @@ export function NewIssueForm({
   const router = useRouter();
   const colors = useThemeColors();
   const menu = useAnchoredMenu("new-issue-menu");
+  const openSheet = useOptionSheet();
   const bottomInset = useSafeAreaInsets().bottom;
   const keyboardOverlap = useBottomKeyboardOverlap();
   const titleInput = useRef<TextInputInstance>(null);
@@ -71,7 +76,6 @@ export function NewIssueForm({
   const [priority, setPriority] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [picking, setPicking] = useState<IssueField | null>(null);
   const data = view.data;
   const statusId = status ?? defaultIssueStatus(data?.statusOptions ?? []);
   const priorityId =
@@ -149,23 +153,23 @@ export function NewIssueForm({
     titleInput.current?.blur();
     descriptionInput.current?.blur();
     await keyboardHidden();
-    setPicking(field);
+    openSheet({ title: titles[field], items: choiceItems(field) });
   };
 
   const pick = (field: IssueField, anchor: MenuAnchor) => {
     if (choices[field].length > MENU_LIMIT) return void pickInSheet(field);
-    menu.open(anchor, {
-      title: titles[field],
-      items: choices[field].map((choice) => ({
-        key: choice.value,
-        label: choice.label,
-        leading: markOf(field, choice.value, choice.label),
-        selected: choice.value === values[field],
-        testID: `new-issue-choice-${choice.value || "none"}`,
-        onPress: () => setters[field](choice.value),
-      })),
-    });
+    menu.open(anchor, { title: titles[field], items: choiceItems(field) });
   };
+
+  const choiceItems = (field: IssueField) =>
+    choices[field].map((choice) => ({
+      key: choice.value,
+      label: choice.label,
+      leading: markOf(field, choice.value, choice.label),
+      selected: choice.value === values[field],
+      testID: `new-issue-choice-${choice.value || "none"}`,
+      onPress: () => setters[field](choice.value),
+    }));
 
   const markOf = (field: IssueField, value: string | null, label: string) => {
     if (field === "status") {
@@ -264,16 +268,6 @@ export function NewIssueForm({
         {CHIP_FIELDS.map(fieldChip)}
       </ScrollView>
       {menu.menu}
-      <ChoiceSheet
-        title={picking ? titles[picking] : null}
-        choices={picking ? choices[picking] : []}
-        selected={picking ? values[picking] : null}
-        onSelect={(value) => {
-          if (picking) setters[picking](value);
-        }}
-        onDismiss={() => setPicking(null)}
-        testID="new-issue-choices"
-      />
     </View>
   );
 }

@@ -37,8 +37,7 @@ export function SessionConfigScreen({
   const { session, agent, models, snapshot, axes, configOptions, mcpServers } =
     useSessionConfigState(host, sessionId);
   const [failed, setFailed] = useState(false);
-  const optionSheet = useOptionSheet();
-  const open = optionSheet.open;
+  const open = useOptionSheet();
   const canInteract = host.scopes.includes("interact");
   const canConfigure = host.scopes.includes("execute");
   const connection = hostConnection(host.hostId);
@@ -194,7 +193,6 @@ export function SessionConfigScreen({
           </FormSection>
         ) : null}
       </Form>
-      {optionSheet.sheet}
     </>
   );
 }
