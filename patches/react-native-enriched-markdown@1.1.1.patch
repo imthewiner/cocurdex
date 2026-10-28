@@ -39,6 +39,59 @@ index b6b38b4cc1a37eacf53f48f940608ed7ead26f93..8394f4497eaa302286d947ed758a361a
    }
  
    private fun animateBlockViewFadeIn(view: View) {
+diff --git a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt b/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt
+index f3bb9122d27d80746b9b8ed07ca5247f080a25d0..28afa462339a59572108d239606e0981580971d2 100644
+--- a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt
++++ b/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt
+@@ -113,6 +113,7 @@ class EnrichedMarkdownText
+     private var imageRequestHeaders: Map<String, String> = emptyMap()
+ 
+     private var streamingAnimation: Boolean = false
++    private var animateFinalText: Boolean = false
+     private var previousTextLength: Int = 0
+     private var fadeAnimator: TailFadeInAnimator? = null
+     override var spoilerOverlayDrawer: SpoilerOverlayDrawer? = null
+@@ -221,13 +222,10 @@ class EnrichedMarkdownText
+ 
+     fun setStreamingAnimation(enabled: Boolean) {
+       if (streamingAnimation == enabled) return
++      animateFinalText = !enabled
+       streamingAnimation = enabled
+       if (enabled) {
+         previousTextLength = text?.length ?: 0
+-      } else {
+-        fadeAnimator?.cancelAll()
+-        fadeAnimator = null
+-        previousTextLength = 0
+       }
+     }
+ 
+@@ -308,6 +306,7 @@ class EnrichedMarkdownText
+       }
+ 
+       text = styledText
++      fadeAnimator?.restore()
+ 
+       applyInteractivity()
+ 
+@@ -320,7 +319,8 @@ class EnrichedMarkdownText
+       layoutManager.invalidateLayout()
+       accessibilityHelper.invalidateAccessibilityItems()
+ 
+-      if (streamingAnimation) {
++      if (streamingAnimation || animateFinalText) {
++        animateFinalText = false
+         if (fadeAnimator == null) {
+           fadeAnimator = TailFadeInAnimator(this)
+         }
+@@ -490,6 +490,7 @@ class EnrichedMarkdownText
+       pendingStyledText = null
+       fadeAnimator?.cancelAll()
+       fadeAnimator = null
++      animateFinalText = false
+     }
+ 
+     override fun setPadding(
 diff --git a/android/src/main/java/com/swmansion/enriched/markdown/renderer/LinkRenderer.kt b/android/src/main/java/com/swmansion/enriched/markdown/renderer/LinkRenderer.kt
 index 7beb976e1daa8eeee864edca6da33cd2e358ba7f..8e7801cd2f48a6aea6de554688901fee330814fc 100644
 --- a/android/src/main/java/com/swmansion/enriched/markdown/renderer/LinkRenderer.kt
@@ -222,6 +275,51 @@ index c0460a14cedf0b7699a924243ce56bae648d6f8a..0277880283c189f43410db7895d7b4de
 +    private const val FADE_DURATION_MS = 400L
    }
  }
+diff --git a/ios/EnrichedMarkdownText.mm b/ios/EnrichedMarkdownText.mm
+index 1b3841713a0f50789ad338aa3fe5f95adcd66476..a2ba2279e62ef1d09b273518517e946ce228fa38 100644
+--- a/ios/EnrichedMarkdownText.mm
++++ b/ios/EnrichedMarkdownText.mm
+@@ -91,6 +91,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
+   BOOL _enableImagePress;
+   BOOL _enableCodeBlockPress;
+   BOOL _streamingAnimation;
++  BOOL _animateFinalText;
+   BOOL _forceHeightUpdateOnNextRender;
+ 
+   size_t _renderedStyleFingerprint;
+@@ -554,7 +555,9 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
+     dispatch_async(dispatch_get_main_queue(), ^{ self->_textView.hidden = NO; });
+   }
+ 
+-  if (_streamingAnimation) {
++  [_fadeAnimator restore];
++  if (_streamingAnimation || _animateFinalText) {
++    _animateFinalText = NO;
+     if (!_fadeAnimator) {
+       _fadeAnimator = [[ENRMTailFadeInAnimator alloc] initWithTextView:_textView];
+     }
+@@ -703,12 +706,9 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
+ 
+   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
+     _streamingAnimation = newViewProps.streamingAnimation;
++    _animateFinalText = !_streamingAnimation;
+     if (_streamingAnimation) {
+       _previousTextLength = ENRMGetAttributedText(_textView).length;
+-    } else {
+-      [_fadeAnimator cancel];
+-      _fadeAnimator = nil;
+-      _previousTextLength = 0;
+     }
+   }
+ 
+@@ -791,6 +791,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
+   _fadeAnimator = nil;
+   _previousTextLength = 0;
+   _streamingAnimation = NO;
++  _animateFinalText = NO;
+   _forceHeightUpdateOnNextRender = NO;
+   _cachedMarkdown = nil;
+   _renderedMarkdown = nil;
 diff --git a/ios/utils/CodeBackground.m b/ios/utils/CodeBackground.m
 index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..443dd054b2b27375363c9979f818f57db20ef79f 100644
 --- a/ios/utils/CodeBackground.m
@@ -260,8 +358,20 @@ index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..443dd054b2b27375363c9979f818f57d
                                   [self drawBackgroundAndBorders:finalRect
                                                  backgroundColor:backgroundColor
                                                      borderColor:borderColor
+diff --git a/ios/utils/ENRMTailFadeInAnimator.h b/ios/utils/ENRMTailFadeInAnimator.h
+index 0be4fa8daea7d85408f6aa158084a15a4464b583..700d9ff20862af88d6263a661874c9f6cc76a5eb 100644
+--- a/ios/utils/ENRMTailFadeInAnimator.h
++++ b/ios/utils/ENRMTailFadeInAnimator.h
+@@ -9,6 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
+ - (instancetype)initWithTextView:(ENRMPlatformTextView *)textView;
+ 
+ - (void)animateFrom:(NSUInteger)tailStart to:(NSUInteger)tailEnd;
++- (void)restore;
+ - (void)cancel;
+ 
+ @end
 diff --git a/ios/utils/ENRMTailFadeInAnimator.m b/ios/utils/ENRMTailFadeInAnimator.m
-index 5c4c3bafd6abb00030a1a3689695f3d9d9113408..5d0df7d23d28e91d3162aaaa7379347963584947 100644
+index 5c4c3bafd6abb00030a1a3689695f3d9d9113408..48c65f527983fb6bb21004ce4077437c2520823c 100644
 --- a/ios/utils/ENRMTailFadeInAnimator.m
 +++ b/ios/utils/ENRMTailFadeInAnimator.m
 @@ -3,23 +3,23 @@
@@ -306,7 +416,7 @@ index 5c4c3bafd6abb00030a1a3689695f3d9d9113408..5d0df7d23d28e91d3162aaaa73793479
    }
    return self;
  }
-@@ -35,127 +36,85 @@ typedef struct {
+@@ -35,104 +36,81 @@ typedef struct {
  {
  #if !TARGET_OS_OSX
    [_displayLink invalidate];
@@ -430,7 +540,8 @@ index 5c4c3bafd6abb00030a1a3689695f3d9d9113408..5d0df7d23d28e91d3162aaaa73793479
  }
  
 -- (void)snapshotColorsInRange:(NSRange)range storage:(NSTextStorage *)storage
--{
++- (void)restore
+ {
 -  [self cleanupEntries];
 -
 -  NSMutableArray<RCTUIColor *> *colors = [NSMutableArray array];
@@ -451,11 +562,11 @@ index 5c4c3bafd6abb00030a1a3689695f3d9d9113408..5d0df7d23d28e91d3162aaaa73793479
 -    _colorEntries[i].color = _retainedColors[i];
 -    _colorEntries[i].range = [ranges[i] rangeValue];
 -  }
--}
--
++  if (_entries.count > 0) [self updateAtTime:CACurrentMediaTime() finish:NO];
+ }
+ 
  - (void)cancel
- {
- #if !TARGET_OS_OSX
+@@ -141,21 +119,7 @@ typedef struct {
    [_displayLink invalidate];
    _displayLink = nil;
  #endif
