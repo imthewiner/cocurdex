@@ -57,6 +57,7 @@ import {
 } from "./chat-message";
 import { isReasoningMessage } from "./chat-message-utils";
 import {
+  getSegmentGroupKey,
   getSegmentKey,
   groupActivityWithFollowingItem,
 } from "./chat-segment-groups";
@@ -783,7 +784,7 @@ export const ChatConversationItem = memo(function ChatConversationItem({
           {groupActivityWithFollowingItem(segments).map((group) => (
             <div
               className="flex flex-col gap-0.5"
-              key={getSegmentKey(group[0])}
+              key={getSegmentGroupKey(group)}
             >
               {group.map((segment) => {
                 if (segment.kind === "item") {
