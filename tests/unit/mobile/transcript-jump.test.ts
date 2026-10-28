@@ -28,19 +28,19 @@ describe("nextJumpState", () => {
   });
 
   it("offers the oldest message after the viewer scrolls near the latest", () => {
-    expect(nextJumpState(scrolled, at(100), CONTENT - VIEWPORT, 20).kind).toBe(
+    expect(nextJumpState(scrolled, at(4), CONTENT - VIEWPORT, 20).kind).toBe(
       "top",
     );
   });
 
-  it("mirrors the scroll direction in the middle of a long transcript", () => {
+  it("keeps the latest-content entry available while reading history", () => {
     const towardOlder = nextJumpState(
       scrolled,
       at(4000),
       CONTENT - VIEWPORT - 3000,
       20,
     );
-    expect(towardOlder.kind).toBe("top");
+    expect(towardOlder.kind).toBe("latest");
     const towardLatest = nextJumpState(
       towardOlder,
       at(3000),

@@ -58,7 +58,7 @@ async function main() {
       const reply = Array.from(
         { length: 40 },
         (_, index) =>
-          `### Section ${index + 1}\n\nStable reading position. New content fills the available space, then follows the bottom. Manual scrolling pauses following.\n`,
+          `### Section ${index + 1}\n\nStable reading position. New content grows below the viewport without moving the reader. Jumping to the bottom is always a manual action.\n`,
       ).join("\n");
       await daemon.createReplyingSession("Top and follow check", reply);
     }

@@ -7,11 +7,13 @@ import { useVerticalDrag } from "./use-vertical-drag";
 // exclusive, so they share one fixed slot. Draggable vertically to reposition.
 // Shared by agent ChatView and pure-chat ConversationDetail.
 export function JumpControls({
+  streaming = false,
   showJumpToTop,
   showJumpToLatest,
   onJumpToTop,
   onJumpToLatest,
 }: {
+  streaming?: boolean;
   showJumpToTop: boolean;
   showJumpToLatest: boolean;
   onJumpToTop(): void;
@@ -70,7 +72,13 @@ export function JumpControls({
         onClick={() => handleClick(onJump)}
         type="button"
       >
-        <Icon className="size-4" />
+        <Icon
+          className={
+            streaming && showJumpToLatest
+              ? "size-4 motion-safe:animate-pulse"
+              : "size-4"
+          }
+        />
       </button>
     </div>
   );

@@ -52,14 +52,14 @@ export function TranscriptList({
   const navigation = useRef({
     sentMessageId,
     target: sentMessageId,
-    follow: true,
+    initialPosition: !sentMessageId,
     retries: 0,
   });
   if (navigation.current.sentMessageId !== sentMessageId) {
     navigation.current = {
       sentMessageId,
       target: sentMessageId,
-      follow: true,
+      initialPosition: false,
       retries: 0,
     };
   }
@@ -81,11 +81,10 @@ export function TranscriptList({
             0,
             metrics.current.contentHeight -
               latestLayout.current.height -
-              space.md,
+              space.md * 2,
           ),
           animated: false,
         });
-        state.target = undefined;
       } else if (index >= 0) {
         indexFailed.current = false;
         list.current?.scrollToIndex({
@@ -96,7 +95,13 @@ export function TranscriptList({
         });
         if (!indexFailed.current) state.target = undefined;
       }
-    } else if (state.follow && metrics.current) {
+    } else if (
+      state.initialPosition &&
+      metrics.current &&
+      latest &&
+      latestLayout.current?.id === latest.id
+    ) {
+      state.initialPosition = false;
       list.current?.scrollToOffset({
         offset: Math.max(
           0,
@@ -109,7 +114,7 @@ export function TranscriptList({
   useImperativeHandle(ref, () => ({
     jumpToItem(id) {
       navigation.current.target = id;
-      navigation.current.follow = false;
+      navigation.current.initialPosition = false;
       navigation.current.retries = 0;
       align();
     },
@@ -127,7 +132,7 @@ export function TranscriptList({
   };
   const jumpToLatest = () => {
     navigation.current.target = undefined;
-    navigation.current.follow = true;
+    navigation.current.initialPosition = false;
     const current = metrics.current;
     if (current)
       list.current?.scrollToOffset({
@@ -137,7 +142,7 @@ export function TranscriptList({
   };
   const jumpToOldest = () => {
     navigation.current.target = undefined;
-    navigation.current.follow = false;
+    navigation.current.initialPosition = false;
     list.current?.scrollToOffset({
       offset: 0,
       animated: metrics.current !== null && !isFarFromOldest(metrics.current),
@@ -158,25 +163,9 @@ export function TranscriptList({
         onScroll={onScroll}
         onScrollBeginDrag={() => {
           navigation.current.target = undefined;
-          navigation.current.follow = false;
+          navigation.current.initialPosition = false;
           indicator.onScrollBeginDrag();
           setJump((current) => ({ ...current, userScrolled: true }));
-        }}
-        onScrollEndDrag={(event) => {
-          indicator.onScrollEndDrag();
-          const { contentOffset, contentSize, layoutMeasurement } =
-            event.nativeEvent;
-          navigation.current.follow =
-            contentSize.height - layoutMeasurement.height - contentOffset.y <=
-            24;
-        }}
-        onMomentumScrollEnd={(event) => {
-          indicator.onMomentumScrollEnd();
-          const { contentOffset, contentSize, layoutMeasurement } =
-            event.nativeEvent;
-          navigation.current.follow =
-            contentSize.height - layoutMeasurement.height - contentOffset.y <=
-            24;
         }}
         onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
         onContentSizeChange={(_width, height) => {
@@ -235,6 +224,9 @@ export function TranscriptList({
       {jump.kind ? (
         <JumpButton
           target={jump.kind}
+          streaming={items.some(
+            (item) => item.kind === "assistant" && item.streaming,
+          )}
           unseen={jump.kind === "latest" && hasUnseenLatest(jump, items.length)}
           onPress={jump.kind === "latest" ? jumpToLatest : jumpToOldest}
         />

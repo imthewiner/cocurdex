@@ -77,35 +77,6 @@ export function isViewportAtBottom(viewport: HTMLDivElement) {
   );
 }
 
-/**
- * Whether the viewport should keep following the stream after a scroll.
- * Manual scrolling outranks following: while the viewer is actively scrolling,
- * only a deliberate return to the very bottom re-arms it.
- */
-export function resolveStickToBottom({
-  hasRecentUserScrollIntent,
-  isAtBottom,
-  isNearBottom,
-  scrollDelta,
-  wasSticking,
-}: {
-  hasRecentUserScrollIntent: boolean;
-  isAtBottom: boolean;
-  isNearBottom: boolean;
-  scrollDelta: number;
-  wasSticking: boolean;
-}): boolean {
-  if (!isNearBottom && scrollDelta < 0) {
-    return false;
-  }
-
-  if (hasRecentUserScrollIntent) {
-    return isAtBottom;
-  }
-
-  return isNearBottom ? true : wasSticking;
-}
-
 export function isViewportNearTop(viewport: HTMLDivElement) {
   return isScrollNearTop(viewport.scrollTop, SCROLL_BOTTOM_THRESHOLD);
 }

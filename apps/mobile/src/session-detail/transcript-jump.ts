@@ -41,7 +41,7 @@ export function transcriptEdges({
 }: ScrollMetrics) {
   const threshold = viewportHeight;
   return {
-    nearLatest: contentHeight - viewportHeight - offset <= threshold,
+    nearLatest: contentHeight - viewportHeight - offset <= 8,
     nearOldest: offset <= threshold,
   };
 }
@@ -59,13 +59,16 @@ export function nextJumpState(
       )
     : state.direction;
   const { nearLatest, nearOldest } = transcriptEdges(metrics);
-  const kind = resolveJumpButton({
-    isReady: itemCount > 0,
-    hasUserScrolled: state.userScrolled,
-    isNearTop: nearOldest,
-    isNearBottom: nearLatest,
-    scrollDirection: direction,
-  });
+  const kind =
+    !nearLatest && itemCount > 0
+      ? "latest"
+      : resolveJumpButton({
+          isReady: itemCount > 0,
+          hasUserScrolled: state.userScrolled,
+          isNearTop: nearOldest,
+          isNearBottom: nearLatest,
+          scrollDirection: direction,
+        });
   const awayFromLatestAt = nearLatest
     ? null
     : (state.awayFromLatestAt ?? itemCount);

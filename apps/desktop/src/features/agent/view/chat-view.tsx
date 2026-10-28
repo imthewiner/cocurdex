@@ -244,6 +244,7 @@ export function ChatView({
   );
   const {
     activeUserMessageId,
+    finishInitialPositioning,
     hasUserScrolled,
     isNearBottom,
     isNearTop,
@@ -251,7 +252,7 @@ export function ChatView({
     markUserScrollIntent,
     markUserScrollStart,
     holdForDisclosure,
-    stickToBottomIfLocked,
+    syncViewportLayout,
     scrollToLatest,
     scrollToTop,
     scrollToUserMessage,
@@ -295,15 +296,16 @@ export function ChatView({
   );
   const activeUserNavigationMessageId =
     activeUserMessageId ?? stickyUserMessages.at(-1)?.id ?? null;
-  // One mutually-exclusive jump button. At the edges it points to the opposite
-  // end; in the middle it mirrors the scroll direction.
-  const jumpButton = resolveJumpButton({
-    isReady: isInitialBottomSettled && timelineGroups.length > 0,
-    hasUserScrolled,
-    isNearTop,
-    isNearBottom,
-    scrollDirection,
-  });
+  const jumpButton =
+    !isNearBottom && isInitialBottomSettled
+      ? "latest"
+      : resolveJumpButton({
+          isReady: isInitialBottomSettled && timelineGroups.length > 0,
+          hasUserScrolled,
+          isNearTop,
+          isNearBottom,
+          scrollDirection,
+        });
   const shouldShowJumpToLatest = jumpButton === "latest";
   const shouldShowJumpToTop = jumpButton === "top";
   // Latest values for diagnostics only — kept in a ref so the scroll handler
@@ -342,9 +344,10 @@ export function ChatView({
     isContentReady,
     isContentReadyNow: renderReadiness.isReady,
     isRunning,
+    finishInitialPositioning,
     setInitialBottomSettled: setIsInitialBottomSettled,
     status,
-    stickToBottomIfLocked,
+    syncViewportLayout,
     stickyUserMessages,
     syncScrollState,
     timelineGroupCount: timelineGroups.length,
@@ -467,6 +470,7 @@ export function ChatView({
           </ScrollArea>
         </RenderReadinessContext>
         <JumpControls
+          streaming={isRunning && shouldShowJumpToLatest}
           onJumpToLatest={scrollToLatest}
           onJumpToTop={scrollToTop}
           showJumpToLatest={shouldShowJumpToLatest}

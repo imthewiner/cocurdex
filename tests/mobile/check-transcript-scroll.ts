@@ -9,10 +9,7 @@ interface Node {
 }
 
 async function nodes(file: string | undefined): Promise<Node[]> {
-  assert(
-    file,
-    "Expected initial, filled, paused-before, paused-after, resumed snapshots",
-  );
+  assert(file, "Expected initial, filled, jumped, after-jump snapshots");
   const snapshot = JSON.parse(await readFile(file, "utf8"));
   assert(snapshot.success, `Snapshot failed: ${file}`);
   return snapshot.data.nodes;
@@ -28,10 +25,10 @@ function lastSection(snapshot: Node[]) {
   return Math.max(...values);
 }
 
-const [initial, filled, pausedBefore, pausedAfter, resumed] = await Promise.all(
-  Array.from({ length: 5 }, (_, index) => nodes(process.argv[index + 2])),
+const [initial, filled, jumped, afterJump] = await Promise.all(
+  Array.from({ length: 4 }, (_, index) => nodes(process.argv[index + 2])),
 );
-assert(initial && filled && pausedBefore && pausedAfter && resumed);
+assert(initial && filled && jumped && afterJump);
 const prompt = initial.find((node) =>
   node.identifier?.startsWith("transcript-user-"),
 );
@@ -45,19 +42,32 @@ assert(
   prompt.rect.y - viewport.rect.y < viewport.rect.height * 0.1,
   "Sent prompt must start near the top",
 );
+const filledPrompt = filled.find(
+  (node) => node.identifier === prompt.identifier,
+);
+assert(filledPrompt, "Stream growth must leave the sent prompt visible");
+assert.deepEqual(
+  filledPrompt.rect,
+  prompt.rect,
+  "Crossing the viewport boundary must preserve the prompt position",
+);
+for (const section of sections(initial)) {
+  const current = sections(filled).find((node) => node.label === section.label);
+  assert.deepEqual(
+    current?.rect,
+    section.rect,
+    "Streaming must preserve existing section positions",
+  );
+}
 assert(
-  lastSection(filled) > lastSection(initial),
-  "Filling the viewport must advance the visible tail",
+  lastSection(jumped) > lastSection(filled),
+  "Explicit jump must reveal newer content",
 );
 assert.deepEqual(
-  sections(pausedBefore).map(({ label, rect }) => ({ label, rect })),
-  sections(pausedAfter).map(({ label, rect }) => ({ label, rect })),
-  "Incoming text must not move the viewport after a manual scroll",
-);
-assert(
-  lastSection(resumed) > lastSection(pausedAfter),
-  "Jump to latest must resume following",
+  sections(jumped).map(({ label, rect }) => ({ label, rect })),
+  sections(afterJump).map(({ label, rect }) => ({ label, rect })),
+  "Incoming text must not move the viewport after a manual jump",
 );
 process.stdout.write(
-  `${JSON.stringify({ promptY: prompt.rect.y, initialSection: lastSection(initial), filledSection: lastSection(filled), resumedSection: lastSection(resumed), pausedPositionStable: true })}\n`,
+  `${JSON.stringify({ promptY: prompt.rect.y, filledSection: lastSection(filled), jumpedSection: lastSection(jumped), positionStable: true })}\n`,
 );

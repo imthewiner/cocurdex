@@ -6,6 +6,7 @@ import { check, readScenarioArgs, runScenario } from "./lib/app-session.mjs";
 import { clearColorScheme, emulateColorScheme } from "./lib/appearance.mjs";
 import { daemonRequest } from "./lib/daemon-rpc.mjs";
 import { clickByRole } from "./lib/locate.mjs";
+import { translate } from "./lib/navigate.mjs";
 
 const require = createRequire(new URL("../e2e/package.json", import.meta.url));
 const { tsImport } = await import(require.resolve("tsx/esm/api"));
@@ -39,6 +40,19 @@ function startRecorder() {
     if (!record.done) requestAnimationFrame(sample);
   };
   requestAnimationFrame(sample);
+}
+
+function readingState() {
+  const viewport = [
+    ...document.querySelectorAll("[data-slot=scroll-area-viewport]"),
+  ].find((node) => node.querySelector("[data-testid=chat-timeline]"));
+  if (!viewport) return null;
+  return {
+    top: viewport.scrollTop,
+    height: viewport.scrollHeight,
+    viewport: viewport.clientHeight,
+    length: viewport.textContent.length,
+  };
 }
 
 runScenario("chat-streaming", {
@@ -216,6 +230,146 @@ runScenario("chat-streaming", {
             maxGrowth,
             maxFading,
           });
+        }
+        await clearColorScheme(session);
+        return { themes: reports };
+      },
+    ],
+    [
+      "stream growth preserves reading position before and after a manual jump",
+      async ({ session, workspaceId, providerSnapshot }) => {
+        const reports = [];
+        const jumpLabel = await translate(session, "common:jumpToLatest");
+        for (const theme of ["light", "dark"]) {
+          await emulateColorScheme(session, theme);
+          const title = `Reading control ${theme}`;
+          const configured = await daemonRequest(session, "session.configure", {
+            id: crypto.randomUUID(),
+            workspaceId,
+            sessionKind: "main",
+            title,
+            agentType: "pi",
+            writeMode: "read-only",
+            sessionModeId: null,
+            providerSnapshot,
+          });
+          await clickByRole(
+            session,
+            { role: "button", name: new RegExp(`^${title}`) },
+            30_000,
+          );
+          const text = `${Array.from(
+            { length: 70 },
+            (_, index) =>
+              `Reading section ${index + 1}. New content must not move the reader's viewport while this reply grows.\n\n`,
+          ).join("")}Reading control finished.`;
+          stub.plan = {
+            kind: "stream",
+            chunks: text.match(/[\s\S]{1,24}/g),
+            intervalMs: 80,
+          };
+          await daemonRequest(session, "session.send", {
+            sessionId: configured.id,
+            messageId: crypto.randomUUID(),
+            content: "Check manual reading control.",
+            attachments: [],
+          });
+          await session.waitUntil(
+            () => {
+              const viewport = [
+                ...document.querySelectorAll(
+                  "[data-slot=scroll-area-viewport]",
+                ),
+              ].find((node) =>
+                node.querySelector("[data-testid=chat-timeline]"),
+              );
+              return (
+                viewport && viewport.scrollHeight > viewport.clientHeight * 1.5
+              );
+            },
+            null,
+            30_000,
+          );
+          const before = await session.run(readingState);
+          await session.waitUntil(
+            (length) => {
+              const viewport = [
+                ...document.querySelectorAll(
+                  "[data-slot=scroll-area-viewport]",
+                ),
+              ].find((node) =>
+                node.querySelector("[data-testid=chat-timeline]"),
+              );
+              return viewport && viewport.textContent.length > length + 400;
+            },
+            before.length,
+            30_000,
+          );
+          const grown = await session.run(readingState);
+          check(
+            Math.abs(grown.top - before.top) <= 1,
+            "stream moved the reading position",
+            { before, grown },
+          );
+          const pulse = await session.run((label) => {
+            const button = [...document.querySelectorAll("button")].find(
+              (node) => node.getAttribute("aria-label") === label,
+            );
+            const icon = button?.querySelector("svg");
+            return icon ? getComputedStyle(icon).animationName : null;
+          }, jumpLabel);
+          check(pulse === "pulse", "offscreen streaming icon is not animated", {
+            pulse,
+          });
+          await clickByRole(session, { role: "button", name: jumpLabel });
+          const jumped = await session.run(readingState);
+          check(
+            jumped.top > grown.top,
+            "explicit jump did not reach new content",
+            { grown, jumped },
+          );
+          await session.waitUntil(
+            (length) => {
+              const viewport = [
+                ...document.querySelectorAll(
+                  "[data-slot=scroll-area-viewport]",
+                ),
+              ].find((node) =>
+                node.querySelector("[data-testid=chat-timeline]"),
+              );
+              return viewport && viewport.textContent.length > length + 400;
+            },
+            jumped.length,
+            30_000,
+          );
+          const afterJump = await session.run(readingState);
+          check(
+            Math.abs(afterJump.top - jumped.top) <= 1,
+            "manual jump rearmed automatic following",
+            { jumped, afterJump },
+          );
+          await session.waitUntil(
+            () =>
+              document.body.textContent.includes("Reading control finished."),
+            null,
+            60_000,
+          );
+          await session.waitUntil(
+            () => document.querySelectorAll("[data-streaming]").length === 0,
+            null,
+            30_000,
+          );
+          const stopped = await session.run((label) => {
+            const button = [...document.querySelectorAll("button")].find(
+              (node) => node.getAttribute("aria-label") === label,
+            );
+            const icon = button?.querySelector("svg");
+            return icon ? getComputedStyle(icon).animationName : null;
+          }, jumpLabel);
+          check(stopped === "none", "completed reply kept the icon animated", {
+            stopped,
+          });
+          reports.push({ theme, before, grown, jumped, afterJump });
         }
         await clearColorScheme(session);
         return { themes: reports };
