@@ -194,16 +194,19 @@ export function useOpenLink(
 
 const MarkdownBlock = memo(function MarkdownBlock({
   markdown,
+  streaming,
   style,
   onOpenLink,
 }: {
   markdown: string;
+  streaming: boolean;
   style: MarkdownStyle;
   onOpenLink(url: string): void;
 }) {
   return (
     <EnrichedMarkdownText
       markdown={markdown}
+      streamingAnimation={streaming}
       flavor="github"
       markdownStyle={style}
       selectable={false}
@@ -237,11 +240,13 @@ function useFileLinkedMarkdown(
 
 function SegmentView({
   block,
+  streaming,
   style,
   hostId,
   onOpenLink,
 }: {
   block: StreamingBlock;
+  streaming: boolean;
   style: MarkdownStyle;
   hostId: string | undefined;
   onOpenLink(url: string): void;
@@ -255,6 +260,7 @@ function SegmentView({
     return (
       <MarkdownBlock
         markdown={block.text}
+        streaming={streaming}
         style={style}
         onOpenLink={onOpenLink}
       />
@@ -266,6 +272,7 @@ function SegmentView({
       fallback={
         <MarkdownBlock
           markdown={`~~~~\n${block.source}\n~~~~`}
+          streaming={false}
           style={style}
           onOpenLink={onOpenLink}
         />
@@ -313,6 +320,7 @@ export function MarkdownText({
         <SegmentView
           key={block.key}
           block={block}
+          streaming={streaming}
           style={style}
           hostId={hostId}
           onOpenLink={openLink}
