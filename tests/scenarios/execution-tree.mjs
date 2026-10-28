@@ -71,7 +71,7 @@ function describeTree(tree) {
     left.session.title.localeCompare(right.session.title),
   );
   return {
-    earlierRun: runs[0],
+    earlierRun: runs.find((run) => run !== latest && run.toolCalls.length > 0),
     emptyRun: runs.find((run) => run.toolCalls.length === 0),
     latestRun: latest,
     healthyCall: latest.toolCalls.find(
@@ -96,7 +96,10 @@ runScenario("execution-tree", {
     check(Boolean(tree), "fixture team session missing");
     const shape = describeTree(tree);
     check(
-      shape.teammates.length === 2 && shape.failedCall && shape.emptyRun,
+      shape.teammates.length === 2 &&
+        shape.failedCall &&
+        shape.emptyRun &&
+        shape.earlierRun,
       "fixture team session has an unexpected shape",
       shape,
     );
