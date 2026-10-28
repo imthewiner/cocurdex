@@ -55,6 +55,24 @@ function readingState() {
   };
 }
 
+function jumpControlLayout(label) {
+  const button = [...document.querySelectorAll("button")].find(
+    (node) => node.getAttribute("aria-label") === label,
+  );
+  const viewport = [
+    ...document.querySelectorAll("[data-slot=scroll-area-viewport]"),
+  ].find((node) => node.querySelector("[data-testid=chat-timeline]"));
+  if (!button || !viewport) return null;
+  const control = button.getBoundingClientRect();
+  const area = viewport.getBoundingClientRect();
+  return {
+    centerOffset: control.x + control.width / 2 - area.x - area.width / 2,
+    bottomGap: area.bottom - control.bottom,
+    width: control.width,
+    height: control.height,
+  };
+}
+
 runScenario("chat-streaming", {
   open: () => openScenarioApp(args, { fixtureDb: true }),
   setup: async ({ session }) => {
@@ -321,6 +339,17 @@ runScenario("chat-streaming", {
           check(pulse === "pulse", "offscreen streaming icon is not animated", {
             pulse,
           });
+          const jumpLayout = await session.run(jumpControlLayout, jumpLabel);
+          check(
+            jumpLayout && Math.abs(jumpLayout.centerOffset) <= 1,
+            "jump control must be centered over the conversation",
+            jumpLayout,
+          );
+          check(
+            jumpLayout.bottomGap >= 12 && jumpLayout.bottomGap <= 24,
+            "jump control must sit just above the composer",
+            jumpLayout,
+          );
           await clickByRole(session, { role: "button", name: jumpLabel });
           const jumped = await session.run(readingState);
           check(
@@ -369,7 +398,98 @@ runScenario("chat-streaming", {
           check(stopped === "none", "completed reply kept the icon animated", {
             stopped,
           });
-          reports.push({ theme, before, grown, jumped, afterJump });
+          const artifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
+          if (artifacts) {
+            const shot = await session.send("Page.captureScreenshot", {
+              format: "png",
+            });
+            await writeFile(
+              path.join(artifacts, `jump-control-${theme}.png`),
+              Buffer.from(shot.data, "base64"),
+            );
+          }
+          const resizedLayouts = [];
+          const topLabel = await translate(session, "common:jumpToTop");
+          for (const width of [960, 1280]) {
+            await session.send("Emulation.setDeviceMetricsOverride", {
+              width,
+              height: 800,
+              deviceScaleFactor: 1,
+              mobile: false,
+            });
+            await session.waitUntil(
+              (width) => window.innerWidth === width,
+              width,
+            );
+            await clickByRole(session, { role: "button", name: jumpLabel });
+            const point = await session.run(() => {
+              const area = [
+                ...document.querySelectorAll(
+                  "[data-slot=scroll-area-viewport]",
+                ),
+              ]
+                .find((node) =>
+                  node.querySelector("[data-testid=chat-timeline]"),
+                )
+                .getBoundingClientRect();
+              return {
+                x: area.x + area.width / 2,
+                y: area.y + area.height / 2,
+              };
+            });
+            await session.send("Input.dispatchMouseEvent", {
+              type: "mouseWheel",
+              ...point,
+              deltaX: 0,
+              deltaY: 20,
+            });
+            await session.waitUntil(
+              (label) =>
+                [...document.querySelectorAll("button")].some(
+                  (node) => node.getAttribute("aria-label") === label,
+                ),
+              topLabel,
+            );
+            const topLayout = await session.run(jumpControlLayout, topLabel);
+            check(
+              Math.abs(topLayout.centerOffset) <= 1 &&
+                topLayout.bottomGap === 16,
+              "top control must retain the centered slot after resize",
+              { width, topLayout },
+            );
+            await clickByRole(session, { role: "button", name: topLabel });
+            await session.waitUntil(() => {
+              const viewport = [
+                ...document.querySelectorAll(
+                  "[data-slot=scroll-area-viewport]",
+                ),
+              ].find((node) =>
+                node.querySelector("[data-testid=chat-timeline]"),
+              );
+              return viewport?.scrollTop === 0;
+            });
+            const latestLayout = await session.run(
+              jumpControlLayout,
+              jumpLabel,
+            );
+            check(
+              Math.abs(latestLayout.centerOffset) <= 1 &&
+                latestLayout.bottomGap === topLayout.bottomGap,
+              "both directions must share the same slot",
+              { width, topLayout, latestLayout },
+            );
+            resizedLayouts.push({ width, topLayout, latestLayout });
+          }
+          await session.send("Emulation.clearDeviceMetricsOverride");
+          reports.push({
+            theme,
+            before,
+            grown,
+            jumped,
+            afterJump,
+            jumpLayout,
+            resizedLayouts,
+          });
         }
         await clearColorScheme(session);
         return { themes: reports };
