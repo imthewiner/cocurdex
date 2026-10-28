@@ -1,5 +1,5 @@
 diff --git a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdown.kt b/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdown.kt
-index b6b38b4cc1a37eacf53f48f940608ed7ead26f93..8394f4497eaa302286d947ed758a361ae9a1c4e9 100644
+index b6b38b4cc1a37eacf53f48f940608ed7ead26f93..a113f6ecec1e4b45446383930fb62a03ff400929 100644
 --- a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdown.kt
 +++ b/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdown.kt
 @@ -37,6 +37,7 @@ import com.swmansion.enriched.markdown.utils.text.view.ImagePressHost
@@ -10,28 +10,46 @@ index b6b38b4cc1a37eacf53f48f940608ed7ead26f93..8394f4497eaa302286d947ed758a361a
  import java.util.EnumSet
  import java.util.concurrent.ExecutorService
  import java.util.concurrent.Executors
-@@ -58,7 +59,15 @@ class EnrichedMarkdown(
+@@ -58,7 +59,14 @@ class EnrichedMarkdown(
  
    private var currentRenderId = 0L
    private val dirtyFlags = EnumSet.noneOf(DirtyFlag::class.java)
 +  private val tailAnimators = WeakHashMap<EnrichedMarkdownInternalText, TailFadeInAnimator>()
++  private var animateFinalText = false
    var streamingAnimation: Boolean = false
 +    set(value) {
++      if (field == value) return
++      animateFinalText = !value
 +      field = value
-+      if (!value) {
-+        tailAnimators.values.forEach { it.cancelAll() }
-+        tailAnimators.clear()
-+      }
 +    }
  
    // used to force a Yoga re-measure when a block image resolves its box height
    var stateWrapper: StateWrapper? = null
-@@ -595,9 +604,11 @@ class EnrichedMarkdown(
+@@ -430,6 +438,7 @@ class EnrichedMarkdown(
+     dirtyFlags.clear()
+ 
+     val topologyChanged = applySegments(renderedSegments, reset)
++    animateFinalText = false
+ 
+     // A just-closed block has unchanged content, so the reconciler reuses it
+     // without an update; sync pending here to trigger its deferred highlight.
+@@ -576,7 +585,7 @@ class EnrichedMarkdown(
+       view: View,
+       segment: RenderedSegment,
+     ) {
+-      if (!streamingAnimation) return
++      if (!streamingAnimation && !animateFinalText) return
+       when (segment) {
+         is RenderedSegment.Text -> animateTextViewTail(view as EnrichedMarkdownInternalText, 0)
+ 
+@@ -594,14 +603,16 @@ class EnrichedMarkdown(
+     view: EnrichedMarkdownInternalText,
      tailStart: Int,
    ) {
-     if (!streamingAnimation) return
+-    if (!streamingAnimation) return
++    tailAnimators[view]?.restore()
++    if (!streamingAnimation && !animateFinalText) return
 +    val animator = tailAnimators.getOrPut(view) { TailFadeInAnimator(view) }
-+    animator.restore()
      val textLength = view.text?.length ?: 0
      if (textLength <= tailStart) return
 -    TailFadeInAnimator(view).animate(tailStart, textLength)
@@ -39,6 +57,21 @@ index b6b38b4cc1a37eacf53f48f940608ed7ead26f93..8394f4497eaa302286d947ed758a361a
    }
  
    private fun animateBlockViewFadeIn(view: View) {
+-    if (!streamingAnimation) return
++    if (!streamingAnimation && !animateFinalText) return
+     if (isReducedMotionEnabled(context)) return
+     view.alpha = 0f
+     view
+@@ -643,6 +654,9 @@ class EnrichedMarkdown(
+   }
+ 
+   fun cleanup() {
++    tailAnimators.values.forEach { it.cancelAll() }
++    tailAnimators.clear()
++    animateFinalText = false
+     executor.shutdownNow()
+   }
+ 
 diff --git a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt b/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt
 index f3bb9122d27d80746b9b8ed07ca5247f080a25d0..28afa462339a59572108d239606e0981580971d2 100644
 --- a/android/src/main/java/com/swmansion/enriched/markdown/EnrichedMarkdownText.kt
@@ -275,6 +308,84 @@ index c0460a14cedf0b7699a924243ce56bae648d6f8a..0277880283c189f43410db7895d7b4de
 +    private const val FADE_DURATION_MS = 400L
    }
  }
+diff --git a/ios/EnrichedMarkdown.mm b/ios/EnrichedMarkdown.mm
+index b7edde7a019a91eac7c2e78eacab2654106d607b..08ef2a42618b43be75e25cc21d7ea078ba4119fe 100644
+--- a/ios/EnrichedMarkdown.mm
++++ b/ios/EnrichedMarkdown.mm
+@@ -117,6 +117,7 @@ static char kENRMSegmentFadeAnimatorKey;
+   BOOL _enableTaskListItemToggle;
+   BOOL _enableImagePress;
+   BOOL _streamingAnimation;
++  BOOL _animateFinalText;
+   ENRMTableStreamingMode _tableStreamingMode;
+   ENRMCodeBlockStreamingMode _codeBlockStreamingMode;
+   // Trailing code block whose closing fence hasn't streamed in yet, if any.
+@@ -204,6 +205,7 @@ static char kENRMSegmentFadeAnimatorKey;
+     _enableImagePress = NO;
+     _dynamicBlockProps = [[ENRMDynamicBlockProps alloc] init];
+     _streamingAnimation = NO;
++  _animateFinalText = NO;
+     _tableStreamingMode = ENRMTableStreamingModeProgressive;
+     _codeBlockStreamingMode = ENRMCodeBlockStreamingModeProgressive;
+     _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
+@@ -859,6 +861,7 @@ static char kENRMSegmentFadeAnimatorKey;
+ 
+   _segmentViews = result.views;
+   _segmentSignatures = result.signatures;
++  _animateFinalText = NO;
+ 
+   // A just-closed block has unchanged content, so the reconciler reuses it
+   // without an update; sync pending here to trigger its deferred highlight.
+@@ -1017,7 +1020,7 @@ static char kENRMSegmentFadeAnimatorKey;
+ 
+ - (void)animateBlockViewIfNeeded:(RCTUIView *)view
+ {
+-  if (!_streamingAnimation)
++  if (!_streamingAnimation && !_animateFinalText)
+     return;
+ 
+ #if !TARGET_OS_OSX
+@@ -1031,10 +1034,10 @@ static char kENRMSegmentFadeAnimatorKey;
+ 
+ - (void)animateTextView:(EnrichedMarkdownInternalText *)view fromTailStart:(NSUInteger)tailStart
+ {
+-  if (!_streamingAnimation)
+-    return;
+-
+   ENRMTailFadeInAnimator *animator = objc_getAssociatedObject(view.textView, &kENRMSegmentFadeAnimatorKey);
++  [animator restore];
++  if (!_streamingAnimation && !_animateFinalText)
++    return;
+   if (!animator) {
+     animator = [[ENRMTailFadeInAnimator alloc] initWithTextView:view.textView];
+     objc_setAssociatedObject(view.textView, &kENRMSegmentFadeAnimatorKey, animator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+@@ -1150,17 +1153,7 @@ static char kENRMSegmentFadeAnimatorKey;
+   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
+     _streamingAnimation = newViewProps.streamingAnimation;
+     _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
+-    if (!_streamingAnimation) {
+-      for (RCTUIView *segment in _segmentViews) {
+-        if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {
+-          ENRMTailFadeInAnimator *animator = objc_getAssociatedObject(
+-              ((EnrichedMarkdownInternalText *)segment).textView, &kENRMSegmentFadeAnimatorKey);
+-          [animator cancel];
+-          objc_setAssociatedObject(((EnrichedMarkdownInternalText *)segment).textView, &kENRMSegmentFadeAnimatorKey,
+-                                   nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+-        }
+-      }
+-    }
++    _animateFinalText = !_streamingAnimation;
+   }
+ 
+   if (newViewProps.streamingConfig.tableMode != oldViewProps.streamingConfig.tableMode) {
+@@ -1311,6 +1304,7 @@ static char kENRMSegmentFadeAnimatorKey;
+   _maxFontSizeMultiplier = 0;
+   _allowTrailingMargin = NO;
+   _streamingAnimation = NO;
++  _animateFinalText = NO;
+   _tableStreamingMode = ENRMTableStreamingModeProgressive;
+   _codeBlockStreamingMode = ENRMCodeBlockStreamingModeProgressive;
+   _pendingCodeBlockSegment = nil;
 diff --git a/ios/EnrichedMarkdownText.mm b/ios/EnrichedMarkdownText.mm
 index 1b3841713a0f50789ad338aa3fe5f95adcd66476..a2ba2279e62ef1d09b273518517e946ce228fa38 100644
 --- a/ios/EnrichedMarkdownText.mm
