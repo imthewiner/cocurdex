@@ -3,7 +3,7 @@ import type { AgentId } from "@cocurdex/shared";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, SectionList, StyleSheet, Text } from "react-native";
+import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
 import { useAgentRoles } from "@/agents";
 import { layout, space, useThemeColors } from "@/theme";
 import {
@@ -151,13 +151,6 @@ export function SessionList({
         sections={sections}
         keyExtractor={(row) => row.id}
         stickySectionHeadersEnabled={false}
-        ListHeaderComponent={
-          offline ? (
-            <Text style={[styles.offline, { color: colors.mutedForeground }]}>
-              {t("offline", { host: host.name })}
-            </Text>
-          ) : undefined
-        }
         ListEmptyComponent={
           searching ? (
             <ListNotice
@@ -206,6 +199,23 @@ export function SessionList({
           </>
         )}
       />
+      {offline ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.offline,
+            { bottom: tabBarInset + space.sm, backgroundColor: colors.popover },
+          ]}
+        >
+          <Text
+            testID="session-offline"
+            accessibilityLiveRegion="polite"
+            style={[styles.offlineText, { color: colors.mutedForeground }]}
+          >
+            {t("offline", { host: host.name })}
+          </Text>
+        </View>
+      ) : null}
       {actions.menu}
       {actions.dialog ? (
         <BrandHost matchContents>{actions.dialog}</BrandHost>
@@ -217,10 +227,14 @@ export function SessionList({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   offline: {
-    fontSize: 13,
-    paddingHorizontal: layout.sideMargin,
-    paddingTop: space.sm,
+    position: "absolute",
+    left: layout.sideMargin,
+    right: layout.sideMargin,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: space.md,
   },
+  offlineText: { fontSize: 13, lineHeight: 18, textAlign: "center" },
   footer: {
     minHeight: 44,
     justifyContent: "center",
