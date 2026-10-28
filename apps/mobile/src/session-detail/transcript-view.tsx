@@ -15,6 +15,7 @@ import {
   FlatList,
   Image,
   type ImageURISource,
+  type ListViewToken,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Platform,
@@ -35,8 +36,10 @@ import {
   INITIAL_JUMP_STATE,
   isFarFromLatest,
   isFarFromOldest,
+  isNearVisibleItems,
   nextJumpState,
   type ScrollMetrics,
+  type VisibleItems,
 } from "./transcript-jump";
 import { TurnActions } from "./turn-actions";
 import { useActivityLabel } from "./use-activity-label";
@@ -370,7 +373,7 @@ function toggledSet(current: ReadonlySet<string>, id: string) {
   return next;
 }
 
-const MAX_INDEX_RETRIES = 3;
+const MAX_INDEX_RETRIES = 12;
 
 function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
   const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -379,6 +382,14 @@ function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
     contentHeight: contentSize.height,
     viewportHeight: layoutMeasurement.height,
   };
+}
+
+function visibleRange(tokens: readonly ListViewToken[]): VisibleItems | null {
+  const indexes = tokens.flatMap((token) =>
+    typeof token.index === "number" ? [token.index] : [],
+  );
+  if (indexes.length === 0) return null;
+  return { first: Math.min(...indexes), last: Math.max(...indexes) };
 }
 
 export function TranscriptView({
@@ -400,6 +411,14 @@ export function TranscriptView({
   const rowActions = useStableActions(actions);
   const seekingOldest = useRef(false);
   const indexRetries = useRef(0);
+  const indexFailed = useRef(false);
+  const [landing, setLanding] = useState(false);
+  const visibleItems = useRef<VisibleItems | null>(null);
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: readonly ListViewToken[] }) => {
+      visibleItems.current = visibleRange(viewableItems);
+    },
+  ).current;
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
@@ -426,15 +445,27 @@ export function TranscriptView({
     ),
     [colors, rowActions, expanded, toggle],
   );
-  const scrollToIndex = (index: number) =>
-    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: true });
+  const scrollToIndex = (index: number, animated: boolean) =>
+    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated });
+  const landOn = (index: number) => {
+    indexFailed.current = false;
+    scrollToIndex(index, false);
+    if (!indexFailed.current) {
+      requestAnimationFrame(() => setLanding(false));
+    }
+  };
   useImperativeHandle(ref, () => ({
     jumpToItem: (id) => {
       const index = newestFirst.findIndex((item) => item.id === id);
       if (index < 0) return;
       seekingOldest.current = false;
       indexRetries.current = 0;
-      scrollToIndex(index);
+      if (isNearVisibleItems(index, visibleItems.current)) {
+        scrollToIndex(index, true);
+        return;
+      }
+      setLanding(true);
+      landOn(index);
     },
   }));
   const jumpToLatest = () => {
@@ -469,7 +500,7 @@ export function TranscriptView({
     );
   };
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, landing && styles.hidden]}>
       <FlatList
         {...scrollIndicator}
         ref={listRef}
@@ -494,14 +525,19 @@ export function TranscriptView({
             listRef.current?.scrollToEnd({ animated: false });
           }
         }}
+        onViewableItemsChanged={onViewableItemsChanged}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
-          if (indexRetries.current >= MAX_INDEX_RETRIES) return;
+          indexFailed.current = true;
+          if (indexRetries.current >= MAX_INDEX_RETRIES) {
+            setLanding(false);
+            return;
+          }
           indexRetries.current += 1;
           listRef.current?.scrollToOffset({
             offset: averageItemLength * index,
             animated: false,
           });
-          requestAnimationFrame(() => scrollToIndex(index));
+          requestAnimationFrame(() => landOn(index));
         }}
         renderItem={renderItem}
       />
@@ -518,6 +554,7 @@ export function TranscriptView({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  hidden: { opacity: 0 },
   content: {
     paddingHorizontal: layout.sideMargin,
     paddingVertical: space.md,

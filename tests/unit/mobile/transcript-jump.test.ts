@@ -4,6 +4,7 @@ import {
   INITIAL_JUMP_STATE,
   isFarFromLatest,
   isFarFromOldest,
+  isNearVisibleItems,
   type JumpState,
   nextJumpState,
   promptOutline,
@@ -122,5 +123,22 @@ describe("jump distance", () => {
         viewportHeight: viewport,
       }),
     ).toBe(false);
+  });
+});
+
+describe("isNearVisibleItems", () => {
+  it("animates to an item a few rows from the visible ones", () => {
+    expect(isNearVisibleItems(12, { first: 8, last: 10 })).toBe(true);
+    expect(isNearVisibleItems(9, { first: 8, last: 10 })).toBe(true);
+    expect(isNearVisibleItems(6, { first: 8, last: 10 })).toBe(true);
+  });
+
+  it("jumps without animation to a far item", () => {
+    expect(isNearVisibleItems(40, { first: 0, last: 2 })).toBe(false);
+    expect(isNearVisibleItems(0, { first: 30, last: 33 })).toBe(false);
+  });
+
+  it("jumps without animation before any row is visible", () => {
+    expect(isNearVisibleItems(1, null)).toBe(false);
   });
 });
