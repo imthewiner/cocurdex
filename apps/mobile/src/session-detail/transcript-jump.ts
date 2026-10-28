@@ -91,24 +91,6 @@ export function isFarFromOldest({
   return offset < end - viewportHeight * ANIMATED_JUMP_SCREENS;
 }
 
-const ANIMATED_JUMP_ITEMS = 3;
-
-export interface VisibleItems {
-  first: number;
-  last: number;
-}
-
-export function isNearVisibleItems(
-  index: number,
-  visible: VisibleItems | null,
-) {
-  if (visible === null) return false;
-  return (
-    index >= visible.first - ANIMATED_JUMP_ITEMS &&
-    index <= visible.last + ANIMATED_JUMP_ITEMS
-  );
-}
-
 export function hasUnseenLatest(state: JumpState, itemCount: number) {
   return state.awayFromLatestAt !== null && itemCount > state.awayFromLatestAt;
 }

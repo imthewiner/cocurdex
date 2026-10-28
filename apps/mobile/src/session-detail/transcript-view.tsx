@@ -15,7 +15,6 @@ import {
   FlatList,
   Image,
   type ImageURISource,
-  type ListViewToken,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Platform,
@@ -36,10 +35,8 @@ import {
   INITIAL_JUMP_STATE,
   isFarFromLatest,
   isFarFromOldest,
-  isNearVisibleItems,
   nextJumpState,
   type ScrollMetrics,
-  type VisibleItems,
 } from "./transcript-jump";
 import { TurnActions } from "./turn-actions";
 import { useActivityLabel } from "./use-activity-label";
@@ -384,14 +381,6 @@ function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
   };
 }
 
-function visibleRange(tokens: readonly ListViewToken[]): VisibleItems | null {
-  const indexes = tokens.flatMap((token) =>
-    typeof token.index === "number" ? [token.index] : [],
-  );
-  if (indexes.length === 0) return null;
-  return { first: Math.min(...indexes), last: Math.max(...indexes) };
-}
-
 export function TranscriptView({
   items,
   footer,
@@ -413,12 +402,6 @@ export function TranscriptView({
   const indexRetries = useRef(0);
   const indexFailed = useRef(false);
   const [landing, setLanding] = useState(false);
-  const visibleItems = useRef<VisibleItems | null>(null);
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: readonly ListViewToken[] }) => {
-      visibleItems.current = visibleRange(viewableItems);
-    },
-  ).current;
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
@@ -445,11 +428,9 @@ export function TranscriptView({
     ),
     [colors, rowActions, expanded, toggle],
   );
-  const scrollToIndex = (index: number, animated: boolean) =>
-    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated });
   const landOn = (index: number) => {
     indexFailed.current = false;
-    scrollToIndex(index, false);
+    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: false });
     if (!indexFailed.current) {
       requestAnimationFrame(() => setLanding(false));
     }
@@ -460,11 +441,6 @@ export function TranscriptView({
       if (index < 0) return;
       seekingOldest.current = false;
       indexRetries.current = 0;
-      if (isNearVisibleItems(index, visibleItems.current)) {
-        scrollToIndex(index, true);
-        return;
-      }
-      setLanding(true);
       landOn(index);
     },
   }));
@@ -525,9 +501,9 @@ export function TranscriptView({
             listRef.current?.scrollToEnd({ animated: false });
           }
         }}
-        onViewableItemsChanged={onViewableItemsChanged}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
           indexFailed.current = true;
+          setLanding(true);
           if (indexRetries.current >= MAX_INDEX_RETRIES) {
             setLanding(false);
             return;
