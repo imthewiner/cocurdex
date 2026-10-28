@@ -45,7 +45,7 @@
     "computers": "电脑",
     "editIssue": "编辑 issue",
     "fontSize": "字号",
-    "issues": "Issues",
+    "issues": "事项",
     "language": "语言",
     "newIssue": "新建 issue",
     "notes": "笔记",
@@ -56,7 +56,7 @@
     "settings": "设置"
   },
   "tabs": {
-    "issues": "Issues",
+    "issues": "事项",
     "notes": "笔记",
     "sessions": "会话",
     "settings": "设置"
