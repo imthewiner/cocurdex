@@ -1735,8 +1735,10 @@ export default interface Resources {
       editMakePrimary: "Make primary";
       editNameLabel: "Workspace name";
       editPrimary: "Primary";
+      editRemoveDescription: "{{name}} and all of its agent sessions are removed from Cocurdex. Files in its folders are not touched.";
       editRemoveFolder: "Remove folder";
-      editRemoveWorkspace: "Remove workspace";
+      editRemoveTitle: "Remove {{name}}?";
+      editRemoveWorkspace: "Remove";
       editSave: "Save";
       editTitle: "Edit workspace";
       empty: "No matching workspaces.";
@@ -1867,7 +1869,6 @@ export default interface Resources {
           prefetch: "Runs during install";
         };
         remove: "Remove";
-        removeAgent: "Remove {{name}}…";
         removeDescription: "Removes {{name}} from Cocurdex. Existing sessions stay, and you can add it again from the ACP Registry.";
         removeFailed: "Could not remove the agent";
         removeSucceeded: "Removed {{name}}";

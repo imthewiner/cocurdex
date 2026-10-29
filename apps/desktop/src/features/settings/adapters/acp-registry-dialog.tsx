@@ -6,11 +6,11 @@ import {
   toAcpRegistryAgentId,
 } from "@cocurdex/shared";
 import { useAtomValue, useSetAtom } from "jotai";
-import { Check, Download, PackageSearch, Terminal, Trash2 } from "lucide-react";
+import { Check, Download, PackageSearch, Terminal } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { AppConfirmDialog } from "@/components/app";
+import { AppRemoveButton } from "@/components/app";
 import {
   Badge,
   Button,
@@ -310,7 +310,6 @@ export function AcpRegistryRemoveButton({
 }) {
   const { t } = useTranslation("settings");
   const [removing, setRemoving] = useState(false);
-  const [confirming, setConfirming] = useState(false);
 
   const remove = async () => {
     setRemoving(true);
@@ -326,27 +325,16 @@ export function AcpRegistryRemoveButton({
   };
 
   return (
-    <>
-      <Button
-        disabled={removing}
-        onClick={() => setConfirming(true)}
-        size="xs"
-        type="button"
-        variant="destructive"
-      >
-        {removing ? <Spinner size="xs" /> : <Trash2 className="size-3.5" />}
-        {t("adapters.registry.removeAgent", { name: label })}
-      </Button>
-      <AppConfirmDialog
-        cancelLabel={t("adapters.registry.plan.cancel")}
-        confirmLabel={t("adapters.registry.remove")}
-        description={t("adapters.registry.removeDescription", { name: label })}
-        onConfirm={() => void remove()}
-        onOpenChange={setConfirming}
-        open={confirming}
-        title={t("adapters.registry.removeTitle", { name: label })}
-        variant="destructive"
-      />
-    </>
+    <AppRemoveButton
+      busy={removing}
+      cancelLabel={t("adapters.registry.plan.cancel")}
+      confirmDescription={t("adapters.registry.removeDescription", {
+        name: label,
+      })}
+      confirmLabel={t("adapters.registry.remove")}
+      confirmTitle={t("adapters.registry.removeTitle", { name: label })}
+      label={t("adapters.registry.remove")}
+      onConfirm={() => void remove()}
+    />
   );
 }

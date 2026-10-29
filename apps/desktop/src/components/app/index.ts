@@ -20,6 +20,7 @@ export {
 export { AppGitBranchLabel } from "./git-branch-label";
 export { AppInlineRenameInput } from "./inline-rename-input";
 export { AppPreviewCardTooltipContent } from "./preview-card-tooltip";
+export { AppRemoveButton } from "./remove-button";
 export {
   AppSearchableSelect,
   type AppSearchableSelectOption,

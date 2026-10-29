@@ -86,7 +86,6 @@
         "prefetch": "安装时运行"
       },
       "remove": "移除",
-      "removeAgent": "移除 {{name}}…",
       "removeDescription": "从 Cocurdex 移除 {{name}}。已有会话保留，之后可以从 ACP Registry 重新添加。",
       "removeFailed": "无法移除该 agent",
       "removeSucceeded": "已移除 {{name}}",

@@ -89,7 +89,6 @@
         "prefetch": "Runs during install"
       },
       "remove": "Remove",
-      "removeAgent": "Remove {{name}}…",
       "removeDescription": "Removes {{name}} from Cocurdex. Existing sessions stay, and you can add it again from the ACP Registry.",
       "removeFailed": "Could not remove the agent",
       "removeSucceeded": "Removed {{name}}",

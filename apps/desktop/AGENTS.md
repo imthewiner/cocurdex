@@ -47,7 +47,7 @@ A design covers function as well as look. Before drawing a redesign, inventory f
 
 - Separate planes by brightness, never by outlines. Content sits on `bg-background`; a group sits on one raised plane (`bg-settings-surface`, `rounded-card`) with no border, ring, or shadow. Rows inside a plane are separated by spacing or `divide-border/40`. Inputs, editors, and the overlay primitives (dialogs, menus, popovers) keep the edges their primitives draw.
 - Settings pages compose `SettingsGroup` and `SettingRow` (`components/app/settings-fields.tsx`): a muted `text-meta` group label above the plane, then rows with a `text-body` title, a muted description, and the control at the trailing edge. Details a row needs on demand expand inside the same row under its text column, never as a nested plane.
-- Row and section actions are `ghost` buttons with a leading `size-3.5` icon. A filled `default` button is reserved for the one primary action of a view or dialog; destructive actions use the `destructive` variant and confirm through `AppConfirmDialog`.
+- Row and section actions are `ghost` buttons with a leading `size-3.5` icon. A filled `default` button is reserved for the one primary action of a view or dialog; destructive actions start from a muted control that turns destructive on hover (see `AppRemoveButton`) and confirm through `AppConfirmDialog`, whose final action uses the `destructive` variant.
 - Show status as a small `rounded-full` dot or muted text beside the item, not as a tinted pill or a filled badge; a status color marks the dot, never a large surface.
 - Keep type regular and quiet: `text-body` for content, `text-meta` for labels and metadata, `font-medium` only for titles, monospace only for paths, versions, and ids.
 
@@ -81,6 +81,8 @@ A scenario the app already handles somewhere must look and behave the same every
 
 - Keep the same concept identical across views: icon, wording, action order and placement, hover and focus states, confirmation behavior, and keyboard handling (Enter submits, Escape cancels, focus returns to the trigger).
 - When two places already diverge for the same scenario, unify them in the same change instead of adding a third variant. Promote the shared version to `components/app` when it is used across features.
+- Do not improvise. The same component carries the same UI and UX across the whole app: variant, size, icon, color, hover state, placement, wording pattern, and confirmation. A new look or behavior for an existing control is never an implementation detail you decide; before writing one, search the app for every place that solves the scenario and copy that solution exactly. When none fits, or the existing places disagree, stop and ask the user with concrete options (and your recommendation) before building, then unify every place to the answer.
+- Removing or deleting the item a detail view or dialog shows uses `AppRemoveButton` from `components/app`: a muted `ghost` button with a leading `Trash2` that turns destructive on hover, labeled with the bare verb (Remove, Delete) without the item name or an ellipsis, placed at the start of the view's bottom action row opposite its primary actions, and always confirmed through `AppConfirmDialog`. Red appears only on hover and on the confirm dialog's final action.
 
 ### Choose controls by meaning
 

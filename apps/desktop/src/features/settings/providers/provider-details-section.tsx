@@ -1,8 +1,8 @@
 import type { ProviderConfigRecord } from "@cocurdex/shared";
-import { Check, KeyRound, Trash2 } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { Check, KeyRound } from "lucide-react";
+import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
-import { AppConfirmDialog } from "@/components";
+import { AppRemoveButton } from "@/components";
 import { Button, Input, Label, Switch, Text } from "@/components/ui";
 import { cn } from "@/lib";
 
@@ -47,7 +47,6 @@ export function ProviderDetailsSection({
   const { t } = useTranslation("settings");
   const enabledSwitchId = useId();
   const apiKeyId = useId();
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const hasStoredApiKey = Boolean(draftProvider.apiKeySecretId);
   const isPresetProvider = presetProviderIds.has(draftProvider.id);
   // The provider id is the primary key: models and the API key secret are
@@ -162,16 +161,16 @@ export function ProviderDetailsSection({
         {!isPresetProvider ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             {selectedProvider ? (
-              <Button
-                className="text-muted-foreground hover:text-destructive"
-                size="sm"
-                type="button"
-                variant="ghost"
-                onClick={() => setIsDeleteConfirmOpen(true)}
-              >
-                <Trash2 className="size-4" />
-                {t("providers.actions.delete")}
-              </Button>
+              <AppRemoveButton
+                cancelLabel={t("providers.deleteConfirm.cancel")}
+                confirmDescription={t("providers.deleteConfirm.description", {
+                  provider: selectedProvider.name,
+                })}
+                confirmLabel={t("providers.deleteConfirm.confirm")}
+                confirmTitle={t("providers.deleteConfirm.title")}
+                label={t("providers.actions.delete")}
+                onConfirm={() => void onRemoveProvider(selectedProvider.id)}
+              />
             ) : (
               <span />
             )}
@@ -187,24 +186,6 @@ export function ProviderDetailsSection({
           </div>
         ) : null}
       </div>
-
-      <AppConfirmDialog
-        open={isDeleteConfirmOpen}
-        variant="destructive"
-        title={t("providers.deleteConfirm.title")}
-        description={t("providers.deleteConfirm.description", {
-          provider: selectedProvider?.name ?? draftProvider.id,
-        })}
-        cancelLabel={t("providers.deleteConfirm.cancel")}
-        confirmLabel={t("providers.deleteConfirm.confirm")}
-        onOpenChange={setIsDeleteConfirmOpen}
-        onConfirm={() => {
-          if (selectedProvider) {
-            void onRemoveProvider(selectedProvider.id);
-          }
-          setIsDeleteConfirmOpen(false);
-        }}
-      />
     </>
   );
 }

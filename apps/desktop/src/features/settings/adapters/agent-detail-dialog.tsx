@@ -316,14 +316,12 @@ function AgentDetailContent({
         {needsInstall ? <InstallField status={status} /> : null}
       </div>
       {registryAgentId ? (
-        <div className="flex border-t border-border/60 pt-3">
-          <div className="-ms-2">
-            <AcpRegistryRemoveButton
-              agentId={registryAgentId}
-              label={agent.label}
-              onRemoved={onRemoved}
-            />
-          </div>
+        <div className="flex">
+          <AcpRegistryRemoveButton
+            agentId={registryAgentId}
+            label={agent.label}
+            onRemoved={onRemoved}
+          />
         </div>
       ) : null}
     </>
