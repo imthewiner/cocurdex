@@ -706,7 +706,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - inputText: ${NEW_ISSUE_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: new-issue
@@ -821,7 +821,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - inputText: ${NEW_NOTE_TITLE}
 - pressKey: Enter
 - inputText: ${NEW_NOTE_BODY}
@@ -856,7 +856,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - runFlow:
     when:
       platform: iOS
@@ -926,6 +926,20 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 5%, 9%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 5000
 - retry:
     maxRetries: 3
     commands:

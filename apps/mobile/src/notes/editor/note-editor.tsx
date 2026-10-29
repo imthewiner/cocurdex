@@ -307,6 +307,8 @@ export function NoteEditor({
         originWhitelist={["about:blank"]}
         onShouldStartLoadWithRequest={({ url }) => url === "about:blank"}
         onMessage={handleMessage}
+        onContentProcessDidTerminate={() => webView.current?.reload()}
+        onRenderProcessGone={() => webView.current?.reload()}
         setSupportMultipleWindows={false}
         allowsLinkPreview={false}
         hideKeyboardAccessoryView

@@ -31,9 +31,9 @@ async function seedLargeWorkspace(root) {
 function findTreeRow(itemPath) {
   const roots = [document];
   for (const root of roots) {
-    const row = [...root.querySelectorAll("[data-item-path]")].find(
-      (element) => element.dataset.itemPath === itemPath,
-    );
+    const row = [...root.querySelectorAll("[role=treeitem][data-item-path]")]
+      .filter((element) => element.dataset.itemParked !== "true")
+      .find((element) => element.dataset.itemPath === itemPath);
     if (row) {
       row.scrollIntoView({ block: "center" });
       const bounds = row.getBoundingClientRect();
@@ -108,9 +108,9 @@ function stopWatchingTreeRows() {
 function treeFolderExpanded(itemPath) {
   const roots = [document];
   for (const root of roots) {
-    const row = [...root.querySelectorAll("[data-item-path]")].find(
-      (element) => element.dataset.itemPath === itemPath,
-    );
+    const row = [...root.querySelectorAll("[role=treeitem][data-item-path]")]
+      .filter((element) => element.dataset.itemParked !== "true")
+      .find((element) => element.dataset.itemPath === itemPath);
     if (row) return row.getAttribute("aria-expanded") === "true";
     for (const element of root.querySelectorAll("*")) {
       if (element.shadowRoot) roots.push(element.shadowRoot);
