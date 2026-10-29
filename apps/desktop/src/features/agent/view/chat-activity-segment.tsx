@@ -22,6 +22,7 @@ export function ActivitySegment({
   isLiveConversation,
   isTurnWork,
   items,
+  liveLabel,
   renderItem,
 }: {
   durationMs?: number;
@@ -29,12 +30,13 @@ export function ActivitySegment({
   isLiveConversation: boolean;
   isTurnWork: boolean;
   items: TimelineGroup[];
+  liveLabel?: ReactNode;
   renderItem(item: TimelineGroup, nested: boolean): ReactNode;
 }) {
   const { t } = useTranslation("agent");
   const singleItem = items[0];
 
-  if (!isTurnWork && singleItem && getSingleToolCall(items)) {
+  if (!liveLabel && !isTurnWork && singleItem && getSingleToolCall(items)) {
     return renderItem(singleItem, true);
   }
 
@@ -51,6 +53,7 @@ export function ActivitySegment({
         isLiveConversation,
       })}
       label={label}
+      liveLabel={liveLabel}
       stateKey={`activity:${items[0]?.id}`}
       variant={isTurnWork ? "turn" : "step"}
     >

@@ -64,7 +64,6 @@ export function nextJumpState(
   const kind = resolveJumpButton({
     streaming,
     isReady: itemCount > 0,
-    hasUserScrolled: state.userScrolled,
     isNearTop: nearOldest,
     isNearBottom: nearLatest,
     scrollDirection: direction,

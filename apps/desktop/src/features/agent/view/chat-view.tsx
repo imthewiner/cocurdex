@@ -245,7 +245,6 @@ export function ChatView({
   const {
     activeUserMessageId,
     finishInitialPositioning,
-    hasUserScrolled,
     isNearBottom,
     isNearTop,
     scrollDirection,
@@ -299,7 +298,6 @@ export function ChatView({
   const jumpButton = resolveJumpButton({
     streaming: isRunning,
     isReady: isInitialBottomSettled && timelineGroups.length > 0,
-    hasUserScrolled,
     isNearTop,
     isNearBottom,
     scrollDirection,

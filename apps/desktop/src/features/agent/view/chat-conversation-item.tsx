@@ -47,7 +47,8 @@ import { QuestionCard } from "../question";
 // detail view, which renders this component.
 import { ToolCallGroup, ToolCallItem } from "../tool-call/tool-call-ui";
 import type { ToolCallPreviewLocation } from "../tool-call/tool-call-utils";
-import { ActivityLine } from "./chat-activity";
+import { ActivityLiveLabel } from "./chat-activity";
+import { ActivityLiveRow } from "./chat-activity-block";
 import { ActivitySegment, TurnStoppedNote } from "./chat-activity-segment";
 import { type ActivityState, formatDurationMs } from "./chat-activity-state";
 import {
@@ -631,7 +632,7 @@ export const ChatConversationItem = memo(function ChatConversationItem({
   promptVariant = "chat",
   runStartedAt,
 }: {
-  // History conversation items don't render an ActivityLine (only the latest
+  // History conversation items don't render a live activity label (only the latest
   // conversation does, gated by isLatestConversation && isRunning). Marking
   // this optional lets the parent skip passing the unstable activity object,
   // which would otherwise defeat React.memo on every streaming token.
@@ -685,6 +686,14 @@ export const ChatConversationItem = memo(function ChatConversationItem({
               segment.kind === "item" && segment.item.id === turnEndMessageId,
           ) - 1
         ];
+
+  const liveLabel =
+    showActivity && activity && activity.kind !== "responding" ? (
+      <ActivityLiveLabel activity={activity} runStartedAt={runStartedAt} />
+    ) : null;
+  const lastSegment = segments.at(-1);
+  const liveSegment =
+    liveLabel && lastSegment?.kind === "activity" ? lastSegment : null;
 
   const renderTimelineItem = (group: TimelineGroup, nested = false) => {
     if (group.kind === "toolCalls") {
@@ -799,14 +808,15 @@ export const ChatConversationItem = memo(function ChatConversationItem({
                     isTurnWork={segment === turnWorkSegment}
                     items={segment.items}
                     key={getSegmentKey(segment)}
+                    liveLabel={segment === liveSegment ? liveLabel : undefined}
                     renderItem={renderTimelineItem}
                   />
                 );
               })}
             </div>
           ))}
-          {showActivity && activity && activity.kind !== "responding" ? (
-            <ActivityLine activity={activity} runStartedAt={runStartedAt} />
+          {liveLabel && !liveSegment ? (
+            <ActivityLiveRow>{liveLabel}</ActivityLiveRow>
           ) : null}
           {isStopped && !showStoppedInActions ? <TurnStoppedNote /> : null}
         </div>

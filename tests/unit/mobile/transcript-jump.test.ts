@@ -26,10 +26,10 @@ describe("nextJumpState", () => {
     ).toBeNull();
   });
 
-  it("offers the oldest message after the viewer scrolls near the latest", () => {
-    expect(nextJumpState(scrolled, at(4), CONTENT - VIEWPORT, 20).kind).toBe(
-      "top",
-    );
+  it("shows nothing at the latest message after the viewer scrolls back", () => {
+    expect(
+      nextJumpState(scrolled, at(4), CONTENT - VIEWPORT, 20).kind,
+    ).toBeNull();
   });
 
   it("follows reading direction after streaming stops", () => {

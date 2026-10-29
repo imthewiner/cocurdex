@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 describe("resolveJumpButton", () => {
   const base = {
     isReady: true,
-    hasUserScrolled: true,
     isNearTop: false,
     isNearBottom: false,
     scrollDirection: "down" as const,
@@ -24,18 +23,19 @@ describe("resolveJumpButton", () => {
     expect(resolveJumpButton({ ...base, isNearTop: true })).toBe("latest");
   });
 
-  it("offers 'top' at the bottom once the viewer has scrolled", () => {
-    expect(resolveJumpButton({ ...base, isNearBottom: true })).toBe("top");
+  it("shows nothing at the bottom, even after scrolling up and back", () => {
+    expect(
+      resolveJumpButton({ ...base, isNearBottom: true, scrollDirection: "up" }),
+    ).toBeNull();
+    expect(
+      resolveJumpButton({ ...base, isNearBottom: true, streaming: true }),
+    ).toBeNull();
   });
 
-  it("stays hidden at the bottom of a freshly opened conversation", () => {
+  it("offers 'latest' above the bottom while a reply streams", () => {
     expect(
-      resolveJumpButton({
-        ...base,
-        isNearBottom: true,
-        hasUserScrolled: false,
-      }),
-    ).toBeNull();
+      resolveJumpButton({ ...base, scrollDirection: "up", streaming: true }),
+    ).toBe("latest");
   });
 
   it("mirrors the scroll direction in the middle", () => {
@@ -89,7 +89,6 @@ describe("resolveScrollDirection", () => {
 it("prioritizes incoming content only while running", () => {
   const state = {
     isReady: true,
-    hasUserScrolled: true,
     isNearTop: false,
     isNearBottom: false,
     scrollDirection: "up" as const,
