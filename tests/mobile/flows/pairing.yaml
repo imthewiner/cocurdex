@@ -687,6 +687,14 @@ appId: dev.cocurdex.mobile
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
 - scrollUntilVisible:
+    element:
+      text: ${SHOW_MORE}
+    centerElement: true
+    optional: true
+- tapOn:
+    text: ${SHOW_MORE}
+    optional: true
+- scrollUntilVisible:
     element: ${OTHER_SESSION_TITLE}
     timeout: 10000
 - scrollUntilVisible:
