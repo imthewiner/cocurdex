@@ -74,6 +74,7 @@
     },
     "contextFileTooLarge": "文件过大。请选择更小的文件或附加选区。",
     "noInstalledAgent": "尚未安装 Agent",
+    "openWorkspaceFirst": "先打开文件夹，再描述要做的任务",
     "placeholder": "计划、构建，输入 / 使用 Skill，输入 @ 添加上下文",
     "removeAttachment": "移除附件",
     "selectAgent": "选择 Agent",
