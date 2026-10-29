@@ -1,4 +1,5 @@
 import { sentPromptPeek } from "@cocurdex/shared";
+import { useHeaderHeight } from "expo-router/react-navigation";
 import {
   type ComponentRef,
   type ReactElement,
@@ -47,6 +48,9 @@ export function TranscriptList({
   ref?: Ref<TranscriptHandle>;
 }) {
   const reducedMotion = useReducedMotion();
+  const headerHeight = useHeaderHeight();
+  const frame = useRef<ComponentRef<typeof View>>(null);
+  const [headerOverlap, setHeaderOverlap] = useState(0);
   const indicator = useScrollIndicatorWhileScrolling();
   const list = useRef<FlatList<TranscriptTurn>>(null);
   const metrics = useRef<ScrollMetrics | null>(null);
@@ -70,7 +74,8 @@ export function TranscriptList({
   }
   const latestJump = useRef<{ animated: boolean } | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
-  const peek = sentPromptPeek(viewportHeight);
+  const visibleHeight = Math.max(0, viewportHeight - headerOverlap);
+  const peek = sentPromptPeek(visibleHeight);
   const viewportWidth = useRef(0);
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const turns = useMemo(() => transcriptTurns(items), [items]);
@@ -131,14 +136,14 @@ export function TranscriptList({
         const target = state.target;
         const inset =
           target === state.sentMessageId
-            ? sentPromptPeek(metrics.current.viewportHeight)
+            ? sentPromptPeek(metrics.current.viewportHeight - headerOverlap)
             : 0;
         latestView.current?.measureLayout(
           content,
           (_x, y) => {
             if (navigation.current.target !== target) return;
             list.current?.scrollToOffset({
-              offset: Math.max(0, y - space.md - inset),
+              offset: Math.max(0, y - space.md - headerOverlap - inset),
               animated: false,
             });
           },
@@ -149,7 +154,7 @@ export function TranscriptList({
         list.current?.scrollToIndex({
           index,
           viewPosition: 0,
-          viewOffset: space.md,
+          viewOffset: space.md + headerOverlap,
           animated: false,
         });
         if (!indexFailed.current) state.target = undefined;
@@ -226,7 +231,15 @@ export function TranscriptList({
     });
   };
   return (
-    <View style={styles.fill}>
+    <View
+      ref={frame}
+      style={styles.fill}
+      onLayout={() =>
+        frame.current?.measureInWindow((_x, y) =>
+          setHeaderOverlap(Math.max(0, Math.round(headerHeight - y))),
+        )
+      }
+    >
       <FlatList
         {...indicator}
         ref={list}
@@ -235,7 +248,12 @@ export function TranscriptList({
         extraData={[viewportHeight, renderRow, footer]}
         scrollsChildToFocus={false}
         keyboardDismissMode="interactive"
-        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: space.md + headerOverlap },
+        ]}
         scrollEventThrottle={32}
         onScroll={onScroll}
         onScrollBeginDrag={() => {
@@ -299,7 +317,7 @@ export function TranscriptList({
               style={[
                 styles.turn,
                 {
-                  minHeight: Math.max(0, viewportHeight - space.md * 2 - peek),
+                  minHeight: Math.max(0, visibleHeight - space.md * 2 - peek),
                 },
               ]}
               onLayout={(event) => {

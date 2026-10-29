@@ -912,7 +912,8 @@ appId: dev.cocurdex.mobile
           visible: ${ISSUE_LINK_TEXT}
           timeout: 10000
       - tapOn:
-          point: "15%,18%"
+          text: ${ISSUE_LINK_TEXT}
+          point: 10%, 50%
 - extendedWaitUntil:
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000

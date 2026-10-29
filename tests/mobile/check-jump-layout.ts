@@ -15,7 +15,13 @@ for (const file of files) {
   assert(snapshot.success, `Snapshot failed: ${file}`);
   const nodes: SnapshotNode[] = snapshot.data.nodes;
   const button = nodes.find((node) => node.identifier === "transcript-jump");
-  const viewport = nodes.filter((node) => node.kind === "scroll-area").at(-1);
+  const viewport = nodes.find(
+    (node) =>
+      node.kind === "scroll-area" &&
+      button !== undefined &&
+      button.rect.y >= node.rect.y &&
+      button.rect.y + button.rect.height <= node.rect.y + node.rect.height,
+  );
   assert(button && viewport, "Expected jump control and transcript viewport");
   const scale = button.rect.width / 40;
   const centerOffset =

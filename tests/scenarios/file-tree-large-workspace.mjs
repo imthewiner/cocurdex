@@ -105,19 +105,32 @@ function stopWatchingTreeRows() {
   return [...window.__treeRowWatch.missing];
 }
 
+function treeFolderExpanded(itemPath) {
+  const roots = [document];
+  for (const root of roots) {
+    const row = [...root.querySelectorAll("[data-item-path]")].find(
+      (element) => element.dataset.itemPath === itemPath,
+    );
+    if (row) return row.getAttribute("aria-expanded") === "true";
+    for (const element of root.querySelectorAll("*")) {
+      if (element.shadowRoot) roots.push(element.shadowRoot);
+    }
+  }
+  return false;
+}
+
 async function expandFolder(session, itemPath) {
   const deadline = Date.now() + UI_TIMEOUT_MS;
-  for (;;) {
-    await session.waitUntil(
-      findTreeRow,
-      itemPath,
-      Math.max(1, deadline - Date.now()),
-    );
+  while (!(await session.run(treeFolderExpanded, itemPath))) {
+    const remaining = deadline - Date.now();
+    check(remaining > 0, "folder did not expand", { itemPath });
+    await session.waitUntil(findTreeRow, itemPath, remaining);
     const point = await session.run(findTreeRow, itemPath);
-    if (point) {
-      await clickPoint(session, point);
-      return;
-    }
+    if (!point) continue;
+    await clickPoint(session, point);
+    await session
+      .waitUntil(treeFolderExpanded, itemPath, 5_000)
+      .catch(() => {});
   }
 }
 
