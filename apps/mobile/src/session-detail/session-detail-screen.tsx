@@ -47,6 +47,13 @@ function sessionSubtitle(
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+function runStartTime(observation: SessionObservationSnapshot | null) {
+  const run = observation?.activeRun;
+  if (run?.status !== "running") return undefined;
+  const time = Date.parse(run.startedAt);
+  return Number.isNaN(time) ? undefined : time;
+}
+
 export function SessionDetailScreen({
   host,
   sessionId,
@@ -77,6 +84,7 @@ export function SessionDetailScreen({
   const running =
     observation?.session.status === "running" ||
     observation?.activeRun?.status === "running";
+  const runStartedAt = runStartTime(observation);
   const [sends, setSends] = useState<readonly PendingSend[]>(() =>
     pendingSend ? [pendingSend] : [],
   );
@@ -102,8 +110,9 @@ export function SessionDetailScreen({
         ],
         observation?.toolCalls ?? [],
         running || unconfirmed.length > 0,
+        runStartedAt,
       ),
-    [observation, workspacePath, running, unconfirmed],
+    [observation, workspacePath, running, unconfirmed, runStartedAt],
   );
   const pending = observation
     ? pendingInteraction(observation.interactions)

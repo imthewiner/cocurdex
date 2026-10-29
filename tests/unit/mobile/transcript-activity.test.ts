@@ -153,3 +153,17 @@ it("keeps the same running heading before and after tool events", () => {
     expect(result.filter((item) => item.kind === "activity")).toHaveLength(1);
   }
 });
+
+it("times only the live turn from the run start", () => {
+  const items = [
+    user("u1"),
+    tool("t1"),
+    tool("t3"),
+    reply("a1"),
+    user("u2"),
+    tool("t2"),
+  ];
+  const result = condenseTranscript(items, records, true, 1_000);
+  const activities = result.filter((item) => item.kind === "activity");
+  expect(activities.map((item) => item.startedAt)).toEqual([undefined, 1_000]);
+});

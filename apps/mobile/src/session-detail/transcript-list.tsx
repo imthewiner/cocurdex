@@ -1,3 +1,4 @@
+import { sentPromptPeek } from "@cocurdex/shared";
 import {
   type ComponentRef,
   type ReactElement,
@@ -67,7 +68,9 @@ export function TranscriptList({
       retries: 0,
     };
   }
+  const latestJump = useRef<{ animated: boolean } | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const peek = sentPromptPeek(viewportHeight);
   const viewportWidth = useRef(0);
   const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const turns = useMemo(() => transcriptTurns(items), [items]);
@@ -126,12 +129,13 @@ export function TranscriptList({
         const content = list.current?.getNativeScrollRef()?.getInnerViewRef();
         if (!content) return;
         const target = state.target;
+        const inset = target === state.sentMessageId ? peek : 0;
         latestView.current?.measureLayout(
           content,
           (_x, y) => {
             if (navigation.current.target !== target) return;
             list.current?.scrollToOffset({
-              offset: Math.max(0, y - space.md),
+              offset: Math.max(0, y - space.md - inset),
               animated: false,
             });
           },
@@ -163,8 +167,23 @@ export function TranscriptList({
       });
     }
   };
+  const scrollToLatest = (animated: boolean) => {
+    if (!metrics.current) return;
+    const current = readingMetrics(metrics.current);
+    const offset = Math.max(0, current.contentHeight - current.viewportHeight);
+    if (current.offset >= offset - 1) {
+      latestJump.current = null;
+      return;
+    }
+    latestJump.current = { animated };
+    const glideStart = offset - current.viewportHeight;
+    if (animated && current.offset < glideStart)
+      list.current?.scrollToOffset({ offset: glideStart, animated: false });
+    list.current?.scrollToOffset({ offset, animated });
+  };
   useImperativeHandle(ref, () => ({
     jumpToItem(id) {
+      latestJump.current = null;
       navigation.current.target = id;
       navigation.current.initialPosition = false;
       navigation.current.retries = 0;
@@ -182,27 +201,20 @@ export function TranscriptList({
     if (Math.abs(next.offset - previous) >= 12)
       directionOffset.current = next.offset;
     metrics.current = next;
+    const reading = readingMetrics(next);
+    if (next.offset >= reading.contentHeight - reading.viewportHeight - 1)
+      latestJump.current = null;
     setJump((current) =>
-      nextJumpState(
-        current,
-        readingMetrics(next),
-        previous,
-        items.length,
-        streaming,
-      ),
+      nextJumpState(current, reading, previous, items.length, streaming),
     );
   };
   const jumpToLatest = () => {
     navigation.current.target = undefined;
     navigation.current.initialPosition = false;
-    const current = metrics.current && readingMetrics(metrics.current);
-    if (current)
-      list.current?.scrollToOffset({
-        offset: Math.max(0, current.contentHeight - current.viewportHeight),
-        animated: !reducedMotion,
-      });
+    scrollToLatest(!reducedMotion);
   };
   const jumpToOldest = () => {
+    latestJump.current = null;
     navigation.current.target = undefined;
     navigation.current.initialPosition = false;
     list.current?.scrollToOffset({
@@ -224,6 +236,7 @@ export function TranscriptList({
         scrollEventThrottle={32}
         onScroll={onScroll}
         onScrollBeginDrag={() => {
+          latestJump.current = null;
           navigation.current.target = undefined;
           navigation.current.initialPosition = false;
           indicator.onScrollBeginDrag();
@@ -257,6 +270,7 @@ export function TranscriptList({
             ),
           );
           align();
+          if (latestJump.current) scrollToLatest(latestJump.current.animated);
         }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
           indexFailed.current = true;
@@ -281,7 +295,9 @@ export function TranscriptList({
               testID={`transcript-turn-${latest.id}`}
               style={[
                 styles.turn,
-                { minHeight: Math.max(0, viewportHeight - space.md * 2) },
+                {
+                  minHeight: Math.max(0, viewportHeight - space.md * 2 - peek),
+                },
               ]}
               onLayout={(event) => {
                 latestLayout.current = {

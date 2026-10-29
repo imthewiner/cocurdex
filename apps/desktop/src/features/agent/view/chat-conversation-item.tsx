@@ -3,6 +3,7 @@ import {
   type AgentToolCallRecord,
   type AgentTurnCompletedEvent,
   type AgentUsageRecord,
+  formatDurationMs,
   isContextAttachment,
   isDocumentAttachment,
   isImageAttachment,
@@ -50,7 +51,7 @@ import type { ToolCallPreviewLocation } from "../tool-call/tool-call-utils";
 import { ActivityLiveLabel } from "./chat-activity";
 import { ActivityLiveRow } from "./chat-activity-block";
 import { ActivitySegment, TurnStoppedNote } from "./chat-activity-segment";
-import { type ActivityState, formatDurationMs } from "./chat-activity-state";
+import type { ActivityState } from "./chat-activity-state";
 import {
   MessageAttachments,
   ReasoningMarkdown,

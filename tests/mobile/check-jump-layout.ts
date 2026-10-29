@@ -18,11 +18,10 @@ for (const file of files) {
   const viewport = nodes.filter((node) => node.kind === "scroll-area").at(-1);
   assert(button && viewport, "Expected jump control and transcript viewport");
   const scale = button.rect.width / 40;
-  const rightGap =
-    (viewport.rect.x +
-      viewport.rect.width -
-      button.rect.x -
-      button.rect.width) /
+  const centerOffset =
+    (button.rect.x +
+      button.rect.width / 2 -
+      (viewport.rect.x + viewport.rect.width / 2)) /
     scale;
   const bottomGap =
     (viewport.rect.y +
@@ -31,14 +30,14 @@ for (const file of files) {
       button.rect.height) /
     scale;
   assert(
-    Math.abs(rightGap - 16) <= 1,
-    `Expected 16dp right inset: ${rightGap}`,
+    Math.abs(centerOffset) <= 1,
+    `Expected the jump control centered: ${centerOffset}`,
   );
   assert(
     Math.abs(bottomGap - 16) <= 1,
     `Expected 16dp bottom inset: ${bottomGap}`,
   );
   process.stdout.write(
-    `${JSON.stringify({ file, label: button.label, rightGap, bottomGap })}\n`,
+    `${JSON.stringify({ file, label: button.label, centerOffset, bottomGap })}\n`,
   );
 }

@@ -1,3 +1,4 @@
+import { formatDurationMs } from "@cocurdex/shared";
 import { CircleStop } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +9,7 @@ import {
 } from "./activity-summary";
 import { formatActivitySummary } from "./activity-summary-label";
 import { ActivityBlock } from "./chat-activity-block";
-import { formatDurationMs, isActivityHeaderBusy } from "./chat-activity-state";
+import { isActivityHeaderBusy } from "./chat-activity-state";
 import { isReasoningMessage } from "./chat-message-utils";
 import type { TimelineGroup } from "./chat-timeline";
 

@@ -23,6 +23,7 @@ export type { TranscriptHandle } from "./transcript-list";
 
 import { TurnActions } from "./turn-actions";
 import { useActivityLabel } from "./use-activity-label";
+import { useElapsedLabel } from "./use-elapsed-label";
 import { WorkingMark } from "./working-mark";
 
 const BODY_SIZE = 16;
@@ -150,6 +151,43 @@ function ToolRow({
   );
 }
 
+function LiveActivityLabel({
+  item,
+  label,
+  colors,
+}: {
+  item: ActivityItem;
+  label: string;
+  colors: ThemeColors;
+}) {
+  const elapsed = useElapsedLabel(item.startedAt);
+  const tool = item.items.findLast(
+    (child) => child.kind === "tool" && child.status === "in_progress",
+  );
+  return (
+    <>
+      <WorkingMark />
+      <Text
+        style={[styles.elapsed, { color: colors.mutedForeground }]}
+        testID="transcript-activity-elapsed"
+      >
+        {elapsed}
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={[styles.activityText, { color: colors.mutedForeground }]}
+      >
+        {tool?.kind === "tool" ? tool.title : label}
+        {tool?.kind === "tool" && tool.detail ? (
+          <Text
+            style={[styles.toolDetail, { color: colors.foreground }]}
+          >{` ${tool.detail}`}</Text>
+        ) : null}
+      </Text>
+    </>
+  );
+}
+
 function ActivityRow({
   item,
   colors,
@@ -175,13 +213,16 @@ function ActivityRow({
         style={styles.tool}
         testID={`transcript-activity-${item.id}`}
       >
-        {item.running ? <WorkingMark /> : null}
-        <Text
-          numberOfLines={1}
-          style={[styles.activityText, { color: colors.mutedForeground }]}
-        >
-          {label}
-        </Text>
+        {item.running ? (
+          <LiveActivityLabel item={item} label={label} colors={colors} />
+        ) : (
+          <Text
+            numberOfLines={1}
+            style={[styles.activityText, { color: colors.mutedForeground }]}
+          >
+            {label}
+          </Text>
+        )}
         <SymbolView
           name={
             expanded
@@ -408,6 +449,7 @@ const styles = StyleSheet.create({
   toolText: { flex: 1, fontSize: 14 },
   activity: { gap: space.xs },
   activityText: { flex: 1, fontSize: 14 },
+  elapsed: { fontSize: 14, fontVariant: ["tabular-nums"] },
   activityItems: { gap: space.sm, paddingLeft: space.md },
   toolDetail: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),

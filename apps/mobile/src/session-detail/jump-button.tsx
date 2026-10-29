@@ -1,19 +1,25 @@
 import type { JumpButtonKind } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
-import { useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AccessibilityInfo,
-  Animated,
+import { Pressable, StyleSheet, View } from "react-native";
+import Animated, {
+  cancelAnimation,
   Easing,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
-import { layout, space, useThemeColors, useThemeName } from "@/theme";
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import { space, useThemeColors, useThemeName } from "@/theme";
 
 const SIZE = 40;
 const DOT = 10;
+const STREAM_DOT = 5;
+const DOT_DELAYS = [0, 160, 320] as const;
 const FILL = { light: "#e5e5e5", dark: "#333333" } as const;
 
 export function JumpButton({
@@ -47,16 +53,19 @@ export function JumpButton({
           pressed && styles.pressed,
         ]}
       >
-        {latest && streaming ? <StreamingRing color={colors.tint} /> : null}
-        <SymbolView
-          name={
-            latest
-              ? { ios: "arrow.down", android: "arrow_downward" }
-              : { ios: "arrow.up", android: "arrow_upward" }
-          }
-          size={18}
-          tintColor={colors.foreground}
-        />
+        {latest && streaming ? (
+          <StreamingDots color={colors.foreground} />
+        ) : (
+          <SymbolView
+            name={
+              latest
+                ? { ios: "arrow.down", android: "arrow_downward" }
+                : { ios: "arrow.up", android: "arrow_upward" }
+            }
+            size={18}
+            tintColor={colors.foreground}
+          />
+        )}
 
         {latest && unseen && !streaming ? (
           <View
@@ -71,82 +80,61 @@ export function JumpButton({
   );
 }
 
-function StreamingRing({ color }: { color: string }) {
-  const [rotation] = useState(() => new Animated.Value(0));
-  const [reduceMotion, setReduceMotion] = useState(true);
-  const [attach] = useState(() => (node: unknown) => {
-    if (!node) return;
-    let active = true;
-    let animation: Animated.CompositeAnimation | undefined;
-    const update = (reduced: boolean) => {
-      if (!active) return;
-      animation?.stop();
-      rotation.setValue(0);
-      setReduceMotion(reduced);
-      if (reduced) return;
-      animation = Animated.loop(
-        Animated.timing(rotation, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-          isInteraction: false,
-        }),
-      );
-      animation.start();
-    };
-    void AccessibilityInfo.isReduceMotionEnabled().then(update);
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      update,
-    );
-    return () => {
-      active = false;
-      animation?.stop();
-      subscription.remove();
-    };
-  });
+function StreamingDots({ color }: { color: string }) {
   return (
     <View
-      ref={attach}
+      testID="transcript-jump-streaming"
       pointerEvents="none"
       accessible={false}
-      style={StyleSheet.absoluteFill}
+      style={styles.dots}
     >
-      <View
-        style={[
-          styles.ring,
-          { borderColor: color, opacity: reduceMotion ? 1 : 0.2 },
-        ]}
-      />
-      {!reduceMotion ? (
-        <Animated.View
-          style={[
-            styles.ring,
-            {
-              borderColor: "transparent",
-              borderTopColor: color,
-              transform: [
-                {
-                  rotate: rotation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ["0deg", "360deg"],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-      ) : null}
+      {DOT_DELAYS.map((delay) => (
+        <StreamingDot key={delay} color={color} delay={delay} />
+      ))}
     </View>
+  );
+}
+
+function StreamingDot({ color, delay }: { color: string; delay: number }) {
+  const reduced = useReducedMotion();
+  const progress = useSharedValue(0);
+  const attach = useCallback(
+    (node: unknown) => {
+      if (!node || reduced) return;
+      progress.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 360, easing: Easing.out(Easing.quad) }),
+            withTiming(0, { duration: 360, easing: Easing.in(Easing.quad) }),
+            withTiming(0, { duration: 480 }),
+          ),
+          -1,
+        ),
+      );
+      return () => cancelAnimation(progress);
+    },
+    [delay, progress, reduced],
+  );
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: reduced ? 1 : 0.35 + progress.value * 0.65,
+    transform: [{ translateY: reduced ? 0 : -1.5 * progress.value }],
+  }));
+  return (
+    <Animated.View
+      ref={attach}
+      style={[styles.streamDot, { backgroundColor: color }, animatedStyle]}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   slot: {
     position: "absolute",
-    end: layout.sideMargin,
+    start: 0,
+    end: 0,
     bottom: space.lg,
+    alignItems: "center",
   },
   button: {
     width: SIZE,
@@ -155,10 +143,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ring: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: SIZE / 2,
-    borderWidth: 2,
+  dots: { flexDirection: "row", alignItems: "center", gap: 3 },
+  streamDot: {
+    width: STREAM_DOT,
+    height: STREAM_DOT,
+    borderRadius: STREAM_DOT / 2,
   },
   pressed: { opacity: 0.6 },
   dot: {

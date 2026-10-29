@@ -10,7 +10,9 @@ export * from "./agent-versions";
 export * from "./assistant-session";
 export * from "./attachment-http";
 export type { BrowserTab, BrowserTabsSnapshot } from "./browser-tabs";
+export * from "./chat-elapsed";
 export * from "./chat-jump-button";
+export * from "./chat-prompt-anchor";
 export * from "./chat-session";
 export * from "./codex-models";
 export type {
