@@ -26,6 +26,10 @@ export {
   type AppSearchableSelectOption,
 } from "./searchable-select";
 export { AppSelect } from "./select";
-export { SettingRow, SettingsGroup } from "./settings-fields";
+export {
+  SettingNumberInput,
+  SettingRow,
+  SettingsGroup,
+} from "./settings-fields";
 export { AppSidebarRowTitle } from "./sidebar-row-title";
 export { AppWindowOverlayHeader } from "./window-overlay-header";

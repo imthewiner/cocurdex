@@ -1335,7 +1335,7 @@
       "timeout": {
         "description": "队友或脚本 agent 的运行超过该时长会被停止。留空表示不限时。",
         "none": "不限",
-        "title": "超时（分钟）"
+        "title": "超时"
       },
       "title": "委派运行"
     },

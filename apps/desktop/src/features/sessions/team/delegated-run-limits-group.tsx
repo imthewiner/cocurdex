@@ -6,8 +6,11 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { SettingRow, SettingsGroup } from "@/components/app";
-import { Input } from "@/components/ui";
+import {
+  SettingNumberInput,
+  SettingRow,
+  SettingsGroup,
+} from "@/components/app";
 import { desktopApi, useMountEffect } from "@/lib";
 
 type RunLimitField = keyof AgentRunLimits;
@@ -43,33 +46,35 @@ function limitsFrom(drafts: RunLimitDrafts): AgentRunLimits | null {
 function RunLimitInput({
   disabled,
   field,
+  label,
   onChange,
   onCommit,
   placeholder,
+  unit,
   value,
 }: {
   disabled: boolean;
   field: RunLimitField;
+  label: string;
   onChange: (field: RunLimitField, value: string) => void;
   onCommit: () => void;
   placeholder?: string;
+  unit?: string;
   value: string;
 }) {
   const bounds = AGENT_RUN_LIMIT_BOUNDS[field];
   return (
-    <Input
-      className="w-24"
+    <SettingNumberInput
+      aria-label={label}
       disabled={disabled}
       max={bounds.max}
       min={bounds.min}
-      onBlur={onCommit}
       onChange={(event) => onChange(field, event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") onCommit();
-      }}
+      onCommit={onCommit}
       placeholder={placeholder}
       step={1}
       type="number"
+      unit={unit}
       value={value}
     />
   );
@@ -131,6 +136,7 @@ export function DelegatedRunLimitsGroup() {
         <RunLimitInput
           disabled={disabled}
           field="maxConcurrentRuns"
+          label={t("teams.runLimits.maxConcurrentRuns.title")}
           onChange={change}
           onCommit={() => void commit()}
           value={values.maxConcurrentRuns}
@@ -143,6 +149,7 @@ export function DelegatedRunLimitsGroup() {
         <RunLimitInput
           disabled={disabled}
           field="maxConcurrentRunsPerAgent"
+          label={t("teams.runLimits.maxConcurrentRunsPerAgent.title")}
           onChange={change}
           onCommit={() => void commit()}
           value={values.maxConcurrentRunsPerAgent}
@@ -155,9 +162,11 @@ export function DelegatedRunLimitsGroup() {
         <RunLimitInput
           disabled={disabled}
           field="delegatedRunTimeoutMinutes"
+          label={t("teams.runLimits.timeout.title")}
           onChange={change}
           onCommit={() => void commit()}
           placeholder={t("teams.runLimits.timeout.none")}
+          unit={t("teams.scriptRuns.minutes")}
           value={values.delegatedRunTimeoutMinutes}
         />
       </SettingRow>

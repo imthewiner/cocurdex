@@ -3126,7 +3126,7 @@ export default interface Resources {
         timeout: {
           description: "Stops a teammate or script agent run that takes longer. Leave empty for no timeout.";
           none: "None";
-          title: "Timeout (minutes)";
+          title: "Timeout";
         };
         title: "Delegated runs";
       };
