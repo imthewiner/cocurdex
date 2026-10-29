@@ -65,9 +65,12 @@ function jumpControlLayout(label) {
   if (!button || !viewport) return null;
   const control = button.getBoundingClientRect();
   const area = viewport.getBoundingClientRect();
+  const column = viewport
+    .querySelector("[data-testid=chat-timeline]")
+    .getBoundingClientRect();
   return {
-    endGap:
-      viewport.closest("section").getBoundingClientRect().right - control.right,
+    centerOffset:
+      control.left + control.width / 2 - (column.left + column.width / 2),
     bottomGap: area.bottom - control.bottom,
     width: control.width,
     height: control.height,
@@ -89,6 +92,14 @@ async function waitForJumpToSettle() {
     previous = next;
   }
   throw new Error("Explicit jump did not settle");
+}
+
+const createdSessionIds = [];
+
+async function configureScenarioSession(session, payload) {
+  const configured = await daemonRequest(session, "session.configure", payload);
+  createdSessionIds.push(configured.id);
+  return configured;
 }
 
 runScenario("chat-streaming", {
@@ -135,7 +146,7 @@ runScenario("chat-streaming", {
         for (const theme of ["light", "dark"]) {
           await emulateColorScheme(session, theme);
           const title = `Streaming ${theme}`;
-          const configured = await daemonRequest(session, "session.configure", {
+          const configured = await configureScenarioSession(session, {
             id: crypto.randomUUID(),
             workspaceId,
             sessionKind: "main",
@@ -283,7 +294,7 @@ runScenario("chat-streaming", {
         for (const theme of ["light", "dark"]) {
           await emulateColorScheme(session, theme);
           const title = `Reading control ${theme}`;
-          const configured = await daemonRequest(session, "session.configure", {
+          const configured = await configureScenarioSession(session, {
             id: crypto.randomUUID(),
             workspaceId,
             sessionKind: "main",
@@ -363,27 +374,39 @@ runScenario("chat-streaming", {
             "stream moved the reading position",
             { before, grown },
           );
-          const ring = await session.run((label) => {
+          const jumpIcons = (label) => {
             const button = [...document.querySelectorAll("button")].find(
               (node) => node.getAttribute("aria-label") === label,
             );
             const indicator = button?.querySelector("[data-stream-indicator]");
-            const icon = button?.querySelector("svg");
-            if (!indicator || !icon) return null;
-            const style = getComputedStyle(indicator);
+            const arrow = [...(button?.querySelectorAll("svg") ?? [])].find(
+              (node) => node !== indicator,
+            );
+            if (!button || !indicator || !arrow) return null;
+            const rect = button.getBoundingClientRect();
             return {
-              animation: style.animationName,
-              duration: style.animationDuration,
-              arcColor: style.borderTopColor,
-              arrowAnimation: getComputedStyle(icon).animationName,
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+              indicatorShown: getComputedStyle(indicator).display !== "none",
+              arrowShown: getComputedStyle(arrow).display !== "none",
             };
-          }, jumpLabel);
+          };
+          const resting = await session.run(jumpIcons, jumpLabel);
           check(
-            ring?.animation === "spin" &&
-              ring.duration === "2s" &&
-              ring.arrowAnimation === "none",
-            "streaming must rotate only the colored border",
-            ring,
+            resting?.indicatorShown && !resting.arrowShown,
+            "streaming must show the ellipsis instead of the arrow",
+            resting,
+          );
+          await session.send("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            x: resting.x,
+            y: resting.y,
+          });
+          const hovered = await session.run(jumpIcons, jumpLabel);
+          check(
+            hovered && !hovered.indicatorShown && hovered.arrowShown,
+            "hovering the streaming jump control must reveal the arrow",
+            hovered,
           );
           const ringArtifacts = process.env.COCURDEX_TEST_ARTIFACTS_DIR;
           if (ringArtifacts) {
@@ -391,37 +414,20 @@ runScenario("chat-streaming", {
               format: "png",
             });
             await writeFile(
-              path.join(ringArtifacts, `stream-ring-${theme}.png`),
+              path.join(ringArtifacts, `stream-jump-hover-${theme}.png`),
               Buffer.from(shot.data, "base64"),
             );
           }
-          await session.send("Emulation.setEmulatedMedia", {
-            features: [
-              { name: "prefers-color-scheme", value: theme },
-              { name: "prefers-reduced-motion", value: "reduce" },
-            ],
+          await session.send("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            x: 0,
+            y: 0,
           });
-          const reduced = await session.run(() => {
-            const indicator = document.querySelector("[data-stream-indicator]");
-            const border = getComputedStyle(indicator.parentElement);
-            return {
-              display: getComputedStyle(indicator).display,
-              top: border.borderTopColor,
-              right: border.borderRightColor,
-            };
-          });
-          check(
-            reduced.display === "none" &&
-              reduced.top === ring.arcColor &&
-              reduced.right === ring.arcColor,
-            "reduced motion must use a static colored border",
-            reduced,
-          );
           await emulateColorScheme(session, theme);
           const jumpLayout = await session.run(jumpControlLayout, jumpLabel);
           check(
-            jumpLayout && Math.abs(jumpLayout.endGap - 16) <= 1,
-            "jump control must sit at the bottom end of the conversation",
+            jumpLayout && Math.abs(jumpLayout.centerOffset) <= 8,
+            "jump control must sit centered under the conversation column",
             jumpLayout,
           );
           check(
@@ -476,7 +482,7 @@ runScenario("chat-streaming", {
           }, jumpLabel);
           check(
             stopped === false,
-            "completed reply kept the streaming border",
+            "completed reply kept the streaming indicator",
             {
               stopped,
             },
@@ -506,6 +512,18 @@ runScenario("chat-streaming", {
             );
             await clickByRole(session, { role: "button", name: jumpLabel });
             await session.run(waitForJumpToSettle);
+            const controlsAtLatest = await session.run(
+              (labels) =>
+                [...document.querySelectorAll("button")].filter((node) =>
+                  labels.includes(node.getAttribute("aria-label")),
+                ).length,
+              [jumpLabel, topLabel],
+            );
+            check(
+              controlsAtLatest === 0,
+              "the latest message must not show a jump control",
+              { width, controlsAtLatest },
+            );
             const point = await session.run(() => {
               const area = [
                 ...document.querySelectorAll(
@@ -525,7 +543,7 @@ runScenario("chat-streaming", {
               type: "mouseWheel",
               ...point,
               deltaX: 0,
-              deltaY: 20,
+              deltaY: -400,
             });
             await session.waitUntil(
               (label) =>
@@ -536,9 +554,9 @@ runScenario("chat-streaming", {
             );
             const topLayout = await session.run(jumpControlLayout, topLabel);
             check(
-              Math.abs(topLayout.endGap - 16) <= 1 &&
+              Math.abs(topLayout.centerOffset) <= 8 &&
                 topLayout.bottomGap === 16,
-              "top control must retain the bottom-end slot after resize",
+              "top control must stay centered above the composer after resize",
               { width, topLayout },
             );
             await clickByRole(session, { role: "button", name: topLabel });
@@ -557,7 +575,7 @@ runScenario("chat-streaming", {
               jumpLabel,
             );
             check(
-              Math.abs(latestLayout.endGap - 16) <= 1 &&
+              Math.abs(latestLayout.centerOffset) <= 8 &&
                 latestLayout.bottomGap === topLayout.bottomGap,
               "both directions must share the same slot",
               { width, topLayout, latestLayout },
@@ -579,9 +597,126 @@ runScenario("chat-streaming", {
         return { themes: reports };
       },
     ],
+    [
+      "live status sits in the activity group header, never below the stream",
+      async ({ session, workspaceId, providerSnapshot }) => {
+        const reports = [];
+        const [planningLabel, thinkingLabel] = await Promise.all([
+          translate(session, "agent:activity.planning"),
+          translate(session, "agent:activity.thinking"),
+        ]);
+        const liveStatus = (labels) => {
+          const timeline = document.querySelector(
+            '[data-testid="chat-timeline"]',
+          );
+          const nodes = [...(timeline?.querySelectorAll("span") ?? [])].filter(
+            (node) => [labels].flat().includes(node.textContent),
+          );
+          return nodes.map((node) => ({
+            inGroupHeader: node.closest("button[aria-expanded]") !== null,
+          }));
+        };
+        for (const theme of ["light", "dark"]) {
+          await emulateColorScheme(session, theme);
+          const title = `Live status ${theme}`;
+          const configured = await configureScenarioSession(session, {
+            id: crypto.randomUUID(),
+            workspaceId,
+            sessionKind: "main",
+            title,
+            agentType: "pi",
+            writeMode: "read-only",
+            sessionModeId: null,
+            providerSnapshot,
+          });
+          await clickByRole(
+            session,
+            { role: "button", name: new RegExp(`^${title}`) },
+            30_000,
+          );
+          stub.plan = { kind: "hang" };
+          await daemonRequest(session, "session.send", {
+            sessionId: configured.id,
+            messageId: crypto.randomUUID(),
+            content: "Wait before doing anything.",
+            attachments: [],
+          });
+          await session.waitUntil(
+            (label) =>
+              [
+                ...(document
+                  .querySelector('[data-testid="chat-timeline"]')
+                  ?.querySelectorAll("span") ?? []),
+              ].some((node) => node.textContent === label),
+            planningLabel,
+            30_000,
+          );
+          const beforeWork = await session.run(liveStatus, planningLabel);
+          check(
+            beforeWork.length === 1 && !beforeWork[0].inGroupHeader,
+            "a turn without process shows one live status row",
+            beforeWork,
+          );
+          await daemonRequest(session, "session.stop", {
+            sessionId: configured.id,
+          });
+
+          const requests = stub.requests.length;
+          stub.plan = {
+            kind: "script",
+            turns: [
+              {
+                toolCalls: [
+                  { name: "read", arguments: { path: "package.json" } },
+                ],
+              },
+              {
+                toolCalls: [{ name: "read", arguments: { path: "README.md" } }],
+              },
+            ],
+          };
+          await daemonRequest(session, "session.send", {
+            sessionId: configured.id,
+            messageId: crypto.randomUUID(),
+            content: "Read two files, then keep thinking.",
+            attachments: [],
+          });
+          while (stub.requests.length < requests + 2) {
+            await stub.nextRequest();
+          }
+          stub.plan = { kind: "hang" };
+          const workingLabels = [planningLabel, thinkingLabel];
+          await session.waitUntil(
+            (labels) =>
+              [
+                ...(document
+                  .querySelector('[data-testid="chat-timeline"]')
+                  ?.querySelectorAll("button[aria-expanded] span") ?? []),
+              ].some((node) => labels.includes(node.textContent)),
+            workingLabels,
+            30_000,
+          );
+          const duringWork = await session.run(liveStatus, workingLabels);
+          check(
+            duringWork.length === 1 && duringWork[0].inGroupHeader,
+            "live status must replace the latest group header, not trail it",
+            duringWork,
+          );
+          await daemonRequest(session, "session.stop", {
+            sessionId: configured.id,
+          });
+          reports.push({ theme, beforeWork, duringWork });
+        }
+        await clearColorScheme(session);
+        return { themes: reports };
+      },
+    ],
   ],
-  teardown: async () => {
+  teardown: async ({ session }) => {
     await stub?.close();
-    return {};
+    for (const sessionId of createdSessionIds) {
+      await daemonRequest(session, "session.delete", { sessionId });
+    }
+    return { deletedSessions: createdSessionIds.length };
   },
 });
