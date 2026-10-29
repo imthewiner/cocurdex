@@ -46,6 +46,17 @@ function compact(value: unknown, maxChars: number) {
   return text.length > maxChars ? `${text.slice(0, maxChars)}…` : text;
 }
 
+function compactBody(value: unknown, maxChars: number) {
+  if (typeof value !== "string") return null;
+  const text = value
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n");
+  if (!text) return null;
+  return text.length > maxChars ? `${text.slice(0, maxChars)}…` : text;
+}
+
 export interface PiMemoryDigest {
   title: string;
   importance: "important" | "trivial";
@@ -57,7 +68,7 @@ export function parsePiMemoryDigest(raw: string | null): PiMemoryDigest | null {
   const parsed = parseJsonObject(raw);
   if (!parsed) return null;
   const title = compact(parsed.title, 64);
-  const body = compact(parsed.body, 1_600);
+  const body = compactBody(parsed.body, 1_600);
   const importance =
     parsed.importance === "important" ? "important" : "trivial";
   if (!title || !body) return null;
@@ -71,6 +82,7 @@ export async function generatePiMemoryDigest(params: {
   apiKey: string | null;
   sessionTitle: string;
   transcript: string;
+  sessionId?: string;
   signal?: AbortSignal;
 }): Promise<PiMemoryDigest | null> {
   const text = await generatePiText({
@@ -80,6 +92,7 @@ export async function generatePiMemoryDigest(params: {
     systemPrompt: MEMORY_DIGEST_PROMPT,
     message: `Session title: ${params.sessionTitle}\n\n${params.transcript}`,
     maxTokens: MEMORY_DIGEST_MAX_TOKENS,
+    sessionId: params.sessionId,
     signal: params.signal,
   });
   return parsePiMemoryDigest(text);

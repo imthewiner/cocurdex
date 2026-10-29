@@ -130,6 +130,16 @@ export type MemoryInstallationState =
   | "installing"
   | "failed";
 
+export type MemoryRecallOutcome = "recalled" | "empty" | "failed";
+
+export interface MemoryRecallStatus {
+  sessionId: string;
+  mode: "agent" | "chat";
+  outcome: MemoryRecallOutcome;
+  error: string | null;
+  at: string;
+}
+
 export interface MemoryStatus {
   settings: MemorySettings;
   enabled: boolean;
@@ -143,6 +153,7 @@ export interface MemoryStatus {
   doctor: MemoryDoctorReport | null;
   error: string | null;
   checkedAt: string | null;
+  lastRecall: MemoryRecallStatus | null;
 }
 
 export interface MemoryRecallItem {

@@ -1,6 +1,8 @@
 {
   "session": {
     "alreadySaved": "This conversation is already in memory",
+    "recallFailed": "Memory recall failed this turn: {{error}}",
+    "recallFailedUnknown": "unknown error",
     "save": "Save to memory",
     "saved": "Conversation saved to memory",
     "saveFailed": "Could not save the conversation",

@@ -1,6 +1,8 @@
 {
   "session": {
     "alreadySaved": "这段对话已经在记忆里了",
+    "recallFailed": "本轮记忆召回失败：{{error}}",
+    "recallFailedUnknown": "未知错误",
     "save": "保存到记忆",
     "saved": "对话已保存到记忆",
     "saveFailed": "无法保存对话",

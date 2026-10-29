@@ -480,7 +480,6 @@ export async function recallMemories(
 ) {
   const args = [
     "recall",
-    input.query,
     "--titles",
     "--json",
     "--limit",
@@ -489,6 +488,7 @@ export async function recallMemories(
   if (input.project) {
     args.push("--project", input.project);
   }
+  args.push(input.query);
   const result = await runRsrs(executable, args, {
     timeoutMs: input.timeoutMs ?? RECALL_TIMEOUT_MS,
   });
@@ -537,7 +537,7 @@ export async function rememberMemory(
   input: RememberCommandInput,
   timeoutMs = REMEMBER_TIMEOUT_MS,
 ) {
-  const args = ["remember", input.content, "--json"];
+  const args = ["remember", "--json"];
   appendFlag(args, "--title", input.title);
   appendFlag(args, "--importance", input.importance ?? null);
   appendFlag(args, "--type", input.type ?? null);
@@ -551,6 +551,7 @@ export async function rememberMemory(
     args.push("--supersedes", input.supersedes.join(","));
   }
   if (input.seeAlso?.length) args.push("--see-also", input.seeAlso.join(","));
+  args.push(input.content);
   const result = await runRsrs(executable, args, { timeoutMs });
   const payload = parseRsrsJson(result.stdout);
   return parseRememberPayload(payload);

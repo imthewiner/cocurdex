@@ -142,6 +142,7 @@ export async function generateProviderSessionTitle(
         model: records.model,
         apiKey: records.apiKey,
         message: payload.message,
+        sessionId: session.id,
         signal: controller.signal,
       });
     } else {

@@ -11,7 +11,9 @@ import {
   type MemoryImportance,
   type MemoryInstallResult,
   type MemoryRecallItem,
+  type MemoryRecallOutcome,
   type MemoryRecallResult,
+  type MemoryRecallStatus,
   type MemoryRememberInput,
   type MemoryRememberResult,
   type MemorySessionSaveInput,
@@ -114,6 +116,7 @@ export class MemoryService {
     string,
     { stored: boolean; nudge: boolean }
   >();
+  private lastRecall: MemoryRecallStatus | null = null;
   private readonly device: string;
   private readonly now: () => Date;
 
@@ -240,7 +243,11 @@ export class MemoryService {
     ) {
       return this.executable;
     }
-    this.executable = await resolveRsrsExecutable(this.currentSettings());
+    const resolved = await resolveRsrsExecutable(this.currentSettings());
+    this.executable =
+      resolved?.source === "path"
+        ? ((await materializeNativeBinary(resolved)) ?? resolved)
+        : resolved;
     this.executableResolvedAt = this.now().getTime();
     return this.executable;
   }
@@ -263,6 +270,11 @@ export class MemoryService {
   }
 
   async getStatus(refresh = false): Promise<MemoryStatus> {
+    const status = await this.computeStatus(refresh);
+    return { ...status, lastRecall: this.lastRecall };
+  }
+
+  private async computeStatus(refresh = false): Promise<MemoryStatus> {
     await this.ensureInitialized();
     const now = this.now().getTime();
     if (
@@ -294,6 +306,7 @@ export class MemoryService {
         doctor: installState.doctor,
         error: installState.error,
         checkedAt: installState.attemptedAt,
+        lastRecall: null,
       };
       this.statusCache = { status, at: now };
       return status;
@@ -331,6 +344,7 @@ export class MemoryService {
       doctor: installState.doctor,
       error,
       checkedAt: this.now().toISOString(),
+      lastRecall: null,
     };
     this.statusCache = { status, at: now };
     return status;
@@ -648,13 +662,18 @@ export class MemoryService {
         timeoutMs: TURN_RECALL_BUDGET_MS,
       });
     } catch (error) {
-      logDaemonDiagnostic("info", "memory.turnRecallSkipped", {
+      this.noteRecall(session.id, mode, "failed", errorMessage(error));
+      logDaemonDiagnostic("warn", "memory.turnRecallFailed", {
         error: errorMessage(error),
         sessionId: session.id,
       });
       return null;
     }
-    if (result.items.length === 0) return null;
+    if (result.items.length === 0) {
+      this.noteRecall(session.id, mode, "empty", null);
+      return null;
+    }
+    this.noteRecall(session.id, mode, "recalled", null);
     const excerpts = new Map<string, string>();
     if (mode === "chat") {
       const selected = result.items.slice(0, 2);
@@ -679,6 +698,30 @@ export class MemoryService {
       }),
       items: result.items,
     };
+  }
+
+  private noteRecall(
+    sessionId: string,
+    mode: "agent" | "chat",
+    outcome: MemoryRecallOutcome,
+    error: string | null,
+  ) {
+    const previous = this.lastRecall;
+    if (
+      previous?.sessionId === sessionId &&
+      previous.outcome === outcome &&
+      previous.error === error
+    ) {
+      return;
+    }
+    this.lastRecall = {
+      sessionId,
+      mode,
+      outcome,
+      error,
+      at: this.now().toISOString(),
+    };
+    this.broadcast();
   }
 
   private async projectFor(session: SessionRecord) {
@@ -819,30 +862,46 @@ export class MemoryService {
       });
     const importance: MemoryImportance =
       input.importance ?? digest?.importance ?? "trivial";
-    const result = await this.remember({
+    const stored = await this.storeSessionMemory({
       content: redactMemorySecrets(body),
       title:
         digest?.title ??
         `Cocurdex chat：${compactDigestText(session.title, 48)}`,
       importance,
       project: await this.projectFor(session),
-      force: true,
     });
-    if (!result.id) {
+    if (!stored.id) {
       return {
         saved: false,
         memoryId: null,
-        reason: result.message ?? "not-written",
+        reason: stored.message ?? stored.action,
       };
     }
     await writeMemoryCapture(this.options.state, session.id, {
-      memoryId: result.id,
+      memoryId: stored.id,
       savedAt: endedAt,
       lastAssistantMessageId: lastAssistant?.id ?? null,
       kind: "session",
     });
     this.broadcast();
-    return { saved: true, memoryId: result.id, reason: null };
+    return { saved: true, memoryId: stored.id, reason: null };
+  }
+
+  private async storeSessionMemory(input: {
+    content: string;
+    title: string;
+    importance: MemoryImportance;
+    project: string | null;
+  }): Promise<MemoryRememberResult> {
+    const judged = await this.remember(input);
+    if (judged.action !== "candidates" || judged.id) return judged;
+    const parentId = judged.candidates[0]?.id ?? null;
+    if (!parentId) return judged;
+    logDaemonDiagnostic("info", "memory.sessionAttached", {
+      parentId,
+      title: input.title,
+    });
+    return this.remember({ ...input, parentId });
   }
 
   private async summarizeSession(session: SessionRecord, transcript: string) {
@@ -872,6 +931,7 @@ export class MemoryService {
         apiKey: runtime.apiKey ?? null,
         sessionTitle: session.title,
         transcript,
+        sessionId: session.id,
         signal: controller.signal,
       });
     } catch (error) {

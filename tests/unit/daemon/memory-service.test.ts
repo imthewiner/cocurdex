@@ -57,7 +57,11 @@ function fakeMessages(): MessageRecord[] {
   ];
 }
 
-async function createFakeRsrs(directory: string, logPath: string) {
+async function createFakeRsrs(
+  directory: string,
+  logPath: string,
+  options: { failRecall?: boolean; candidateOnRemember?: boolean } = {},
+) {
   const scriptPath = path.join(directory, "fake-rsrs.mjs");
   const script = `import { appendFileSync } from "node:fs";
 const log = ${JSON.stringify(logPath)};
@@ -72,11 +76,21 @@ if (command === "--version") {
 } else if (command === "config") {
   send({ command: "config", status: "ok", summary: { data_dir: "/tmp/rsrs", addr: "https://api.rsrs.rs" } });
 } else if (command === "recall") {
-  send({ command: "recall", status: "ok", details: [{ id: "memory-1", title: "Recall title", score: 0.8 }] });
+  ${
+    options.failRecall
+      ? `process.stderr.write("rsrs recall timed out after 2000ms\\n"); process.exit(1);`
+      : `send({ command: "recall", status: "ok", details: [{ id: "memory-1", title: "Recall title", score: 0.8 }] });`
+  }
 } else if (command === "show") {
   send({ command: "show", status: "ok", details: { entry: { id: args[1], title: "Recall title", content: "Recall body", importance: "important", tags: [] } } });
 } else if (command === "remember") {
-  send({ command: "remember", status: "ok", summary: { action: "created", id: "saved-memory" } });
+  if (args.includes("--parent")) {
+    send({ command: "remember", status: "ok", summary: { action: "created", id: "attached-memory" } });
+  } else if (${options.candidateOnRemember === true}) {
+    send({ command: "remember", status: "ok", summary: { action: "candidates" }, details: [{ id: "old-memory", title: "Old memory", score: 0.9 }] });
+  } else {
+    send({ command: "remember", status: "ok", summary: { action: "created", id: "saved-memory" } });
+  }
 } else if (command === "doctor") {
   send({ command: "doctor", status: "ok", summary: { total: 1, pass: 1, warn: 0, fail: 0, skip: 0, version: "1.0.0" }, items: [{ name: "store", status: "ok", value: "ok" }] });
 } else if (command === "prompt") {
@@ -119,10 +133,12 @@ function createState(settings: MemorySettings) {
   };
 }
 
-async function createService() {
+async function createService(
+  options: { failRecall?: boolean; candidateOnRemember?: boolean } = {},
+) {
   const directory = await temp.create("cocurdex-memory-");
   const logPath = path.join(directory, "calls.log");
-  const executable = await createFakeRsrs(directory, logPath);
+  const executable = await createFakeRsrs(directory, logPath, options);
   const settings: MemorySettings = {
     enabled: true,
     agent: { injectContext: true, tools: true },
@@ -184,6 +200,56 @@ describe("MemoryService with a fake rsrs CLI", () => {
     expect(log).toContain('"remember"');
     expect(log).toContain("--importance");
     expect(log).toContain("trivial");
+  });
+
+  it("stores a manual session save as important and lets rsrs judge it", async () => {
+    const { service, logPath } = await createService();
+    await service.getStatus();
+    const result = await service.saveSession({
+      sessionId: "chat-1",
+      importance: "important",
+    });
+    expect(result).toMatchObject({ saved: true, memoryId: "saved-memory" });
+    const calls = (await readFile(logPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+    const remember = calls.find((args) => args[0] === "remember");
+    expect(remember).toContain("--importance");
+    expect(remember).toContain("important");
+    expect(remember).not.toContain("--force");
+  });
+
+  it("attaches the session summary under the closest memory instead of duplicating it", async () => {
+    const { service, logPath } = await createService({
+      candidateOnRemember: true,
+    });
+    await service.getStatus();
+    const result = await service.saveSession({ sessionId: "chat-1" });
+    expect(result).toMatchObject({ saved: true, memoryId: "attached-memory" });
+    const rememberCalls = (await readFile(logPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[])
+      .filter((args) => args[0] === "remember");
+    expect(rememberCalls).toHaveLength(2);
+    expect(rememberCalls[1]).toContain("--parent");
+    expect(rememberCalls[1]).toContain("old-memory");
+  });
+
+  it("records a failed turn recall so clients can surface it", async () => {
+    const { service } = await createService({ failRecall: true });
+    await service.getStatus();
+    expect(
+      await service.buildTurnContext(fakeSession(), "anything", "chat"),
+    ).toBeNull();
+    const status = await service.getStatus();
+    expect(status.lastRecall).toMatchObject({
+      sessionId: "chat-1",
+      mode: "chat",
+      outcome: "failed",
+    });
+    expect(status.lastRecall?.error).toBeTruthy();
   });
 
   it("stops recalling and capturing when the switch is off", async () => {

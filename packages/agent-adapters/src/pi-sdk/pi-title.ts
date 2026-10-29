@@ -31,9 +31,27 @@ const TITLE_MAX_TOKENS = 512;
 // the right "disable thinking" parameter per provider (deepseek/zai/qwen/...).
 // Manually configured models lack compat and fall back to pi's URL-based
 // auto-detection.
+const OPENCODE_SESSION_HEADER = "x-opencode-session";
+const OPENCODE_PROVIDER_IDS = new Set(["opencode", "opencode-go"]);
+
+export function withOpenCodeSession(
+  provider: ProviderConfigRecord,
+  headers: Record<string, string> | undefined,
+  sessionId: string | undefined,
+) {
+  if (!sessionId || !OPENCODE_PROVIDER_IDS.has(provider.id)) return headers;
+  const present = Object.keys(headers ?? {}).some(
+    (key) => key.toLowerCase() === OPENCODE_SESSION_HEADER,
+  );
+  return present
+    ? headers
+    : { ...headers, [OPENCODE_SESSION_HEADER]: sessionId };
+}
+
 function buildPiTitleModel(
   provider: ProviderConfigRecord,
   model: ProviderModelRecord,
+  sessionId?: string,
 ): Model<Api> {
   return {
     id: model.modelId,
@@ -47,7 +65,11 @@ function buildPiTitleModel(
     cost: buildModelCost(model.costJson),
     contextWindow: model.contextLimit ?? 0,
     maxTokens: model.outputLimit ?? 0,
-    headers: parseHeaders(provider.headersJson),
+    headers: withOpenCodeSession(
+      provider,
+      parseHeaders(provider.headersJson),
+      sessionId,
+    ),
     compat:
       parseJsonObject(model.compatJson) ?? parseJsonObject(provider.compatJson),
   } as Model<Api>;
@@ -71,9 +93,14 @@ export async function generatePiText(params: {
   systemPrompt: string;
   message: string;
   maxTokens: number;
+  sessionId?: string;
   signal?: AbortSignal;
 }): Promise<string | null> {
-  const model = buildPiTitleModel(params.provider, params.model);
+  const model = buildPiTitleModel(
+    params.provider,
+    params.model,
+    params.sessionId,
+  );
   const context: Context = {
     systemPrompt: params.systemPrompt,
     messages: [
@@ -108,6 +135,7 @@ export async function generatePiConversationTitle(params: {
   model: ProviderModelRecord;
   apiKey: string | null;
   message: string;
+  sessionId?: string;
   signal?: AbortSignal;
 }): Promise<string | null> {
   const text = await generatePiText({
@@ -117,6 +145,7 @@ export async function generatePiConversationTitle(params: {
     systemPrompt: TITLE_PROMPT,
     message: params.message,
     maxTokens: TITLE_MAX_TOKENS,
+    sessionId: params.sessionId,
     signal: params.signal,
   });
   return text ? normalizeTitle(text) : null;
