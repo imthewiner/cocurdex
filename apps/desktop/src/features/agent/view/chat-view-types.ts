@@ -15,7 +15,10 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import type { ReactNode, Ref } from "react";
-import type { ChatComposerHandle } from "@/features/composer";
+import type {
+  ChatComposerHandle,
+  ComposerSendOutcome,
+} from "@/features/composer";
 import type { SessionPlan } from "../plan";
 import type { QueuedAgentInputItem } from "../queued-input";
 import type { AgentSessionRuntimeState } from "../runtime";
@@ -73,7 +76,7 @@ export interface ChatViewProps {
     message: string,
     attachments: MessageAttachment[],
     useOppositeFollowUpBehavior?: boolean,
-  ): void;
+  ): ComposerSendOutcome | Promise<ComposerSendOutcome>;
   onStop?(): void;
   onDeleteQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
   onSendNowQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
