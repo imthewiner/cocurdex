@@ -65,10 +65,19 @@ export function getMessageScrollTop(
 }
 
 const TIMELINE_BOTTOM_PADDING = 24;
+const PROMPT_ANCHOR_PEEK_RATIO = 0.2;
+const PROMPT_ANCHOR_PEEK_MAX = 160;
 
 export function getAnchoredConversationMinHeight(viewportHeight: number) {
+  const earlierReplyPeek = Math.min(
+    PROMPT_ANCHOR_PEEK_MAX,
+    Math.round(viewportHeight * PROMPT_ANCHOR_PEEK_RATIO),
+  );
   return Math.max(
     0,
-    viewportHeight - MESSAGE_SCROLL_INSET - TIMELINE_BOTTOM_PADDING,
+    viewportHeight -
+      MESSAGE_SCROLL_INSET -
+      TIMELINE_BOTTOM_PADDING -
+      earlierReplyPeek,
   );
 }
