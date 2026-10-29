@@ -106,8 +106,19 @@ function stopWatchingTreeRows() {
 }
 
 async function expandFolder(session, itemPath) {
-  await session.waitUntil(findTreeRow, itemPath, UI_TIMEOUT_MS);
-  await clickPoint(session, await session.run(findTreeRow, itemPath));
+  const deadline = Date.now() + UI_TIMEOUT_MS;
+  for (;;) {
+    await session.waitUntil(
+      findTreeRow,
+      itemPath,
+      Math.max(1, deadline - Date.now()),
+    );
+    const point = await session.run(findTreeRow, itemPath);
+    if (point) {
+      await clickPoint(session, point);
+      return;
+    }
+  }
 }
 
 async function expandNestedFolder(session, parentPath, childPath) {
