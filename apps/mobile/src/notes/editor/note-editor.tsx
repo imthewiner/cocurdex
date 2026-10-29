@@ -17,7 +17,11 @@ import { highlightCode } from "@/files";
 import { useOpenLink } from "@/markdown";
 import { useTextScale } from "@/preferences";
 import { type ThemeColors, useThemeColors, useThemeName } from "@/theme";
-import { useBottomKeyboardOverlap, useOptionSheet } from "@/ui";
+import {
+  useBottomKeyboardOverlap,
+  useHeaderOverlap,
+  useOptionSheet,
+} from "@/ui";
 import type { NoteDocSession } from "./note-doc-session";
 import {
   type NoteBlockStyle,
@@ -131,6 +135,7 @@ export function NoteEditor({
   const scheme = useThemeName();
   const router = useRouter();
   const keyboardOverlap = useBottomKeyboardOverlap();
+  const header = useHeaderOverlap();
   const keyboardShown = keyboardOverlap > 0;
   const bottomInset = useSafeAreaInsets().bottom;
   const openLink = useOpenLink(hostId, undefined);
@@ -295,9 +300,15 @@ export function NoteEditor({
 
   return (
     <View
+      ref={header.ref}
+      onLayout={header.onLayout}
       style={[
         styles.fill,
-        { backgroundColor: colors.background, paddingBottom: keyboardOverlap },
+        {
+          backgroundColor: colors.background,
+          paddingTop: header.overlap,
+          paddingBottom: keyboardOverlap,
+        },
       ]}
     >
       <WebView
@@ -312,7 +323,6 @@ export function NoteEditor({
         setSupportMultipleWindows={false}
         allowsLinkPreview={false}
         hideKeyboardAccessoryView
-        contentInsetAdjustmentBehavior="automatic"
         keyboardDisplayRequiresUserAction={false}
         textZoom={100}
         style={[styles.fill, { backgroundColor: colors.background }]}

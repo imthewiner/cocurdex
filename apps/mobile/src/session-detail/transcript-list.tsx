@@ -1,5 +1,4 @@
 import { sentPromptPeek } from "@cocurdex/shared";
-import { useHeaderHeight } from "expo-router/react-navigation";
 import {
   type ComponentRef,
   type ReactElement,
@@ -18,7 +17,7 @@ import {
 } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { layout, space } from "@/theme";
-import { useScrollIndicatorWhileScrolling } from "@/ui";
+import { useHeaderOverlap, useScrollIndicatorWhileScrolling } from "@/ui";
 import { JumpButton } from "./jump-button";
 import type { CondensedItem } from "./transcript-activity";
 import {
@@ -48,9 +47,8 @@ export function TranscriptList({
   ref?: Ref<TranscriptHandle>;
 }) {
   const reducedMotion = useReducedMotion();
-  const headerHeight = useHeaderHeight();
-  const frame = useRef<ComponentRef<typeof View>>(null);
-  const [headerOverlap, setHeaderOverlap] = useState(0);
+  const frame = useHeaderOverlap();
+  const headerOverlap = frame.overlap;
   const indicator = useScrollIndicatorWhileScrolling();
   const list = useRef<FlatList<TranscriptTurn>>(null);
   const metrics = useRef<ScrollMetrics | null>(null);
@@ -231,15 +229,7 @@ export function TranscriptList({
     });
   };
   return (
-    <View
-      ref={frame}
-      style={styles.fill}
-      onLayout={() =>
-        frame.current?.measureInWindow((_x, y) =>
-          setHeaderOverlap(Math.max(0, Math.round(headerHeight - y))),
-        )
-      }
-    >
+    <View ref={frame.ref} style={styles.fill} onLayout={frame.onLayout}>
       <FlatList
         {...indicator}
         ref={list}
