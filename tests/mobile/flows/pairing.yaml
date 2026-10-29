@@ -935,6 +935,17 @@ appId: dev.cocurdex.mobile
       - tapOn:
           text: ${ISSUE_LINK_TEXT}
           point: 10%, 50%
+      - extendedWaitUntil:
+          visible: ${ISSUE_DESCRIPTION}
+          timeout: 5000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: ${ISSUE_DESCRIPTION}
+          commands:
+            - tapOn:
+                text: ${ISSUE_LINK_TEXT}
+                point: 10%, 4%
 - extendedWaitUntil:
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000
