@@ -157,7 +157,7 @@ async function attachSharedInstance(shared, { fixtures, fixtureDb }) {
 
 export async function openScenarioApp(
   { port, url, keep, "fixture-db": fixtureDbArg },
-  { fixtures = [], fixtureDb = fixtureDbArg } = {},
+  { fixtures = [], fixtureDb = fixtureDbArg, isolated = false } = {},
 ) {
   if (port) {
     const session = await openAppSession({ port, url });
@@ -168,7 +168,7 @@ export async function openScenarioApp(
       close: () => session.close(),
     };
   }
-  const shared = readSharedInstance();
+  const shared = isolated ? null : readSharedInstance();
   if (shared) return attachSharedInstance(shared, { fixtures, fixtureDb });
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(os.tmpdir(), "cocu-ws-")),

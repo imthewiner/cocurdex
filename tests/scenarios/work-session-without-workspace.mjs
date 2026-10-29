@@ -88,7 +88,7 @@ async function sendButton(session) {
 }
 
 runScenario("work-session-without-workspace", {
-  open: () => openScenarioApp(args),
+  open: () => openScenarioApp(args, { isolated: true }),
   setup: async ({ session }) => {
     await removeWorkWorkspaces(session);
     const placeholder = await translate(
