@@ -2247,6 +2247,7 @@ export class CocurdexDaemonService {
         runId: this.runs.activeRunId(sessionId),
       };
       const userMessage = await this.state.saveUserMessage(createdMessage);
+      this.announceSessionsChanged();
       void this.runs.track(
         this.dispatchSteeringMessage(payload, userMessage, providerConfig),
       );
@@ -2282,10 +2283,7 @@ export class CocurdexDaemonService {
         this.queuedFollowUps.set(sessionId, queued);
       }
       if (heldForCapacity) this.runCapacity.hold(sessionId);
-      this.events.emit("daemon.event", {
-        type: "data.changed",
-        areas: ["agent"],
-      });
+      this.announceSessionsChanged();
       return userMessage;
     }
 
@@ -2296,6 +2294,7 @@ export class CocurdexDaemonService {
       await this.state.moveMessageToEnd(createdMessage.id, sessionId);
     }
     const savedMessage = await this.state.saveUserMessage(createdMessage);
+    this.announceSessionsChanged();
     const persistence: RuntimePersistence = {
       ...(await this.createRuntimePersistence(payload.session)),
       providerConfig,
