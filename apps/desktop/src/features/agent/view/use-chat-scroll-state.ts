@@ -44,13 +44,15 @@ function scrollViewportToLatest(viewport: HTMLDivElement, smooth: boolean) {
     getTranscriptContentHeight(viewport) - viewport.clientHeight,
   );
   if (
-    smooth &&
-    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    !smooth ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
   ) {
-    viewport.scrollTo({ top, behavior: "smooth" });
-  } else {
     viewport.scrollTop = top;
+    return;
   }
+  const glideStart = top - viewport.clientHeight;
+  if (viewport.scrollTop < glideStart) viewport.scrollTop = glideStart;
+  viewport.scrollTo({ top, behavior: "smooth" });
 }
 
 export function useChatScrollState({
