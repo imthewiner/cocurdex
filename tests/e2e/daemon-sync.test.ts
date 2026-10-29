@@ -198,4 +198,52 @@ describe("sync.pull across daemon restarts", () => {
       }
     });
   });
+
+  it("announces a prompt that starts a turn so observers pull it", async () => {
+    await withStub(async (stub) => {
+      const daemon = await spawnDaemon({
+        userDataPath: tempDirs.createSync("cocu-sync-"),
+      });
+      try {
+        const session = await startChatSession(daemon, stub);
+        const before = await pull(daemon, session.id, null);
+        const events: CocurdexDaemonEvent[] = [];
+        const subscription = await subscribeDaemonEvents(
+          (event) => events.push(event),
+          daemon.options,
+        );
+        try {
+          stub.plan = { kind: "hang" };
+          await requestDaemon(
+            "session.send",
+            {
+              sessionId: session.id,
+              messageId: crypto.randomUUID(),
+              content: "observed prompt",
+            },
+            daemon.options,
+          );
+          await waitFor(() =>
+            events.some(
+              (event) =>
+                event.type === "data.changed" && event.areas.includes("agent"),
+            ),
+          );
+          const delta = await pull(daemon, session.id, before.cursor);
+          expect(
+            contents(delta.transcripts[session.id]?.messages ?? []),
+          ).toEqual(["user:observed prompt"]);
+        } finally {
+          subscription.close();
+          await requestDaemon(
+            "session.stop",
+            { sessionId: session.id },
+            daemon.options,
+          );
+        }
+      } finally {
+        await daemon.dispose();
+      }
+    });
+  });
 });

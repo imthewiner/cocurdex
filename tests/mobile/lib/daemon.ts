@@ -113,13 +113,22 @@ async function pointWorkspacesAtFixtures(
   }
 }
 
-const STREAM_CHUNK_CHARS = 6;
+const STREAM_CHUNK_SIZES = [1, 2, 1, 0, 0, 18, 3, 0, 24, 2];
 const STREAM_CHUNK_INTERVAL_MS = 60;
 
 function streamedChunks(reply: string) {
+  const graphemes = [
+    ...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(
+      reply,
+    ),
+  ].map(({ segment }) => segment);
   const chunks: string[] = [];
-  for (let at = 0; at < reply.length; at += STREAM_CHUNK_CHARS) {
-    chunks.push(reply.slice(at, at + STREAM_CHUNK_CHARS));
+  let at = 0;
+  while (at < graphemes.length) {
+    const size =
+      STREAM_CHUNK_SIZES[chunks.length % STREAM_CHUNK_SIZES.length] ?? 1;
+    chunks.push(graphemes.slice(at, at + size).join(""));
+    at += size;
   }
   return chunks;
 }

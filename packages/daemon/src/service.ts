@@ -93,7 +93,7 @@ import {
   workspacePathsEqual,
 } from "@cocurdex/shared";
 import { resolveAuthorizedPdfReadPath } from "@cocurdex/shared/node";
-import { AcpRegistryService } from "./acp-registry";
+import { AcpRegistryService, AgentAuthService } from "./acp-registry";
 import {
   AgentToolBridge,
   registerHistoryTools,
@@ -260,6 +260,7 @@ export class CocurdexDaemonService {
   readonly decks: DaemonDeckService;
   readonly providerService: DaemonProviderService;
   readonly acpRegistry: AcpRegistryService;
+  readonly agentAuth: AgentAuthService;
   readonly providerCredentials: ProviderCredentials;
   readonly providerLogins: ProviderLoginSessions;
   private startupRecovery: Promise<void> | null = null;
@@ -326,6 +327,11 @@ export class CocurdexDaemonService {
       (providerId) => this.providerCredentials.setApiKey(providerId, null),
     );
     this.acpRegistry = new AcpRegistryService(this.state, options.userDataPath);
+    this.agentAuth = new AgentAuthService({
+      registry: this.acpRegistry,
+      liveSessionIds: (agentId) => this.runtime.liveSessionIdsForAgent(agentId),
+      disposeSession: (sessionId) => this.disposeSessionRuntime(sessionId),
+    });
     this.providerService = new DaemonProviderService(
       this.state,
       this.providerCredentials,
@@ -2241,6 +2247,7 @@ export class CocurdexDaemonService {
         runId: this.runs.activeRunId(sessionId),
       };
       const userMessage = await this.state.saveUserMessage(createdMessage);
+      this.announceSessionsChanged();
       void this.runs.track(
         this.dispatchSteeringMessage(payload, userMessage, providerConfig),
       );
@@ -2276,10 +2283,7 @@ export class CocurdexDaemonService {
         this.queuedFollowUps.set(sessionId, queued);
       }
       if (heldForCapacity) this.runCapacity.hold(sessionId);
-      this.events.emit("daemon.event", {
-        type: "data.changed",
-        areas: ["agent"],
-      });
+      this.announceSessionsChanged();
       return userMessage;
     }
 
@@ -2290,6 +2294,7 @@ export class CocurdexDaemonService {
       await this.state.moveMessageToEnd(createdMessage.id, sessionId);
     }
     const savedMessage = await this.state.saveUserMessage(createdMessage);
+    this.announceSessionsChanged();
     const persistence: RuntimePersistence = {
       ...(await this.createRuntimePersistence(payload.session)),
       providerConfig,

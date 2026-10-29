@@ -31,6 +31,7 @@ function actionClause(
 }
 
 export function activityLabel(item: ActivityItem, t: TFunction<"sessions">) {
+  if (item.running) return t("detail.working");
   const clauses: string[] = item.summary.actions.map(({ action, count }) =>
     actionClause(action, count, t),
   );

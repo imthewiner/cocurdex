@@ -3,6 +3,7 @@ import type {
   AcpRegistryAgentId,
   AcpRegistryCatalogAgent,
   AcpRegistryInstalledAgent,
+  AgentAuthState,
   AgentDescriptor,
   AgentId,
   AgentMcpUnsupportedReason,
@@ -552,7 +553,10 @@ export interface ProductApi {
     agentId: AgentId,
     modelId: string,
   ): Promise<AgentProviderModelAxes | null>;
-  loginAgent(agentId: AgentId): Promise<void>;
+  loginAgent(agentId: AgentId, methodId?: string): Promise<void>;
+  cancelAgentLogin(agentId: AgentId): Promise<void>;
+  logoutAgent(agentId: AcpRegistryAgentId): Promise<void>;
+  readAgentAuth(agentId: AcpRegistryAgentId): Promise<AgentAuthState>;
   listAcpRegistryCatalog(options?: {
     forceRefresh?: boolean;
   }): Promise<AcpRegistryCatalogAgent[]>;

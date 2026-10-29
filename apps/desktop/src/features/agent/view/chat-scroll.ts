@@ -59,9 +59,22 @@ export function resolveStickyUserMessage(
   return { id: stickyId ?? fallbackId };
 }
 
+export function getTranscriptContentHeight(viewport: HTMLDivElement) {
+  const end = viewport.querySelector<HTMLElement>(
+    "[data-transcript-content-end]",
+  );
+  if (!end) return viewport.scrollHeight;
+  return Math.max(
+    0,
+    end.getBoundingClientRect().bottom -
+      viewport.getBoundingClientRect().top +
+      viewport.scrollTop,
+  );
+}
+
 export function isViewportNearBottom(viewport: HTMLDivElement) {
   return isScrollNearBottom(
-    viewport.scrollHeight,
+    getTranscriptContentHeight(viewport),
     viewport.clientHeight,
     viewport.scrollTop,
     SCROLL_BOTTOM_THRESHOLD,
@@ -70,40 +83,11 @@ export function isViewportNearBottom(viewport: HTMLDivElement) {
 
 export function isViewportAtBottom(viewport: HTMLDivElement) {
   return isScrollNearBottom(
-    viewport.scrollHeight,
+    getTranscriptContentHeight(viewport),
     viewport.clientHeight,
     viewport.scrollTop,
     SCROLL_RESUME_BOTTOM_THRESHOLD,
   );
-}
-
-/**
- * Whether the viewport should keep following the stream after a scroll.
- * Manual scrolling outranks following: while the viewer is actively scrolling,
- * only a deliberate return to the very bottom re-arms it.
- */
-export function resolveStickToBottom({
-  hasRecentUserScrollIntent,
-  isAtBottom,
-  isNearBottom,
-  scrollDelta,
-  wasSticking,
-}: {
-  hasRecentUserScrollIntent: boolean;
-  isAtBottom: boolean;
-  isNearBottom: boolean;
-  scrollDelta: number;
-  wasSticking: boolean;
-}): boolean {
-  if (!isNearBottom && scrollDelta < 0) {
-    return false;
-  }
-
-  if (hasRecentUserScrollIntent) {
-    return isAtBottom;
-  }
-
-  return isNearBottom ? true : wasSticking;
 }
 
 export function isViewportNearTop(viewport: HTMLDivElement) {

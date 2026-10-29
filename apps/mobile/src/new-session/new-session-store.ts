@@ -1,36 +1,22 @@
+import { File, Paths } from "expo-file-system";
 import { useSyncExternalStore } from "react";
-import { EMPTY_DRAFT, type NewSessionDraft } from "./new-session-draft";
+import { createNewSessionStore } from "./new-session-state";
 
-interface NewSessionState {
-  hostId: string | null;
-  draft: NewSessionDraft;
-}
+const preferenceFile = (key: string) =>
+  new File(Paths.document, `${encodeURIComponent(key)}.json`);
+const store = createNewSessionStore({
+  getItem(key) {
+    const file = preferenceFile(key);
+    return file.exists ? file.textSync() : null;
+  },
+  setItem(key, value) {
+    preferenceFile(key).writeSync(value);
+  },
+});
 
-let state: NewSessionState = { hostId: null, draft: EMPTY_DRAFT };
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function publish(next: NewSessionState) {
-  state = next;
-  for (const listener of [...listeners]) listener();
-}
-
-export function beginNewSession(hostId: string) {
-  publish({ hostId, draft: EMPTY_DRAFT });
-}
-
-export function updateNewSessionDraft(
-  change: (draft: NewSessionDraft) => NewSessionDraft,
-) {
-  publish({ ...state, draft: change(state.draft) });
-}
+export const beginNewSession = store.begin;
+export const updateNewSessionDraft = store.update;
 
 export function useNewSessionState() {
-  return useSyncExternalStore(subscribe, () => state);
+  return useSyncExternalStore(store.subscribe, store.getSnapshot);
 }

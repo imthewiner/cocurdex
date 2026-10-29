@@ -92,7 +92,13 @@ export async function handleDaemonRequest(
     case "agent.sessionModes.read":
       return service.readAgentSessionModes(request.params.agentId);
     case "agent.login":
-      return service.providerService.loginAgent(request.params.agentId);
+      return service.agentAuth.login(request.params);
+    case "agent.login.cancel":
+      return service.agentAuth.cancelLogin(request.params.agentId);
+    case "agent.logout":
+      return service.agentAuth.logout(request.params.agentId);
+    case "agent.auth.read":
+      return service.agentAuth.read(request.params.agentId);
     case "acpRegistry.catalog":
       return service.acpRegistry.listCatalog(request.params);
     case "acpRegistry.install":

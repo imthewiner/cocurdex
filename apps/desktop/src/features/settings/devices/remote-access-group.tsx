@@ -6,8 +6,12 @@ import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { SettingRow, SettingsGroup } from "@/components/app";
-import { Badge, Input, Switch, Text } from "@/components/ui";
+import {
+  SettingNumberInput,
+  SettingRow,
+  SettingsGroup,
+} from "@/components/app";
+import { Badge, Switch, Text } from "@/components/ui";
 import { desktopApi } from "@/lib";
 import { CopyButton } from "./copy-button";
 
@@ -75,17 +79,13 @@ export function RemoteAccessGroup({
         })}
         title={t("devices.remote.port.title")}
       >
-        <Input
+        <SettingNumberInput
           aria-label={t("devices.remote.port.title")}
-          className="w-24 tabular-nums"
           disabled={saving}
           inputMode="numeric"
           value={portDraft}
-          onBlur={commitPort}
           onChange={(event) => setPortDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") commitPort();
-          }}
+          onCommit={commitPort}
         />
       </SettingRow>
       {status.error ? (

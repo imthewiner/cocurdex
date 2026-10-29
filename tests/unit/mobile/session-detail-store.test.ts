@@ -1,6 +1,7 @@
 import {
   createSessionDetailStore,
   DETAIL_RELOAD_DELAY_MS,
+  DETAIL_STREAM_BATCH_MS,
 } from "@cocurdex/mobile/internal/session-detail/session-detail-store";
 import type {
   AgentToolCallRecord,
@@ -97,6 +98,7 @@ describe("createSessionDetailStore", () => {
         createdAt: "2026-10-24T10:00:02.000Z",
       });
     }
+    await vi.advanceTimersByTimeAsync(DETAIL_STREAM_BATCH_MS);
     expect(store.getSnapshot().observation?.activeMessages).toMatchObject([
       { id: "a1", content: "Reading the cart" },
     ]);
@@ -121,6 +123,57 @@ describe("createSessionDetailStore", () => {
     });
   });
 
+  it("coalesces small deltas without delaying message completion", async () => {
+    const { fake, store } = await loadedStore({
+      "session.snapshot": [OBSERVATION],
+    });
+    const changed = vi.fn();
+    store.subscribe(changed);
+    for (const delta of ["中", "文", " content"]) {
+      fake.emit({
+        type: "message.delta",
+        sessionId: "s1",
+        messageId: "a1",
+        role: "assistant",
+        delta,
+        createdAt: "2026-10-24T10:00:02.000Z",
+      });
+    }
+    expect(changed).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(DETAIL_STREAM_BATCH_MS);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().observation?.activeMessages[0]?.content).toBe(
+      "中文 content",
+    );
+    fake.emit({
+      type: "message.delta",
+      sessionId: "s1",
+      messageId: "a1",
+      role: "assistant",
+      delta: " tail",
+      createdAt: "2026-10-24T10:00:02.000Z",
+    });
+    fake.emit({
+      type: "message.completed",
+      sessionId: "s1",
+      message: {
+        id: "a1",
+        sessionId: "s1",
+        role: "assistant",
+        content: "中文 content tail",
+        attachments: [],
+        createdAt: "2026-10-24T10:00:02.000Z",
+      },
+    });
+    expect(store.getSnapshot().observation?.messages[0]?.content).toBe(
+      "中文 content tail",
+    );
+    expect(store.getSnapshot().observation?.activeMessages).toEqual([]);
+    changed.mockClear();
+    await vi.advanceTimersByTimeAsync(DETAIL_STREAM_BATCH_MS);
+    expect(changed).not.toHaveBeenCalled();
+  });
+
   it("upserts tool calls and ignores other sessions", async () => {
     const { fake, store } = await loadedStore({
       "session.snapshot": [OBSERVATION],
@@ -141,6 +194,31 @@ describe("createSessionDetailStore", () => {
     expect(store.getSnapshot().observation?.toolCalls).toEqual([
       { ...TOOL, status: "completed" },
     ]);
+  });
+
+  it("keeps deltas current while batching notifications and cancels them on unsubscribe", async () => {
+    const fake = fakeConnection({ "session.snapshot": [OBSERVATION] });
+    const store = createSessionDetailStore(fake.connection, "s1");
+    const changed = vi.fn();
+    const unsubscribe = store.subscribe(changed);
+    await vi.runAllTimersAsync();
+    changed.mockClear();
+    fake.emit({
+      type: "message.delta",
+      sessionId: "s1",
+      messageId: "a1",
+      role: "assistant",
+      delta: "Received immediately",
+      createdAt: "2026-10-24T10:00:02.000Z",
+    });
+    expect(store.getSnapshot().observation?.activeMessages[0]?.content).toBe(
+      "Received immediately",
+    );
+    expect(changed).not.toHaveBeenCalled();
+    unsubscribe();
+    await vi.advanceTimersByTimeAsync(DETAIL_STREAM_BATCH_MS);
+    expect(changed).not.toHaveBeenCalled();
+    expect(store.observed()).toBe(false);
   });
 
   it("refetches the snapshot once for a burst of interaction events", async () => {

@@ -11,6 +11,7 @@ export {
   AppGitBranchLabel,
   AppInlineRenameInput,
   AppPreviewCardTooltipContent,
+  AppRemoveButton,
   AppSearchableSelect,
   type AppSearchableSelectOption,
   AppSelect,

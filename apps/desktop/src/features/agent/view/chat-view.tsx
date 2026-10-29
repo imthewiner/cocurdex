@@ -245,14 +245,14 @@ export function ChatView({
   );
   const {
     activeUserMessageId,
-    hasUserScrolled,
+    finishInitialPositioning,
     isNearBottom,
     isNearTop,
     scrollDirection,
     markUserScrollIntent,
     markUserScrollStart,
     holdForDisclosure,
-    stickToBottomIfLocked,
+    syncViewportLayout,
     scrollToLatest,
     scrollToTop,
     scrollToUserMessage,
@@ -297,11 +297,9 @@ export function ChatView({
   );
   const activeUserNavigationMessageId =
     activeUserMessageId ?? stickyUserMessages.at(-1)?.id ?? null;
-  // One mutually-exclusive jump button. At the edges it points to the opposite
-  // end; in the middle it mirrors the scroll direction.
   const jumpButton = resolveJumpButton({
+    streaming: isRunning,
     isReady: isInitialBottomSettled && timelineGroups.length > 0,
-    hasUserScrolled,
     isNearTop,
     isNearBottom,
     scrollDirection,
@@ -344,9 +342,10 @@ export function ChatView({
     isContentReady,
     isContentReadyNow: renderReadiness.isReady,
     isRunning,
+    finishInitialPositioning,
     setInitialBottomSettled: setIsInitialBottomSettled,
     status,
-    stickToBottomIfLocked,
+    syncViewportLayout,
     stickyUserMessages,
     syncScrollState,
     timelineGroupCount: timelineGroups.length,
@@ -469,7 +468,8 @@ export function ChatView({
           </ScrollArea>
         </RenderReadinessContext>
         <JumpControls
-          onJumpToLatest={scrollToLatest}
+          streaming={isRunning && shouldShowJumpToLatest}
+          onJumpToLatest={() => scrollToLatest(true)}
           onJumpToTop={scrollToTop}
           showJumpToLatest={shouldShowJumpToLatest}
           showJumpToTop={shouldShowJumpToTop}

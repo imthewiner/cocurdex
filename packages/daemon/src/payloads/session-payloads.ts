@@ -9,6 +9,7 @@ import {
 } from "@cocurdex/shared";
 import { z } from "zod";
 import {
+  acpRegistryAgentIdSchema,
   agentIdSchema,
   boundedTextSchema,
   exact,
@@ -289,7 +290,19 @@ export const sessionPayloadSchemas = {
     z.object({ agentId: agentIdSchema }),
   ),
   "agent.login": exact<Payload<"agent.login">>()(
+    z.object({
+      agentId: agentIdSchema,
+      methodId: boundedTextSchema(200).min(1).optional(),
+    }),
+  ),
+  "agent.login.cancel": exact<Payload<"agent.login.cancel">>()(
     z.object({ agentId: agentIdSchema }),
+  ),
+  "agent.logout": exact<Payload<"agent.logout">>()(
+    z.object({ agentId: acpRegistryAgentIdSchema }),
+  ),
+  "agent.auth.read": exact<Payload<"agent.auth.read">>()(
+    z.object({ agentId: acpRegistryAgentIdSchema }),
   ),
   "agent.rateLimits.read": exact<Payload<"agent.rateLimits.read">>()(
     z.object({ agentIds: z.array(agentIdSchema).max(64) }),
