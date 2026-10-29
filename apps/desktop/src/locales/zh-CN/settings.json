@@ -34,6 +34,7 @@
       "builtinNote": "随 Cocurdex 提供，无需安装。",
       "executable": "可执行文件",
       "install": "安装",
+      "manage": "管理",
       "signIn": "登录",
       "update": "更新",
       "usage": "用量"
@@ -585,6 +586,7 @@
     "detail": {
       "enabled": "启用",
       "label": "MCP 服务器",
+      "manageLabel": "管理",
       "newTitle": "新服务器",
       "projectReadOnly": "定义在 {{path}}。项目服务器在这里只读，请编辑该文件来修改。"
     },
@@ -909,6 +911,7 @@
     "list": {
       "configuredCount": "已配置 {{count}} 个"
     },
+    "manageLabel": "管理",
     "models": {
       "addTitle": "添加模型",
       "advanced": "高级",
@@ -1131,6 +1134,7 @@
     "description": "Skills 教 agent 完成专门的工作。安装一次，所有读取共享 skills 文件夹的 agent 都能使用。",
     "detail": {
       "label": "{{name}} 详情",
+      "manageTitle": "管理",
       "removeBrokenDescription": "{{name}} 只剩下失效链接，它们指向的文件夹已不存在。移除只会删除这些链接，不影响其他文件。",
       "removeDescription": "将为所有 agent 删除 {{name}}，包括指向它的链接。删除前会先备份文件夹，14 天内可在 skill-backups 中找回。",
       "removeTitle": "移除 {{name}}？",

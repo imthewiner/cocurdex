@@ -6,7 +6,7 @@ import type {
 import { ArrowUpCircle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AppRemoveButton } from "@/components";
+import { AppRemoveButton, SettingsGroup } from "@/components";
 import { Badge, Button, Text } from "@/components/ui";
 import { SkillAgentsSection } from "./skill-agents-section";
 import { SkillDocumentSection, SkillFilesSection } from "./skill-files-section";
@@ -143,19 +143,21 @@ export function SkillDetail({
       ) : null}
 
       {current.builtin ? null : (
-        <div className="flex items-center">
-          <AppRemoveButton
-            cancelLabel={t("skills.actions.cancel")}
-            confirmDescription={removeDescription}
-            confirmLabel={t("skills.actions.remove")}
-            confirmTitle={t("skills.detail.removeTitle", {
-              name: current.name,
-            })}
-            disabled={isBusy}
-            label={t("skills.actions.remove")}
-            onConfirm={() => void remove()}
-          />
-        </div>
+        <SettingsGroup title={t("skills.detail.manageTitle")}>
+          <div className="flex items-center py-2">
+            <AppRemoveButton
+              cancelLabel={t("skills.actions.cancel")}
+              confirmDescription={removeDescription}
+              confirmLabel={t("skills.actions.remove")}
+              confirmTitle={t("skills.detail.removeTitle", {
+                name: current.name,
+              })}
+              disabled={isBusy}
+              label={t("skills.actions.remove")}
+              onConfirm={() => void remove()}
+            />
+          </div>
+        </SettingsGroup>
       )}
       {isUpdateOpen && current.update ? (
         <SkillUpdateDialog

@@ -1733,6 +1733,7 @@ export default interface Resources {
       editCancel: "Cancel";
       editFoldersLabel: "Source folders";
       editMakePrimary: "Make primary";
+      editManageLabel: "Manage";
       editNameLabel: "Workspace name";
       editPrimary: "Primary";
       editRemoveDescription: "{{name}} and all of its agent sessions are removed from Cocurdex. Files in its folders are not touched.";
@@ -1817,6 +1818,7 @@ export default interface Resources {
         builtinNote: "Ships with Cocurdex; nothing to install.";
         executable: "Executable";
         install: "Install";
+        manage: "Manage";
         signIn: "Login";
         update: "Update";
         usage: "Usage";
@@ -2369,6 +2371,7 @@ export default interface Resources {
       detail: {
         enabled: "Enabled";
         label: "MCP server";
+        manageLabel: "Manage";
         newTitle: "New server";
         projectReadOnly: "Defined in {{path}}. Project servers are read-only here; edit that file to change them.";
       };
@@ -2697,6 +2700,7 @@ export default interface Resources {
       list: {
         configuredCount: "{{count}} configured";
       };
+      manageLabel: "Manage";
       models: {
         addTitle: "Add model";
         advanced: "Advanced";
@@ -2921,6 +2925,7 @@ export default interface Resources {
       description: "Skills teach agents how to do specialized work. Install them once and every agent that reads the shared skills folder can use them.";
       detail: {
         label: "{{name}} details";
+        manageTitle: "Manage";
         removeBrokenDescription: "{{name}} is only broken links to a folder that no longer exists. Removing it deletes those links and touches nothing else.";
         removeDescription: "Deletes {{name}} for every agent, including the links that point to it. The folder is backed up first, so you can restore it from skill-backups for 14 days.";
         removeTitle: "Remove {{name}}?";

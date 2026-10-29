@@ -158,22 +158,23 @@ export function ProviderDetailsSection({
             </div>
           </div>
         ) : null}
+        {!isPresetProvider && selectedProvider ? (
+          <div className="flex flex-col items-start gap-1.5">
+            <Label>{t("providers.manageLabel")}</Label>
+            <AppRemoveButton
+              cancelLabel={t("providers.deleteConfirm.cancel")}
+              confirmDescription={t("providers.deleteConfirm.description", {
+                provider: selectedProvider.name,
+              })}
+              confirmLabel={t("providers.deleteConfirm.confirm")}
+              confirmTitle={t("providers.deleteConfirm.title")}
+              label={t("providers.actions.delete")}
+              onConfirm={() => void onRemoveProvider(selectedProvider.id)}
+            />
+          </div>
+        ) : null}
         {!isPresetProvider ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {selectedProvider ? (
-              <AppRemoveButton
-                cancelLabel={t("providers.deleteConfirm.cancel")}
-                confirmDescription={t("providers.deleteConfirm.description", {
-                  provider: selectedProvider.name,
-                })}
-                confirmLabel={t("providers.deleteConfirm.confirm")}
-                confirmTitle={t("providers.deleteConfirm.title")}
-                label={t("providers.actions.delete")}
-                onConfirm={() => void onRemoveProvider(selectedProvider.id)}
-              />
-            ) : (
-              <span />
-            )}
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <Button
               size="sm"
               type="button"

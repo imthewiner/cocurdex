@@ -398,6 +398,7 @@
     "editCancel": "取消",
     "editFoldersLabel": "源文件夹",
     "editMakePrimary": "设为主文件夹",
+    "editManageLabel": "管理",
     "editNameLabel": "工作区名称",
     "editPrimary": "主文件夹",
     "editRemoveDescription": "将从 Cocurdex 中移除 {{name}} 及其全部 Agent 会话，文件夹中的文件不受影响。",

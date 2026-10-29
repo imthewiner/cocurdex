@@ -184,37 +184,38 @@ function EditWorkspaceForm({
             {t("workspace.editAddFolder")}
           </Button>
         </div>
+        <div className="flex flex-col items-start gap-1.5">
+          <Label>{t("workspace.editManageLabel")}</Label>
+          <AppRemoveButton
+            cancelLabel={t("workspace.editCancel")}
+            confirmDescription={t("workspace.editRemoveDescription", {
+              name: workspace.name,
+            })}
+            confirmLabel={t("workspace.editRemoveWorkspace")}
+            confirmTitle={t("workspace.editRemoveTitle", {
+              name: workspace.name,
+            })}
+            label={t("workspace.editRemoveWorkspace")}
+            onConfirm={() => onRemoveWorkspace(workspace.id)}
+          />
+        </div>
         {saveError ? (
           <Text size="meta" tone="destructive">
             {saveError}
           </Text>
         ) : null}
       </div>
-      <DialogFooter className="sm:justify-between">
-        <AppRemoveButton
-          cancelLabel={t("workspace.editCancel")}
-          confirmDescription={t("workspace.editRemoveDescription", {
-            name: workspace.name,
-          })}
-          confirmLabel={t("workspace.editRemoveWorkspace")}
-          confirmTitle={t("workspace.editRemoveTitle", {
-            name: workspace.name,
-          })}
-          label={t("workspace.editRemoveWorkspace")}
-          onConfirm={() => onRemoveWorkspace(workspace.id)}
-        />
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            {t("workspace.editCancel")}
-          </Button>
-          <Button
-            disabled={!canSave}
-            type="button"
-            onClick={() => void handleSave()}
-          >
-            {t("workspace.editSave")}
-          </Button>
-        </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {t("workspace.editCancel")}
+        </Button>
+        <Button
+          disabled={!canSave}
+          type="button"
+          onClick={() => void handleSave()}
+        >
+          {t("workspace.editSave")}
+        </Button>
       </DialogFooter>
     </>
   );

@@ -30,7 +30,7 @@ export function AppRemoveButton({
   return (
     <>
       <Button
-        className="text-muted-foreground hover:text-destructive"
+        className="-ms-2.5 text-muted-foreground hover:text-destructive"
         disabled={disabled || busy}
         size="sm"
         type="button"

@@ -288,27 +288,29 @@ export function McpServerDetail({
 
         <McpAdvancedSection form={form} readOnly={readOnly} onChange={update} />
 
+        {isNew || readOnly ? null : (
+          <div className="flex flex-col items-start gap-1.5 pt-4">
+            <Label>{t("mcp.detail.manageLabel")}</Label>
+            <AppRemoveButton
+              cancelLabel={t("mcp.removeConfirm.cancel")}
+              confirmDescription={t("mcp.removeConfirm.description", {
+                name,
+              })}
+              confirmLabel={t("mcp.removeConfirm.confirm")}
+              confirmTitle={t("mcp.removeConfirm.title")}
+              label={t("mcp.actions.remove")}
+              onConfirm={() => void remove()}
+            />
+          </div>
+        )}
+
         <div className="grid gap-3 py-4">
           {error ? (
             <Text role="alert" size="meta" tone="destructive">
               {error}
             </Text>
           ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {isNew || readOnly ? (
-              <span />
-            ) : (
-              <AppRemoveButton
-                cancelLabel={t("mcp.removeConfirm.cancel")}
-                confirmDescription={t("mcp.removeConfirm.description", {
-                  name,
-                })}
-                confirmLabel={t("mcp.removeConfirm.confirm")}
-                confirmTitle={t("mcp.removeConfirm.title")}
-                label={t("mcp.actions.remove")}
-                onConfirm={() => void remove()}
-              />
-            )}
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <Button
                 disabled={isTesting}
