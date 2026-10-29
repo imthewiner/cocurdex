@@ -6,16 +6,47 @@
       "docs": "Docs",
       "refresh": "Refresh"
     },
+    "auth": {
+      "cancel": "Cancel",
+      "confirmCancel": "Cancel",
+      "failedKeeping": "{{message}} Still signed in with {{method}}.",
+      "login": "Log in",
+      "logout": "Log out…",
+      "logoutConfirm": "Log out",
+      "logoutDescription_one": "{{agent}} will ask you to log in again before its next session.",
+      "logoutDescription_other": "{{agent}} will ask you to log in again before its next session.",
+      "logoutDescriptionSessions_one": "This stops {{count}} running {{agent}} session. {{agent}} will ask you to log in again before its next session.",
+      "logoutDescriptionSessions_other": "This stops {{count}} running {{agent}} sessions. {{agent}} will ask you to log in again before its next session.",
+      "logoutTitle": "Log out of {{agent}}?",
+      "method": "Login method",
+      "readFailed": "Could not read login methods: {{message}}",
+      "reading": "Reading login methods…",
+      "retry": "Retry",
+      "signingIn": "Logging in with {{method}}. If a browser page opens, finish there; this updates when it is done.",
+      "switchConfirm": "Switch",
+      "switchDescription_one": "Switching stops {{count}} running {{agent}} session. It keeps the current method if the new login fails.",
+      "switchDescription_other": "Switching stops {{count}} running {{agent}} sessions. It keeps the current method if the new login fails.",
+      "switchTitle": "Switch login method?"
+    },
     "badge": {
       "builtin": "Built in",
       "updateRequired": "Update required"
     },
     "description": "Pick any of these agent CLIs when starting a session. cocurdex detects the versions installed on this machine; add more from the ACP Registry.",
+    "detail": {
+      "builtinNote": "Ships with Cocurdex; nothing to install.",
+      "executable": "Executable",
+      "install": "Install",
+      "signIn": "Login",
+      "update": "Update",
+      "usage": "Usage"
+    },
     "kind": {
       "builtin": "Built-in",
       "detecting": "Checking…",
       "error": "Failed",
       "missing": "Not installed",
+      "needsLogin": "Login required",
       "outdated": "Update required",
       "ready": "Ready"
     },
@@ -58,8 +89,11 @@
         "prefetch": "Runs during install"
       },
       "remove": "Remove",
+      "removeAgent": "Remove {{name}}…",
+      "removeDescription": "Removes {{name}} from Cocurdex. Existing sessions stay, and you can add it again from the ACP Registry.",
       "removeFailed": "Could not remove the agent",
       "removeSucceeded": "Removed {{name}}",
+      "removeTitle": "Remove {{name}}?",
       "retry": "Retry",
       "search": "Search agents",
       "title": "ACP Registry",
