@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpToLine, Ellipsis } from "lucide-react";
+import { ArrowDownToLine, ArrowUpToLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export function JumpControls({
@@ -49,11 +49,7 @@ export function JumpControls({
       >
         {streaming && showJumpToLatest ? (
           <>
-            <Ellipsis
-              aria-hidden="true"
-              className="size-4 group-hover/jump:hidden group-focus-visible/jump:hidden"
-              data-stream-indicator="true"
-            />
+            <StreamingDots />
             <Icon className="hidden size-4 group-hover/jump:block group-focus-visible/jump:block" />
           </>
         ) : (
@@ -61,5 +57,21 @@ export function JumpControls({
         )}
       </button>
     </div>
+  );
+}
+
+function StreamingDots() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="stream-dots size-5 group-hover/jump:hidden group-focus-visible/jump:hidden"
+      data-stream-indicator="true"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="5" cy="12" r="2.5" />
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="19" cy="12" r="2.5" />
+    </svg>
   );
 }

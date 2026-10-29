@@ -128,25 +128,36 @@ function StepTrigger({
 }) {
   return (
     <CollapsibleTrigger className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-control px-1.5 py-1 text-left text-body text-chat-fg-muted transition-colors hover:bg-chat-surface-row-hover">
-      {liveLabel ? null : (
-        <ChevronRight
-          className={cn(
-            "size-3.5 shrink-0 transition-transform rtl:-scale-x-100",
-            open && "rotate-90",
-          )}
-        />
-      )}
-      {liveLabel ?? (
-        <span
-          className={cn(
-            "min-w-0 truncate text-chat-fg-secondary",
-            busy && "activity-shimmer",
-          )}
-        >
-          {label}
-        </span>
+      {liveLabel ? (
+        <>
+          {liveLabel}
+          <StepChevron open={open} />
+        </>
+      ) : (
+        <>
+          <StepChevron open={open} />
+          <span
+            className={cn(
+              "min-w-0 truncate text-chat-fg-secondary",
+              busy && "activity-shimmer",
+            )}
+          >
+            {label}
+          </span>
+        </>
       )}
     </CollapsibleTrigger>
+  );
+}
+
+function StepChevron({ open }: { open: boolean }) {
+  return (
+    <ChevronRight
+      className={cn(
+        "size-3.5 shrink-0 transition-transform rtl:-scale-x-100",
+        open && "rotate-90",
+      )}
+    />
   );
 }
 
