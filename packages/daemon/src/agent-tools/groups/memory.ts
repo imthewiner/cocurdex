@@ -17,6 +17,7 @@ export interface MemoryToolDependencies {
   show(id: string): Promise<MemoryEntry | null>;
   remember(input: MemoryRememberInput): Promise<MemoryRememberResult>;
   policy(): Promise<string>;
+  noteToolUse?(sessionId: string, tool: "recall" | "show" | "remember"): void;
 }
 
 const canRead = (caller: AgentToolCallerContext) =>
@@ -67,12 +68,14 @@ export function registerMemoryTools(
       },
     },
     isAvailable: (caller) => deps.isEnabled() && canRead(caller),
-    execute: async (_caller, input) =>
-      deps.recall({
+    execute: async (caller, input) => {
+      deps.noteToolUse?.(caller.sessionId, "recall");
+      return deps.recall({
         query: String(input.query),
         limit: optionalNumber(input.limit),
         project: optionalString(input.project) ?? null,
-      }),
+      });
+    },
   });
 
   registry.register({
@@ -91,7 +94,10 @@ export function registerMemoryTools(
       },
     },
     isAvailable: (caller) => deps.isEnabled() && canRead(caller),
-    execute: async (_caller, input) => deps.show(String(input.id)),
+    execute: async (caller, input) => {
+      deps.noteToolUse?.(caller.sessionId, "show");
+      return deps.show(String(input.id));
+    },
   });
 
   registry.register({
@@ -162,8 +168,9 @@ export function registerMemoryTools(
       },
     },
     isAvailable: (caller) => deps.isEnabled() && canWrite(caller),
-    execute: async (_caller, input) =>
-      deps.remember({
+    execute: async (caller, input) => {
+      deps.noteToolUse?.(caller.sessionId, "remember");
+      return deps.remember({
         content: String(input.content),
         title: String(input.title),
         importance: input.importance === "important" ? "important" : "trivial",
@@ -175,7 +182,8 @@ export function registerMemoryTools(
         mergeIds: stringArray(input.mergeIds),
         supersedes: stringArray(input.supersedes),
         seeAlso: stringArray(input.seeAlso),
-      }),
+      });
+    },
   });
 
   registry.register({
@@ -183,7 +191,7 @@ export function registerMemoryTools(
       group: "memory",
       name: "policy",
       description:
-        "Read the full Respire (rsrs) memory workflow: recall rules, dedup and tree placement, importance tiers, diary rules, and maintenance. Call it when a storage decision is unclear.",
+        "Read the full Respire (rsrs) memory workflow: dedup, tree placement, importance tiers, diary rules, and maintenance. The session memory gates are already in your instructions; read this when that decision is still unclear.",
       inputSchema: {
         type: "object",
         properties: {},

@@ -458,6 +458,8 @@ export class CocurdexDaemonService {
       show: (id) => this.memory.show(id),
       remember: (input) => this.memory.remember(input),
       policy: () => this.memory.policy(),
+      noteToolUse: (sessionId, tool) =>
+        this.memory.noteGateToolUse(sessionId, tool),
     });
     this.scriptRuns = new ScriptRunModule({
       repository: this.state.scriptRuns,
@@ -582,6 +584,11 @@ export class CocurdexDaemonService {
         const completedSession = await this.state.getSession(event.sessionId);
         if (completedSession && isChatSession(completedSession)) {
           void this.memory.captureTurn(event.sessionId, event.messageId);
+        } else if (completedSession) {
+          void this.memory.finishTurn({
+            sessionId: event.sessionId,
+            enforce: (completedSession.sessionKind ?? "main") !== "subagent",
+          });
         }
       }
       await this.team.onAgentEvent(event);
@@ -3027,17 +3034,25 @@ export class CocurdexDaemonService {
     const priorMessages = history.filter(
       (message) => message.id !== userMessage.id,
     );
+    const chatSession = isChatSession(session);
+    const sessionKind = session.sessionKind ?? "main";
+    const memoryGate = await this.memory.beginTurn({
+      sessionId: session.id,
+      mode: chatSession ? "chat" : "agent",
+      enforce: !chatSession && sessionKind !== "subagent",
+    });
     const memoryContext =
-      (session.sessionKind ?? "main") === "subagent"
+      !chatSession && sessionKind === "subagent"
         ? null
         : await this.memory.buildTurnContext(
             session,
             userMessage.content,
-            isChatSession(session) ? "chat" : "agent",
+            chatSession ? "chat" : "agent",
           );
-    const memoryPrefix = memoryContext?.brief
-      ? `${memoryContext.brief}\n\n`
-      : "";
+    const memoryPrefix = [memoryGate, memoryContext?.brief]
+      .filter((section): section is string => Boolean(section))
+      .join("\n\n");
+    const memoryText = memoryPrefix ? `${memoryPrefix}\n\n` : "";
     const resolution = resolveStartContext({
       targetAgentType: session.agentType,
       priorMessages,
@@ -3050,7 +3065,7 @@ export class CocurdexDaemonService {
         this.consumeNativeFork(pending, session, userMessage, priorMessages);
       }
       return {
-        content: `${memoryPrefix}${userMessage.content}`,
+        content: `${memoryText}${userMessage.content}`,
         history,
         contextHandoff: undefined,
       };
@@ -3111,7 +3126,7 @@ export class CocurdexDaemonService {
       areas: ["agent"],
     });
     return {
-      content: `${memoryPrefix}${userMessage.content}`,
+      content: `${memoryText}${userMessage.content}`,
       history: resolution.freshProviderThread ? [userMessage] : history,
       contextHandoff: {
         text: handoff.text,

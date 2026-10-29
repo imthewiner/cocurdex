@@ -1,5 +1,7 @@
 import { chmod, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { AgentToolBridge } from "@cocurdex/daemon/internal/agent-tools/agent-tool-bridge";
+import { registerMemoryTools } from "@cocurdex/daemon/internal/agent-tools/groups/memory";
 import { MemoryService } from "@cocurdex/daemon/internal/memory/service";
 import type {
   MemorySettings,
@@ -168,7 +170,7 @@ describe("MemoryService with a fake rsrs CLI", () => {
       "How do I run Cocurdex?",
       "chat",
     );
-    expect(context?.brief).toContain("<memory-context>");
+    expect(context?.brief).toContain("<memory-context");
     expect(context?.brief).toContain("memory-1");
     expect(context?.brief).toContain("Recall body");
   });
@@ -196,5 +198,134 @@ describe("MemoryService with a fake rsrs CLI", () => {
       saved: false,
       reason: "disabled",
     });
+  });
+
+  it("nudges the next turn when the store gate was missed", async () => {
+    const { service } = await createService();
+    await service.getStatus();
+    expect(
+      await service.beginTurn({
+        sessionId: "agent-1",
+        mode: "agent",
+        enforce: true,
+      }),
+    ).toBeNull();
+    expect(
+      await service.finishTurn({ sessionId: "agent-1", enforce: true }),
+    ).toBe(true);
+    expect(
+      await service.beginTurn({
+        sessionId: "agent-1",
+        mode: "agent",
+        enforce: true,
+      }),
+    ).toContain("Gate 2 (store) was missed");
+    expect(
+      await service.beginTurn({
+        sessionId: "agent-1",
+        mode: "agent",
+        enforce: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("clears the gate when the turn stored something", async () => {
+    const { service } = await createService();
+    await service.getStatus();
+    await service.beginTurn({
+      sessionId: "agent-2",
+      mode: "agent",
+      enforce: true,
+    });
+    service.noteGateToolUse("agent-2", "remember");
+    expect(
+      await service.finishTurn({ sessionId: "agent-2", enforce: true }),
+    ).toBe(false);
+    expect(
+      await service.beginTurn({
+        sessionId: "agent-2",
+        mode: "agent",
+        enforce: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not enforce gates for chat or subagent turns", async () => {
+    const { service } = await createService();
+    await service.getStatus();
+    expect(
+      await service.beginTurn({
+        sessionId: "chat-1",
+        mode: "chat",
+        enforce: false,
+      }),
+    ).toBeNull();
+    expect(
+      await service.finishTurn({ sessionId: "chat-1", enforce: true }),
+    ).toBe(false);
+    expect(
+      await service.beginTurn({
+        sessionId: "sub-1",
+        mode: "agent",
+        enforce: false,
+      }),
+    ).toBeNull();
+    expect(
+      await service.finishTurn({ sessionId: "sub-1", enforce: false }),
+    ).toBe(false);
+  });
+
+  it("does not enforce gates when the switch is off", async () => {
+    const { service } = await createService();
+    await service.getStatus();
+    const settings = await service.getSettings();
+    await service.setSettings({ ...settings, enabled: false });
+    expect(
+      await service.beginTurn({
+        sessionId: "agent-3",
+        mode: "agent",
+        enforce: true,
+      }),
+    ).toBeNull();
+    expect(
+      await service.finishTurn({ sessionId: "agent-3", enforce: true }),
+    ).toBe(false);
+    service.noteGateToolUse("agent-3", "remember");
+    expect(service.agentInstructions(true)).toBe("");
+  });
+
+  it("injects the gates into the agent catalog while memory is enabled", async () => {
+    const { service } = await createService();
+    await service.getStatus();
+    const session = { ...fakeSession(), sessionKind: "main" as const };
+    const bridge = new AgentToolBridge({
+      url: "http://127.0.0.1:1/mcp",
+      getSession: async () => session as never,
+      memoryInstructions: (hasMemoryTools) =>
+        hasMemoryTools ? service.agentInstructions(true) : undefined,
+    });
+    registerMemoryTools(bridge.registry, {
+      isEnabled: () => service.areToolsEnabledSync(),
+      recall: (input) => service.recall(input),
+      show: (id) => service.show(id),
+      remember: (input) => service.remember(input),
+      policy: () => service.policy(),
+    });
+    const binding = bridge.bind({ id: session.id });
+    if (!binding) throw new Error("expected a session binding");
+    const catalog = await bridge.catalog(binding.binding.token);
+    expect(catalog.tools.map((tool) => tool.name)).toContain("remember");
+    expect(catalog.instructions ?? "").toContain(
+      "Gate 1 - recall before acting.",
+    );
+    expect(catalog.instructions ?? "").toContain(
+      "Gate 2 - store before replying.",
+    );
+
+    const settings = await service.getSettings();
+    await service.setSettings({ ...settings, enabled: false });
+    const disabledCatalog = await bridge.catalog(binding.binding.token);
+    expect(disabledCatalog.tools).toEqual([]);
+    expect(disabledCatalog.instructions).toBeUndefined();
   });
 });

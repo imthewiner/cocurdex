@@ -1,5 +1,6 @@
 export {
   buildAgentMemoryPolicy,
+  buildGateNudge,
   buildMemoryBrief,
   buildSessionDigestFallback,
   buildTranscriptForSummary,

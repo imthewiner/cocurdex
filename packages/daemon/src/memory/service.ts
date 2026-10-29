@@ -28,6 +28,7 @@ import { buildSnapshotProviderRecords } from "../provider/session-title";
 import type { DaemonState } from "../state";
 import {
   buildAgentMemoryPolicy,
+  buildGateNudge,
   buildMemoryBrief,
   buildSessionDigestFallback,
   buildTranscriptForSummary,
@@ -109,6 +110,10 @@ export class MemoryService {
   private writeQueue: Promise<void> = Promise.resolve();
   private readQueue: Promise<void> = Promise.resolve();
   private startupPromise: Promise<void> | null = null;
+  private readonly gateTurns = new Map<
+    string,
+    { stored: boolean; nudge: boolean }
+  >();
   private readonly device: string;
   private readonly now: () => Date;
 
@@ -567,6 +572,55 @@ export class MemoryService {
     }
   }
 
+  async beginTurn(input: {
+    sessionId: string;
+    mode: "agent" | "chat";
+    enforce: boolean;
+  }): Promise<string | null> {
+    await this.ensureInitialized();
+    if (
+      !this.currentSettings().enabled ||
+      !this.isReadyForTurns() ||
+      input.mode === "chat" ||
+      !input.enforce
+    ) {
+      this.gateTurns.delete(input.sessionId);
+      return null;
+    }
+    const previous = this.gateTurns.get(input.sessionId);
+    this.gateTurns.set(input.sessionId, { stored: false, nudge: false });
+    return previous?.nudge === true ? buildGateNudge() : null;
+  }
+
+  noteGateToolUse(sessionId: string, tool: "recall" | "show" | "remember") {
+    if (tool !== "remember") return;
+    const turn = this.gateTurns.get(sessionId);
+    if (turn) turn.stored = true;
+  }
+
+  async finishTurn(input: {
+    sessionId: string;
+    enforce: boolean;
+  }): Promise<boolean> {
+    const turn = this.gateTurns.get(input.sessionId);
+    if (!turn) return false;
+    await this.ensureInitialized();
+    if (
+      !input.enforce ||
+      !this.currentSettings().enabled ||
+      !this.isReadyForTurns() ||
+      turn.stored
+    ) {
+      this.gateTurns.delete(input.sessionId);
+      return false;
+    }
+    turn.nudge = true;
+    logDaemonDiagnostic("info", "memory.gateStoreMissed", {
+      sessionId: input.sessionId,
+    });
+    return true;
+  }
+
   async buildTurnContext(
     session: SessionRecord,
     message: string,
@@ -832,7 +886,8 @@ export class MemoryService {
   }
 
   agentInstructions(hasTools: boolean) {
-    return buildAgentMemoryPolicy(hasTools);
+    if (!hasTools || !this.isEnabledSync()) return "";
+    return buildAgentMemoryPolicy(true);
   }
 
   async getCaptures(): Promise<MemoryCaptureMap> {
