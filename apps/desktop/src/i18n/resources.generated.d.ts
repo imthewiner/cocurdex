@@ -1878,25 +1878,6 @@ export default interface Resources {
         title: "ACP Registry";
         unsupported: "Not available for this platform";
       };
-      runLimits: {
-        description: "Caps how many agent runs execute at once. Delegated runs past a limit wait in the queue; runs you start yourself are never held back.";
-        invalid: "Enter whole numbers within the allowed range.";
-        maxConcurrentRuns: {
-          description: "Total agent runs across all sessions (1–64).";
-          title: "Concurrent runs";
-        };
-        maxConcurrentRunsPerAgent: {
-          description: "Runs of the same agent at once (1–64).";
-          title: "Concurrent runs per agent";
-        };
-        saveFailed: "Could not save run limits.";
-        timeout: {
-          description: "Stops a teammate or subagent run that exceeds this time. Leave empty for no timeout.";
-          none: "None";
-          title: "Delegated run timeout (minutes)";
-        };
-        title: "Run limits";
-      };
       status: {
         builtin: "Built in — ships with cocurdex, nothing to install.";
         detecting: "Checking installation…";
@@ -3125,6 +3106,25 @@ export default interface Resources {
       role: "Role";
       roleMissing: "Role was deleted";
       rolePlaceholder: "Choose a role";
+      runLimits: {
+        description: "Runs that teammates and script agents start. Past a limit they wait in order; runs you start yourself never wait, but they count toward the limits.";
+        invalid: "Enter whole numbers within the allowed range.";
+        maxConcurrentRuns: {
+          description: "Agent runs at once across all sessions, including yours (1–64).";
+          title: "Concurrent runs";
+        };
+        maxConcurrentRunsPerAgent: {
+          description: "Runs of the same agent CLI at once, including yours (1–64).";
+          title: "Concurrent runs per agent";
+        };
+        saveFailed: "Could not save run limits.";
+        timeout: {
+          description: "Stops a teammate or script agent run that takes longer. Leave empty for no timeout.";
+          none: "None";
+          title: "Timeout (minutes)";
+        };
+        title: "Delegated runs";
+      };
       save: "Save";
       saveFailed: "Could not save this team.";
       saved: "Team saved";

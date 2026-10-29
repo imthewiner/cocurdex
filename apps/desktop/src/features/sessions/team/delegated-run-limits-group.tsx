@@ -75,7 +75,7 @@ function RunLimitInput({
   );
 }
 
-export function AgentRunLimitsGroup() {
+export function DelegatedRunLimitsGroup() {
   const { t } = useTranslation("settings");
   const [saved, setSaved] = useState<AgentRunLimits | null>(null);
   const [drafts, setDrafts] = useState<RunLimitDrafts | null>(null);
@@ -97,7 +97,7 @@ export function AgentRunLimitsGroup() {
     if (!drafts || !saved) return;
     const next = limitsFrom(drafts);
     if (!next) {
-      toast.error(t("adapters.runLimits.invalid"));
+      toast.error(t("teams.runLimits.invalid"));
       setDrafts(draftsFrom(saved));
       return;
     }
@@ -110,7 +110,7 @@ export function AgentRunLimitsGroup() {
       toast.error(
         error instanceof Error
           ? error.message
-          : t("adapters.runLimits.saveFailed"),
+          : t("teams.runLimits.saveFailed"),
       );
       setDrafts(draftsFrom(saved));
     }
@@ -121,12 +121,12 @@ export function AgentRunLimitsGroup() {
 
   return (
     <SettingsGroup
-      description={t("adapters.runLimits.description")}
-      title={t("adapters.runLimits.title")}
+      description={t("teams.runLimits.description")}
+      title={t("teams.runLimits.title")}
     >
       <SettingRow
-        description={t("adapters.runLimits.maxConcurrentRuns.description")}
-        title={t("adapters.runLimits.maxConcurrentRuns.title")}
+        description={t("teams.runLimits.maxConcurrentRuns.description")}
+        title={t("teams.runLimits.maxConcurrentRuns.title")}
       >
         <RunLimitInput
           disabled={disabled}
@@ -137,10 +137,8 @@ export function AgentRunLimitsGroup() {
         />
       </SettingRow>
       <SettingRow
-        description={t(
-          "adapters.runLimits.maxConcurrentRunsPerAgent.description",
-        )}
-        title={t("adapters.runLimits.maxConcurrentRunsPerAgent.title")}
+        description={t("teams.runLimits.maxConcurrentRunsPerAgent.description")}
+        title={t("teams.runLimits.maxConcurrentRunsPerAgent.title")}
       >
         <RunLimitInput
           disabled={disabled}
@@ -151,15 +149,15 @@ export function AgentRunLimitsGroup() {
         />
       </SettingRow>
       <SettingRow
-        description={t("adapters.runLimits.timeout.description")}
-        title={t("adapters.runLimits.timeout.title")}
+        description={t("teams.runLimits.timeout.description")}
+        title={t("teams.runLimits.timeout.title")}
       >
         <RunLimitInput
           disabled={disabled}
           field="delegatedRunTimeoutMinutes"
           onChange={change}
           onCommit={() => void commit()}
-          placeholder={t("adapters.runLimits.timeout.none")}
+          placeholder={t("teams.runLimits.timeout.none")}
           value={values.delegatedRunTimeoutMinutes}
         />
       </SettingRow>

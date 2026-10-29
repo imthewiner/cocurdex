@@ -95,25 +95,6 @@
       "title": "ACP Registry",
       "unsupported": "当前平台不可用"
     },
-    "runLimits": {
-      "description": "限制同时执行的 agent 运行数量。超出上限的委派运行会排队等待；你自己发起的运行不受限制。",
-      "invalid": "请输入允许范围内的整数。",
-      "maxConcurrentRuns": {
-        "description": "所有会话合计的 agent 运行数（1–64）。",
-        "title": "并发运行数"
-      },
-      "maxConcurrentRunsPerAgent": {
-        "description": "同一 agent 同时运行的数量（1–64）。",
-        "title": "每个 agent 并发运行数"
-      },
-      "saveFailed": "无法保存运行上限。",
-      "timeout": {
-        "description": "队友或子 agent 的运行超过该时长会被停止。留空表示不限时。",
-        "none": "不限",
-        "title": "委派运行超时（分钟）"
-      },
-      "title": "运行上限"
-    },
     "status": {
       "builtin": "内置 — 随 cocurdex 提供，无需安装。",
       "detecting": "正在检测安装情况…",
@@ -1335,6 +1316,25 @@
     "role": "角色",
     "roleMissing": "角色已被删除",
     "rolePlaceholder": "选择角色",
+    "runLimits": {
+      "description": "队友和脚本 agent 发起的运行。达到上限后按顺序排队；你自己发起的运行不会等待，但计入上限。",
+      "invalid": "请输入允许范围内的整数。",
+      "maxConcurrentRuns": {
+        "description": "所有会话合计同时运行的数量，包括你发起的（1–64）。",
+        "title": "同时运行上限"
+      },
+      "maxConcurrentRunsPerAgent": {
+        "description": "同一个 agent CLI 同时运行的数量，包括你发起的（1–64）。",
+        "title": "每个 agent 同时运行上限"
+      },
+      "saveFailed": "无法保存运行上限。",
+      "timeout": {
+        "description": "队友或脚本 agent 的运行超过该时长会被停止。留空表示不限时。",
+        "none": "不限",
+        "title": "超时（分钟）"
+      },
+      "title": "委派运行"
+    },
     "save": "保存",
     "saved": "团队已保存",
     "saveFailed": "无法保存该团队。",

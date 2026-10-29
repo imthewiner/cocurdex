@@ -29,7 +29,6 @@ import {
   useAdapterStatusLabel,
 } from "./adapter-status-dot";
 import { AgentDetailDialog } from "./agent-detail-dialog";
-import { AgentRunLimitsGroup } from "./agent-run-limits-group";
 
 function rowStatus(
   kind: AdapterStatusKind,
@@ -279,7 +278,6 @@ export function AdapterSettingsPanel() {
           openAgent !== null && planUsageAgentIds([openAgent]).length > 0
         }
       />
-      <AgentRunLimitsGroup />
     </div>
   );
 }
