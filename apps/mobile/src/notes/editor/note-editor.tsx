@@ -312,6 +312,7 @@ export function NoteEditor({
         setSupportMultipleWindows={false}
         allowsLinkPreview={false}
         hideKeyboardAccessoryView
+        contentInsetAdjustmentBehavior="automatic"
         keyboardDisplayRequiresUserAction={false}
         textZoom={100}
         style={[styles.fill, { backgroundColor: colors.background }]}
