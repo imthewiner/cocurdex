@@ -958,6 +958,26 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
+    optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  notVisible: ${ISSUE_LINK_TEXT}
+                commands:
+                  - back
+                  - tapOn: "${LINK_NOTE_TITLE}.*"
+            - extendedWaitUntil:
+                visible: ${ISSUE_LINK_TEXT}
+                timeout: 10000
+- extendedWaitUntil:
+    visible: ${ISSUE_LINK_TEXT}
+    timeout: 1000
 - runFlow:
     when:
       platform: iOS
