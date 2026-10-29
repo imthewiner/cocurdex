@@ -14,6 +14,7 @@ import {
   type WorkflowRole,
   type WorkspaceRecord,
 } from "@cocurdex/shared";
+import { agentAuthUsageLines, handleAgentCommand } from "./agent-auth-commands";
 import { withDaemon } from "./daemon-command";
 import { handleDeckCommand } from "./deck-commands";
 import {
@@ -190,6 +191,13 @@ async function main(rawArgs: string[]) {
   if (resource === "daemon" && action === "health") {
     await handleDaemonHealthCommand(parsed);
     return;
+  }
+
+  if (resource === "agent") {
+    const handled = await handleAgentCommand(action, args, parsed);
+    if (handled) {
+      return;
+    }
   }
 
   if (resource === "diagnostics") {
@@ -581,6 +589,7 @@ function printUsage() {
       ...teamUsageLines(),
       ...scriptRunUsageLines(),
       ...providerUsageLines(),
+      ...agentAuthUsageLines(),
       ...mcpUsageLines(),
       "  cocurdex workflow list",
       "  cocurdex workflow definitions",
