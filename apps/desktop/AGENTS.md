@@ -39,6 +39,16 @@ Fix a look or behavior that every caller should share in the primitive itself, n
 - Support RTL with logical layout, spacing, positioning, corners, icon direction, and text alignment. Use physical `left`/`right` only when the behavior is physically directional.
 - Prefer `lucide-react`. Use explicit, consistent `size-3.5`, `size-4`, or `size-5` within a row or context. Conditionally render status icons; do not reserve them with `opacity-0`.
 
+### Visual language
+
+The desktop is immersive and borderless, in the same family as the mobile app. Before designing a screen, a mockup, or a new component, open the existing screens of the same kind (settings pages, lists, dialogs) and match them; a mockup uses the app's tokens and components, not an invented palette.
+
+- Separate planes by brightness, never by outlines. Content sits on `bg-background`; a group sits on one raised plane (`bg-settings-surface`, `rounded-card`) with no border, ring, or shadow. Rows inside a plane are separated by spacing or `divide-border/40`. Inputs, editors, and the overlay primitives (dialogs, menus, popovers) keep the edges their primitives draw.
+- Settings pages compose `SettingsGroup` and `SettingRow` (`components/app/settings-fields.tsx`): a muted `text-meta` group label above the plane, then rows with a `text-body` title, a muted description, and the control at the trailing edge. Details a row needs on demand expand inside the same row under its text column, never as a nested plane.
+- Row and section actions are `ghost` buttons with a leading `size-3.5` icon. A filled `default` button is reserved for the one primary action of a view or dialog; destructive actions use the `destructive` variant and confirm through `AppConfirmDialog`.
+- Show status as a small `rounded-full` dot or muted text beside the item, not as a tinted pill or a filled badge; a status color marks the dot, never a large surface.
+- Keep type regular and quiet: `text-body` for content, `text-meta` for labels and metadata, `font-medium` only for titles, monospace only for paths, versions, and ids.
+
 ### Window controls
 
 The window has no native title bar on any platform. macOS draws its traffic lights at the top-left (`html[data-traffic-lights]`), and Windows and Linux draw minimize, maximize, and close at the top-right over the page (`--titlebar-controls-inset`). Any surface that reaches the top edge of a window, including full-window overlays, dialogs sized to the window, and secondary windows with hidden title bars, must keep its controls and text clear of both areas and leave a draggable strip. Use `AppWindowOverlayHeader` from `@/components/app` for such a header, and mark its interactive children `app-no-drag`. CDP screenshots do not show native window controls, so verify clearance by measurement against `TITLEBAR_LEADING_RESERVE` and `--titlebar-controls-inset` (see `tests/scenarios/decks.mjs`), not by eye.
