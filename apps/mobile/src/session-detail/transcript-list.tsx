@@ -129,7 +129,10 @@ export function TranscriptList({
         const content = list.current?.getNativeScrollRef()?.getInnerViewRef();
         if (!content) return;
         const target = state.target;
-        const inset = target === state.sentMessageId ? peek : 0;
+        const inset =
+          target === state.sentMessageId
+            ? sentPromptPeek(metrics.current.viewportHeight)
+            : 0;
         latestView.current?.measureLayout(
           content,
           (_x, y) => {
