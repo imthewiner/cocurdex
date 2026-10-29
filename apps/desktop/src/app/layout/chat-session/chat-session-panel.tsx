@@ -107,6 +107,7 @@ export function ChatSessionPanel({
       messages={messages}
       onSend={(text, attachments) => {
         void actions.send(session, text, attachments, thinkingLevel);
+        return "sent";
       }}
       onStop={() => {
         void actions.stop(session).catch(notifyFailure);

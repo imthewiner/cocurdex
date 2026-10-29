@@ -14,6 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui";
 import {
   ChatContentColumn,
+  type ComposerSendOutcome,
   sessionComposerDraftKey,
 } from "@/features/composer";
 import {
@@ -282,7 +283,7 @@ export function ChatView({
       message: string,
       attachments: MessageAttachment[],
       useOppositeFollowUpBehavior?: boolean,
-    ) => {
+    ): ComposerSendOutcome => {
       callbacksRef.current.onSend(
         message,
         attachments,
@@ -290,6 +291,7 @@ export function ChatView({
       );
       scrollToLatest();
       anchorNextPrompt();
+      return "sent";
     },
     [anchorNextPrompt, scrollToLatest],
   );

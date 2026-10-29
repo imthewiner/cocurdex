@@ -1394,6 +1394,7 @@ export default interface Resources {
       };
       contextFileTooLarge: "File is too large. Select a smaller file or attach a selection.";
       noInstalledAgent: "No agent installed";
+      openWorkspaceFirst: "Open a folder, then describe the task";
       placeholder: "Plan, Build, / for skills, @ for context";
       removeAttachment: "Remove attachment";
       selectAgent: "Select agent";
