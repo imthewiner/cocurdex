@@ -10,10 +10,12 @@ import {
 } from "@cocurdex/e2e/fixture-db/recipe";
 import type { SupportedLocale } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
-import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
+import { startAndroidTarget } from "./lib/android";
+import { androidSdk, buildAndroidApp } from "./lib/android-build";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
-import { buildIosApp, startIosTarget } from "./lib/ios";
+import { startIosTarget } from "./lib/ios";
+import { buildIosApp } from "./lib/ios-build";
 import type { Appearance, MobilePlatform, MobileTarget } from "./lib/target";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
@@ -193,6 +195,7 @@ const { values } = parseArgs({
     app: { type: "string" },
     run: { type: "string", multiple: true },
     avd: { type: "string" },
+    device: { type: "string" },
     keep: { type: "boolean", default: false },
   },
 });
@@ -209,6 +212,11 @@ function parsePlatform(value: string | undefined): MobilePlatform {
 const platform = parsePlatform(values.platform);
 if (platform === "ios" && process.platform !== "darwin") {
   throw new Error("iOS runs need macOS with Xcode");
+}
+if (values.device && platform !== "ios") {
+  throw new Error(
+    "--device names a booted iOS simulator; use --avd on Android",
+  );
 }
 
 function runId({ appearance, locale }: (typeof RUNS)[number]) {
@@ -311,7 +319,7 @@ async function main() {
     }
     const target =
       platform === "ios"
-        ? await startIosTarget(mobileDir, { appPath })
+        ? await startIosTarget(mobileDir, { appPath, deviceId: values.device })
         : await startAndroidTarget(mobileDir, values.avd, { appPath });
     await daemon.createImageSession(
       IMAGE_SESSION.title,

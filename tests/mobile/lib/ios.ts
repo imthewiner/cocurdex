@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
-import path from "node:path";
 import type { SupportedLocale } from "@cocurdex/shared";
 import { runCommand } from "./command";
+import { iosAppPath } from "./ios-build";
 import type { MobileTarget } from "./target";
 
 const PREFERRED_DEVICE_TYPE = "iPhone 16 Pro";
@@ -90,64 +90,37 @@ async function deleteOrphanedSimulators() {
   }
 }
 
-export async function buildIosApp(mobileDir: string) {
-  await runCommand("pnpm", ["exec", "expo", "prebuild", "--platform", "ios"], {
-    cwd: mobileDir,
-    env: { ...process.env, CI: "1" },
-    inherit: true,
-  });
-  await runCommand(
-    "xcodebuild",
-    [
-      "-workspace",
-      "ios/Cocurdex.xcworkspace",
-      "-scheme",
-      "Cocurdex",
-      "-configuration",
-      "Release",
-      "-sdk",
-      "iphonesimulator",
-      "-derivedDataPath",
-      "ios/build",
-      "build",
-    ],
-    { cwd: mobileDir, inherit: true },
-  );
-}
-
-export function iosAppPath(mobileDir: string) {
-  return path.join(
-    mobileDir,
-    "ios/build/Build/Products/Release-iphonesimulator/Cocurdex.app",
-  );
+async function createSimulator() {
+  await deleteOrphanedSimulators();
+  const { runtime, deviceType } = await latestIosRuntime();
+  const output = await runCommand("xcrun", [
+    "simctl",
+    "create",
+    `${SIMULATOR_PREFIX}${process.pid}`,
+    deviceType,
+    runtime,
+  ]);
+  return output.trim();
 }
 
 export async function startIosTarget(
   mobileDir: string,
-  options: { install?: boolean; appPath?: string } = {},
+  options: { install?: boolean; appPath?: string; deviceId?: string } = {},
 ): Promise<MobileTarget> {
   const install = options.install ?? true;
   const appPath = options.appPath ?? iosAppPath(mobileDir);
   if (install && !existsSync(appPath)) {
     throw new Error(`Missing ${appPath}; run with --build first`);
   }
-  await deleteOrphanedSimulators();
-  const { runtime, deviceType } = await latestIosRuntime();
-  const udid = (
-    await runCommand("xcrun", [
-      "simctl",
-      "create",
-      `${SIMULATOR_PREFIX}${process.pid}`,
-      deviceType,
-      runtime,
-    ])
-  ).trim();
+  const owned = options.deviceId === undefined;
+  const udid = options.deviceId ?? (await createSimulator());
   const stop = async () => {
+    if (!owned) return;
     await runCommand("xcrun", ["simctl", "shutdown", udid]).catch(() => "");
     await runCommand("xcrun", ["simctl", "delete", udid]);
   };
   try {
-    await runCommand("xcrun", ["simctl", "boot", udid]);
+    if (owned) await runCommand("xcrun", ["simctl", "boot", udid]);
     await runCommand("xcrun", ["simctl", "bootstatus", udid, "-b"]);
     if (install) {
       await runCommand("xcrun", ["simctl", "install", udid, appPath]);
