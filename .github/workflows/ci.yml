@@ -359,6 +359,8 @@ jobs:
           (
             pnpm --filter @cocurdex/desktop prepare:cli
             tar -czf "${RUNNER_TEMP}/mobile-upload/mobile-cli.tgz" -C apps/desktop/resources cli skills
+            (cd tests/e2e && node --import tsx fixture-db/cli.ts --out "${RUNNER_TEMP}/fixture-db")
+            tar -czf "${RUNNER_TEMP}/mobile-upload/fixture-db.tgz" -C "${RUNNER_TEMP}/fixture-db" .
           ) &
           daemon=$!
           if [[ "${READY}" == "true" ]]; then
@@ -435,6 +437,8 @@ jobs:
         run: |
           download="${RUNNER_TEMP}/mobile-download"
           tar -xzf "${download}/mobile-cli.tgz" -C apps/desktop/resources
+          mkdir -p "${RUNNER_TEMP}/fixture-db"
+          tar -xzf "${download}/fixture-db.tgz" -C "${RUNNER_TEMP}/fixture-db"
           if [[ -f "${download}/mobile-app.tgz" ]]; then
             app_dir="${RUNNER_TEMP}/mobile-app"
             mkdir -p "${app_dir}"
@@ -489,6 +493,7 @@ jobs:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/mobile-tests
         run: |
           args=(--platform ${{ matrix.platform }} --flow ${{ matrix.flow }} --app "${APP_DIR}/$(ls "${APP_DIR}")")
+          args+=(--fixture-db "${RUNNER_TEMP}/fixture-db")
           if [[ "${ALL_RUNS}" != "true" ]]; then
             args+=(--run "${PR_RUN}")
           fi

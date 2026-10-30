@@ -198,6 +198,7 @@ const { values } = parseArgs({
     flow: { type: "string", multiple: true },
     avd: { type: "string" },
     device: { type: "string" },
+    "fixture-db": { type: "string" },
     keep: { type: "boolean", default: false },
   },
 });
@@ -352,7 +353,11 @@ async function main() {
   }
   const tempDirs = createTempDirs();
   const outputRoot = flowOutputRoot(tempDirs);
-  const daemon = await startPairingDaemon(platform, tempDirs);
+  const daemon = await startPairingDaemon(
+    platform,
+    tempDirs,
+    values["fixture-db"] && path.resolve(values["fixture-db"]),
+  );
   const openedSessionState = async () =>
     (await daemon.sessionAttention()).find(
       (entry) => entry.sessionId === CODE_SESSION,
