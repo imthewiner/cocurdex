@@ -15,6 +15,8 @@ import {
 import {
   buildMemoryRecallQuery,
   DEFAULT_MEMORY_SETTINGS,
+  gateMemorySettings,
+  memoryPlatformSupportsRsrs,
   normalizeMemorySettings,
   parseMemorySettings,
   redactMemorySecrets,
@@ -64,6 +66,28 @@ describe("memory settings", () => {
   it("defaults to enabled when the setting is absent", () => {
     expect(parseMemorySettings(null)).toEqual(DEFAULT_MEMORY_SETTINGS);
     expect(DEFAULT_MEMORY_SETTINGS.enabled).toBe(true);
+  });
+
+  it("turns memory off where the rsrs CLI has no build", () => {
+    expect(memoryPlatformSupportsRsrs({ os: "darwin", arch: "x64" })).toBe(
+      false,
+    );
+    expect(memoryPlatformSupportsRsrs({ os: "darwin", arch: "arm64" })).toBe(
+      true,
+    );
+    expect(memoryPlatformSupportsRsrs({ os: "win32", arch: "x64" })).toBe(true);
+    expect(
+      gateMemorySettings(DEFAULT_MEMORY_SETTINGS, {
+        os: "darwin",
+        arch: "x64",
+      }).enabled,
+    ).toBe(false);
+    expect(
+      gateMemorySettings(
+        { ...DEFAULT_MEMORY_SETTINGS, enabled: false },
+        { os: "linux", arch: "x64" },
+      ).enabled,
+    ).toBe(false);
   });
 
   it("keeps valid values and falls back for invalid ones", () => {

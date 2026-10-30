@@ -14,6 +14,8 @@ import {
   type MemoryImportance,
   type MemoryRecallItem,
   type MemorySettings,
+  RSRS_CLI_PACKAGE,
+  RSRS_CLI_VERSION,
 } from "@cocurdex/shared";
 import { callRuntimeTool, type RuntimeEndpoint } from "./runtime";
 
@@ -574,9 +576,10 @@ export async function installRsrs(input: {
   timeoutMs?: number;
 }): Promise<{ command: string; output: string }> {
   const timeoutMs = input.timeoutMs ?? INSTALL_TIMEOUT_MS;
+  const pinned = `${RSRS_CLI_PACKAGE}@${RSRS_CLI_VERSION}`;
   const attempts: Array<{ command: string; args: string[] }> = [
-    { command: "npm", args: ["install", "-g", "@rsrsai/cli@latest"] },
-    { command: "pnpm", args: ["add", "-g", "@rsrsai/cli@latest"] },
+    { command: "npm", args: ["install", "-g", pinned] },
+    { command: "pnpm", args: ["add", "-g", pinned] },
   ];
   const failures: string[] = [];
   for (const attempt of attempts) {
@@ -604,7 +607,7 @@ export async function installRsrs(input: {
     }
   }
   throw commandError(
-    `Could not install the rsrs CLI. Install Node.js/npm and run "npm install -g @rsrsai/cli@latest". ${failures.join(" | ")}`,
+    `Could not install the rsrs CLI. Install Node.js/npm and run "npm install -g ${pinned}". ${failures.join(" | ")}`,
     "install_failed",
   );
 }

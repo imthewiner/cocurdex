@@ -519,6 +519,7 @@ export const offlineApi: DesktopApi = {
   getMemoryStatus: async () => ({
     settings: DEFAULT_MEMORY_SETTINGS,
     enabled: DEFAULT_MEMORY_SETTINGS.enabled,
+    supported: true,
     available: false,
     installation: "missing" as const,
     version: null,
@@ -555,6 +556,7 @@ export const offlineApi: DesktopApi = {
     status: {
       settings: DEFAULT_MEMORY_SETTINGS,
       enabled: DEFAULT_MEMORY_SETTINGS.enabled,
+      supported: true,
       available: false,
       installation: "missing" as const,
       version: null,

@@ -1142,7 +1142,7 @@ export default interface Resources {
       doctorFailed: "rsrs doctor reported a problem";
       doctorPassed: "rsrs doctor: {{status}}";
       enabled: {
-        description: "Recall before answers and save useful results to your long-term memory.";
+        description: "Recall before answers and save useful results to your long-term memory. Entries go to the local rsrs store (~/.rsrs) and sync to your rsrs account when one is connected. You can turn this off at any time.";
         title: "Enable memory";
       };
       groupTitle: "Long-term memory";
@@ -1156,6 +1156,7 @@ export default interface Resources {
         missing: "rsrs is not installed";
         title: "Status";
         unknown: "unknown version";
+        unsupported: "Long-term memory needs the rsrs CLI, which has no build for Intel Macs, so it stays off on this machine.";
       };
     };
     status: {
@@ -1165,6 +1166,7 @@ export default interface Resources {
       missing: "rsrs is not installed";
       ready: "rsrs {{version}}";
       readyUnknown: "rsrs is ready";
+      unsupported: "Unsupported here";
     };
     switch: {
       label: "Memory";

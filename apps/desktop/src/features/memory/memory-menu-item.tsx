@@ -15,6 +15,7 @@ import {
 
 function statusNote(t: TFunction<"memory">, status: MemoryStatus | undefined) {
   if (!status) return null;
+  if (!status.supported) return t("status.unsupported");
   if (status.installation === "installing") return t("status.installing");
   if (status.available) return null;
   if (status.installation === "failed") return t("status.failed");
@@ -28,6 +29,7 @@ export function MemoryMenuItem() {
   const enabled = data?.settings.enabled ?? true;
   const installing = data?.installation === "installing";
   const available = data?.available;
+  const unsupported = data?.supported === false;
   const note = statusNote(t, data);
 
   const toggle = async (next: boolean) => {
@@ -64,7 +66,7 @@ export function MemoryMenuItem() {
   return (
     <DropdownMenuCheckboxItem
       checked={enabled}
-      disabled={pending || installing}
+      disabled={pending || installing || unsupported}
       onCheckedChange={(checked) => void toggle(checked === true)}
       onSelect={(event) => event.preventDefault()}
     >

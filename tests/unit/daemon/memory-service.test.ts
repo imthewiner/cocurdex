@@ -134,7 +134,11 @@ function createState(settings: MemorySettings) {
 }
 
 async function createService(
-  options: { failRecall?: boolean; candidateOnRemember?: boolean } = {},
+  options: {
+    failRecall?: boolean;
+    candidateOnRemember?: boolean;
+    platform?: { os: string; arch: string };
+  } = {},
 ) {
   const directory = await temp.create("cocurdex-memory-");
   const logPath = path.join(directory, "calls.log");
@@ -152,6 +156,7 @@ async function createService(
     broadcast: () => {},
     resolveSessionProvider: async () => null,
     device: "test-host",
+    platform: options.platform,
     rsrsDataDir: directory,
     startRuntime: false,
     now: () => new Date("2026-10-28T10:00:02.000Z"),
@@ -359,6 +364,25 @@ describe("MemoryService with a fake rsrs CLI", () => {
     ).toBe(false);
     service.noteGateToolUse("agent-3", "remember");
     expect(service.agentInstructions(true)).toBe("");
+  });
+
+  it("keeps memory off where the rsrs CLI has no build", async () => {
+    const { service } = await createService({
+      platform: { os: "darwin", arch: "x64" },
+    });
+    const settings = await service.getSettings();
+    expect(settings.enabled).toBe(false);
+    const status = await service.getStatus();
+    expect(status).toMatchObject({ supported: false, enabled: false });
+    expect(await service.recall({ query: "cocurdex" })).toMatchObject({
+      items: [],
+    });
+    const install = await service.install();
+    expect(install.installed).toBe(false);
+    expect(install.message).toContain("darwin/x64");
+    expect(
+      (await service.setSettings({ ...settings, enabled: true })).enabled,
+    ).toBe(false);
   });
 
   it("injects the gates into the agent catalog while memory is enabled", async () => {

@@ -1,4 +1,9 @@
-import { DEFAULT_MEMORY_SETTINGS, type MemorySettings } from "@cocurdex/shared";
+import {
+  DEFAULT_MEMORY_SETTINGS,
+  type MemorySettings,
+  type MemoryStatus,
+} from "@cocurdex/shared";
+import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -11,6 +16,22 @@ import {
   useMemoryStatus,
 } from "./memory-queries";
 
+function statusText(
+  t: TFunction<"memory">,
+  status: MemoryStatus | undefined,
+  installing: boolean,
+) {
+  if (status?.supported === false) return t("settings.status.unsupported");
+  if (status?.available) {
+    return t("settings.status.available", {
+      version: status.version ?? t("settings.status.unknown"),
+    });
+  }
+  return installing
+    ? t("settings.status.installing")
+    : t("settings.status.missing");
+}
+
 export function MemorySettingsPanel() {
   const { t } = useTranslation("memory");
   const { data: status } = useMemoryStatus();
@@ -18,6 +39,7 @@ export function MemorySettingsPanel() {
   const settings = settingsData ?? DEFAULT_MEMORY_SETTINGS;
   const [busy, setBusy] = useState(false);
   const installing = status?.installation === "installing";
+  const unsupported = status?.supported === false;
 
   const save = async (next: MemorySettings) => {
     try {
@@ -78,6 +100,7 @@ export function MemorySettingsPanel() {
           <Switch
             aria-label={t("settings.enabled.title")}
             checked={settings.enabled}
+            disabled={unsupported}
             onCheckedChange={(enabled) => void save({ ...settings, enabled })}
           />
         </SettingRow>
@@ -159,13 +182,7 @@ export function MemorySettingsPanel() {
                 {t("settings.status.title")}
               </Text>
               <Text className="mt-0.5 block" size="meta" tone="muted">
-                {status?.available
-                  ? t("settings.status.available", {
-                      version: status.version ?? t("settings.status.unknown"),
-                    })
-                  : installing
-                    ? t("settings.status.installing")
-                    : t("settings.status.missing")}
+                {statusText(t, status, installing)}
               </Text>
               {status?.executable ? (
                 <Text
@@ -208,7 +225,7 @@ export function MemorySettingsPanel() {
             <div className="flex shrink-0 items-center gap-2">
               {busy || installing ? <Spinner size="md" /> : null}
               <Button
-                disabled={busy || installing}
+                disabled={busy || installing || unsupported}
                 size="sm"
                 variant="outline"
                 onClick={() => void runInstall()}

@@ -43,7 +43,7 @@
     "doctorFailed": "rsrs 体检发现问题",
     "doctorPassed": "rsrs 体检：{{status}}",
     "enabled": {
-      "description": "回答前召回，结束后把有价值的结果写入长期记忆。",
+      "description": "回答前召回，结束后把有价值的结果写入长期记忆。条目保存在本地 rsrs 存储（~/.rsrs），已连接 rsrs 账号时会同步到该账号。你可以随时关闭。",
       "title": "启用记忆"
     },
     "groupTitle": "长期记忆",
@@ -56,7 +56,8 @@
       "installing": "正在安装 rsrs…",
       "missing": "rsrs 尚未安装",
       "title": "状态",
-      "unknown": "未知版本"
+      "unknown": "未知版本",
+      "unsupported": "长期记忆依赖 rsrs CLI，而它没有 Intel Mac 版本，因此这台机器上保持关闭。"
     }
   },
   "status": {
@@ -65,7 +66,8 @@
     "installing": "正在安装 rsrs…",
     "missing": "rsrs 尚未安装",
     "ready": "rsrs {{version}}",
-    "readyUnknown": "rsrs 已就绪"
+    "readyUnknown": "rsrs 已就绪",
+    "unsupported": "此设备不支持"
   },
   "switch": {
     "label": "记忆",

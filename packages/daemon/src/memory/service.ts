@@ -5,11 +5,13 @@ import {
   buildMemoryRecallQuery,
   type CocurdexDaemonEvent,
   DEFAULT_MEMORY_SETTINGS,
+  gateMemorySettings,
   isChatSession,
   type MemoryDoctorReport,
   type MemoryEntry,
   type MemoryImportance,
   type MemoryInstallResult,
+  type MemoryPlatform,
   type MemoryRecallItem,
   type MemoryRecallOutcome,
   type MemoryRecallResult,
@@ -21,6 +23,7 @@ import {
   type MemorySettings,
   type MemoryStatus,
   type MessageRecord,
+  memoryPlatformSupportsRsrs,
   redactMemorySecrets,
   type SessionRecord,
 } from "@cocurdex/shared";
@@ -93,6 +96,7 @@ export interface MemoryServiceOptions {
     session: SessionRecord,
   ): Promise<AgentRuntimeProviderConfig | null>;
   device?: string;
+  platform?: MemoryPlatform;
   rsrsDataDir?: string;
   startRuntime?: boolean;
   now?: () => Date;
@@ -139,11 +143,20 @@ export class MemoryService {
   private runtimeCheckedAt = 0;
   private runtimeTools: Map<string, Set<string>> | null = null;
   private readonly device: string;
+  private readonly platform: MemoryPlatform;
   private readonly now: () => Date;
 
   constructor(private readonly options: MemoryServiceOptions) {
     this.device = options.device ?? `${os.hostname()}/${process.platform}`;
+    this.platform = options.platform ?? {
+      os: process.platform,
+      arch: process.arch,
+    };
     this.now = options.now ?? (() => new Date());
+  }
+
+  private get supported() {
+    return memoryPlatformSupportsRsrs(this.platform);
   }
 
   private async ensureInitialized() {
@@ -165,7 +178,10 @@ export class MemoryService {
   }
 
   private currentSettings(): MemorySettings {
-    return this.settings ?? DEFAULT_MEMORY_SETTINGS;
+    return gateMemorySettings(
+      this.settings ?? DEFAULT_MEMORY_SETTINGS,
+      this.platform,
+    );
   }
 
   private currentInstallState(): MemoryInstallState {
@@ -182,16 +198,16 @@ export class MemoryService {
   }
 
   isEnabledSync() {
-    return this.settings?.enabled ?? true;
+    return this.currentSettings().enabled;
   }
 
   areToolsEnabledSync() {
-    const settings = this.settings;
-    return Boolean(settings?.enabled && settings.agent.tools);
+    const settings = this.currentSettings();
+    return Boolean(settings.enabled && settings.agent.tools);
   }
 
   private isReadyForTurns() {
-    if (!this.settings?.enabled) return false;
+    if (!this.currentSettings().enabled) return false;
     return (
       this.statusCache?.status.available === true ||
       this.installState?.status === "ready"
@@ -205,7 +221,10 @@ export class MemoryService {
 
   async setSettings(input: MemorySettings): Promise<MemorySettings> {
     await this.ensureInitialized();
-    const settings = await writeMemorySettings(this.options.state, input);
+    const settings = await writeMemorySettings(
+      this.options.state,
+      gateMemorySettings(input, this.platform),
+    );
     this.settings = settings;
     this.statusCache = null;
     this.broadcast();
@@ -285,6 +304,7 @@ export class MemoryService {
       const status: MemoryStatus = {
         settings,
         enabled: settings.enabled,
+        supported: this.supported,
         available: false,
         installation:
           installState.status === "installing"
@@ -332,6 +352,7 @@ export class MemoryService {
     const status: MemoryStatus = {
       settings,
       enabled: settings.enabled,
+      supported: this.supported,
       available: true,
       installation:
         installState.status === "installing" ? "installing" : "ready",
@@ -351,6 +372,13 @@ export class MemoryService {
 
   async install(force = false): Promise<MemoryInstallResult> {
     await this.ensureInitialized();
+    if (!this.supported) {
+      return {
+        status: await this.getStatus(),
+        installed: false,
+        message: `The rsrs CLI has no build for ${this.platform.os}/${this.platform.arch}, so long-term memory stays off on this machine.`,
+      };
+    }
     if (this.installPromise) return this.installPromise;
     if (!force) {
       const state = this.currentInstallState();
@@ -528,6 +556,7 @@ export class MemoryService {
     return {
       settings,
       enabled: settings.enabled,
+      supported: this.supported,
       available: true,
       installation:
         installState.status === "installing" ? "installing" : "ready",
