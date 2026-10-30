@@ -226,6 +226,12 @@ async function waitForExit(pids) {
   }
 }
 
+export async function stopProcessTree(rootPid) {
+  const tree = treePids(rootPid);
+  killTree(rootPid);
+  await waitForExit(tree);
+}
+
 function killTree(rootPid) {
   if (process.platform === "win32") {
     spawnSync("taskkill", ["/PID", String(rootPid), "/T", "/F"]);
@@ -279,9 +285,7 @@ export function removeTempDir(dirPath) {
 }
 
 export async function stopIsolatedInstance(pid, userDataPath) {
-  const tree = treePids(pid);
-  killTree(pid);
-  await waitForExit(tree);
+  await stopProcessTree(pid);
   await removeTempDir(userDataPath);
 }
 

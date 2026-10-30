@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "envMode": "loose",
+  "globalPassThroughEnv": [
+    "COCURDEX_SCENARIO_RECORD_DIR",
+    "COCURDEX_TEST_ARTIFACTS_DIR"
+  ],
+  "globalDependencies": [
+    ".npmrc",
+    "pnpm-workspace.yaml",
+    "patches/**",
+    "tsconfig.base.json",
+    "tsconfig.json"
+  ],
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    }
+  }
+}
