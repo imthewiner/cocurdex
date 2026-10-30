@@ -36,9 +36,11 @@ export interface StubLlmServer {
   requests: StubLlmRequest[];
   plan: StubLlmPlan;
   /** Resolves with the next incoming request. */
-  nextRequest(): Promise<StubLlmRequest>;
+  nextRequest(timeoutMs?: number): Promise<StubLlmRequest>;
   close(): Promise<void>;
 }
+
+const NEXT_REQUEST_TIMEOUT_MS = 30_000;
 
 function sseChunk(delta: Record<string, unknown>, finishReason: string | null) {
   return `data: ${JSON.stringify({
@@ -185,18 +187,28 @@ export async function startStubLlmServer(): Promise<StubLlmServer> {
     set plan(plan: StubLlmPlan) {
       state.plan = plan;
     },
-    nextRequest() {
+    nextRequest(timeoutMs = NEXT_REQUEST_TIMEOUT_MS) {
       const buffered = requests[consumed];
       if (buffered) {
         consumed += 1;
         return Promise.resolve(buffered);
       }
-      return new Promise((resolve) =>
-        waiters.push((request) => {
+      return new Promise((resolve, reject) => {
+        const waiter = (request: StubLlmRequest) => {
+          clearTimeout(timer);
           consumed += 1;
           resolve(request);
-        }),
-      );
+        };
+        const timer = setTimeout(() => {
+          waiters.splice(waiters.indexOf(waiter), 1);
+          reject(
+            new Error(
+              `No LLM request within ${timeoutMs} ms (${requests.length} received)`,
+            ),
+          );
+        }, timeoutMs);
+        waiters.push(waiter);
+      });
     },
     close: () =>
       new Promise((resolve, reject) =>

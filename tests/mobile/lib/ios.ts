@@ -124,10 +124,10 @@ export function iosAppPath(mobileDir: string) {
 
 export async function startIosTarget(
   mobileDir: string,
-  options: { install?: boolean } = {},
+  options: { install?: boolean; appPath?: string } = {},
 ): Promise<MobileTarget> {
   const install = options.install ?? true;
-  const appPath = iosAppPath(mobileDir);
+  const appPath = options.appPath ?? iosAppPath(mobileDir);
   if (install && !existsSync(appPath)) {
     throw new Error(`Missing ${appPath}; run with --build first`);
   }

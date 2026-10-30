@@ -25,7 +25,7 @@ const RUNS: { appearance: Appearance; locale: SupportedLocale }[] = [
 ];
 const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
-  "zh-CN": "继续",
+  "zh-CN": "继续|Continue",
 };
 const SEARCH_OPEN: Record<SupportedLocale, string> = {
   "en-US": "Search",
@@ -190,6 +190,8 @@ const { values } = parseArgs({
   options: {
     platform: { type: "string" },
     build: { type: "boolean", default: false },
+    app: { type: "string" },
+    run: { type: "string", multiple: true },
     avd: { type: "string" },
     keep: { type: "boolean", default: false },
   },
@@ -208,6 +210,25 @@ const platform = parsePlatform(values.platform);
 if (platform === "ios" && process.platform !== "darwin") {
   throw new Error("iOS runs need macOS with Xcode");
 }
+
+function runId({ appearance, locale }: (typeof RUNS)[number]) {
+  return `${appearance}-${locale}`;
+}
+
+function selectRuns(requested: string[] | undefined) {
+  if (!requested) return RUNS;
+  const known = RUNS.map(runId);
+  const unknown = requested.filter((id) => !known.includes(id));
+  if (unknown.length > 0) {
+    throw new Error(
+      `--run must be one of ${known.join(", ")}, not ${unknown.join(", ")}`,
+    );
+  }
+  return RUNS.filter((run) => requested.includes(runId(run)));
+}
+
+const runs = selectRuns(values.run);
+const appPath = values.app ? path.resolve(values.app) : undefined;
 
 const DRIVER_STARTUP_TIMEOUT_MS = "240000";
 
@@ -290,8 +311,8 @@ async function main() {
     }
     const target =
       platform === "ios"
-        ? await startIosTarget(mobileDir)
-        : await startAndroidTarget(mobileDir, values.avd);
+        ? await startIosTarget(mobileDir, { appPath })
+        : await startAndroidTarget(mobileDir, values.avd, { appPath });
     await daemon.createImageSession(
       IMAGE_SESSION.title,
       IMAGE_SESSION.prompt,
@@ -302,7 +323,7 @@ async function main() {
       OPENED_ISSUE.title,
     );
     try {
-      for (const { appearance, locale } of RUNS) {
+      for (const { appearance, locale } of runs) {
         const send = sendLabels(locale);
         const replySession = await daemon.createReplyingSession(
           send.SEND_SESSION_TITLE,
@@ -341,13 +362,13 @@ async function main() {
         throw new Error(`Opening ${CODE_SESSION} did not mark it visited`);
       }
       const prompts = daemon.sentPrompts().join("\n");
-      for (const { locale } of RUNS) {
+      for (const { locale } of runs) {
         const { SEND_PROMPT } = sendLabels(locale);
         if (!prompts.includes(SEND_PROMPT)) {
           throw new Error(`The agent never received "${SEND_PROMPT}"`);
         }
       }
-      const replySessionTitles = RUNS.map(
+      const replySessionTitles = runs.map(
         ({ locale }) => sendLabels(locale).SEND_SESSION_TITLE,
       );
       const started = (await daemon.sessions()).filter(
@@ -356,21 +377,21 @@ async function main() {
           session.providerSnapshot?.modelName === daemon.agentModelName &&
           !replySessionTitles.includes(session.title),
       );
-      if (started.length !== RUNS.length) {
+      if (started.length !== runs.length) {
         throw new Error(
-          `Expected ${RUNS.length} sessions started on Pi with ${daemon.agentModelName}, found ${started.length}`,
+          `Expected ${runs.length} sessions started on Pi with ${daemon.agentModelName}, found ${started.length}`,
         );
       }
-      for (const { locale } of RUNS) {
+      for (const { locale } of runs) {
         const { NEW_SESSION_PROMPT } = sendLabels(locale);
         if (!prompts.includes(NEW_SESSION_PROMPT)) {
           throw new Error(`The agent never received "${NEW_SESSION_PROMPT}"`);
         }
       }
       const devices = await daemon.pairedDevices();
-      if (devices.length !== RUNS.length) {
+      if (devices.length !== runs.length) {
         throw new Error(
-          `Expected ${RUNS.length} paired devices, daemon has ${devices.length}`,
+          `Expected ${runs.length} paired devices, daemon has ${devices.length}`,
         );
       }
     } finally {
