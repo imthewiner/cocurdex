@@ -490,6 +490,29 @@ export class MemoryService {
     return this.runtimeTools?.get(tool)?.has(argument) ?? false;
   }
 
+  private invalidateRuntime() {
+    this.runtimeEndpoint = null;
+    this.runtimeCheckedAt = 0;
+    this.runtimeTools = null;
+  }
+
+  private async viaRuntime<T>(
+    runtime: RuntimeEndpoint | null,
+    call: (endpoint: RuntimeEndpoint) => Promise<T>,
+    fallback: () => Promise<T>,
+  ): Promise<T> {
+    if (!runtime) return fallback();
+    try {
+      return await call(runtime);
+    } catch (error) {
+      logDaemonDiagnostic("info", "memory.runtimeCallFailed", {
+        error: errorMessage(error),
+      });
+      this.invalidateRuntime();
+      return fallback();
+    }
+  }
+
   async recall(input: {
     query: string;
     limit?: number;
@@ -511,18 +534,22 @@ export class MemoryService {
       const viaRuntime =
         runtime !== null &&
         (!input.project || this.runtimeSupports("memory_recall", "project"));
-      const result = viaRuntime
-        ? await recallMemoriesViaRuntime(runtime, {
+      const result = await this.viaRuntime(
+        viaRuntime ? runtime : null,
+        (endpoint) =>
+          recallMemoriesViaRuntime(endpoint, {
             query,
             limit,
             timeoutMs: input.timeoutMs,
-          })
-        : await recallMemories(executable, {
+          }),
+        () =>
+          recallMemories(executable, {
             query,
             limit,
             project: input.project ?? null,
             timeoutMs: input.timeoutMs,
-          });
+          }),
+      );
       if (result.error) {
         logDaemonDiagnostic("info", "memory.recallReportedError", {
           error: result.error,
@@ -543,9 +570,11 @@ export class MemoryService {
     if (!executable) return null;
     const result = await this.enqueueRead(async () => {
       const runtime = await this.runtime();
-      return runtime
-        ? await showMemoryViaRuntime(runtime, id, timeoutMs)
-        : await showMemory(executable, id, timeoutMs);
+      return this.viaRuntime(
+        runtime,
+        (endpoint) => showMemoryViaRuntime(endpoint, id, timeoutMs),
+        () => showMemory(executable, id, timeoutMs),
+      );
     });
     if (result.error) {
       logDaemonDiagnostic("info", "memory.showReportedError", {
@@ -595,17 +624,12 @@ export class MemoryService {
           this.runtimeSupports("memory_remember", "project")) &&
         (!input.tags?.length ||
           this.runtimeSupports("memory_remember", "tags"));
-      const result = viaRuntime
-        ? await rememberMemoryViaRuntime(runtime, {
-            ...input,
-            content,
-            title,
-          })
-        : await rememberMemory(executable, {
-            ...input,
-            content,
-            title,
-          });
+      const result = await this.viaRuntime(
+        viaRuntime ? runtime : null,
+        (endpoint) =>
+          rememberMemoryViaRuntime(endpoint, { ...input, content, title }),
+        () => rememberMemory(executable, { ...input, content, title }),
+      );
       if (result.action === "created") this.broadcast();
       return result;
     });
