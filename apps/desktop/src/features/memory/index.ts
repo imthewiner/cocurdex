@@ -1,3 +1,4 @@
+export { CloudSyncDialog } from "./cloud-sync-dialog";
 export {
   MEMORY_SETTINGS_KEY,
   MEMORY_STATUS_KEY,
