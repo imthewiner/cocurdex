@@ -15,9 +15,6 @@ import {
   newChatComposerDraftKey,
   WelcomeHeading,
 } from "@/features/composer";
-// Sub-entry, not the settings barrel: that barrel reaches SettingsScreen ->
-// @/app/layout, closing an initialization cycle back onto this module.
-import { MemorySwitch } from "@/features/memory";
 import {
   bootstrapProviderModelsAtom,
   providerModelsAtom,
@@ -139,7 +136,6 @@ export function NewChatCard({ onStartChat }: NewChatCardProps) {
           return "sent";
         }}
       />
-      <MemorySwitch className="mt-3" />
     </ComposerSurfaceBody>
   );
 }

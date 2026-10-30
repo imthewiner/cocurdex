@@ -6,4 +6,3 @@ export {
   useMemoryStatus,
 } from "./memory-queries";
 export { MemorySettingsPanel } from "./memory-settings";
-export { MemorySwitch } from "./memory-switch";

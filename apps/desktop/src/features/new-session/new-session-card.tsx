@@ -17,7 +17,6 @@ import {
   ComposerSurfaceBody,
   newSessionComposerDraftKey,
 } from "@/features/composer";
-import { MemorySwitch } from "@/features/memory";
 import {
   AgentSelect,
   buildAgentSelectOptions,
@@ -531,7 +530,6 @@ export function NewSessionCard({
         canSubmit={canStartSession}
         onSend={handleStartSession}
       />
-      <MemorySwitch className="mt-3" />
       <SaveAgentRoleDialog
         open={saveRoleOpen}
         onOpenChange={setSaveRoleOpen}

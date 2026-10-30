@@ -11,6 +11,72 @@ function switchSelector(label) {
   return `[role="switch"][aria-label="${escaped}"]`;
 }
 
+async function openComposerMenu(session, attachLabel) {
+  await session.waitUntil(
+    (name) =>
+      [...document.querySelectorAll("button")].some(
+        (entry) => entry.getAttribute("aria-label") === name,
+      ),
+    attachLabel,
+    UI_TIMEOUT_MS,
+  );
+  const opened = await session.run((name) => {
+    const button = [...document.querySelectorAll("button")].find(
+      (entry) => entry.getAttribute("aria-label") === name,
+    );
+    if (!button) return false;
+    button.click();
+    return true;
+  }, attachLabel);
+  check(opened, "composer attach menu is clickable");
+}
+
+async function readMemoryItem(session, label) {
+  return session.run(
+    ({ label }) => {
+      const element = [
+        ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+      ].find((entry) => (entry.textContent ?? "").includes(label));
+      return element
+        ? {
+            checked: element.getAttribute("aria-checked"),
+            disabled: element.getAttribute("data-disabled") !== null,
+          }
+        : null;
+    },
+    { label },
+  );
+}
+
+async function clickMemoryItem(session, label) {
+  return session.run(
+    ({ label }) => {
+      const element = [
+        ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+      ].find((entry) => (entry.textContent ?? "").includes(label));
+      if (!element || element.getAttribute("data-disabled") !== null) {
+        return false;
+      }
+      element.click();
+      return true;
+    },
+    { label },
+  );
+}
+
+async function waitForMemoryItem(session, label, checked) {
+  await session.waitUntil(
+    ({ label, expected }) => {
+      const element = [
+        ...document.querySelectorAll('[role="menuitemcheckbox"]'),
+      ].find((entry) => (entry.textContent ?? "").includes(label));
+      return element?.getAttribute("aria-checked") === expected;
+    },
+    { label, expected: checked },
+    UI_TIMEOUT_MS,
+  );
+}
+
 async function readSwitch(session, label) {
   return session.run(
     ({ selector }) => {
@@ -26,34 +92,33 @@ async function readSwitch(session, label) {
   );
 }
 
-async function clickSwitch(session, label) {
-  return session.run(
-    ({ selector }) => {
-      const element = document.querySelector(selector);
-      if (!element || element.disabled) return false;
-      element.click();
-      return true;
-    },
-    { selector: switchSelector(label) },
+async function ensureMemoryItem(session, label, attachLabel) {
+  const present = await session.run(
+    ({ label }) =>
+      [...document.querySelectorAll('[role="menuitemcheckbox"]')].some(
+        (element) => (element.textContent ?? "").includes(label),
+      ),
+    { label },
   );
-}
-
-async function waitForSwitch(session, label, checked) {
-  await session.waitUntil(
-    ({ selector, expected }) => {
-      const element = document.querySelector(selector);
-      return (
-        element?.getAttribute("aria-checked") === expected &&
-        element.disabled !== true
-      );
-    },
-    { selector: switchSelector(label), expected: checked },
-    UI_TIMEOUT_MS,
-  );
+  if (!present) {
+    await openComposerMenu(session, attachLabel);
+  }
 }
 
 async function dismissOnboarding(session) {
   const skip = await translate(session, "onboarding:action.skip");
+  const attach = await translate(session, "common:actions.attach");
+  await session.waitUntil(
+    ({ skip, attach }) => {
+      const buttons = [...document.querySelectorAll("button")];
+      return (
+        buttons.some((entry) => entry.innerText.trim() === skip) ||
+        buttons.some((entry) => entry.getAttribute("aria-label") === attach)
+      );
+    },
+    { skip, attach },
+    UI_TIMEOUT_MS,
+  );
   await session.run((name) => {
     const button = [...document.querySelectorAll("button")].find(
       (entry) => entry.innerText.trim() === name,
@@ -67,19 +132,24 @@ runScenario("memory-switch", {
   setup: async ({ session }) => {
     await dismissOnboarding(session);
     const label = await translate(session, "memory:switch.label");
+    const attachLabel = await translate(session, "common:actions.attach");
+    await openComposerMenu(session, attachLabel);
     await session.waitUntil(
-      ({ selector }) => Boolean(document.querySelector(selector)),
-      { selector: switchSelector(label) },
+      ({ label }) =>
+        [...document.querySelectorAll('[role="menuitemcheckbox"]')].some(
+          (element) => (element.textContent ?? "").includes(label),
+        ),
+      { label },
       UI_TIMEOUT_MS,
     );
-    return { label };
+    return { label, attachLabel };
   },
   steps: [
     [
-      "the welcome switch is on by default",
+      "the composer memory toggle is on by default",
       async ({ session, label }) => {
-        const state = await readSwitch(session, label);
-        check(state?.checked === "true", "memory switch defaults on", state);
+        const state = await readMemoryItem(session, label);
+        check(state?.checked === "true", "memory toggle defaults on", state);
         const settings = await daemonRequest(session, "memory.settings.get");
         check(
           settings.enabled === true,
@@ -91,9 +161,13 @@ runScenario("memory-switch", {
     ],
     [
       "turning memory off persists",
-      async ({ session, label }) => {
-        check(await clickSwitch(session, label), "memory switch is clickable");
-        await waitForSwitch(session, label, "false");
+      async ({ session, label, attachLabel }) => {
+        await ensureMemoryItem(session, label, attachLabel);
+        check(
+          await clickMemoryItem(session, label),
+          "memory toggle is clickable",
+        );
+        await waitForMemoryItem(session, label, "false");
         const settings = await daemonRequest(session, "memory.settings.get");
         check(settings.enabled === false, "daemon setting is off", settings);
         return { enabled: settings.enabled };
@@ -101,9 +175,13 @@ runScenario("memory-switch", {
     ],
     [
       "turning memory back on persists",
-      async ({ session, label }) => {
-        check(await clickSwitch(session, label), "memory switch is clickable");
-        await waitForSwitch(session, label, "true");
+      async ({ session, label, attachLabel }) => {
+        await ensureMemoryItem(session, label, attachLabel);
+        check(
+          await clickMemoryItem(session, label),
+          "memory toggle is clickable",
+        );
+        await waitForMemoryItem(session, label, "true");
         const settings = await daemonRequest(session, "memory.settings.get");
         check(settings.enabled === true, "daemon setting is on", settings);
         return { enabled: settings.enabled };
