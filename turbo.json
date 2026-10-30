@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "envMode": "loose",
+  "globalDependencies": [
+    ".npmrc",
+    "pnpm-workspace.yaml",
+    "patches/**",
+    "tsconfig.base.json",
+    "tsconfig.json"
+  ],
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "typecheck": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    }
+  }
+}

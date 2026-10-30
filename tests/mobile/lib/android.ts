@@ -125,9 +125,9 @@ async function freeConsolePort(sdk: string) {
 export async function startAndroidTarget(
   mobileDir: string,
   avdName: string | undefined,
-  options: { visible?: boolean; install?: boolean } = {},
+  options: { visible?: boolean; install?: boolean; appPath?: string } = {},
 ): Promise<MobileTarget> {
-  const apkPath = androidApkPath(mobileDir);
+  const apkPath = options.appPath ?? androidApkPath(mobileDir);
   const install = options.install ?? true;
   if (install && !existsSync(apkPath)) {
     throw new Error(`Missing ${apkPath}; run with --build first`);

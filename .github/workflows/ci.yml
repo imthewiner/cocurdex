@@ -15,10 +15,11 @@ permissions:
 
 env:
   CI: true
+  TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
   changes:
-    name: Detect desktop changes
+    name: Detect changes
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -26,6 +27,7 @@ jobs:
     outputs:
       run_desktop: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_desktop || 'false' }}
       run_mobile: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_mobile || 'false' }}
+      seed_mobile: ${{ steps.scope.outputs.seed_mobile }}
       verified: ${{ steps.verified.outputs.hit == 'true' }}
       verified_key: ${{ steps.fingerprint.outputs.key }}
     steps:
@@ -58,42 +60,71 @@ jobs:
           else
             echo "hit=false" >> "${GITHUB_OUTPUT}"
           fi
-      - name: Detect desktop scope
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Install workspace tools
+        run: pnpm install --frozen-lockfile --filter @cocurdex/workspace
+      - name: Detect affected packages
         id: scope
-        if: steps.verified.outputs.hit != 'true'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
-            echo "run_desktop=true" >> "${GITHUB_OUTPUT}"
-            echo "run_mobile=false" >> "${GITHUB_OUTPUT}"
-            exit 0
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            base="${PR_BASE_SHA}"
+            head="${PR_HEAD_SHA}"
+          else
+            base="${PUSH_BEFORE_SHA}"
+            head="${GITHUB_SHA}"
           fi
 
-          changed_files="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
-          run_desktop=false
-          while IFS= read -r changed_path; do
-            case "${changed_path}" in
-              .github/workflows/ci.yml|.npmrc|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.base.json|tsconfig.json|apps/cli/*|apps/desktop/*|packages/agent-adapters/*|packages/agent-core/*|packages/client-runtime/*|packages/daemon/*|packages/db/*|packages/llm-chat/*|packages/product-skills/*|packages/rpc/*|packages/shared/*|tests/*)
-                run_desktop=true
-                break
-                ;;
-            esac
-          done <<< "${changed_files}"
+          everything=false
+          affected=""
+          if [[ -z "${base}" || "${base}" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            everything=true
+          else
+            if git diff --name-only "${base}...${head}" | grep -q '^[.]github/'; then
+              everything=true
+            fi
+            affected="$(TURBO_SCM_BASE="${base}" TURBO_SCM_HEAD="${head}" \
+              pnpm exec turbo ls --affected --output=json | jq -r '.packages.items[].name')"
+          fi
+          echo "Affected packages:"
+          echo "${affected:-(none)}"
 
-          run_mobile=false
-          while IFS= read -r changed_path; do
-            case "${changed_path}" in
-              .github/workflows/ci.yml|apps/mobile/*|packages/client-runtime/*|packages/rpc/*|packages/shared/*|tests/mobile/*)
-                run_mobile=true
-                break
-                ;;
-            esac
-          done <<< "${changed_files}"
+          mobile_only='^@cocurdex/(console|mobile|mobile-e2e|unit-mobile)$'
+          desktop_affected=false
+          if grep -v -E "${mobile_only}" <<< "${affected}" | grep -q .; then
+            desktop_affected=true
+          fi
+          mobile_affected=false
+          if grep -qx '@cocurdex/mobile-e2e' <<< "${affected}"; then
+            mobile_affected=true
+          fi
+          if [[ "${everything}" == "true" ]]; then
+            desktop_affected=true
+            mobile_affected=true
+          fi
 
-          echo "run_desktop=${run_desktop}" >> "${GITHUB_OUTPUT}"
-          echo "run_mobile=${run_mobile}" >> "${GITHUB_OUTPUT}"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            run_desktop="${desktop_affected}"
+            run_mobile="${mobile_affected}"
+            seed_mobile=false
+          else
+            run_desktop=true
+            run_mobile=false
+            seed_mobile="${mobile_affected}"
+          fi
+          {
+            echo "run_desktop=${run_desktop}"
+            echo "run_mobile=${run_mobile}"
+            echo "seed_mobile=${seed_mobile}"
+          } >> "${GITHUB_OUTPUT}"
 
   workspace:
     name: Workspace quality
@@ -114,13 +145,17 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm typecheck
-      - name: Test
-        run: pnpm -r --no-bail --if-present --filter "!@cocurdex/e2e" test
+      - name: Restore turbo cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
+      - name: Typecheck and test
+        run: pnpm exec turbo run typecheck test --filter "!@cocurdex/e2e" --concurrency 4 --continue
       - name: Test e2e
         if: ${{ !cancelled() }}
-        run: pnpm --filter @cocurdex/e2e test
+        run: pnpm exec turbo run test --filter @cocurdex/e2e
       - name: Check design tokens
         run: pnpm lint:design-tokens
       - name: Check theme parity
@@ -131,11 +166,6 @@ jobs:
         run: pnpm --filter @cocurdex/mobile check:mermaid-runtime
       - name: Check mobile note editor runtime is up to date
         run: pnpm --filter @cocurdex/mobile check:note-editor-runtime
-      - name: Bundle mobile app
-        working-directory: apps/mobile
-        run: |
-          pnpm exec expo export --platform ios --output-dir "${RUNNER_TEMP}/mobile-ios"
-          pnpm exec expo export --platform android --output-dir "${RUNNER_TEMP}/mobile-android"
       - name: Check desktop translations
         run: pnpm --filter @cocurdex/desktop i18n:lint
       - name: Check mobile translations
@@ -158,6 +188,16 @@ jobs:
         run: pnpm --filter @cocurdex/desktop lint:cycles
       - name: Lint renderer structure rules
         run: pnpm exec biome lint --only=style/noRestrictedImports --only=performance/noReExportAll --only=plugin apps/desktop/src
+      - name: Prune turbo cache
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: find .turbo/cache -type f -mtime +7 -delete 2>/dev/null || true
+      - name: Upload turbo cache
+        if: ${{ !cancelled() && hashFiles('.turbo/cache/**') != '' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
 
   desktop:
     name: Desktop (${{ matrix.os }})
@@ -192,18 +232,19 @@ jobs:
       - name: Install dependencies
         if: needs.changes.outputs.run_desktop == 'true'
         run: pnpm install --frozen-lockfile
-      - name: Typecheck desktop
-        if: needs.changes.outputs.run_desktop == 'true'
-        run: pnpm --filter @cocurdex/desktop --filter @cocurdex/unit-desktop typecheck
-      - name: Test desktop
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
-        run: pnpm --filter @cocurdex/unit-desktop test
+      - name: Restore turbo cache
+        if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
+          restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
       - name: Test all packages
         if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
-        run: pnpm -r --no-bail --if-present --filter "!@cocurdex/e2e" test
+        run: pnpm exec turbo run test --filter "!@cocurdex/e2e" --concurrency 4 --continue
       - name: Test e2e
         if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' }}
-        run: pnpm --filter @cocurdex/e2e test
+        run: pnpm exec turbo run test --filter @cocurdex/e2e
         env:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
       - name: Build desktop
@@ -245,13 +286,26 @@ jobs:
           path: ${{ runner.temp }}/desktop-tests
           if-no-files-found: ignore
           retention-days: 7
+      - name: Prune turbo cache
+        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' }}
+        shell: bash
+        run: find .turbo/cache -type f -mtime +7 -delete 2>/dev/null || true
+      - name: Upload turbo cache
+        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' && hashFiles('.turbo/cache/**') != '' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
 
-  mobile:
-    name: Mobile e2e (${{ matrix.platform }})
+  mobile-app:
+    name: Mobile app (${{ matrix.platform }})
     needs: changes
-    if: needs.changes.outputs.run_mobile == 'true'
+    if: needs.changes.outputs.run_mobile == 'true' || needs.changes.outputs.seed_mobile == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 75
+    timeout-minutes: 60
+    permissions:
+      actions: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -260,6 +314,91 @@ jobs:
             os: macos-latest
           - platform: android
             os: ubuntu-latest
+    env:
+      NATIVE_DIR: ${{ github.workspace }}/../mobile-native
+      APP_DIR: ${{ github.workspace }}/../mobile-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Setup Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Restore pnpm store
+        uses: ./.github/actions/restore-pnpm-store
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Fingerprint native app
+        id: fingerprint
+        working-directory: tests/mobile
+        run: echo "hash=$(node --import tsx app.ts fingerprint --platform ${{ matrix.platform }})" >> "${GITHUB_OUTPUT}"
+      - name: Restore native app
+        id: native
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ env.NATIVE_DIR }}
+          key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
+          lookup-only: ${{ needs.changes.outputs.run_mobile != 'true' }}
+      - name: Build native app
+        if: steps.native.outputs.cache-hit != 'true'
+        run: pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} --out "${NATIVE_DIR}"
+      - name: Save native app
+        if: steps.native.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ env.NATIVE_DIR }}
+          key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
+      - name: Delete older native apps
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
+        run: |
+          gh cache list --repo "${GITHUB_REPOSITORY}" --ref "${GITHUB_REF}" \
+            --key "mobile-native-v1-${{ matrix.platform }}-" --limit 100 --json id,key \
+            --jq ".[] | select(.key != \"${KEEP}\") | .id" |
+            while read -r id; do gh cache delete "${id}" --repo "${GITHUB_REPOSITORY}"; done
+      - name: Repack current JavaScript
+        if: needs.changes.outputs.run_mobile == 'true' && steps.native.outputs.cache-hit == 'true'
+        run: |
+          app="$(ls "${NATIVE_DIR}")"
+          pnpm --filter @cocurdex/mobile-e2e app -- repack --platform ${{ matrix.platform }} \
+            --source "${NATIVE_DIR}/${app}" --out "${APP_DIR}"
+      - name: Use fresh native app
+        if: needs.changes.outputs.run_mobile == 'true' && steps.native.outputs.cache-hit != 'true'
+        run: |
+          rm -rf "${APP_DIR}"
+          cp -R "${NATIVE_DIR}" "${APP_DIR}"
+      - name: Archive app
+        if: needs.changes.outputs.run_mobile == 'true'
+        run: tar -C "${APP_DIR}" -cf "${RUNNER_TEMP}/mobile-app.tar" .
+      - name: Upload app
+        if: needs.changes.outputs.run_mobile == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-app-${{ matrix.platform }}
+          path: ${{ runner.temp }}/mobile-app.tar
+          retention-days: 1
+
+  mobile:
+    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.run }})
+    needs: [changes, mobile-app]
+    if: needs.changes.outputs.run_mobile == 'true'
+    runs-on: ${{ matrix.platform == 'ios' && 'macos-latest' || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
+        run: [light-en-US, dark-zh-CN]
     env:
       MAESTRO_VERSION: 2.11.0
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
@@ -281,6 +420,19 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Download app
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: mobile-app-${{ matrix.platform }}
+          path: ${{ runner.temp }}
+      - name: Unpack app
+        id: app
+        run: |
+          mkdir -p "${RUNNER_TEMP}/mobile-app"
+          tar -C "${RUNNER_TEMP}/mobile-app" -xf "${RUNNER_TEMP}/mobile-app.tar"
+          echo "path=${RUNNER_TEMP}/mobile-app/$(ls "${RUNNER_TEMP}/mobile-app")" >> "${GITHUB_OUTPUT}"
+      - name: Build bundled daemon
+        run: pnpm --filter @cocurdex/desktop prepare:cli
       - name: Install Maestro
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -302,14 +454,20 @@ jobs:
           "${tools}/sdkmanager" emulator platform-tools "${ANDROID_SYSTEM_IMAGE}"
           echo no | "${tools}/avdmanager" create avd --force --name cocurdex-ci --package "${ANDROID_SYSTEM_IMAGE}" --device pixel_6
       - name: Run mobile flows
-        run: pnpm --filter @cocurdex/mobile-e2e flows -- --platform ${{ matrix.platform }} --build ${{ matrix.platform == 'android' && '--avd cocurdex-ci' || '' }}
+        run: |
+          avd=()
+          if [[ "${{ matrix.platform }}" == "android" ]]; then
+            avd=(--avd cocurdex-ci)
+          fi
+          pnpm --filter @cocurdex/mobile-e2e flows -- --platform ${{ matrix.platform }} \
+            --app "${{ steps.app.outputs.path }}" --run ${{ matrix.run }} "${avd[@]}"
         env:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/mobile-tests
       - name: Upload mobile test artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: mobile-tests-${{ matrix.platform }}
+          name: mobile-tests-${{ matrix.platform }}-${{ matrix.run }}
           path: ${{ runner.temp }}/mobile-tests
           if-no-files-found: ignore
           retention-days: 7
@@ -318,6 +476,9 @@ jobs:
     name: Cache pnpm store (${{ matrix.os }})
     if: github.event_name == 'push'
     runs-on: ${{ matrix.os }}
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -355,11 +516,21 @@ jobs:
         with:
           path: ${{ steps.store.outputs.path }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Delete older pnpm stores
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        run: |
+          gh cache list --repo "${GITHUB_REPOSITORY}" --ref "${GITHUB_REF}" \
+            --key "pnpm-store-${RUNNER_OS}-" --limit 100 --json id,key \
+            --jq ".[] | select(.key != \"${KEEP}\") | .id" |
+            while read -r id; do gh cache delete "${id}" --repo "${GITHUB_REPOSITORY}"; done
 
   record:
     name: Record verified fingerprint
-    needs: [changes, workspace, desktop, mobile]
-    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' && needs.mobile.result != 'failure' && needs.changes.outputs.run_desktop == 'true' }}
+    needs: [changes, workspace, desktop, mobile-app, mobile]
+    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' && needs.mobile-app.result != 'failure' && needs.mobile.result != 'failure' && needs.changes.outputs.run_desktop == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Write marker
