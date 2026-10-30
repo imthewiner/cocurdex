@@ -1417,6 +1417,9 @@ importers:
       '@cocurdex/product-skills':
         specifier: workspace:*
         version: link:../../../packages/product-skills
+      '@cocurdex/shared':
+        specifier: workspace:*
+        version: link:../../../packages/shared
     devDependencies:
       '@types/node':
         specifier: ^24.19.2

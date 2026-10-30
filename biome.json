@@ -114,6 +114,43 @@
         "!apps/desktop/src/components/ui/**"
       ],
       "plugins": ["./biome-plugins/no-hoisted-class-names.grit"]
+    },
+    {
+      "includes": [
+        "tests/**",
+        "!tests/scenarios/lib/**",
+        "!tests/e2e/helpers/**",
+        "!tests/e2e/fixture-db/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "node:fs": {
+                    "importNames": ["mkdtemp", "mkdtempSync"],
+                    "message": "Use createTempDirs() from @cocurdex/shared/testing: its cleanup retries the removal, so Windows can release open handles before the directory is deleted."
+                  },
+                  "node:fs/promises": {
+                    "importNames": ["mkdtemp"],
+                    "message": "Use createTempDirs() from @cocurdex/shared/testing: its cleanup retries the removal, so Windows can release open handles before the directory is deleted."
+                  },
+                  "fs": {
+                    "importNames": ["mkdtemp", "mkdtempSync"],
+                    "message": "Use createTempDirs() from @cocurdex/shared/testing: its cleanup retries the removal, so Windows can release open handles before the directory is deleted."
+                  },
+                  "fs/promises": {
+                    "importNames": ["mkdtemp"],
+                    "message": "Use createTempDirs() from @cocurdex/shared/testing: its cleanup retries the removal, so Windows can release open handles before the directory is deleted."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

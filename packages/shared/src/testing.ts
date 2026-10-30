@@ -26,7 +26,12 @@ export function createTempDirs(): TempDirs {
       const directories = created.splice(0);
       await Promise.allSettled(
         directories.map((directory) =>
-          rm(directory, { recursive: true, force: true, maxRetries: 3 }),
+          rm(directory, {
+            recursive: true,
+            force: true,
+            maxRetries: 20,
+            retryDelay: 100,
+          }),
         ),
       );
     },
