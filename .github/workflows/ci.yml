@@ -326,12 +326,6 @@ jobs:
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
       IOS_DEVICE_TYPE: iPhone 16 Pro
     steps:
-      - name: Boot iOS simulator
-        if: matrix.platform == 'ios'
-        run: |
-          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
-          xcrun simctl boot "${udid}"
-          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Locate app directories
         run: |
           {
@@ -355,6 +349,12 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Boot iOS simulator
+        if: matrix.platform == 'ios'
+        run: |
+          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
+          xcrun simctl boot "${udid}"
+          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Fingerprint native app
         id: fingerprint
         working-directory: tests/mobile

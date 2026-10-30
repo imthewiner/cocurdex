@@ -16,7 +16,6 @@ import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
 import { startIosTarget } from "./lib/ios";
 import { buildIosApp } from "./lib/ios-build";
-import { pairingDeepLink } from "./lib/pairing-link";
 import type { Appearance, MobilePlatform, MobileTarget } from "./lib/target";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
@@ -29,10 +28,6 @@ const RUNS: { appearance: Appearance; locale: SupportedLocale }[] = [
 const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
   "zh-CN": "继续|Continue",
-};
-const SYSTEM_OPEN: Record<SupportedLocale, string> = {
-  "en-US": "Open",
-  "zh-CN": "打开|Open",
 };
 const SEARCH_OPEN: Record<SupportedLocale, string> = {
   "en-US": "Search",
@@ -147,13 +142,13 @@ function flowLabels(locale: SupportedLocale) {
     FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
+    EMPTY_PASTE: hosts.empty.paste,
     SCAN_TITLE: hosts.scan.title,
     SCAN_PASTE: hosts.scan.paste,
     SCAN_UNREACHABLE: hosts.pair.failure.unreachable,
     PAIR_ACTION: hosts.pair.action,
     LINK_PLACEHOLDER: hosts.pair.linkPlaceholder,
     SYSTEM_CONTINUE: SYSTEM_CONTINUE[locale],
-    SYSTEM_OPEN: SYSTEM_OPEN[locale],
     SEARCH_OPEN: SEARCH_OPEN[locale],
     SEARCH_DISMISS: SEARCH_DISMISS[locale],
     NEW_SESSION_ACTION: sessions.newSession.open,
@@ -391,7 +386,6 @@ async function main() {
           await target.resetState();
           await target.setAppearance(appearance);
           await target.setLocale(locale);
-          const pairingLink = await daemon.createPairingLink();
           await runFlow(
             target,
             `${flow}.yaml`,
@@ -401,8 +395,7 @@ async function main() {
               SEND_SESSION_ID: replySession.id,
               NEW_SESSION_MODEL: daemon.agentModelName,
               AGENT_MODEL_ID: daemon.agentModelId,
-              PAIRING_LINK: pairingLink,
-              PAIR_DEEP_LINK: pairingDeepLink(pairingLink),
+              PAIRING_LINK: await daemon.createPairingLink(),
               HOST_ADDRESS: daemon.hostAddress,
               LINK_NOTE_TITLE,
               ISSUE_LINK_TEXT: issueLinkText,

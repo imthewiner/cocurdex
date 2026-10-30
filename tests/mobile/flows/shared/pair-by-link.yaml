@@ -4,15 +4,30 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${EMPTY_TITLE}
     timeout: 30000
-- openLink: ${PAIR_DEEP_LINK}
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn: ${EMPTY_PASTE}
+      - tapOn:
+          text: ${SYSTEM_CONTINUE}
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: "pairing-link"
+          timeout: 5000
 - tapOn:
-    text: ${SYSTEM_OPEN}
-    optional: true
+    id: "pairing-link"
+- inputText: ${PAIRING_LINK}
+- extendedWaitUntil:
+    visible:
+      id: "pairing-link"
+      text: ${PAIRING_LINK}
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       text: ${PAIR_ACTION}
       enabled: true
-    timeout: 10000
+    timeout: 5000
 - retry:
     maxRetries: 2
     commands:
