@@ -54,6 +54,7 @@ import {
   showMemoryViaRuntime,
 } from "./rsrs";
 import {
+  callRuntimeTool,
   ensureRuntime,
   listRuntimeTools,
   type RuntimeEndpoint,
@@ -104,6 +105,16 @@ export interface MemoryTurnContext {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+function recordValue(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function textValue(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 export class MemoryService {
@@ -293,6 +304,11 @@ export class MemoryService {
       };
       this.statusCache = { status, at: now };
       return status;
+    }
+    const runtimeStatus = await this.runtimeStatus(executable.command);
+    if (runtimeStatus) {
+      this.statusCache = { status: runtimeStatus, at: now };
+      return runtimeStatus;
     }
     const [versionResult, configResult] = await Promise.allSettled([
       readRsrsVersion(executable, 4_000),
@@ -488,6 +504,43 @@ export class MemoryService {
 
   private runtimeSupports(tool: string, argument: string) {
     return this.runtimeTools?.get(tool)?.has(argument) ?? false;
+  }
+
+  private async runtimeStatus(
+    executableCommand: string,
+  ): Promise<MemoryStatus | null> {
+    const runtime = await this.runtime();
+    if (!runtime) return null;
+    let payload: Record<string, unknown>;
+    try {
+      payload = await callRuntimeTool(runtime, "memory_status", {}, 5_000);
+    } catch (error) {
+      logDaemonDiagnostic("info", "memory.runtimeStatusFailed", {
+        error: errorMessage(error),
+      });
+      this.invalidateRuntime();
+      return null;
+    }
+    const summary = recordValue(payload.summary) ?? {};
+    const session = recordValue(summary.session) ?? {};
+    const settings = this.currentSettings();
+    const installState = this.currentInstallState();
+    return {
+      settings,
+      enabled: settings.enabled,
+      available: true,
+      installation:
+        installState.status === "installing" ? "installing" : "ready",
+      version: runtime.bin ?? installState.version,
+      executable: executableCommand,
+      dataDir: textValue(summary.data_dir),
+      account: textValue(session.user),
+      space: null,
+      doctor: installState.doctor,
+      error: null,
+      checkedAt: this.now().toISOString(),
+      lastRecall: null,
+    };
   }
 
   private invalidateRuntime() {

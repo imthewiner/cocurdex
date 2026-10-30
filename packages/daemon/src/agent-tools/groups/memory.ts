@@ -9,11 +9,7 @@ import type { AgentToolRegistry } from "../tool-registry";
 
 export interface MemoryToolDependencies {
   isEnabled(): boolean;
-  recall(input: {
-    query: string;
-    limit?: number;
-    project?: string | null;
-  }): Promise<MemoryRecallResult>;
+  recall(input: { query: string; limit?: number }): Promise<MemoryRecallResult>;
   show(id: string): Promise<MemoryEntry | null>;
   remember(input: MemoryRememberInput): Promise<MemoryRememberResult>;
   policy(): Promise<string>;
@@ -49,18 +45,14 @@ export function registerMemoryTools(
       group: "memory",
       name: "recall",
       description:
-        "Search the user's long-term memory through Respire (rsrs). Returns compact ids and titles; use memory_show to read a full entry before relying on it. Query with the project name plus concrete keywords, not pronouns. Empty results are normal; try different terms before concluding there is no memory.",
+        "Search the user's long-term memory through Respire (rsrs). Returns compact ids and titles; use memory_show to read a full entry before relying on it. Memory is shared across every project, so query with concrete keywords and the name of the thing you are looking for, not pronouns. Empty results are normal; try different terms before concluding there is no memory.",
       inputSchema: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Project + concrete keywords" },
+          query: { type: "string", description: "Concrete keywords" },
           limit: {
             type: "integer",
             description: "Maximum results, 1-20 (default 8)",
-          },
-          project: {
-            type: "string",
-            description: "Optional project filter",
           },
         },
         required: ["query"],
@@ -73,7 +65,6 @@ export function registerMemoryTools(
       return deps.recall({
         query: String(input.query),
         limit: optionalNumber(input.limit),
-        project: optionalString(input.project) ?? null,
       });
     },
   });
@@ -129,10 +120,6 @@ export function registerMemoryTools(
             items: { type: "string" },
             description: "Optional tags",
           },
-          project: {
-            type: "string",
-            description: "Optional project label",
-          },
           parentId: {
             type: "string",
             description: "Attach under this cause/parent memory id",
@@ -175,7 +162,6 @@ export function registerMemoryTools(
         title: String(input.title),
         importance: input.importance === "important" ? "important" : "trivial",
         tags: stringArray(input.tags),
-        project: optionalString(input.project) ?? null,
         parentId: optionalString(input.parentId) ?? null,
         type: optionalString(input.type) ?? null,
         force: input.force === true,

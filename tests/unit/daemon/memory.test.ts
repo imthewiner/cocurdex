@@ -236,7 +236,6 @@ describe("memory agent tools", () => {
     expect(deps.recall).toHaveBeenCalledWith({
       query: "cocurdex",
       limit: 3,
-      project: null,
     });
     expect(result).toMatchObject({ items: [{ id: "memory-1" }] });
   });
