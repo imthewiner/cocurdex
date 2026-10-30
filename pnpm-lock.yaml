@@ -1238,6 +1238,9 @@ importers:
       simple-git:
         specifier: ^4.0.2
         version: 4.0.2(supports-color@7.2.0)
+      tar:
+        specifier: 7.5.21
+        version: 7.5.21
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
