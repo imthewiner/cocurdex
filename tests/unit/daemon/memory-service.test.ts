@@ -153,6 +153,8 @@ async function createService(
     broadcast: () => {},
     resolveSessionProvider: async () => null,
     device: "test-host",
+    rsrsDataDir: directory,
+    startRuntime: false,
     now: () => new Date("2026-10-28T10:00:02.000Z"),
   });
   return { service, state, logPath, directory };

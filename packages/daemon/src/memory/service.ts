@@ -47,10 +47,18 @@ import {
   readRsrsPolicy,
   readRsrsVersion,
   recallMemories,
+  recallMemoriesViaRuntime,
   rememberMemory,
+  rememberMemoryViaRuntime,
   resolveRsrsExecutable,
   showMemory,
+  showMemoryViaRuntime,
 } from "./rsrs";
+import {
+  ensureRuntime,
+  listRuntimeTools,
+  type RuntimeEndpoint,
+} from "./runtime";
 import {
   type MemoryCaptureMap,
   type MemoryInstallState,
@@ -87,6 +95,8 @@ export interface MemoryServiceOptions {
   ): Promise<AgentRuntimeProviderConfig | null>;
   autoInstall?: boolean;
   device?: string;
+  rsrsDataDir?: string;
+  startRuntime?: boolean;
   now?: () => Date;
 }
 
@@ -117,6 +127,9 @@ export class MemoryService {
     { stored: boolean; nudge: boolean }
   >();
   private lastRecall: MemoryRecallStatus | null = null;
+  private runtimeEndpoint: RuntimeEndpoint | null = null;
+  private runtimeCheckedAt = 0;
+  private runtimeTools: Map<string, Set<string>> | null = null;
   private readonly device: string;
   private readonly now: () => Date;
 
@@ -474,6 +487,39 @@ export class MemoryService {
     return run;
   }
 
+  private async runtime(): Promise<RuntimeEndpoint | null> {
+    if (this.runtimeEndpoint) {
+      if (this.now().getTime() - this.runtimeCheckedAt < STATUS_CACHE_MS) {
+        return this.runtimeEndpoint;
+      }
+    }
+    const executable = await this.resolveExecutable();
+    if (!executable) return null;
+    let endpoint: RuntimeEndpoint | null = null;
+    try {
+      endpoint = await ensureRuntime({
+        command: executable.command,
+        dataDir: this.options.rsrsDataDir,
+        autoStart: this.options.startRuntime !== false,
+        now: () => this.now().getTime(),
+      });
+    } catch (error) {
+      logDaemonDiagnostic("info", "memory.runtimeUnavailable", {
+        error: errorMessage(error),
+      });
+    }
+    this.runtimeEndpoint = endpoint;
+    this.runtimeCheckedAt = this.now().getTime();
+    this.runtimeTools = endpoint
+      ? await listRuntimeTools(endpoint).catch(() => null)
+      : null;
+    return endpoint;
+  }
+
+  private runtimeSupports(tool: string, argument: string) {
+    return this.runtimeTools?.get(tool)?.has(argument) ?? false;
+  }
+
   async recall(input: {
     query: string;
     limit?: number;
@@ -491,12 +537,22 @@ export class MemoryService {
       return { query, items: [], truncated: false };
     }
     return this.enqueueRead(async () => {
-      const result = await recallMemories(executable, {
-        query,
-        limit,
-        project: input.project ?? null,
-        timeoutMs: input.timeoutMs,
-      });
+      const runtime = await this.runtime();
+      const viaRuntime =
+        runtime !== null &&
+        (!input.project || this.runtimeSupports("memory_recall", "project"));
+      const result = viaRuntime
+        ? await recallMemoriesViaRuntime(runtime, {
+            query,
+            limit,
+            timeoutMs: input.timeoutMs,
+          })
+        : await recallMemories(executable, {
+            query,
+            limit,
+            project: input.project ?? null,
+            timeoutMs: input.timeoutMs,
+          });
       if (result.error) {
         logDaemonDiagnostic("info", "memory.recallReportedError", {
           error: result.error,
@@ -515,9 +571,12 @@ export class MemoryService {
     if (!this.currentSettings().enabled) return null;
     const executable = await this.resolveExecutable();
     if (!executable) return null;
-    const result = await this.enqueueRead(() =>
-      showMemory(executable, id, timeoutMs),
-    );
+    const result = await this.enqueueRead(async () => {
+      const runtime = await this.runtime();
+      return runtime
+        ? await showMemoryViaRuntime(runtime, id, timeoutMs)
+        : await showMemory(executable, id, timeoutMs);
+    });
     if (result.error) {
       logDaemonDiagnostic("info", "memory.showReportedError", {
         error: result.error,
@@ -559,11 +618,24 @@ export class MemoryService {
       };
     }
     return this.enqueueWrite(async () => {
-      const result = await rememberMemory(executable, {
-        ...input,
-        content,
-        title,
-      });
+      const runtime = await this.runtime();
+      const viaRuntime =
+        runtime !== null &&
+        (!input.project ||
+          this.runtimeSupports("memory_remember", "project")) &&
+        (!input.tags?.length ||
+          this.runtimeSupports("memory_remember", "tags"));
+      const result = viaRuntime
+        ? await rememberMemoryViaRuntime(runtime, {
+            ...input,
+            content,
+            title,
+          })
+        : await rememberMemory(executable, {
+            ...input,
+            content,
+            title,
+          });
       if (result.action === "created") this.broadcast();
       return result;
     });
