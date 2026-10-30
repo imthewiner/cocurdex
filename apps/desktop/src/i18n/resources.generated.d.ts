@@ -1214,10 +1214,12 @@ export default interface Resources {
       links: {
         open: "Open";
         repo: {
+          action: "Open the Respire source code";
           description: "Respire CLI is open source: github.com/risense-ai/respire-cli";
           title: "Source code";
         };
         site: {
+          action: "Open the Respire website";
           description: "rsrs.rs: what Respire is and how it works";
           title: "Website";
         };

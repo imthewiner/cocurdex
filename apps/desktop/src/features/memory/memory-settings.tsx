@@ -417,6 +417,7 @@ export function MemorySettingsPanel() {
           title={t("settings.links.site.title")}
         >
           <Button
+            aria-label={t("settings.links.site.action")}
             size="sm"
             variant="ghost"
             onClick={() => void desktopApi.openExternal(RSRS_SITE_URL)}
@@ -430,6 +431,7 @@ export function MemorySettingsPanel() {
           title={t("settings.links.repo.title")}
         >
           <Button
+            aria-label={t("settings.links.repo.action")}
             size="sm"
             variant="ghost"
             onClick={() => void desktopApi.openExternal(RSRS_REPO_URL)}

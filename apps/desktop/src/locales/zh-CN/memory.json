@@ -115,11 +115,13 @@
       "open": "打开",
       "repo": {
         "description": "Respire CLI 已开源：github.com/risense-ai/respire-cli",
-        "title": "开源地址"
+        "title": "开源地址",
+        "action": "打开 Respire 开源地址"
       },
       "site": {
         "description": "rsrs.rs：Respire 是什么、怎么工作",
-        "title": "官网"
+        "title": "官网",
+        "action": "打开 Respire 官网"
       }
     },
     "linksTitle": "关于 Respire",

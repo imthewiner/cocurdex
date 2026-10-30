@@ -115,11 +115,13 @@
       "open": "Open",
       "repo": {
         "description": "Respire CLI is open source: github.com/risense-ai/respire-cli",
-        "title": "Source code"
+        "title": "Source code",
+        "action": "Open the Respire source code"
       },
       "site": {
         "description": "rsrs.rs: what Respire is and how it works",
-        "title": "Website"
+        "title": "Website",
+        "action": "Open the Respire website"
       }
     },
     "linksTitle": "About Respire",
