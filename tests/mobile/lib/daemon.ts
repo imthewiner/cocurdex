@@ -21,7 +21,7 @@ import {
   HOST_PAIRING_HTTP_PATH,
   type ImageAttachment,
 } from "@cocurdex/shared";
-import type { createTempDirs } from "@cocurdex/shared/testing";
+import type { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { EMULATOR_HOST_ALIAS } from "./android";
 import type { MobilePlatform } from "./target";
 

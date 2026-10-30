@@ -5,7 +5,7 @@ import {
   listGitWorktrees,
 } from "@cocurdex/daemon/internal/git-worktree";
 import { runGit } from "@cocurdex/daemon/internal/workspace-changes/git-run";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

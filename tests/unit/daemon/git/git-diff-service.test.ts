@@ -7,7 +7,7 @@ import {
   listGitCommits,
   parsePorcelainToGitStatusEntries,
 } from "@cocurdex/daemon/internal/git/git-diff-service";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { simpleGit } from "simple-git";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 

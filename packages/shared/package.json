@@ -6,7 +6,6 @@
     ".": "./src/index.ts",
     "./build-policy": "./src/build-policy.ts",
     "./node": "./src/node.ts",
-    "./testing": "./src/testing.ts",
     "./internal/*": "./src/*.ts"
   },
   "scripts": {

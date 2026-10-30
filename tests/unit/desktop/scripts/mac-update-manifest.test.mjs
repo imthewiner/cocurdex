@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import {
   createMacManifest,
   macUpdateChannelFileName,

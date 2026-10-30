@@ -2,7 +2,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import { parseHostPairingLink } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { buildAndroidApp, startAndroidTarget } from "./lib/android";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";

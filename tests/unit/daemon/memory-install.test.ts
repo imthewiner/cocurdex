@@ -2,7 +2,7 @@ import { chmod, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { installRsrs } from "@cocurdex/daemon/internal/memory/rsrs";
 import { RSRS_CLI_PACKAGE, RSRS_CLI_VERSION } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, describe, expect, it } from "vitest";
 
 const temp = createTempDirs();

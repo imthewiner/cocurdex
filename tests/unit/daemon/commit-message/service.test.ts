@@ -12,7 +12,7 @@ vi.mock("@cocurdex/agent-adapters", () => ({
 }));
 
 import { DaemonCommitMessageService } from "@cocurdex/daemon/internal/commit-message/service";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 
 const tempDirs = createTempDirs();
 

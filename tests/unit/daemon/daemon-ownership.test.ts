@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { acquireDaemonOwnership } from "@cocurdex/daemon/internal/daemon-ownership";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

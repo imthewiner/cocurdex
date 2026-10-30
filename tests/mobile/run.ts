@@ -9,7 +9,7 @@ import {
   FIXTURE_WORKSPACE_NAME,
 } from "@cocurdex/e2e/fixture-db/recipe";
 import type { SupportedLocale } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";

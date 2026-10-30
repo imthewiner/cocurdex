@@ -12,7 +12,7 @@ import type {
   WorkspaceRecord,
 } from "@cocurdex/shared";
 import { sessionConfiguration } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

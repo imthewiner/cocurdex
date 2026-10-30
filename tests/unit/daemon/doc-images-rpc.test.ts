@@ -10,7 +10,7 @@ import type {
   DaemonRequestPayloadByMethod,
 } from "@cocurdex/rpc";
 import { findDocImages, type HostPrincipal } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

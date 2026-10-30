@@ -1,7 +1,7 @@
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveGitRepositoryPaths } from "@cocurdex/daemon/internal/git/git-client";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { simpleGit } from "simple-git";
 import { afterEach, describe, expect, it } from "vitest";
 

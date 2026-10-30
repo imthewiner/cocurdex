@@ -3,7 +3,7 @@ import { createAgentRegistry } from "@cocurdex/agent-core";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
 import type { MessageRecord, SendSessionCommand } from "@cocurdex/shared";
 import { CHAT_WORKSPACE_ID } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

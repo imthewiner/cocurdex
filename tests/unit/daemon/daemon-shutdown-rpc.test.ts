@@ -1,6 +1,6 @@
 import { requestDaemon } from "@cocurdex/daemon/internal/client";
 import { startDaemonServer } from "@cocurdex/daemon/internal/wire";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

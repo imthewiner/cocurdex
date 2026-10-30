@@ -10,7 +10,7 @@ import {
   type HostPrincipal,
   type ImageAttachment,
 } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

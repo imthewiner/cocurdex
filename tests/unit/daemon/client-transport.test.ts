@@ -6,7 +6,7 @@ import {
 import { getDaemonSocketPath } from "@cocurdex/daemon/internal/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
 import { daemonRequestTimeout } from "@cocurdex/rpc/client";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

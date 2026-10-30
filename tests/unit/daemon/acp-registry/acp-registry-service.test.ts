@@ -14,7 +14,7 @@ import {
   ACP_REGISTRY_AGENTS_SETTING_KEY,
   AcpRegistryService,
 } from "@cocurdex/daemon/internal/acp-registry/acp-registry-service";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import {
   afterAll,
   afterEach,

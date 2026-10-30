@@ -4,7 +4,7 @@ import {
   readPiProviderAuthState,
   resolvePiProviderAuth,
 } from "@cocurdex/agent-adapters/internal/pi-sdk/pi-provider-auth";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

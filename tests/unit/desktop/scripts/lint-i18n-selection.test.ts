@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { selectLintInput } from "@desktop/scripts/lint-i18n-selection.mjs";
 import { afterEach, describe, expect, it } from "vitest";
 

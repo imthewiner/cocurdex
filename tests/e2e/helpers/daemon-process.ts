@@ -10,7 +10,7 @@ import {
 } from "@cocurdex/daemon/client";
 import { getDaemonLogDirectory } from "@cocurdex/daemon/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 
 const tempDirs = createTempDirs();
 const activeStops = new Set<() => Promise<number | null>>();

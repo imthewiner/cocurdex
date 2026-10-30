@@ -1,7 +1,7 @@
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { createFingerprintAsync } from "@expo/fingerprint";
 import { androidApkPath, androidSdk, buildAndroidApp } from "./lib/android";
 import { runCommand } from "./lib/command";
