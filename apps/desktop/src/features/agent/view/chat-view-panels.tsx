@@ -22,6 +22,7 @@ import { JumpControls } from "@/components/chat";
 import {
   ChatComposer,
   type ChatComposerHandle,
+  type ComposerSendOutcome,
   ComposerSurface,
   ComposerSurfaceBody,
   composerFooterControlClassName,
@@ -83,7 +84,7 @@ interface ChatComposerControls {
     message: string,
     attachments: MessageAttachment[],
     useOppositeFollowUpBehavior?: boolean,
-  ): void;
+  ): ComposerSendOutcome | Promise<ComposerSendOutcome>;
   onStop?(): void;
   onDeleteQueuedInput?(item: QueuedAgentInputItem): Promise<void>;
   onSendNowQueuedInput?(item: QueuedAgentInputItem): Promise<void>;

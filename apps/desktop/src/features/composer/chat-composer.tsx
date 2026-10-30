@@ -73,7 +73,10 @@ import { PanelComposer } from "./panel-composer";
 import { PillComposer } from "./pill-composer";
 import { sendShortcutAtom } from "./send-shortcut";
 import { SessionRoleName } from "./session-role-name";
-import { useComposerSubmission } from "./use-composer-submission";
+import {
+  type ComposerSendOutcome,
+  useComposerSubmission,
+} from "./use-composer-submission";
 import {
   getContextAttachmentMentionLabel,
   getContextAttachmentSerializedText,
@@ -130,7 +133,7 @@ interface ChatComposerProps {
     message: string,
     attachments: MessageAttachment[],
     useOppositeFollowUpBehavior?: boolean,
-  ): void | Promise<void>;
+  ): ComposerSendOutcome | Promise<ComposerSendOutcome>;
   onStop?(): void;
   thinkingLevel?: AgentThinkingLevel | null;
   thinkingLevelOptions?: ThinkingLevelOption[];

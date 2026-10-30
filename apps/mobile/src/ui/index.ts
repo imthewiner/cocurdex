@@ -30,6 +30,7 @@ export { HeaderButtons } from "./header-buttons";
 export type { HeaderButtonItem } from "./header-buttons-props";
 export { headerLeading } from "./header-leading";
 export { useHeaderOptions } from "./header-options";
+export { useHeaderOverlap } from "./header-overlap";
 export { keyboardHidden } from "./keyboard";
 export { useBottomKeyboardOverlap } from "./keyboard-overlap";
 export { useKeyboardVisible } from "./keyboard-visible";

@@ -1,22 +1,11 @@
 import type { ImageAttachment } from "@cocurdex/shared";
 import { SymbolView } from "expo-symbols";
 import type { TFunction } from "i18next";
-import {
-  memo,
-  type Ref,
-  useCallback,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { memo, type Ref, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  FlatList,
   Image,
   type ImageURISource,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
   Platform,
   Pressable,
   StyleSheet,
@@ -26,20 +15,16 @@ import {
 import { MarkdownText } from "@/markdown";
 import { scaledSize, useTextScale } from "@/preferences";
 import { layout, space, type ThemeColors, useThemeColors } from "@/theme";
-import { useScrollIndicatorWhileScrolling } from "@/ui";
-import { JumpButton } from "./jump-button";
 import type { TranscriptItem } from "./transcript";
 import type { ActivityChild, CondensedItem } from "./transcript-activity";
-import {
-  hasUnseenLatest,
-  INITIAL_JUMP_STATE,
-  isFarFromLatest,
-  isFarFromOldest,
-  nextJumpState,
-  type ScrollMetrics,
-} from "./transcript-jump";
+import { type TranscriptHandle, TranscriptList } from "./transcript-list";
+
+export type { TranscriptHandle } from "./transcript-list";
+
 import { TurnActions } from "./turn-actions";
 import { useActivityLabel } from "./use-activity-label";
+import { useElapsedLabel } from "./use-elapsed-label";
+import { WorkingMark } from "./working-mark";
 
 const BODY_SIZE = 16;
 const BODY_LINE_HEIGHT = 24;
@@ -47,10 +32,6 @@ const BODY_LINE_HEIGHT = 24;
 type ToolStatus = Extract<TranscriptItem, { kind: "tool" }>["status"];
 type ActivityItem = Extract<CondensedItem, { kind: "activity" }>;
 export type ImageSource = (attachment: ImageAttachment) => ImageURISource;
-
-export interface TranscriptHandle {
-  jumpToItem(id: string): void;
-}
 
 export interface TranscriptActions {
   hostId: string;
@@ -170,6 +151,43 @@ function ToolRow({
   );
 }
 
+function LiveActivityLabel({
+  item,
+  label,
+  colors,
+}: {
+  item: ActivityItem;
+  label: string;
+  colors: ThemeColors;
+}) {
+  const elapsed = useElapsedLabel(item.startedAt);
+  const tool = item.items.findLast(
+    (child) => child.kind === "tool" && child.status === "in_progress",
+  );
+  return (
+    <>
+      <WorkingMark />
+      <Text
+        style={[styles.elapsed, { color: colors.mutedForeground }]}
+        testID="transcript-activity-elapsed"
+      >
+        {elapsed}
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={[styles.activityText, { color: colors.mutedForeground }]}
+      >
+        {tool?.kind === "tool" ? tool.title : label}
+        {tool?.kind === "tool" && tool.detail ? (
+          <Text
+            style={[styles.toolDetail, { color: colors.foreground }]}
+          >{` ${tool.detail}`}</Text>
+        ) : null}
+      </Text>
+    </>
+  );
+}
+
 function ActivityRow({
   item,
   colors,
@@ -189,17 +207,22 @@ function ActivityRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ expanded }}
+        accessibilityState={{ expanded, busy: item.running }}
+        disabled={item.items.length === 0}
         onPress={onToggle}
         style={styles.tool}
         testID={`transcript-activity-${item.id}`}
       >
-        <Text
-          numberOfLines={1}
-          style={[styles.activityText, { color: colors.mutedForeground }]}
-        >
-          {label}
-        </Text>
+        {item.running ? (
+          <LiveActivityLabel item={item} label={label} colors={colors} />
+        ) : (
+          <Text
+            numberOfLines={1}
+            style={[styles.activityText, { color: colors.mutedForeground }]}
+          >
+            {label}
+          </Text>
+        )}
         <SymbolView
           name={
             expanded
@@ -358,67 +381,34 @@ function useStableActions(actions: TranscriptActions): TranscriptActions {
   );
 }
 
-interface VisibleAnchor {
-  items: readonly CondensedItem[];
-  minIndexForVisible: number;
-}
-
-function toggledSet(current: ReadonlySet<string>, id: string) {
-  const next = new Set(current);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  return next;
-}
-
-const MAX_INDEX_RETRIES = 12;
-
-function scrollMetrics(event: NativeSyntheticEvent<NativeScrollEvent>) {
-  const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-  return {
-    offset: contentOffset.y,
-    contentHeight: contentSize.height,
-    viewportHeight: layoutMeasurement.height,
-  };
-}
-
 export function TranscriptView({
   items,
   footer,
   actions,
+  sentMessageId,
   ref,
 }: {
   items: readonly CondensedItem[];
   footer?: React.ReactElement;
   actions: TranscriptActions;
+  sentMessageId?: string;
   ref?: Ref<TranscriptHandle>;
 }) {
-  const scrollIndicator = useScrollIndicatorWhileScrolling();
   const colors = useThemeColors();
-  const listRef = useRef<FlatList<CondensedItem>>(null);
-  const lastMetrics = useRef<ScrollMetrics | null>(null);
-  const lastOffset = useRef(0);
   const rowActions = useStableActions(actions);
-  const seekingOldest = useRef(false);
-  const indexRetries = useRef(0);
-  const indexFailed = useRef(false);
-  const [landing, setLanding] = useState(false);
-  const [jump, setJump] = useState(INITIAL_JUMP_STATE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const [anchor, setAnchor] = useState<VisibleAnchor | null>(null);
-  const newestFirst = useMemo(() => [...items].reverse(), [items]);
-  const shown = useRef({ items, newestFirst });
-  shown.current = { items, newestFirst };
   const toggle = useCallback((id: string) => {
-    const { items: current, newestFirst: ordered } = shown.current;
-    const index = ordered.findIndex((item) => item.id === id);
-    setAnchor({ items: current, minIndexForVisible: index + 1 });
-    requestAnimationFrame(() =>
-      setExpanded((expandedIds) => toggledSet(expandedIds, id)),
-    );
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
-  const renderItem = useCallback(
-    ({ item }: { item: CondensedItem }) => (
+  const renderRow = useCallback(
+    (item: CondensedItem) => (
       <TranscriptRow
+        key={`${item.kind}:${item.id}`}
         item={item}
         colors={colors}
         actions={rowActions}
@@ -428,114 +418,18 @@ export function TranscriptView({
     ),
     [colors, rowActions, expanded, toggle],
   );
-  const landOn = (index: number) => {
-    indexFailed.current = false;
-    listRef.current?.scrollToIndex({ index, viewPosition: 1, animated: false });
-    if (!indexFailed.current) {
-      requestAnimationFrame(() => setLanding(false));
-    }
-  };
-  useImperativeHandle(ref, () => ({
-    jumpToItem: (id) => {
-      const index = newestFirst.findIndex((item) => item.id === id);
-      if (index < 0) return;
-      seekingOldest.current = false;
-      indexRetries.current = 0;
-      landOn(index);
-    },
-  }));
-  const jumpToLatest = () => {
-    seekingOldest.current = false;
-    const metrics = lastMetrics.current;
-    const far = metrics !== null && isFarFromLatest(metrics);
-    listRef.current?.scrollToOffset({ offset: 0, animated: !far });
-  };
-  const jumpToOldest = () => {
-    seekingOldest.current = true;
-    const metrics = lastMetrics.current;
-    const far = metrics !== null && isFarFromOldest(metrics);
-    listRef.current?.scrollToEnd({ animated: !far });
-  };
-  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const metrics = scrollMetrics(event);
-    lastMetrics.current = metrics;
-    const previous = lastOffset.current;
-    lastOffset.current = metrics.offset;
-    const remaining =
-      metrics.contentHeight - metrics.viewportHeight - metrics.offset;
-    if (remaining <= 1) seekingOldest.current = false;
-    setJump((current) =>
-      nextJumpState(current, metrics, previous, items.length),
-    );
-  };
-  const onScrollBeginDrag = () => {
-    seekingOldest.current = false;
-    scrollIndicator.onScrollBeginDrag();
-    setJump((current) =>
-      current.userScrolled ? current : { ...current, userScrolled: true },
-    );
-  };
   return (
-    <View style={[styles.fill, landing && styles.hidden]}>
-      <FlatList
-        {...scrollIndicator}
-        ref={listRef}
-        inverted
-        scrollsChildToFocus={false}
-        maintainVisibleContentPosition={
-          anchor?.items === items
-            ? { minIndexForVisible: anchor.minIndexForVisible }
-            : undefined
-        }
-        data={newestFirst}
-        extraData={expanded}
-        keyExtractor={(item) => `${item.kind}:${item.id}`}
-        keyboardDismissMode="interactive"
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={footer}
-        scrollEventThrottle={32}
-        onScroll={onScroll}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onContentSizeChange={() => {
-          if (seekingOldest.current) {
-            listRef.current?.scrollToEnd({ animated: false });
-          }
-        }}
-        onScrollToIndexFailed={({ index, averageItemLength }) => {
-          indexFailed.current = true;
-          setLanding(true);
-          if (indexRetries.current >= MAX_INDEX_RETRIES) {
-            setLanding(false);
-            return;
-          }
-          indexRetries.current += 1;
-          listRef.current?.scrollToOffset({
-            offset: averageItemLength * index,
-            animated: false,
-          });
-          requestAnimationFrame(() => landOn(index));
-        }}
-        renderItem={renderItem}
-      />
-      {jump.kind ? (
-        <JumpButton
-          target={jump.kind}
-          unseen={jump.kind === "latest" && hasUnseenLatest(jump, items.length)}
-          onPress={jump.kind === "latest" ? jumpToLatest : jumpToOldest}
-        />
-      ) : null}
-    </View>
+    <TranscriptList
+      ref={ref}
+      items={items}
+      footer={footer}
+      sentMessageId={sentMessageId}
+      renderRow={renderRow}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  hidden: { opacity: 0 },
-  content: {
-    paddingHorizontal: layout.sideMargin,
-    paddingVertical: space.md,
-    gap: space.md,
-  },
   userTurn: { alignItems: "flex-end", gap: space.xs },
   image: { width: "60%", borderRadius: 16, overflow: "hidden" },
   imageFill: { width: "100%", height: "100%" },
@@ -555,6 +449,7 @@ const styles = StyleSheet.create({
   toolText: { flex: 1, fontSize: 14 },
   activity: { gap: space.xs },
   activityText: { flex: 1, fontSize: 14 },
+  elapsed: { fontSize: 14, fontVariant: ["tabular-nums"] },
   activityItems: { gap: space.sm, paddingLeft: space.md },
   toolDetail: {
     fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }),

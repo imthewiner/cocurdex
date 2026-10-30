@@ -2,27 +2,23 @@ export type JumpButtonKind = "top" | "latest" | null;
 
 export function resolveJumpButton({
   isReady,
-  hasUserScrolled,
   isNearTop,
   isNearBottom,
   scrollDirection,
+  streaming = false,
 }: {
   isReady: boolean;
-  hasUserScrolled: boolean;
   isNearTop: boolean;
   isNearBottom: boolean;
   scrollDirection: "up" | "down";
+  streaming?: boolean;
 }): JumpButtonKind {
-  if (!isReady || (isNearTop && isNearBottom)) {
+  if (!isReady || isNearBottom) {
     return null;
   }
 
-  if (isNearTop) {
+  if (streaming || isNearTop) {
     return "latest";
-  }
-
-  if (isNearBottom) {
-    return hasUserScrolled ? "top" : null;
   }
 
   return scrollDirection === "up" ? "top" : "latest";

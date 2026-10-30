@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   getStickyUserMessageIdForConversationIndex,
+  getTranscriptContentHeight,
+  isViewportAtBottom,
   isViewportNearTop,
   resolveStickyUserMessage,
 } from "@/features/agent/view/chat-scroll";
@@ -123,5 +125,25 @@ describe("chat scroll state", () => {
     expect(
       getStickyUserMessageIdForConversationIndex(conversationGroups, 2),
     ).toBe("user-1");
+  });
+});
+
+describe("transcript content boundary", () => {
+  it("ignores anchor space below the last visible content", () => {
+    const end = document.createElement("div");
+    end.setAttribute("data-transcript-content-end", "");
+    const viewport = document.createElement("div");
+    viewport.append(end);
+    Object.defineProperties(viewport, {
+      scrollHeight: { value: 2000 },
+      clientHeight: { value: 600 },
+      scrollTop: { value: 1000 },
+    });
+    viewport.getBoundingClientRect = () => ({ top: 100 }) as DOMRect;
+    end.getBoundingClientRect = () => ({ bottom: 400 }) as DOMRect;
+    expect(getTranscriptContentHeight(viewport)).toBe(1300);
+    expect(isViewportAtBottom(viewport)).toBe(true);
+    end.getBoundingClientRect = () => ({ bottom: 900 }) as DOMRect;
+    expect(isViewportAtBottom(viewport)).toBe(false);
   });
 });

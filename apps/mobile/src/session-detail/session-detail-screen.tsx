@@ -35,7 +35,7 @@ import { SessionTitle } from "./session-title";
 import { sessionWorkspace, sessionWorkspacePath } from "./session-workspace";
 import { StatusLine } from "./status-line";
 import { buildTranscript, pendingInteraction } from "./transcript";
-import { type CondensedItem, condenseTranscript } from "./transcript-activity";
+import { condenseTranscript } from "./transcript-activity";
 import { type TranscriptHandle, TranscriptView } from "./transcript-view";
 
 function sessionSubtitle(
@@ -47,23 +47,11 @@ function sessionSubtitle(
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
-type LivePhase = "thinking" | "usingTools" | "responding";
-
-function livePhase(items: readonly CondensedItem[]): LivePhase {
-  const last = items.at(-1);
-  if (last?.kind === "assistant" && last.streaming) return "responding";
-  const tools =
-    last?.kind === "activity"
-      ? last.items
-      : last?.kind === "tool"
-        ? [last]
-        : [];
-  const active = tools.some(
-    (item) =>
-      item.kind === "tool" &&
-      (item.status === "pending" || item.status === "in_progress"),
-  );
-  return active ? "usingTools" : "thinking";
+function runStartTime(observation: SessionObservationSnapshot | null) {
+  const run = observation?.activeRun;
+  if (run?.status !== "running") return undefined;
+  const time = Date.parse(run.startedAt);
+  return Number.isNaN(time) ? undefined : time;
 }
 
 export function SessionDetailScreen({
@@ -96,6 +84,7 @@ export function SessionDetailScreen({
   const running =
     observation?.session.status === "running" ||
     observation?.activeRun?.status === "running";
+  const runStartedAt = runStartTime(observation);
   const [sends, setSends] = useState<readonly PendingSend[]>(() =>
     pendingSend ? [pendingSend] : [],
   );
@@ -120,9 +109,10 @@ export function SessionDetailScreen({
           ...unconfirmed.map(pendingSendItem),
         ],
         observation?.toolCalls ?? [],
-        running,
+        running || unconfirmed.length > 0,
+        runStartedAt,
       ),
-    [observation, workspacePath, running, unconfirmed],
+    [observation, workspacePath, running, unconfirmed, runStartedAt],
   );
   const pending = observation
     ? pendingInteraction(observation.interactions)
@@ -213,14 +203,7 @@ export function SessionDetailScreen({
   };
 
   const title = observation?.session.title ?? listed?.title ?? "";
-  const liveLabels: Record<LivePhase, string> = {
-    thinking: t("detail.thinking"),
-    usingTools: t("detail.usingTools"),
-    responding: t("detail.responding"),
-  };
-  const sendingStatus = unconfirmed.length > 0 ? t("detail.sending") : null;
-  const runningStatus = running ? liveLabels[livePhase(items)] : sendingStatus;
-  const status = failed ? t("detail.failed") : runningStatus;
+  const status = failed ? t("detail.failed") : null;
 
   return (
     <>
@@ -256,6 +239,7 @@ export function SessionDetailScreen({
         ) : (
           <TranscriptView
             ref={transcript}
+            sentMessageId={sends.at(-1)?.id}
             items={items}
             actions={{
               hostId: host.hostId,

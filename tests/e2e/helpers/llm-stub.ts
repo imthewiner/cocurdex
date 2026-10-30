@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   createServer,
   type IncomingMessage,
@@ -77,6 +78,7 @@ export async function startStubLlmServer(): Promise<StubLlmServer> {
   const requests: StubLlmRequest[] = [];
   const waiters: ((request: StubLlmRequest) => void)[] = [];
   let consumed = 0;
+  const serverId = randomUUID();
   let toolCallCount = 0;
   const state: { plan: StubLlmPlan } = { plan: { kind: "hang" } };
 
@@ -153,7 +155,7 @@ export async function startStubLlmServer(): Promise<StubLlmServer> {
             tool_calls: [
               {
                 index,
-                id: `call_e2e_${toolCallCount}`,
+                id: `call_e2e_${serverId}_${toolCallCount}`,
                 type: "function",
                 function: {
                   name: toolCall.name,
