@@ -1,6 +1,10 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "envMode": "loose",
+  "globalPassThroughEnv": [
+    "COCURDEX_SCENARIO_RECORD_DIR",
+    "COCURDEX_TEST_ARTIFACTS_DIR"
+  ],
   "globalDependencies": [
     ".npmrc",
     "pnpm-workspace.yaml",

@@ -314,10 +314,13 @@ jobs:
             os: macos-latest
           - platform: android
             os: ubuntu-latest
-    env:
-      NATIVE_DIR: ${{ github.workspace }}/../mobile-native
-      APP_DIR: ${{ github.workspace }}/../mobile-app
     steps:
+      - name: Locate app directories
+        run: |
+          {
+            echo "NATIVE_DIR=${RUNNER_TEMP}/mobile-native"
+            echo "APP_DIR=${RUNNER_TEMP}/mobile-app"
+          } >> "${GITHUB_ENV}"
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup pnpm
