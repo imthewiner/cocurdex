@@ -25,7 +25,7 @@ const RUNS: { appearance: Appearance; locale: SupportedLocale }[] = [
 ];
 const SYSTEM_CONTINUE: Record<SupportedLocale, string> = {
   "en-US": "Continue",
-  "zh-CN": "继续",
+  "zh-CN": "继续|Continue",
 };
 const SEARCH_OPEN: Record<SupportedLocale, string> = {
   "en-US": "Search",
