@@ -128,14 +128,15 @@ export function NewChatCard({ onStartChat }: NewChatCardProps) {
         placeholderOverride={t("composer.placeholder", {
           defaultValue: "Ask anything…",
         })}
-        onSend={(text, attachments) => {
-          if (!providerSnapshot) return;
-          return onStartChat({
+        onSend={async (text, attachments) => {
+          if (!providerSnapshot) return "kept";
+          await onStartChat({
             providerSnapshot: { ...providerSnapshot, thinkingLevel },
             thinkingLevel,
             text,
             attachments,
           });
+          return "sent";
         }}
       />
       <MemorySwitch className="mt-3" />

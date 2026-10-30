@@ -469,6 +469,13 @@ export const offlineApi: DesktopApi = {
   listCompatibleProvidersForAgent: async () => [],
   probeProviderModelAxes: async () => null,
   loginAgent: async () => {},
+  cancelAgentLogin: async () => {},
+  logoutAgent: async () => {
+    throw new Error("Logging out needs the desktop app");
+  },
+  readAgentAuth: async () => {
+    throw new Error("Agent sign-in needs the desktop app");
+  },
   listAcpRegistryCatalog: async () => [],
   installAcpRegistryAgent: async () => {
     throw new Error("ACP Registry needs the desktop app");

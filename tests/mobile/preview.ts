@@ -17,6 +17,7 @@ const { values } = parseArgs({
     build: { type: "boolean", default: false },
     dev: { type: "boolean", default: false },
     stream: { type: "boolean", default: false },
+    "stream-scroll": { type: "boolean", default: false },
   },
 });
 const platform = values.platform === "android" ? "android" : "ios";
@@ -52,6 +53,14 @@ async function main() {
         "Streaming display check",
         "Stream starts immediately.\n\n中文内容与 emoji 👩🏽‍💻 保持完整。\n\n- First item\n- Second item\n\n```ts\nconst total = 42;\n```\n\nStream complete.",
       );
+    }
+    if (values["stream-scroll"]) {
+      const reply = Array.from(
+        { length: 40 },
+        (_, index) =>
+          `### Section ${index + 1}\n\nStable reading position. New content grows below the viewport without moving the reader. Jumping to the bottom is always a manual action.\n`,
+      ).join("\n");
+      await daemon.createReplyingSession("Top and follow check", reply);
     }
     const target =
       platform === "ios"

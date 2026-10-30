@@ -10,7 +10,5 @@ export {
   isScrollNearTop,
   STICK_TO_BOTTOM_RESUME_THRESHOLD,
   STICK_TO_BOTTOM_THRESHOLD,
-  shouldFollowStreamOnResize,
-  shouldReleaseStickOnUserScroll,
 } from "./use-stick-to-bottom";
 export { clampOffset, useVerticalDrag } from "./use-vertical-drag";

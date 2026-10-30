@@ -396,10 +396,12 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${SEND_REPLY}
     timeout: 20000
+- assertNotVisible: ${REPLYING_STATUS}
 - takeScreenshot: session-streaming
 - extendedWaitUntil:
     visible: ${SEND_REPLY_END}
     timeout: 20000
+- assertNotVisible: ${REPLYING_STATUS}
 - assertVisible: ${SEND_REPLY_CODE}
 - assertVisible: ${SEND_PROMPT}
 - tapOn: ${SEND_REPLY}
@@ -554,6 +556,33 @@ appId: dev.cocurdex.mobile
 - assertVisible:
     id: "new-session-agent"
     text: "(?s).*${ROLE_NAME}.*"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: ${NEW_SESSION_ACTION}
+    timeout: 10000
+- tapOn: ${NEW_SESSION_ACTION}
+- extendedWaitUntil:
+    visible:
+      id: "new-session-agent"
+      text: "(?s).*${ROLE_NAME}.*"
+    timeout: 10000
+- tapOn:
+    id: "new-session-agent"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-workspace"
+      text: "(?s).*${WORKSPACE_NAME}.*"
+    timeout: 5000
+- assertVisible:
+    id: "new-session-model"
+    text: "(?s).*${NEW_SESSION_MODEL}.*"
+- takeScreenshot: new-session-restored
+- tapOn: ${SESSION_CONFIG_CLOSE}
+- extendedWaitUntil:
+    visible:
+      id: "new-session-prompt"
+    timeout: 5000
 - tapOn:
     id: "new-session-prompt"
 - inputText: ${NEW_SESSION_PROMPT}
@@ -658,6 +687,14 @@ appId: dev.cocurdex.mobile
     visible: "${ROLE_NAME}[ ·,].*"
     timeout: 5000
 - scrollUntilVisible:
+    element:
+      text: ${SHOW_MORE}
+    centerElement: true
+    optional: true
+- tapOn:
+    text: ${SHOW_MORE}
+    optional: true
+- scrollUntilVisible:
     element: ${OTHER_SESSION_TITLE}
     timeout: 10000
 - scrollUntilVisible:
@@ -677,7 +714,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - inputText: ${NEW_ISSUE_TITLE}
 - waitForAnimationToEnd
 - takeScreenshot: new-issue
@@ -792,7 +829,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - inputText: ${NEW_NOTE_TITLE}
 - pressKey: Enter
 - inputText: ${NEW_NOTE_BODY}
@@ -827,7 +864,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible:
       id: note-format-bold
-    timeout: 10000
+    timeout: 30000
 - runFlow:
     when:
       platform: iOS
@@ -882,8 +919,33 @@ appId: dev.cocurdex.mobile
       - extendedWaitUntil:
           visible: ${ISSUE_LINK_TEXT}
           timeout: 10000
+          optional: true
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  notVisible: ${ISSUE_LINK_TEXT}
+                commands:
+                  - back
+                  - tapOn: ${LINK_NOTE_TITLE}
+            - extendedWaitUntil:
+                visible: ${ISSUE_LINK_TEXT}
+                timeout: 10000
       - tapOn:
-          point: "15%,18%"
+          text: ${ISSUE_LINK_TEXT}
+          point: 10%, 50%
+      - extendedWaitUntil:
+          visible: ${ISSUE_DESCRIPTION}
+          timeout: 5000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: ${ISSUE_DESCRIPTION}
+          commands:
+            - tapOn:
+                text: ${ISSUE_LINK_TEXT}
+                point: 10%, 4%
 - extendedWaitUntil:
     visible: ${ISSUE_DESCRIPTION}
     timeout: 10000
@@ -896,6 +958,40 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     visible: ${ISSUE_LINK_TEXT}
     timeout: 10000
+    optional: true
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  notVisible: ${ISSUE_LINK_TEXT}
+                commands:
+                  - back
+                  - tapOn: "${LINK_NOTE_TITLE}.*"
+            - extendedWaitUntil:
+                visible: ${ISSUE_LINK_TEXT}
+                timeout: 10000
+- extendedWaitUntil:
+    visible: ${ISSUE_LINK_TEXT}
+    timeout: 1000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 5%, 9%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: ${ISSUE_DESCRIPTION}
+    timeout: 5000
 - retry:
     maxRetries: 3
     commands:

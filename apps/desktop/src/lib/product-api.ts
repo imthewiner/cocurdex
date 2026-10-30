@@ -230,9 +230,16 @@ export const daemonProductApi: ProductRequestApi = {
     }),
   probeProviderModelAxes: (agentId, modelId) =>
     rpc("provider.modelAxes.probe", { agentId, modelId }),
-  loginAgent: async (agentId) => {
-    await rpc("agent.login", { agentId });
+  loginAgent: async (agentId, methodId) => {
+    await rpc("agent.login", { agentId, methodId });
   },
+  cancelAgentLogin: async (agentId) => {
+    await rpc("agent.login.cancel", { agentId });
+  },
+  logoutAgent: async (agentId) => {
+    await rpc("agent.logout", { agentId });
+  },
+  readAgentAuth: (agentId) => rpc("agent.auth.read", { agentId }),
   listAcpRegistryCatalog: (options) =>
     rpc("acpRegistry.catalog", options ?? {}),
   installAcpRegistryAgent: (registryId) =>

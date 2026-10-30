@@ -1,11 +1,11 @@
 import {
   type AgentToolCallResult,
   type ExecutionToolCallSummary,
+  formatDurationMs,
   formatToolCallOutput,
   unwrapShellCommand,
 } from "@cocurdex/shared";
 import { getToolCallSummary } from "../tool-call/tool-call-utils";
-import { formatDurationMs } from "../view/chat-activity-state";
 
 export const OUTPUT_TAIL_LINES = 20;
 

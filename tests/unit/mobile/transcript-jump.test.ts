@@ -2,7 +2,6 @@ import type { CondensedItem } from "@cocurdex/mobile/internal/session-detail/tra
 import {
   hasUnseenLatest,
   INITIAL_JUMP_STATE,
-  isFarFromLatest,
   isFarFromOldest,
   type JumpState,
   nextJumpState,
@@ -13,7 +12,8 @@ import { describe, expect, it } from "vitest";
 const VIEWPORT = 800;
 const CONTENT = 10_000;
 
-function at(offset: number) {
+function at(distanceFromEnd: number) {
+  const offset = CONTENT - VIEWPORT - distanceFromEnd;
   return { offset, contentHeight: CONTENT, viewportHeight: VIEWPORT };
 }
 
@@ -21,25 +21,37 @@ const scrolled: JumpState = { ...INITIAL_JUMP_STATE, userScrolled: true };
 
 describe("nextJumpState", () => {
   it("shows nothing on a freshly opened transcript at the latest message", () => {
-    expect(nextJumpState(INITIAL_JUMP_STATE, at(0), 0, 20).kind).toBeNull();
+    expect(
+      nextJumpState(INITIAL_JUMP_STATE, at(0), CONTENT - VIEWPORT, 20).kind,
+    ).toBeNull();
   });
 
-  it("offers the oldest message after the viewer scrolls near the latest", () => {
-    expect(nextJumpState(scrolled, at(100), 0, 20).kind).toBe("top");
+  it("shows nothing at the latest message after the viewer scrolls back", () => {
+    expect(
+      nextJumpState(scrolled, at(4), CONTENT - VIEWPORT, 20).kind,
+    ).toBeNull();
   });
 
-  it("mirrors the scroll direction in the middle of a long transcript", () => {
-    const towardOlder = nextJumpState(scrolled, at(4000), 3000, 20);
+  it("follows reading direction after streaming stops", () => {
+    const towardOlder = nextJumpState(
+      scrolled,
+      at(4000),
+      CONTENT - VIEWPORT - 3000,
+      20,
+    );
     expect(towardOlder.kind).toBe("top");
-    const towardLatest = nextJumpState(towardOlder, at(3000), 4000, 20);
+    const towardLatest = nextJumpState(
+      towardOlder,
+      at(3000),
+      CONTENT - VIEWPORT - 4000,
+      20,
+    );
     expect(towardLatest.kind).toBe("latest");
   });
 
   it("offers the latest message from the oldest end", () => {
     const oldest = CONTENT - VIEWPORT;
-    expect(nextJumpState(scrolled, at(oldest), oldest - 50, 20).kind).toBe(
-      "latest",
-    );
+    expect(nextJumpState(scrolled, at(oldest), 50, 20).kind).toBe("latest");
   });
 
   it("shows nothing when the transcript fits on screen", () => {
@@ -48,21 +60,38 @@ describe("nextJumpState", () => {
   });
 
   it("keeps the same state object when nothing changed", () => {
-    const state = nextJumpState(scrolled, at(4000), 3000, 20);
-    expect(nextJumpState(state, at(4100), 4000, 20)).toBe(state);
+    const state = nextJumpState(
+      scrolled,
+      at(4000),
+      CONTENT - VIEWPORT - 3000,
+      20,
+    );
+    expect(nextJumpState(state, at(4100), CONTENT - VIEWPORT - 4000, 20)).toBe(
+      state,
+    );
   });
 });
 
 describe("hasUnseenLatest", () => {
   it("flags items that arrived while the viewer was away from the latest", () => {
-    const away = nextJumpState(scrolled, at(4000), 3000, 20);
+    const away = nextJumpState(
+      scrolled,
+      at(4000),
+      CONTENT - VIEWPORT - 3000,
+      20,
+    );
     expect(hasUnseenLatest(away, 20)).toBe(false);
     expect(hasUnseenLatest(away, 21)).toBe(true);
   });
 
   it("clears once the viewer is back at the latest message", () => {
-    const away = nextJumpState(scrolled, at(4000), 3000, 20);
-    const back = nextJumpState(away, at(0), 4000, 22);
+    const away = nextJumpState(
+      scrolled,
+      at(4000),
+      CONTENT - VIEWPORT - 3000,
+      20,
+    );
+    const back = nextJumpState(away, at(0), CONTENT - VIEWPORT - 4000, 22);
     expect(hasUnseenLatest(back, 22)).toBe(false);
   });
 });
@@ -90,37 +119,39 @@ describe("promptOutline", () => {
 describe("jump distance", () => {
   const viewport = 800;
 
-  it("animates only within one screen of the latest", () => {
-    expect(
-      isFarFromLatest({
-        offset: 5000,
-        contentHeight: 9000,
-        viewportHeight: viewport,
-      }),
-    ).toBe(true);
-    expect(
-      isFarFromLatest({
-        offset: 600,
-        contentHeight: 9000,
-        viewportHeight: viewport,
-      }),
-    ).toBe(false);
-  });
-
   it("animates only within one screen of the oldest", () => {
-    expect(
-      isFarFromOldest({
-        offset: 100,
-        contentHeight: 9000,
-        viewportHeight: viewport,
-      }),
-    ).toBe(true);
     expect(
       isFarFromOldest({
         offset: 7800,
         contentHeight: 9000,
         viewportHeight: viewport,
       }),
+    ).toBe(true);
+    expect(
+      isFarFromOldest({
+        offset: 100,
+        contentHeight: 9000,
+        viewportHeight: viewport,
+      }),
     ).toBe(false);
   });
+});
+
+it("returns to the reading direction when a stream stops without another scroll", () => {
+  const streaming = nextJumpState(
+    scrolled,
+    at(4000),
+    at(3000).offset,
+    20,
+    true,
+  );
+  expect(streaming.kind).toBe("latest");
+  expect(
+    nextJumpState(streaming, at(4000), at(4000).offset, 20, false).kind,
+  ).toBe("top");
+});
+
+it("ignores small reverse movement", () => {
+  const state = nextJumpState(scrolled, at(4000), at(3000).offset, 20);
+  expect(nextJumpState(state, at(3997), at(4000).offset, 20).kind).toBe("top");
 });

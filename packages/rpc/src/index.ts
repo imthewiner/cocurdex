@@ -2,6 +2,7 @@ import type {
   AcpRegistryAgentId,
   AcpRegistryCatalogAgent,
   AcpRegistryInstalledAgent,
+  AgentAuthState,
   AgentDescriptor,
   AgentId,
   AgentMcpUnsupportedReason,
@@ -355,7 +356,10 @@ export type DaemonRequestPayloadByMethod = {
   "sync.pull": SyncPullInput;
   "agent.list": undefined;
   "agent.sessionModes.read": { agentId: AgentId };
-  "agent.login": { agentId: AgentId };
+  "agent.login": { agentId: AgentId; methodId?: string };
+  "agent.login.cancel": { agentId: AgentId };
+  "agent.logout": { agentId: AcpRegistryAgentId };
+  "agent.auth.read": { agentId: AcpRegistryAgentId };
   "agent.rateLimits.read": { agentIds: AgentId[] };
   "acpRegistry.catalog": { forceRefresh?: boolean };
   "acpRegistry.install": { registryId: string };
@@ -723,6 +727,9 @@ export type DaemonResultByMethod = {
   "agent.list": AgentDescriptor[];
   "agent.sessionModes.read": AgentSessionMode[];
   "agent.login": null;
+  "agent.login.cancel": null;
+  "agent.logout": null;
+  "agent.auth.read": AgentAuthState;
   "agent.rateLimits.read": Partial<Record<AgentId, AgentRateLimitsReadResult>>;
   "acpRegistry.catalog": AcpRegistryCatalogAgent[];
   "acpRegistry.install": AcpRegistryInstalledAgent;

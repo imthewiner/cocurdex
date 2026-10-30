@@ -22,6 +22,7 @@ export function PendingTranscript({
   return (
     <TranscriptView
       items={items}
+      sentMessageId={send.id}
       actions={{
         hostId: host.hostId,
         fileRoot: undefined,

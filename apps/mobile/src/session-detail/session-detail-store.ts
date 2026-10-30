@@ -6,6 +6,7 @@ import type {
   MessageRecord,
   SessionObservationSnapshot,
 } from "@cocurdex/shared";
+import { STREAM_RENDER_BATCH_MS } from "@cocurdex/shared";
 
 export type SessionDetailConnection = Pick<
   HostConnection,
@@ -34,6 +35,7 @@ const RELOAD_EVENTS = new Set<CocurdexDaemonEvent["type"]>([
 ]);
 
 export const DETAIL_RELOAD_DELAY_MS = 250;
+export const DETAIL_STREAM_BATCH_MS = STREAM_RENDER_BATCH_MS;
 
 function upsertById<T extends { id: string }>(items: readonly T[], next: T) {
   const index = items.findIndex((item) => item.id === next.id);
@@ -88,21 +90,33 @@ export function createSessionDetailStore(
   };
   let stop: (() => void) | null = null;
   let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+  let streamTimer: ReturnType<typeof setTimeout> | null = null;
   let generation = 0;
   let live = connection.getState().status === "live";
 
-  const publish = (next: Partial<SessionDetailSnapshot>) => {
-    snapshot = { ...snapshot, ...next };
+  const notify = () => {
+    if (streamTimer) clearTimeout(streamTimer);
+    streamTimer = null;
     for (const listener of [...listeners]) listener();
+  };
+
+  const publish = (next: Partial<SessionDetailSnapshot>, batch = false) => {
+    snapshot = { ...snapshot, ...next };
+    if (batch) {
+      streamTimer ??= setTimeout(notify, DETAIL_STREAM_BATCH_MS);
+    } else {
+      notify();
+    }
   };
 
   const updateObservation = (
     change: (
       observation: SessionObservationSnapshot,
     ) => SessionObservationSnapshot,
+    batch = false,
   ) => {
     if (snapshot.observation) {
-      publish({ observation: change(snapshot.observation) });
+      publish({ observation: change(snapshot.observation) }, batch);
     }
   };
 
@@ -147,10 +161,13 @@ export function createSessionDetailStore(
     if (eventSessionId(event) !== sessionId) return;
     switch (event.type) {
       case "message.delta":
-        updateObservation((observation) => ({
-          ...observation,
-          activeMessages: appendDelta(observation.activeMessages, event),
-        }));
+        updateObservation(
+          (observation) => ({
+            ...observation,
+            activeMessages: appendDelta(observation.activeMessages, event),
+          }),
+          true,
+        );
         break;
       case "message.completed":
         updateObservation((observation) => ({
@@ -196,6 +213,8 @@ export function createSessionDetailStore(
       stopState();
       if (reloadTimer) clearTimeout(reloadTimer);
       reloadTimer = null;
+      if (streamTimer) clearTimeout(streamTimer);
+      streamTimer = null;
     };
   }
 

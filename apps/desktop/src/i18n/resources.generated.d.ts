@@ -1466,6 +1466,7 @@ export default interface Resources {
       };
       contextFileTooLarge: "File is too large. Select a smaller file or attach a selection.";
       noInstalledAgent: "No agent installed";
+      openWorkspaceFirst: "Open a folder, then describe the task";
       placeholder: "Plan, Build, / for skills, @ for context";
       removeAttachment: "Remove attachment";
       selectAgent: "Select agent";
@@ -1805,10 +1806,13 @@ export default interface Resources {
       editCancel: "Cancel";
       editFoldersLabel: "Source folders";
       editMakePrimary: "Make primary";
+      editManageLabel: "Manage";
       editNameLabel: "Workspace name";
       editPrimary: "Primary";
+      editRemoveDescription: "{{name}} and all of its agent sessions are removed from Cocurdex. Files in its folders are not touched.";
       editRemoveFolder: "Remove folder";
-      editRemoveWorkspace: "Remove workspace";
+      editRemoveTitle: "Remove {{name}}?";
+      editRemoveWorkspace: "Remove";
       editSave: "Save";
       editTitle: "Edit workspace";
       empty: "No matching workspaces.";
@@ -1856,16 +1860,48 @@ export default interface Resources {
         docs: "Docs";
         refresh: "Refresh";
       };
+      auth: {
+        cancel: "Cancel";
+        confirmCancel: "Cancel";
+        failedKeeping: "{{message}} Still signed in with {{method}}.";
+        login: "Log in";
+        logout: "Log out…";
+        logoutConfirm: "Log out";
+        logoutDescriptionSessions_one: "This stops {{count}} running {{agent}} session. {{agent}} will ask you to log in again before its next session.";
+        logoutDescriptionSessions_other: "This stops {{count}} running {{agent}} sessions. {{agent}} will ask you to log in again before its next session.";
+        logoutDescription_one: "{{agent}} will ask you to log in again before its next session.";
+        logoutDescription_other: "{{agent}} will ask you to log in again before its next session.";
+        logoutTitle: "Log out of {{agent}}?";
+        method: "Login method";
+        readFailed: "Could not read login methods: {{message}}";
+        reading: "Reading login methods…";
+        retry: "Retry";
+        signingIn: "Logging in with {{method}}. If a browser page opens, finish there; this updates when it is done.";
+        switchConfirm: "Switch";
+        switchDescription_one: "Switching stops {{count}} running {{agent}} session. It keeps the current method if the new login fails.";
+        switchDescription_other: "Switching stops {{count}} running {{agent}} sessions. It keeps the current method if the new login fails.";
+        switchTitle: "Switch login method?";
+      };
       badge: {
         builtin: "Built in";
         updateRequired: "Update required";
       };
       description: "Pick any of these agent CLIs when starting a session. cocurdex detects the versions installed on this machine; add more from the ACP Registry.";
+      detail: {
+        builtinNote: "Ships with Cocurdex; nothing to install.";
+        executable: "Executable";
+        install: "Install";
+        manage: "Manage";
+        signIn: "Login";
+        update: "Update";
+        usage: "Usage";
+      };
       kind: {
         builtin: "Built-in";
         detecting: "Checking…";
         error: "Failed";
         missing: "Not installed";
+        needsLogin: "Login required";
         outdated: "Update required";
         ready: "Ready";
       };
@@ -1908,31 +1944,14 @@ export default interface Resources {
           prefetch: "Runs during install";
         };
         remove: "Remove";
+        removeDescription: "Removes {{name}} from Cocurdex. Existing sessions stay, and you can add it again from the ACP Registry.";
         removeFailed: "Could not remove the agent";
         removeSucceeded: "Removed {{name}}";
+        removeTitle: "Remove {{name}}?";
         retry: "Retry";
         search: "Search agents";
         title: "ACP Registry";
         unsupported: "Not available for this platform";
-      };
-      runLimits: {
-        description: "Caps how many agent runs execute at once. Delegated runs past a limit wait in the queue; runs you start yourself are never held back.";
-        invalid: "Enter whole numbers within the allowed range.";
-        maxConcurrentRuns: {
-          description: "Total agent runs across all sessions (1–64).";
-          title: "Concurrent runs";
-        };
-        maxConcurrentRunsPerAgent: {
-          description: "Runs of the same agent at once (1–64).";
-          title: "Concurrent runs per agent";
-        };
-        saveFailed: "Could not save run limits.";
-        timeout: {
-          description: "Stops a teammate or subagent run that exceeds this time. Leave empty for no timeout.";
-          none: "None";
-          title: "Delegated run timeout (minutes)";
-        };
-        title: "Run limits";
       };
       status: {
         builtin: "Built in — ships with cocurdex, nothing to install.";
@@ -2425,6 +2444,7 @@ export default interface Resources {
       detail: {
         enabled: "Enabled";
         label: "MCP server";
+        manageLabel: "Manage";
         newTitle: "New server";
         projectReadOnly: "Defined in {{path}}. Project servers are read-only here; edit that file to change them.";
       };
@@ -2753,6 +2773,7 @@ export default interface Resources {
       list: {
         configuredCount: "{{count}} configured";
       };
+      manageLabel: "Manage";
       models: {
         addTitle: "Add model";
         advanced: "Advanced";
@@ -2978,6 +2999,7 @@ export default interface Resources {
       description: "Skills teach agents how to do specialized work. Install them once and every agent that reads the shared skills folder can use them.";
       detail: {
         label: "{{name}} details";
+        manageTitle: "Manage";
         removeBrokenDescription: "{{name}} is only broken links to a folder that no longer exists. Removing it deletes those links and touches nothing else.";
         removeDescription: "Deletes {{name}} for every agent, including the links that point to it. The folder is backed up first, so you can restore it from skill-backups for 14 days.";
         removeTitle: "Remove {{name}}?";
@@ -3163,6 +3185,25 @@ export default interface Resources {
       role: "Role";
       roleMissing: "Role was deleted";
       rolePlaceholder: "Choose a role";
+      runLimits: {
+        description: "Runs that teammates and script agents start. Past a limit they wait in order; runs you start yourself never wait, but they count toward the limits.";
+        invalid: "Enter whole numbers within the allowed range.";
+        maxConcurrentRuns: {
+          description: "Agent runs at once across all sessions, including yours (1–64).";
+          title: "Concurrent runs";
+        };
+        maxConcurrentRunsPerAgent: {
+          description: "Runs of the same agent CLI at once, including yours (1–64).";
+          title: "Concurrent runs per agent";
+        };
+        saveFailed: "Could not save run limits.";
+        timeout: {
+          description: "Stops a teammate or script agent run that takes longer. Leave empty for no timeout.";
+          none: "None";
+          title: "Timeout";
+        };
+        title: "Delegated runs";
+      };
       save: "Save";
       saveFailed: "Could not save this team.";
       saved: "Team saved";

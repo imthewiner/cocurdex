@@ -20,6 +20,8 @@ export type CondensedItem =
       items: ActivityChild[];
       summary: ToolActionSummary;
       replies: number;
+      running?: boolean;
+      startedAt?: number;
     };
 
 type Turn = { prompt: UserItem | null; items: ActivityChild[] };
@@ -84,7 +86,30 @@ function condenseTurn(
   turn: Turn,
   live: boolean,
   records: ReadonlyMap<string, AgentToolCallRecord>,
+  startedAt: number | undefined,
 ): CondensedItem[] {
+  if (live) {
+    const tools = turn.items.filter((item) => item.kind === "tool");
+    const calls = tools.flatMap((item) => {
+      const call = records.get(item.id);
+      return call ? [call] : [];
+    });
+    return [
+      ...(turn.prompt ? [turn.prompt] : []),
+      {
+        kind: "activity",
+        id: `activity:${turn.prompt?.id ?? "active"}`,
+        items: tools,
+        summary: summarizeToolActions(calls),
+        replies: 0,
+        running: true,
+        ...(startedAt === undefined ? {} : { startedAt }),
+      },
+      ...turn.items.flatMap((item) =>
+        item.kind === "assistant" ? [{ ...item, turnEnd: false }] : [],
+      ),
+    ];
+  }
   const answerId = live
     ? null
     : (turn.items.findLast((item) => item.kind === "assistant")?.id ?? null);
@@ -114,10 +139,16 @@ export function condenseTranscript(
   items: readonly TranscriptItem[],
   toolCalls: readonly AgentToolCallRecord[],
   running = false,
+  startedAt?: number,
 ): CondensedItem[] {
   const records = new Map(toolCalls.map((call) => [call.id, call]));
   const turns = splitTurns(items);
   return turns.flatMap((turn, index) =>
-    condenseTurn(turn, running && index === turns.length - 1, records),
+    condenseTurn(
+      turn,
+      running && index === turns.length - 1,
+      records,
+      startedAt,
+    ),
   );
 }
