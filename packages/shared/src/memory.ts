@@ -19,7 +19,6 @@ export interface MemorySettings {
   enabled: boolean;
   agent: MemoryAgentSettings;
   chat: MemoryChatSettings;
-  projectMode: "workspace" | "global";
   cliPath: string | null;
 }
 
@@ -34,7 +33,6 @@ export const DEFAULT_MEMORY_SETTINGS: MemorySettings = {
     saveTurns: true,
     saveOnEnd: true,
   },
-  projectMode: "workspace",
   cliPath: null,
 };
 
@@ -52,10 +50,6 @@ export function normalizeMemorySettings(input: unknown): MemorySettings {
   }
   const agent = isRecord(input.agent) ? input.agent : {};
   const chat = isRecord(input.chat) ? input.chat : {};
-  const projectMode =
-    input.projectMode === "global" || input.projectMode === "workspace"
-      ? input.projectMode
-      : DEFAULT_MEMORY_SETTINGS.projectMode;
   const cliPath =
     typeof input.cliPath === "string" && input.cliPath.trim()
       ? input.cliPath.trim()
@@ -80,7 +74,6 @@ export function normalizeMemorySettings(input: unknown): MemorySettings {
         DEFAULT_MEMORY_SETTINGS.chat.saveOnEnd,
       ),
     },
-    projectMode,
     cliPath,
   };
 }
@@ -240,13 +233,6 @@ export function redactMemorySecrets(text: string) {
     result = result.replace(pattern, "[redacted]");
   }
   return result;
-}
-
-export function memoryProjectForWorkspace(
-  workspaceName: string | null | undefined,
-) {
-  const trimmed = workspaceName?.trim();
-  return trimmed ? trimmed : null;
 }
 
 export function buildMemoryRecallQuery(input: {

@@ -71,7 +71,6 @@ describe("memory settings", () => {
       enabled: false,
       agent: { tools: false },
       chat: { saveOnEnd: false, saveTurns: "nope" },
-      projectMode: "global",
       cliPath: "  /opt/rsrs  ",
     });
     expect(settings.enabled).toBe(false);
@@ -79,7 +78,6 @@ describe("memory settings", () => {
     expect(settings.agent.injectContext).toBe(true);
     expect(settings.chat.saveOnEnd).toBe(false);
     expect(settings.chat.saveTurns).toBe(true);
-    expect(settings.projectMode).toBe("global");
     expect(settings.cliPath).toBe("/opt/rsrs");
   });
 });

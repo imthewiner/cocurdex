@@ -143,7 +143,6 @@ async function createService(
     enabled: true,
     agent: { injectContext: true, tools: true },
     chat: { recall: true, saveTurns: true, saveOnEnd: true },
-    projectMode: "global",
     cliPath: executable,
   };
   const state = createState(settings);

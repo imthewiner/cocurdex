@@ -21,7 +21,6 @@ import {
   type MemorySettings,
   type MemoryStatus,
   type MessageRecord,
-  memoryProjectForWorkspace,
   redactMemorySecrets,
   type SessionRecord,
 } from "@cocurdex/shared";
@@ -712,9 +711,8 @@ export class MemoryService {
     if (!settings.enabled) return null;
     if (mode === "agent" && !settings.agent.injectContext) return null;
     if (mode === "chat" && !settings.chat.recall) return null;
-    const project = await this.projectFor(session);
     const query = buildMemoryRecallQuery({
-      project,
+      project: null,
       title: session.title,
       message,
     });
@@ -724,7 +722,6 @@ export class MemoryService {
       result = await this.recall({
         query,
         limit: 6,
-        project,
         timeoutMs: TURN_RECALL_BUDGET_MS,
       });
     } catch (error) {
@@ -790,20 +787,6 @@ export class MemoryService {
     this.broadcast();
   }
 
-  private async projectFor(session: SessionRecord) {
-    const settings = this.currentSettings();
-    if (settings.projectMode === "global") return null;
-    try {
-      const workspaces = await this.options.state.listWorkspaces();
-      const workspace = workspaces.find(
-        (candidate) => candidate.id === session.workspaceId,
-      );
-      return memoryProjectForWorkspace(workspace?.name);
-    } catch {
-      return null;
-    }
-  }
-
   async captureTurn(
     sessionId: string,
     assistantMessageId: string | null,
@@ -850,7 +833,6 @@ export class MemoryService {
       content: redactMemorySecrets(line),
       title: `Cocurdex chat：${compactDigestText(session.title, 48)}`,
       importance: "trivial",
-      project: await this.projectFor(session),
       force: true,
     });
     if (!result.id) {
@@ -934,7 +916,6 @@ export class MemoryService {
         digest?.title ??
         `Cocurdex chat：${compactDigestText(session.title, 48)}`,
       importance,
-      project: await this.projectFor(session),
     });
     if (!stored.id) {
       return {
@@ -957,7 +938,6 @@ export class MemoryService {
     content: string;
     title: string;
     importance: MemoryImportance;
-    project: string | null;
   }): Promise<MemoryRememberResult> {
     const judged = await this.remember(input);
     if (judged.action !== "candidates" || judged.id) return judged;

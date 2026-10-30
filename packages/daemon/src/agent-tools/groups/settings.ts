@@ -91,7 +91,7 @@ export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [
     tier: "write",
     storage: "daemon",
     description:
-      "Long-term memory through Respire (rsrs). enabled is the master switch; agent controls automatic recall and memory tools for agent sessions; chat controls recall and automatic capture for chat sessions; projectMode scopes recall to the workspace or the whole store; cliPath optionally points at the rsrs executable.",
+      "Long-term memory through Respire (rsrs). enabled is the master switch; agent controls automatic recall and memory tools for agent sessions; chat controls recall and automatic capture for chat sessions; cliPath optionally points at the rsrs executable.",
     valueSchema: {
       type: "object",
       properties: {
@@ -113,7 +113,6 @@ export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [
           },
           additionalProperties: false,
         },
-        projectMode: { type: "string", enum: ["workspace", "global"] },
         cliPath: { type: ["string", "null"] },
       },
       additionalProperties: false,
