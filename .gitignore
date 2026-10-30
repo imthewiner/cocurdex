@@ -39,3 +39,5 @@ playwright-report/
 .codegraph/
 .alma-snapshots
 /dev.ps1
+
+.turbo
