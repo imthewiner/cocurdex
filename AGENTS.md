@@ -46,7 +46,7 @@ When a push starts no checks, read `gh pr view --json mergeStateStatus`: GitHub 
 
 Address GitHub objects (review threads, comments, runs, check suites) only by IDs a query returned in this task. A guessed or remembered node ID can name an object in another repository, and a write through it posts there; after any write, confirm the response names this repository.
 
-CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/`, `.claude/`, and `.cursor/`, and the desktop `version` field. When every job passes, it records that fingerprint, and a later run with the same fingerprint (in the same PR, or on `main`) skips the checks. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
+CI fingerprints the tree without `AGENTS.md`, `CLAUDE.md`, root `*.md`, `docs/`, Markdown under `.agents/`, `.claude/`, and `.cursor/`, and the desktop `version` field. Once the required jobs (workspace and desktop) pass, it records that fingerprint, and the mobile jobs record their own; a later run with the same fingerprint anywhere in the repository (the same PR, the merge queue, or `main`) skips the jobs it covers. The merge queue never runs the mobile jobs: they are not required, and `main` runs the full mobile matrix after the merge. A docs-only or version-only push therefore costs one short job; anything else the tests could read must stay out of that exclusion list.
 
 ## Architecture: daemon, host, and clients
 

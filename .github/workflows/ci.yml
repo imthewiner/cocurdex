@@ -29,12 +29,14 @@ jobs:
     outputs:
       run_native: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_native || 'false' }}
       run_linux: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_linux || 'false' }}
-      run_mobile: ${{ (github.event_name == 'push' || steps.verified.outputs.hit != 'true') && steps.scope.outputs.run_mobile || 'false' }}
+      run_mobile: ${{ github.event_name != 'merge_group' && (github.event_name == 'push' || steps.verified.outputs.mobile_hit != 'true') && steps.scope.outputs.run_mobile || 'false' }}
       affected: ${{ steps.scope.outputs.affected }}
       scm_base: ${{ steps.scope.outputs.base }}
       mobile_runs: ${{ steps.scope.outputs.mobile_runs }}
       verified: ${{ steps.verified.outputs.hit == 'true' }}
       verified_key: ${{ steps.fingerprint.outputs.key }}
+      mobile_verified: ${{ steps.verified.outputs.mobile_hit == 'true' }}
+      mobile_verified_key: ${{ steps.fingerprint.outputs.mobile_key }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -50,21 +52,24 @@ jobs:
             git show HEAD:apps/desktop/package.json | grep -v '^  "version":' | git hash-object --stdin
           } | git hash-object --stdin)"
           echo "key=ci-verified-v1-${fingerprint}" >> "${GITHUB_OUTPUT}"
+          echo "mobile_key=ci-verified-mobile-v1-${fingerprint}" >> "${GITHUB_OUTPUT}"
       - name: Look up verified fingerprint
         id: verified
         env:
           GH_TOKEN: ${{ github.token }}
           KEY: ${{ steps.fingerprint.outputs.key }}
+          MOBILE_KEY: ${{ steps.fingerprint.outputs.mobile_key }}
           REPOSITORY_ID: ${{ github.repository_id }}
         run: |
-          matches="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${KEY}&per_page=100" \
-            --jq "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${REPOSITORY_ID})] | length" \
-            || echo 0)"
-          if [[ "${matches}" -gt 0 ]]; then
-            echo "hit=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "hit=false" >> "${GITHUB_OUTPUT}"
-          fi
+          recorded() {
+            local matches
+            matches="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=$1&per_page=100" \
+              --jq "[.artifacts[] | select(.expired == false and .workflow_run.head_repository_id == ${REPOSITORY_ID})] | length" \
+              || echo 0)"
+            if [[ "${matches}" -gt 0 ]]; then echo true; else echo false; fi
+          }
+          echo "hit=$(recorded "${KEY}")" >> "${GITHUB_OUTPUT}"
+          echo "mobile_hit=$(recorded "${MOBILE_KEY}")" >> "${GITHUB_OUTPUT}"
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - name: Setup Node
@@ -533,8 +538,8 @@ jobs:
 
   record:
     name: Record verified fingerprint
-    needs: [changes, workspace, desktop, mobile-app, mobile]
-    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' && needs.mobile-app.result != 'failure' && needs.mobile.result != 'failure' }}
+    needs: [changes, workspace, desktop]
+    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Write marker
@@ -543,5 +548,20 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: ${{ needs.changes.outputs.verified_key }}
+          path: ci-verified.txt
+          retention-days: 30
+
+  record-mobile:
+    name: Record verified mobile fingerprint
+    needs: [changes, mobile-app, mobile]
+    if: ${{ !cancelled() && github.event_name != 'merge_group' && needs.changes.outputs.mobile_verified != 'true' && contains(fromJSON('["success","skipped"]'), needs.mobile-app.result) && contains(fromJSON('["success","skipped"]'), needs.mobile.result) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write marker
+        run: echo "${GITHUB_SHA}" > ci-verified.txt
+      - name: Save verified fingerprint
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ${{ needs.changes.outputs.mobile_verified_key }}
           path: ci-verified.txt
           retention-days: 30
