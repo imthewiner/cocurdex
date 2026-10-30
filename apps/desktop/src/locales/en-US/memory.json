@@ -1,0 +1,76 @@
+{
+  "session": {
+    "alreadySaved": "This conversation is already in memory",
+    "recallFailed": "Memory recall failed this turn: {{error}}",
+    "recallFailedUnknown": "unknown error",
+    "save": "Save to memory",
+    "saved": "Conversation saved to memory",
+    "saveFailed": "Could not save the conversation",
+    "saving": "Saving…"
+  },
+  "settings": {
+    "actions": {
+      "doctor": "Run doctor",
+      "install": "Install",
+      "verify": "Verify"
+    },
+    "agentContext": {
+      "description": "Recall relevant memories before each agent turn and add them to the prompt.",
+      "title": "Recall for agent sessions"
+    },
+    "agentTools": {
+      "description": "Give agent sessions the memory_recall, memory_show, memory_remember, and memory_policy tools.",
+      "title": "Memory tools for agents"
+    },
+    "chatRecall": {
+      "description": "Recall relevant memories before each chat answer.",
+      "title": "Recall for chat sessions"
+    },
+    "chatSaveOnEnd": {
+      "description": "Summarize a chat session when it is archived or deleted.",
+      "title": "Save chat sessions on end"
+    },
+    "chatSaveTurns": {
+      "description": "Append each completed chat exchange to today's memory diary.",
+      "title": "Save chat turns"
+    },
+    "cliPath": {
+      "description": "Optional path to the rsrs executable. Leave empty to use the installed binary or PATH.",
+      "placeholder": "Auto-detect",
+      "title": "rsrs executable"
+    },
+    "connectionTitle": "Connection",
+    "doctorFailed": "rsrs doctor reported a problem",
+    "doctorPassed": "rsrs doctor: {{status}}",
+    "enabled": {
+      "description": "Recall before answers and save useful results to your long-term memory. Entries go to the local rsrs store (~/.rsrs) and sync to your rsrs account when one is connected. You can turn this off at any time.",
+      "title": "Enable memory"
+    },
+    "groupTitle": "Long-term memory",
+    "installFailed": "Could not install rsrs",
+    "installReady": "rsrs is ready",
+    "saveFailed": "Could not save memory settings",
+    "status": {
+      "available": "rsrs {{version}}",
+      "doctor": "doctor: {{status}} · {{pass}} pass · {{warn}} warn · {{fail}} fail",
+      "installing": "Installing rsrs…",
+      "missing": "rsrs is not installed",
+      "title": "Status",
+      "unknown": "unknown version",
+      "unsupported": "Long-term memory needs the rsrs CLI, which has no build for Intel Macs, so it stays off on this machine."
+    }
+  },
+  "status": {
+    "checking": "Checking rsrs…",
+    "failed": "rsrs is not available",
+    "installing": "Installing rsrs…",
+    "missing": "rsrs is not installed",
+    "ready": "rsrs {{version}}",
+    "readyUnknown": "rsrs is ready",
+    "unsupported": "Unsupported here"
+  },
+  "switch": {
+    "label": "Memory",
+    "toggleFailed": "Could not change the memory setting"
+  }
+}

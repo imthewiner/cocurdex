@@ -69,6 +69,16 @@ import type {
   McpServerConfig,
   McpServerStatus,
   McpStatusReport,
+  MemoryDoctorReport,
+  MemoryEntry,
+  MemoryInstallResult,
+  MemoryRecallResult,
+  MemoryRememberInput,
+  MemoryRememberResult,
+  MemorySessionSaveInput,
+  MemorySessionSaveResult,
+  MemorySettings,
+  MemoryStatus,
   MessageRecord,
   MoveColumnPayload,
   MoveIssuePayload,
@@ -597,6 +607,25 @@ export interface ProductApi {
     settings: NetworkProxySettings,
   ): Promise<NetworkProxyTestResult>;
   testCurrentNetworkProxy(): Promise<NetworkProxyTestResult>;
+  getMemoryStatus(refresh?: boolean): Promise<MemoryStatus>;
+  getMemorySettings(): Promise<MemorySettings>;
+  setMemorySettings(settings: MemorySettings): Promise<MemorySettings>;
+  recallMemories(input: {
+    query: string;
+    limit?: number;
+    project?: string | null;
+  }): Promise<MemoryRecallResult>;
+  showMemory(id: string): Promise<MemoryEntry | null>;
+  rememberMemory(input: MemoryRememberInput): Promise<MemoryRememberResult>;
+  saveSessionMemory(
+    input: MemorySessionSaveInput,
+  ): Promise<MemorySessionSaveResult>;
+  installMemory(force?: boolean): Promise<MemoryInstallResult>;
+  runMemoryDoctor(options?: {
+    remote?: boolean;
+    checkUpdate?: boolean;
+  }): Promise<MemoryDoctorReport>;
+  getMemoryPolicy(): Promise<string>;
   getHostRemoteAccess(): Promise<HostRemoteAccessStatus>;
   setHostRemoteAccess(
     settings: RemoteAccessSettings,

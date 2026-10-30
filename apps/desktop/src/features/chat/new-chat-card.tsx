@@ -19,8 +19,6 @@ import {
   bootstrapProviderModelsAtom,
   providerModelsAtom,
 } from "@/features/sessions";
-// Sub-entry, not the settings barrel: that barrel reaches SettingsScreen ->
-// @/app/layout, closing an initialization cycle back onto this module.
 import { openSettings } from "@/features/settings/settings-navigation";
 import { useMountEffect } from "@/lib";
 import { chatProviderModelsAtom } from "./chat-models";

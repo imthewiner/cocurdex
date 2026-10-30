@@ -473,6 +473,7 @@ export async function startDaemonServer(options: StartDaemonServerOptions) {
       userDataPath,
       agentToolsUrl,
       localToken: options.token,
+      autoStartMemory: process.env.COCURDEX_DISABLE_MEMORY_AUTO_START !== "1",
     });
     const activeService = service;
     health = createDaemonHealthMonitor({
