@@ -34,6 +34,8 @@ import type { WorkspaceRecord } from "@cocurdex/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket as NodeWebSocket } from "ws";
 
+process.env.COCURDEX_DISABLE_MEMORY_AUTO_START = "1";
+
 const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
@@ -525,7 +527,11 @@ it("starts again through the canonical endpoint after an abrupt daemon exit", as
   `,
       userDataPath,
     ],
-    { stdio: ["ignore", "ignore", "pipe", "ipc"], windowsHide: true },
+    {
+      env: { ...process.env, COCURDEX_DISABLE_MEMORY_AUTO_START: "1" },
+      stdio: ["ignore", "ignore", "pipe", "ipc"],
+      windowsHide: true,
+    },
   );
   const exited = once(child, "exit");
   let stderr = "";

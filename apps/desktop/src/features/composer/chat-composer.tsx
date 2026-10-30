@@ -30,6 +30,7 @@ import {
   AppDropdownTriggerLabel,
 } from "@/components";
 import { DropdownMenuGroup, DropdownMenuSeparator } from "@/components/ui";
+import { MemoryMenuItem } from "@/features/memory/menu";
 import {
   AgentSelect,
   agentsAtom,
@@ -541,6 +542,8 @@ const ChatComposerBound = forwardRef<ChatComposerHandle, ChatComposerProps>(
             {attachMenuExtras}
           </>
         ) : null}
+        <DropdownMenuSeparator />
+        <MemoryMenuItem />
       </AppDropdownContent>
     );
 

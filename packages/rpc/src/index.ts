@@ -107,6 +107,16 @@ import type {
   McpServerConfig,
   McpServerStatus,
   McpStatusReport,
+  MemoryDoctorReport,
+  MemoryEntry,
+  MemoryInstallResult,
+  MemoryRecallResult,
+  MemoryRememberInput,
+  MemoryRememberResult,
+  MemorySessionSaveInput,
+  MemorySessionSaveResult,
+  MemorySettings,
+  MemoryStatus,
   MessageRecord,
   MoveColumnPayload,
   MoveIssuePayload,
@@ -504,6 +514,20 @@ export type DaemonRequestPayloadByMethod = {
   "network.proxy.test": { settings?: NetworkProxySettings };
   "network.proxy.get": undefined;
   "network.proxy.set": { settings: NetworkProxySettings };
+  "memory.status": { refresh?: boolean };
+  "memory.settings.get": undefined;
+  "memory.settings.set": { settings: MemorySettings };
+  "memory.recall": {
+    query: string;
+    limit?: number;
+    project?: string | null;
+  };
+  "memory.show": { id: string };
+  "memory.remember": MemoryRememberInput;
+  "memory.session.save": MemorySessionSaveInput;
+  "memory.install": { force?: boolean };
+  "memory.doctor": { remote?: boolean; checkUpdate?: boolean };
+  "memory.policy": undefined;
   "attention.list": undefined;
   "attention.update": UpdateSessionAttentionPayload;
   "file.readText": { filePath: string };
@@ -820,6 +844,16 @@ export type DaemonResultByMethod = {
   "network.proxy.test": NetworkProxyTestResult;
   "network.proxy.get": NetworkProxySettings;
   "network.proxy.set": NetworkProxySettings;
+  "memory.status": MemoryStatus;
+  "memory.settings.get": MemorySettings;
+  "memory.settings.set": MemorySettings;
+  "memory.recall": MemoryRecallResult;
+  "memory.show": MemoryEntry | null;
+  "memory.remember": MemoryRememberResult;
+  "memory.session.save": MemorySessionSaveResult;
+  "memory.install": MemoryInstallResult;
+  "memory.doctor": MemoryDoctorReport;
+  "memory.policy": string;
   "attention.list": SessionAttentionSnapshot[];
   "attention.update": SessionAttentionSnapshot;
   "file.readText": string;
@@ -1011,6 +1045,8 @@ export const DAEMON_NO_PARAM_METHODS = {
   "issue.listLabels": true,
   "issue.listLinkedSessionIds": true,
   "teamTemplate.list": true,
+  "memory.settings.get": true,
+  "memory.policy": true,
   "scriptRun.settings.get": true,
   "mcp.readConfig": true,
   "mcp.injection.check": true,

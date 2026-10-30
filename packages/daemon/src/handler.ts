@@ -119,6 +119,26 @@ export async function handleDaemonRequest(
       return service.getNetworkProxySettings();
     case "network.proxy.set":
       return service.setNetworkProxySettings(request.params.settings);
+    case "memory.status":
+      return service.memory.getStatus(request.params.refresh);
+    case "memory.settings.get":
+      return service.memory.getSettings();
+    case "memory.settings.set":
+      return service.memory.setSettings(request.params.settings);
+    case "memory.recall":
+      return service.memory.recall(request.params);
+    case "memory.show":
+      return service.memory.show(request.params.id);
+    case "memory.remember":
+      return service.memory.remember(request.params);
+    case "memory.session.save":
+      return service.memory.saveSession(request.params);
+    case "memory.install":
+      return service.memory.install(request.params.force);
+    case "memory.doctor":
+      return service.memory.doctor(request.params);
+    case "memory.policy":
+      return service.memory.policy();
     case "attention.list":
       return service.listSessionAttention();
     case "attention.update":

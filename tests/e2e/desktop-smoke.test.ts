@@ -112,6 +112,7 @@ describe("desktop app boot", () => {
       if (value !== undefined) env[key] = value;
     }
     env.COCURDEX_USER_DATA_PATH = userDataPath;
+    env.COCURDEX_DISABLE_MEMORY_AUTO_START = "1";
     env.NO_COLOR = "1";
     env.TZ = "UTC";
     delete env.ELECTRON_RUN_AS_NODE;
