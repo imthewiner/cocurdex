@@ -415,12 +415,6 @@ jobs:
       READY: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_ready || needs.mobile-prepare.outputs.android_ready }}
       HASH: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_hash || needs.mobile-prepare.outputs.android_hash }}
     steps:
-      - name: Boot iOS simulator
-        if: matrix.platform == 'ios'
-        run: |
-          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
-          xcrun simctl boot "${udid}"
-          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup pnpm
@@ -438,6 +432,12 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Boot iOS simulator
+        if: matrix.platform == 'ios'
+        run: |
+          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
+          xcrun simctl boot "${udid}"
+          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Download mobile app
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:

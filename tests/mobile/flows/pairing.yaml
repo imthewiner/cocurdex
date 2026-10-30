@@ -31,14 +31,18 @@ appId: dev.cocurdex.mobile
           visible:
             id: "pairing-link"
           timeout: 5000
-- tapOn:
-    id: "pairing-link"
-- inputText: ${PAIRING_LINK}
-- extendedWaitUntil:
-    visible:
-      id: "pairing-link"
-      text: ${PAIRING_LINK}
-    timeout: 10000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "pairing-link"
+      - eraseText: 120
+      - inputText: ${PAIRING_LINK}
+      - extendedWaitUntil:
+          visible:
+            id: "pairing-link"
+            text: ${PAIRING_LINK}
+          timeout: 10000
 - takeScreenshot: pairing-sheet
 - extendedWaitUntil:
     visible:
