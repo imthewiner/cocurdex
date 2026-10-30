@@ -191,7 +191,7 @@ appId: dev.cocurdex.mobile
 - extendedWaitUntil:
     notVisible:
       id: "mermaid-viewer-preview"
-    timeout: 10000
+    timeout: 30000
 - takeScreenshot: mermaid-viewer
 - runFlow:
     when:

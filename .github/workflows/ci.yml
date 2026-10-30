@@ -300,38 +300,21 @@ jobs:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
 
-  mobile:
-    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.flow }})
+  mobile-prepare:
+    name: Mobile app
     needs: changes
     if: needs.changes.outputs.run_mobile == 'true'
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 75
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       actions: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ios, android]
-        flow: [pairing, transcript, compose, library]
-        include:
-          - platform: ios
-            os: macos-latest
-            pr_run: light-en-US
-          - platform: android
-            os: ubuntu-latest
-            pr_run: dark-zh-CN
-    env:
-      MAESTRO_VERSION: 2.11.0
-      ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
-      IOS_DEVICE_TYPE: iPhone 16 Pro
+    outputs:
+      ios_hash: ${{ steps.fingerprint.outputs.ios }}
+      android_hash: ${{ steps.fingerprint.outputs.android }}
+      ios_ready: ${{ steps.ios.outputs.cache-hit }}
+      android_ready: ${{ steps.android.outputs.cache-hit }}
     steps:
-      - name: Locate app directories
-        run: |
-          {
-            echo "NATIVE_DIR=${RUNNER_TEMP}/mobile-native"
-            echo "APP_DIR=${RUNNER_TEMP}/mobile-app"
-          } >> "${GITHUB_ENV}"
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup pnpm
@@ -349,54 +332,138 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Fingerprint native app
+      - name: Fingerprint native apps
         id: fingerprint
         working-directory: tests/mobile
-        run: echo "hash=$(node --import tsx app.ts fingerprint --platform ${{ matrix.platform }})" >> "${GITHUB_OUTPUT}"
-      - name: Restore native app
-        id: native
+        run: |
+          for platform in ios android; do
+            echo "${platform}=$(node --import tsx app.ts fingerprint --platform "${platform}")" >> "${GITHUB_OUTPUT}"
+          done
+      - name: Restore iOS native app
+        id: ios
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ${{ env.NATIVE_DIR }}
-          key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
-      - name: Build native app
-        if: steps.native.outputs.cache-hit != 'true'
-        run: pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} --out "${NATIVE_DIR}"
-      - name: Save native app
-        if: steps.native.outputs.cache-hit != 'true' && github.event_name != 'merge_group'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+          path: .mobile-native/ios
+          key: mobile-native-v2-ios-${{ steps.fingerprint.outputs.ios }}
+      - name: Restore Android native app
+        id: android
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ${{ env.NATIVE_DIR }}
-          key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
+          path: .mobile-native/android
+          key: mobile-native-v2-android-${{ steps.fingerprint.outputs.android }}
       - name: Delete older native apps
-        if: github.event_name == 'push' && matrix.flow == 'pairing'
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          KEEP: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
+          KEEP_IOS: mobile-native-v2-ios-${{ steps.fingerprint.outputs.ios }}
+          KEEP_ANDROID: mobile-native-v2-android-${{ steps.fingerprint.outputs.android }}
         run: |
           gh cache list --repo "${GITHUB_REPOSITORY}" --ref "${GITHUB_REF}" \
-            --key "mobile-native-v1-${{ matrix.platform }}-" --limit 100 --json id,key \
-            --jq ".[] | select(.key != \"${KEEP}\") | .id" |
+            --key "mobile-native-" --limit 100 --json id,key \
+            --jq ".[] | select(.key != \"${KEEP_IOS}\" and .key != \"${KEEP_ANDROID}\") | .id" |
             while read -r id; do gh cache delete "${id}" --repo "${GITHUB_REPOSITORY}"; done
       - name: Repack current JavaScript
-        if: steps.native.outputs.cache-hit == 'true'
+        env:
+          READY_IOS: ${{ steps.ios.outputs.cache-hit }}
+          READY_ANDROID: ${{ steps.android.outputs.cache-hit }}
         run: |
-          app="$(ls "${NATIVE_DIR}")"
-          pnpm --filter @cocurdex/mobile-e2e app -- repack --platform ${{ matrix.platform }} \
-            --source "${NATIVE_DIR}/${app}" --out "${APP_DIR}"
-      - name: Use fresh native app
-        if: steps.native.outputs.cache-hit != 'true'
-        run: |
-          rm -rf "${APP_DIR}"
-          cp -R "${NATIVE_DIR}" "${APP_DIR}"
+          for platform in ios android; do
+            ready="READY_${platform^^}"
+            [[ "${!ready}" == "true" ]] || continue
+            native="${PWD}/.mobile-native/${platform}"
+            out="${RUNNER_TEMP}/mobile-app/${platform}"
+            pnpm --filter @cocurdex/mobile-e2e app -- repack --platform "${platform}" \
+              --source "${native}/$(ls "${native}")" --out "${out}"
+            tar -czf "${RUNNER_TEMP}/mobile-app-${platform}.tgz" -C "${out}" .
+          done
       - name: Build bundled daemon
-        run: pnpm --filter @cocurdex/desktop prepare:cli
+        run: |
+          pnpm --filter @cocurdex/desktop prepare:cli
+          tar -czf "${RUNNER_TEMP}/mobile-cli.tgz" -C apps/desktop/resources cli skills
+      - name: Upload mobile app
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mobile-app
+          path: ${{ runner.temp }}/mobile-*.tgz
+          compression-level: 0
+          retention-days: 1
+
+  mobile:
+    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.flow }})
+    needs: [changes, mobile-prepare]
+    if: needs.changes.outputs.run_mobile == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
+        flow: [pairing, transcript, compose, library]
+        include:
+          - platform: ios
+            os: macos-latest
+            pr_run: light-en-US
+          - platform: android
+            os: ubuntu-latest
+            pr_run: dark-zh-CN
+    env:
+      MAESTRO_VERSION: 2.11.0
+      ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
+      IOS_DEVICE_TYPE: iPhone 16 Pro
+      READY: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_ready || needs.mobile-prepare.outputs.android_ready }}
+      HASH: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_hash || needs.mobile-prepare.outputs.android_hash }}
+    steps:
       - name: Boot iOS simulator
         if: matrix.platform == 'ios'
         run: |
           udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
           xcrun simctl boot "${udid}"
           echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - name: Setup Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Restore pnpm store
+        uses: ./.github/actions/restore-pnpm-store
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download mobile app
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: mobile-app
+          path: ${{ runner.temp }}/mobile-download
+      - name: Unpack bundled daemon
+        run: tar -xzf "${RUNNER_TEMP}/mobile-download/mobile-cli.tgz" -C apps/desktop/resources
+      - name: Unpack repacked app
+        if: env.READY == 'true'
+        run: |
+          app_dir="${RUNNER_TEMP}/mobile-app"
+          mkdir -p "${app_dir}"
+          tar -xzf "${RUNNER_TEMP}/mobile-download/mobile-app-${{ matrix.platform }}.tgz" -C "${app_dir}"
+          echo "APP_DIR=${app_dir}" >> "${GITHUB_ENV}"
+      - name: Build native app
+        if: env.READY != 'true'
+        run: |
+          pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} \
+            --out "${PWD}/.mobile-native/${{ matrix.platform }}"
+          echo "APP_DIR=${PWD}/.mobile-native/${{ matrix.platform }}" >> "${GITHUB_ENV}"
+      - name: Save native app
+        if: env.READY != 'true' && github.event_name != 'merge_group'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .mobile-native/${{ matrix.platform }}
+          key: mobile-native-v2-${{ matrix.platform }}-${{ env.HASH }}
       - name: Install Maestro
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -444,17 +511,22 @@ jobs:
 
   mobile-required:
     name: Mobile
-    needs: [changes, mobile]
+    needs: [changes, mobile-prepare, mobile]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Require mobile e2e
         env:
           CHANGES: ${{ needs.changes.result }}
+          RUN_MOBILE: ${{ needs.changes.outputs.run_mobile }}
+          PREPARE: ${{ needs.mobile-prepare.result }}
           MOBILE: ${{ needs.mobile.result }}
         run: |
-          echo "changes=${CHANGES} mobile=${MOBILE}"
-          [[ "${CHANGES}" == "success" && ( "${MOBILE}" == "success" || "${MOBILE}" == "skipped" ) ]]
+          echo "changes=${CHANGES} run_mobile=${RUN_MOBILE} prepare=${PREPARE} mobile=${MOBILE}"
+          [[ "${CHANGES}" == "success" ]]
+          if [[ "${RUN_MOBILE}" == "true" ]]; then
+            [[ "${PREPARE}" == "success" && "${MOBILE}" == "success" ]]
+          fi
 
   pnpm-store:
     name: Cache pnpm store (${{ matrix.os }})
@@ -528,8 +600,8 @@ jobs:
 
   record-mobile:
     name: Record verified mobile fingerprint
-    needs: [changes, mobile]
-    if: ${{ !cancelled() && github.event_name != 'merge_group' && needs.changes.outputs.mobile_verified != 'true' && contains(fromJSON('["success","skipped"]'), needs.mobile.result) }}
+    needs: [changes, mobile-prepare, mobile]
+    if: ${{ !cancelled() && github.event_name != 'merge_group' && needs.changes.outputs.mobile_verified != 'true' && contains(fromJSON('["success","skipped"]'), needs.mobile.result) && needs.mobile-prepare.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Write marker
