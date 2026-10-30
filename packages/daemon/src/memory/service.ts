@@ -212,6 +212,7 @@ export class MemoryService {
           status: "idle",
         });
       }
+      void this.runtime().catch(() => undefined);
     })();
     return this.startupPromise;
   }
