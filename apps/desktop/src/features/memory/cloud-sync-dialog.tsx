@@ -179,7 +179,13 @@ export function CloudSyncDialog({
       toast.success(t("cloud.connected"));
       onClose();
     } catch (failure) {
-      setError(errorMessage(failure));
+      const message = errorMessage(failure);
+      if (mode === "register" && /already registered/i.test(message)) {
+        setMode("signin");
+        setError(t("cloud.alreadyRegistered"));
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }

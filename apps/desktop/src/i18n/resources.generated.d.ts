@@ -1100,6 +1100,7 @@ export default interface Resources {
   };
   memory: {
     cloud: {
+      alreadyRegistered: "That username is already registered. Enter its password and recovery key to sign in.";
       cancel: "Cancel";
       connected: "Multi-device sync is on";
       copyRecoveryKey: "Copy recovery key";

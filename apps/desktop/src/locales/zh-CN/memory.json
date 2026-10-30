@@ -1,5 +1,6 @@
 {
   "cloud": {
+    "alreadyRegistered": "该用户名已被注册。请输入它的登录密码和恢复密钥来登录。",
     "cancel": "取消",
     "connected": "多设备同步已开启",
     "copyRecoveryKey": "复制恢复密钥",
@@ -73,11 +74,13 @@
     },
     "cloud": {
       "cancel": "取消",
+      "conflicts_one": "{{count}} 个冲突",
       "conflicts_other": "{{count}} 个冲突",
       "description": "打开后会创建或连接 rsrs 账号，并在多台设备之间同步加密记忆。默认关闭：打开之前不会有任何数据离开这台设备。",
       "needsMemory": "请先开启记忆。",
       "needsRsrs": "rsrs 尚未安装。",
       "offline": "这台设备当前离线。",
+      "pending_one": "{{count}} 条记忆待上传",
       "pending_other": "{{count}} 条记忆待上传",
       "recoveryKey": "恢复密钥",
       "signedOut": "已退出云端记忆",
@@ -88,9 +91,7 @@
       "syncFailed": "同步失败：{{error}}",
       "syncing": "正在同步…",
       "title": "多设备同步",
-      "toggleFailed": "无法修改多设备同步",
-      "conflicts_one": "{{count}} 个冲突",
-      "pending_one": "{{count}} 条记忆待上传"
+      "toggleFailed": "无法修改多设备同步"
     },
     "cloudTitle": "云端同步",
     "connectionTitle": "连接",
