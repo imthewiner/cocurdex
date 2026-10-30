@@ -30,7 +30,7 @@ import {
   AppDropdownTriggerLabel,
 } from "@/components";
 import { DropdownMenuGroup, DropdownMenuSeparator } from "@/components/ui";
-import { CloudSyncDialog } from "@/features/memory";
+import { CloudSyncDialog } from "@/features/memory/cloud";
 import { MemoryMenuItem } from "@/features/memory/menu";
 import {
   AgentSelect,
