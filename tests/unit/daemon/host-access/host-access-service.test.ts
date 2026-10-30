@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const local = { kind: "local" } as const;
 
-async function setup() {
+async function setup(options: { remoteAccessAllowed?: boolean } = {}) {
   const settings = new Map<string, string>();
   let now = new Date("2026-10-11T00:00:00.000Z");
   const service = new HostAccessService({
@@ -18,6 +18,7 @@ async function setup() {
     },
     hostName: () => "studio",
     now: () => now,
+    ...options,
   });
   await service.initialize();
   return {
@@ -214,5 +215,40 @@ describe("HostAccessService", () => {
     expect(service.listAudit(10).map((entry) => entry.action)).toEqual([
       "remote.enabled",
     ]);
+  });
+
+  it("never listens, enables remote access, or pairs when the build disables it", async () => {
+    const { service, settings } = await setup({ remoteAccessAllowed: false });
+    settings.set(
+      "host.remoteAccess",
+      JSON.stringify({ enabled: true, port: 50_000 }),
+    );
+    const applied: unknown[] = [];
+    service.bindRemoteListener({
+      apply: async (next) => {
+        applied.push(next);
+        return { listening: true, error: null };
+      },
+      state: () => ({ listening: false, error: null }),
+    });
+
+    await service.startRemoteListener();
+    await expect(
+      service.setRemoteAccess({ enabled: true, port: 50_000 }, local),
+    ).rejects.toThrow("Remote access is disabled in this build");
+    expect(() =>
+      service.createPairing({ label: "Phone", scopes: ["read"] }, local),
+    ).toThrow("Remote access is disabled in this build");
+
+    expect(applied).toEqual([]);
+    expect(service.listPairings()).toEqual([]);
+    expect(service.listAudit(10)).toEqual([]);
+    expect(await service.remoteAccessStatus()).toEqual({
+      allowed: false,
+      settings: { enabled: false, port: 50_000 },
+      listening: false,
+      addresses: [],
+      error: null,
+    });
   });
 });

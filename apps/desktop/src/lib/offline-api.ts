@@ -581,12 +581,14 @@ export const offlineApi: DesktopApi = {
   }),
   getMemoryPolicy: async () => "",
   getHostRemoteAccess: async () => ({
+    allowed: true,
     settings: { enabled: false, port: DEFAULT_REMOTE_ACCESS_PORT },
     listening: false,
     addresses: [],
     error: null,
   }),
   setHostRemoteAccess: async (settings) => ({
+    allowed: true,
     settings,
     listening: false,
     addresses: [],

@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
   push:
     branches:
       - main
@@ -73,11 +75,15 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          QUEUE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             base="${PR_BASE_SHA}"
             head="${PR_HEAD_SHA}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
+            base="${QUEUE_BASE_SHA}"
+            head="${GITHUB_SHA}"
           else
             base="${PUSH_BEFORE_SHA}"
             head="${GITHUB_SHA}"
@@ -111,7 +117,7 @@ jobs:
             mobile_affected=true
           fi
 
-          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" != "push" ]]; then
             run_desktop="${desktop_affected}"
             mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
           else
@@ -191,7 +197,7 @@ jobs:
         shell: bash
         run: find .turbo/cache -type f -mtime +7 -delete 2>/dev/null || true
       - name: Upload turbo cache
-        if: ${{ !cancelled() && hashFiles('.turbo/cache/**') != '' }}
+        if: ${{ !cancelled() && github.event_name != 'merge_group' && hashFiles('.turbo/cache/**') != '' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .turbo/cache
@@ -289,7 +295,7 @@ jobs:
         shell: bash
         run: find .turbo/cache -type f -mtime +7 -delete 2>/dev/null || true
       - name: Upload turbo cache
-        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' && hashFiles('.turbo/cache/**') != '' }}
+        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' && github.event_name != 'merge_group' && hashFiles('.turbo/cache/**') != '' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .turbo/cache
@@ -351,7 +357,7 @@ jobs:
         if: steps.native.outputs.cache-hit != 'true'
         run: pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} --out "${NATIVE_DIR}"
       - name: Save native app
-        if: steps.native.outputs.cache-hit != 'true'
+        if: steps.native.outputs.cache-hit != 'true' && github.event_name != 'merge_group'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ${{ env.NATIVE_DIR }}

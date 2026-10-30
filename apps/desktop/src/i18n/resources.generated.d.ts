@@ -3256,7 +3256,7 @@ export default interface Resources {
         downloadingWithPercent: "Downloading version {{version}}… {{percent}}%";
         error: "Could not check for updates. {{message}}";
         ready: "Version {{version}} is downloaded and ready to install.";
-        unsupported: "Automatic updates are available in the packaged app.";
+        unsupported: "Automatic updates are off for this build.";
         upToDate: "You're up to date.";
       };
       title: "Version";

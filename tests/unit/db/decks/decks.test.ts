@@ -9,9 +9,11 @@ const tempDirs = createTempDirs();
 afterAll(() => tempDirs.cleanup());
 
 function createTestDatabase() {
-  return createCocurdexDatabase(
+  const database = createCocurdexDatabase(
     path.join(tempDirs.createSync("cocurdex-decks-"), "cocurdex.sqlite"),
   );
+  tempDirs.onCleanup(() => database.close());
+  return database;
 }
 
 function deckWith(titles: string[]): DeckContent {

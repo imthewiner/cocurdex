@@ -10,6 +10,7 @@ export * from "./agent-versions";
 export * from "./assistant-session";
 export * from "./attachment-http";
 export type { BrowserTab, BrowserTabsSnapshot } from "./browser-tabs";
+export * from "./build-policy";
 export * from "./chat-elapsed";
 export * from "./chat-jump-button";
 export * from "./chat-prompt-anchor";

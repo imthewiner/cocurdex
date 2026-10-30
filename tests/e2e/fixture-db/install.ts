@@ -66,6 +66,11 @@ export async function installFixtureDb(input: {
       installedWorkspaces,
     };
   } finally {
-    await rm(built, { recursive: true, force: true });
+    await rm(built, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100,
+    });
   }
 }

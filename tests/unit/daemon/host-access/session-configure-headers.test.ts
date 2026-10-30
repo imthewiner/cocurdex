@@ -70,6 +70,7 @@ async function setup() {
     runtimeFingerprint: "configure-headers-test",
     userDataPath: tempDirs.createSync("configure-headers-"),
   });
+  tempDirs.onCleanup(() => service.shutdown());
   const snapshots = new Map<string, AgentProviderSnapshot>();
   for (const [id, key] of [
     ["gateway", "sk-gateway"],
