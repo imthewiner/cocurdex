@@ -349,12 +349,6 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Boot iOS simulator
-        if: matrix.platform == 'ios'
-        run: |
-          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
-          xcrun simctl boot "${udid}"
-          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Fingerprint native app
         id: fingerprint
         working-directory: tests/mobile
@@ -397,6 +391,12 @@ jobs:
           cp -R "${NATIVE_DIR}" "${APP_DIR}"
       - name: Build bundled daemon
         run: pnpm --filter @cocurdex/desktop prepare:cli
+      - name: Boot iOS simulator
+        if: matrix.platform == 'ios'
+        run: |
+          udid="$(xcrun simctl create cocurdex-ci "${IOS_DEVICE_TYPE}")"
+          xcrun simctl boot "${udid}"
+          echo "IOS_DEVICE=${udid}" >> "${GITHUB_ENV}"
       - name: Install Maestro
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
