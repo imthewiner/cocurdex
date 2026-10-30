@@ -27,8 +27,11 @@ jobs:
       actions: read
       contents: read
     outputs:
-      run_desktop: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_desktop || 'false' }}
+      run_native: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_native || 'false' }}
+      run_linux: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_linux || 'false' }}
       run_mobile: ${{ (github.event_name == 'push' || steps.verified.outputs.hit != 'true') && steps.scope.outputs.run_mobile || 'false' }}
+      affected: ${{ steps.scope.outputs.affected }}
+      scm_base: ${{ steps.scope.outputs.base }}
       mobile_runs: ${{ steps.scope.outputs.mobile_runs }}
       verified: ${{ steps.verified.outputs.hit == 'true' }}
       verified_key: ${{ steps.fingerprint.outputs.key }}
@@ -70,64 +73,55 @@ jobs:
           node-version: 24
       - name: Install workspace tools
         run: pnpm install --frozen-lockfile --filter @cocurdex/workspace
-      - name: Detect affected packages
+      - name: Detect affected tasks
         id: scope
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           QUEUE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            base="${PR_BASE_SHA}"
-            head="${PR_HEAD_SHA}"
-          elif [[ "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
-            base="${QUEUE_BASE_SHA}"
-            head="${GITHUB_SHA}"
-          else
-            base="${PUSH_BEFORE_SHA}"
-            head="${GITHUB_SHA}"
-          fi
+          case "${GITHUB_EVENT_NAME}" in
+            pull_request) base="${PR_BASE_SHA}" ;;
+            merge_group) base="${QUEUE_BASE_SHA}" ;;
+            *) base="${PUSH_BEFORE_SHA}" ;;
+          esac
 
-          everything=false
+          comparable=false
+          if [[ -n "${base}" && ! "${base}" =~ ^0+$ ]] && git cat-file -e "${base}^{commit}" 2>/dev/null &&
+            ! git diff --name-only "${base}...${GITHUB_SHA}" | grep -q '^[.]github/'; then
+            comparable=true
+          fi
           affected=""
-          if [[ -z "${base}" || "${base}" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            everything=true
-          else
-            if git diff --name-only "${base}...${head}" | grep -q '^[.]github/'; then
-              everything=true
-            fi
-            affected="$(TURBO_SCM_BASE="${base}" TURBO_SCM_HEAD="${head}" \
-              pnpm exec turbo ls --affected --output=json | jq -r '.packages.items[].name')"
-          fi
-          echo "Affected packages:"
-          echo "${affected:-(none)}"
-
-          mobile_only='^@cocurdex/(console|mobile|mobile-e2e|unit-mobile)$'
-          desktop_affected=false
-          if grep -v -E "${mobile_only}" <<< "${affected}" | grep -q .; then
-            desktop_affected=true
-          fi
-          mobile_affected=false
-          if grep -qx '@cocurdex/mobile-e2e' <<< "${affected}"; then
-            mobile_affected=true
-          fi
-          if [[ "${everything}" == "true" ]]; then
-            desktop_affected=true
-            mobile_affected=true
+          if [[ "${comparable}" == "true" && "${GITHUB_EVENT_NAME}" != "push" ]]; then
+            affected=true
           fi
 
-          if [[ "${GITHUB_EVENT_NAME}" != "push" ]]; then
-            run_desktop="${desktop_affected}"
-            mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
-          else
-            run_desktop=true
+          export TURBO_SCM_BASE="${base}" TURBO_SCM_HEAD="${GITHUB_SHA}"
+          selected() {
+            pnpm exec turbo run "$@" ${affected:+--affected} --dry=json |
+              jq '[.tasks[] | select(.command != "<NONEXISTENT>")] | length > 0'
+          }
+          run_native="$(selected test test:desktop)"
+          run_linux="$(selected test:desktop test:ui check:startup-bundle)"
+          run_mobile=true
+          if [[ "${comparable}" == "true" ]]; then
+            run_mobile="$(pnpm exec turbo ls --affected --output=json |
+              jq '[.packages.items[].name] | index("@cocurdex/mobile-e2e") != null')"
+          fi
+          echo "native=${run_native} linux=${run_linux} mobile=${run_mobile} affected=${affected:-all}"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"ios","run":"dark-zh-CN"},{"platform":"android","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
+          else
+            mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
           fi
           {
-            echo "run_desktop=${run_desktop}"
-            echo "run_mobile=${mobile_affected}"
+            echo "run_native=${run_native}"
+            echo "run_linux=${run_linux}"
+            echo "run_mobile=${run_mobile}"
             echo "mobile_runs=${mobile_runs}"
+            echo "affected=${affected}"
+            echo "base=${base}"
           } >> "${GITHUB_OUTPUT}"
 
   workspace:
@@ -136,9 +130,16 @@ jobs:
     if: needs.changes.outputs.verified != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TURBO_SCM_BASE: ${{ needs.changes.outputs.scm_base }}
+      TURBO_SCM_HEAD: ${{ github.sha }}
+      AFFECTED: ${{ needs.changes.outputs.affected }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - name: Setup pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - name: Setup Node
@@ -156,10 +157,10 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
           restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
       - name: Typecheck and test
-        run: pnpm exec turbo run typecheck test --filter "!@cocurdex/e2e" --concurrency 4 --continue
+        run: pnpm exec turbo run typecheck test --filter "!@cocurdex/e2e" ${AFFECTED:+--affected} --concurrency 4 --continue
       - name: Test e2e
         if: ${{ !cancelled() }}
-        run: pnpm exec turbo run test --filter @cocurdex/e2e
+        run: pnpm exec turbo run test --filter @cocurdex/e2e ${AFFECTED:+--affected}
       - name: Check design tokens
         run: pnpm lint:design-tokens
       - name: Check theme parity
@@ -206,7 +207,7 @@ jobs:
   desktop:
     name: Desktop (${{ matrix.os }})
     needs: changes
-    runs-on: ${{ needs.changes.outputs.run_desktop == 'true' && matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -215,75 +216,74 @@ jobs:
           - macos-latest
           - windows-latest
           - ubuntu-latest
+    env:
+      RUN: ${{ (matrix.os == 'ubuntu-latest' && needs.changes.outputs.run_linux) || (matrix.os != 'ubuntu-latest' && needs.changes.outputs.run_native) || 'false' }}
+      TURBO_SCM_BASE: ${{ needs.changes.outputs.scm_base }}
+      TURBO_SCM_HEAD: ${{ github.sha }}
+      AFFECTED: ${{ needs.changes.outputs.affected }}
+      NODE_OPTIONS: --max-old-space-size=6144
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
-        if: needs.changes.outputs.run_desktop == 'true'
+        if: env.RUN == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - name: Setup pnpm
-        if: needs.changes.outputs.run_desktop == 'true'
+        if: env.RUN == 'true'
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - name: Setup Node
-        if: needs.changes.outputs.run_desktop == 'true'
+        if: env.RUN == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 24
       - name: Restore pnpm store
-        if: needs.changes.outputs.run_desktop == 'true'
+        if: env.RUN == 'true'
         uses: ./.github/actions/restore-pnpm-store
       - name: Install native build tools
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
+        if: env.RUN == 'true' && runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3 make g++
       - name: Install dependencies
-        if: needs.changes.outputs.run_desktop == 'true'
+        if: env.RUN == 'true'
         run: pnpm install --frozen-lockfile
       - name: Restore turbo cache
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
+        if: env.RUN == 'true' && runner.os != 'Linux'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
           restore-keys: turbo-${{ runner.os }}-${{ github.job }}-
-      - name: Test all packages
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
-        run: pnpm exec turbo run test --filter "!@cocurdex/e2e" --concurrency 4 --continue
+      - name: Test packages
+        if: env.RUN == 'true' && runner.os != 'Linux'
+        run: pnpm exec turbo run test --filter "!@cocurdex/e2e" ${AFFECTED:+--affected} --concurrency 4 --continue
       - name: Test e2e
-        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' }}
-        run: pnpm exec turbo run test --filter @cocurdex/e2e
+        if: ${{ !cancelled() && env.RUN == 'true' && runner.os != 'Linux' }}
+        run: pnpm exec turbo run test --filter @cocurdex/e2e ${AFFECTED:+--affected}
         env:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
-      - name: Build desktop
-        if: needs.changes.outputs.run_desktop == 'true'
-        run: pnpm --filter @cocurdex/desktop build
-        env:
-          NODE_OPTIONS: --max-old-space-size=6144
-      - name: Test built desktop startup
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux'
-        run: pnpm --filter @cocurdex/e2e test:desktop
-        env:
-          COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
-      - name: Test built desktop startup on Linux
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
-        run: xvfb-run -a pnpm --filter @cocurdex/e2e test:desktop
+      - name: Test built desktop
+        if: ${{ !cancelled() && env.RUN == 'true' && runner.os != 'Linux' }}
+        run: pnpm exec turbo run test:desktop ${AFFECTED:+--affected}
         env:
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
       - name: Configure Electron sandbox
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
+        if: env.RUN == 'true' && runner.os == 'Linux'
         working-directory: apps/desktop
         run: |
           sandbox="$(node -p "require('node:path').join(require('node:path').dirname(require.resolve('electron')), 'dist', 'chrome-sandbox')")"
           sudo chown root:root "$sandbox"
           sudo chmod 4755 "$sandbox"
-      - name: Test desktop UI scenarios
-        if: needs.changes.outputs.run_desktop == 'true' && runner.os == 'Linux'
-        run: xvfb-run -a pnpm test:ui
+      - name: Test built desktop and UI scenarios
+        if: env.RUN == 'true' && runner.os == 'Linux'
+        run: xvfb-run -a pnpm exec turbo run test:desktop test:ui check:startup-bundle ${AFFECTED:+--affected} --concurrency 1 --continue
         env:
           COCURDEX_SCENARIO_RENDERER: built
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/desktop-tests
-      - name: Check startup bundle budget
-        if: needs.changes.outputs.run_desktop == 'true'
-        run: pnpm --filter @cocurdex/desktop check:startup-bundle
       - name: Upload desktop test artifacts
-        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' }}
+        if: ${{ !cancelled() && env.RUN == 'true' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: desktop-tests-${{ matrix.os }}
@@ -291,11 +291,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Prune turbo cache
-        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' }}
+        if: ${{ !cancelled() && env.RUN == 'true' && runner.os != 'Linux' }}
         shell: bash
         run: find .turbo/cache -type f -mtime +7 -delete 2>/dev/null || true
       - name: Upload turbo cache
-        if: ${{ !cancelled() && needs.changes.outputs.run_desktop == 'true' && runner.os != 'Linux' && github.event_name != 'merge_group' && hashFiles('.turbo/cache/**') != '' }}
+        if: ${{ !cancelled() && env.RUN == 'true' && runner.os != 'Linux' && github.event_name != 'merge_group' && hashFiles('.turbo/cache/**') != '' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .turbo/cache
@@ -533,7 +533,7 @@ jobs:
   record:
     name: Record verified fingerprint
     needs: [changes, workspace, desktop, mobile-app, mobile]
-    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' && needs.mobile-app.result != 'failure' && needs.mobile.result != 'failure' && needs.changes.outputs.run_desktop == 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.verified != 'true' && needs.workspace.result == 'success' && needs.desktop.result == 'success' && needs.mobile-app.result != 'failure' && needs.mobile.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Write marker
