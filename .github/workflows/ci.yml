@@ -301,7 +301,7 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
 
   mobile-prepare:
-    name: Mobile app
+    name: Mobile app (${{ matrix.platform }})
     needs: changes
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ubuntu-latest
@@ -309,11 +309,10 @@ jobs:
     permissions:
       actions: write
       contents: read
-    outputs:
-      ios_hash: ${{ steps.fingerprint.outputs.ios }}
-      android_hash: ${{ steps.fingerprint.outputs.android }}
-      ios_ready: ${{ steps.ios.outputs.cache-hit }}
-      android_ready: ${{ steps.android.outputs.cache-hit }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -332,59 +331,49 @@ jobs:
         uses: ./.github/actions/restore-pnpm-store
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Fingerprint native apps
+      - name: Fingerprint native app
         id: fingerprint
         working-directory: tests/mobile
-        run: |
-          for platform in ios android; do
-            echo "${platform}=$(node --import tsx app.ts fingerprint --platform "${platform}")" >> "${GITHUB_OUTPUT}"
-          done
-      - name: Restore iOS native app
-        id: ios
+        run: echo "hash=$(node --import tsx app.ts fingerprint --platform ${{ matrix.platform }})" >> "${GITHUB_OUTPUT}"
+      - name: Restore native app
+        id: native
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: .mobile-native/ios
-          key: mobile-native-v2-ios-${{ steps.fingerprint.outputs.ios }}
-      - name: Restore Android native app
-        id: android
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: .mobile-native/android
-          key: mobile-native-v2-android-${{ steps.fingerprint.outputs.android }}
+          path: .mobile-native/${{ matrix.platform }}
+          key: mobile-native-v2-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
       - name: Delete older native apps
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-          KEEP_IOS: mobile-native-v2-ios-${{ steps.fingerprint.outputs.ios }}
-          KEEP_ANDROID: mobile-native-v2-android-${{ steps.fingerprint.outputs.android }}
+          KEEP: mobile-native-v2-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
         run: |
           gh cache list --repo "${GITHUB_REPOSITORY}" --ref "${GITHUB_REF}" \
             --key "mobile-native-" --limit 100 --json id,key \
-            --jq ".[] | select(.key != \"${KEEP_IOS}\" and .key != \"${KEEP_ANDROID}\") | .id" |
+            --jq ".[] | select(.key != \"${KEEP}\" and (.key | contains(\"-${{ matrix.platform }}-\"))) | .id" |
             while read -r id; do gh cache delete "${id}" --repo "${GITHUB_REPOSITORY}"; done
-      - name: Repack current JavaScript
+      - name: Repack app and bundle daemon
         env:
-          READY_IOS: ${{ steps.ios.outputs.cache-hit }}
-          READY_ANDROID: ${{ steps.android.outputs.cache-hit }}
+          READY: ${{ steps.native.outputs.cache-hit }}
         run: |
-          for platform in ios android; do
-            ready="READY_${platform^^}"
-            [[ "${!ready}" == "true" ]] || continue
-            native="${PWD}/.mobile-native/${platform}"
-            out="${RUNNER_TEMP}/mobile-app/${platform}"
-            pnpm --filter @cocurdex/mobile-e2e app -- repack --platform "${platform}" \
+          mkdir -p "${RUNNER_TEMP}/mobile-upload"
+          (
+            pnpm --filter @cocurdex/desktop prepare:cli
+            tar -czf "${RUNNER_TEMP}/mobile-upload/mobile-cli.tgz" -C apps/desktop/resources cli skills
+          ) &
+          daemon=$!
+          if [[ "${READY}" == "true" ]]; then
+            native="${PWD}/.mobile-native/${{ matrix.platform }}"
+            out="${RUNNER_TEMP}/mobile-app"
+            pnpm --filter @cocurdex/mobile-e2e app -- repack --platform ${{ matrix.platform }} \
               --source "${native}/$(ls "${native}")" --out "${out}"
-            tar -czf "${RUNNER_TEMP}/mobile-app-${platform}.tgz" -C "${out}" .
-          done
-      - name: Build bundled daemon
-        run: |
-          pnpm --filter @cocurdex/desktop prepare:cli
-          tar -czf "${RUNNER_TEMP}/mobile-cli.tgz" -C apps/desktop/resources cli skills
+            tar -czf "${RUNNER_TEMP}/mobile-upload/mobile-app.tgz" -C "${out}" .
+          fi
+          wait "${daemon}"
       - name: Upload mobile app
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: mobile-app
-          path: ${{ runner.temp }}/mobile-*.tgz
+          name: mobile-app-${{ matrix.platform }}
+          path: ${{ runner.temp }}/mobile-upload
           compression-level: 0
           retention-days: 1
 
@@ -412,8 +401,6 @@ jobs:
       MAESTRO_VERSION: 2.11.0
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
       IOS_DEVICE_TYPE: iPhone 16 Pro
-      READY: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_ready || needs.mobile-prepare.outputs.android_ready }}
-      HASH: ${{ matrix.platform == 'ios' && needs.mobile-prepare.outputs.ios_hash || needs.mobile-prepare.outputs.android_hash }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -441,29 +428,37 @@ jobs:
       - name: Download mobile app
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: mobile-app
+          name: mobile-app-${{ matrix.platform }}
           path: ${{ runner.temp }}/mobile-download
-      - name: Unpack bundled daemon
-        run: tar -xzf "${RUNNER_TEMP}/mobile-download/mobile-cli.tgz" -C apps/desktop/resources
-      - name: Unpack repacked app
-        if: env.READY == 'true'
+      - name: Unpack app and daemon
+        id: unpack
         run: |
-          app_dir="${RUNNER_TEMP}/mobile-app"
-          mkdir -p "${app_dir}"
-          tar -xzf "${RUNNER_TEMP}/mobile-download/mobile-app-${{ matrix.platform }}.tgz" -C "${app_dir}"
-          echo "APP_DIR=${app_dir}" >> "${GITHUB_ENV}"
+          download="${RUNNER_TEMP}/mobile-download"
+          tar -xzf "${download}/mobile-cli.tgz" -C apps/desktop/resources
+          if [[ -f "${download}/mobile-app.tgz" ]]; then
+            app_dir="${RUNNER_TEMP}/mobile-app"
+            mkdir -p "${app_dir}"
+            tar -xzf "${download}/mobile-app.tgz" -C "${app_dir}"
+            echo "APP_DIR=${app_dir}" >> "${GITHUB_ENV}"
+            echo "ready=true" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Fingerprint native app
+        id: fingerprint
+        if: steps.unpack.outputs.ready != 'true'
+        working-directory: tests/mobile
+        run: echo "hash=$(node --import tsx app.ts fingerprint --platform ${{ matrix.platform }})" >> "${GITHUB_OUTPUT}"
       - name: Build native app
-        if: env.READY != 'true'
+        if: steps.unpack.outputs.ready != 'true'
         run: |
           pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} \
             --out "${PWD}/.mobile-native/${{ matrix.platform }}"
           echo "APP_DIR=${PWD}/.mobile-native/${{ matrix.platform }}" >> "${GITHUB_ENV}"
       - name: Save native app
-        if: env.READY != 'true' && github.event_name != 'merge_group'
+        if: steps.unpack.outputs.ready != 'true' && github.event_name != 'merge_group'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .mobile-native/${{ matrix.platform }}
-          key: mobile-native-v2-${{ matrix.platform }}-${{ env.HASH }}
+          key: mobile-native-v2-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
       - name: Install Maestro
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -484,6 +479,9 @@ jobs:
           yes | "${tools}/sdkmanager" --licenses > /dev/null
           "${tools}/sdkmanager" emulator platform-tools "${ANDROID_SYSTEM_IMAGE}"
           echo no | "${tools}/avdmanager" create avd --force --name cocurdex-ci --package "${ANDROID_SYSTEM_IMAGE}" --device pixel_6
+      - name: Wait for iOS simulator
+        if: matrix.platform == 'ios'
+        run: xcrun simctl bootstatus "${IOS_DEVICE}" -b
       - name: Run mobile flows
         env:
           ALL_RUNS: ${{ github.event_name == 'push' }}
