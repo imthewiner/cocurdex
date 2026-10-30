@@ -11,9 +11,11 @@ afterAll(() => tempDirs.cleanup());
 type Database = ReturnType<typeof createCocurdexDatabase>;
 
 function createDatabase() {
-  return createCocurdexDatabase(
+  const database = createCocurdexDatabase(
     path.join(tempDirs.createSync("cocurdex-db-"), "cocurdex.sqlite"),
   );
+  tempDirs.onCleanup(() => database.close());
+  return database;
 }
 
 async function seedSession(database: Database, sessionId: string) {

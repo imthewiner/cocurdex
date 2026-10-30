@@ -21,6 +21,7 @@ describe("daemon data RPC", () => {
       runtimeFingerprint: "test-runtime",
       userDataPath: tempDirs.createSync("cocurdex-daemon-bad-"),
     });
+    tempDirs.onCleanup(() => service.shutdown());
     const request = (params: unknown) =>
       handleDaemonRequest<"note.create">(service, {
         id: "1",
@@ -49,6 +50,7 @@ describe("daemon data RPC", () => {
       runtimeFingerprint: "test-runtime",
       userDataPath: tempDirs.createSync("cocurdex-daemon-data-"),
     });
+    tempDirs.onCleanup(() => service.shutdown());
     const events: unknown[] = [];
     service.events.on("daemon.event", (event) => events.push(event));
 
@@ -83,6 +85,7 @@ describe("daemon data RPC", () => {
       runtimeFingerprint: "test-runtime",
       userDataPath: tempDirs.createSync("cocurdex-daemon-doc-"),
     });
+    tempDirs.onCleanup(() => service.shutdown());
     const note = await handleDaemonRequest<"note.create">(service, {
       id: "1",
       method: "note.create",
@@ -127,6 +130,7 @@ describe("daemon data RPC", () => {
       runtimeFingerprint: "test-runtime",
       userDataPath: tempDirs.createSync("cocurdex-daemon-issue-"),
     });
+    tempDirs.onCleanup(() => service.shutdown());
     const events: unknown[] = [];
     await handleDaemonRequest<"issue.create">(service, {
       id: "1",

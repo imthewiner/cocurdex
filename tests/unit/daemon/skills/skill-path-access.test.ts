@@ -39,6 +39,7 @@ async function setup() {
     runtimeFingerprint: "skill-access-test",
     userDataPath,
   });
+  tempDirs.onCleanup(() => service.shutdown());
   await service.saveWorkspace({
     id: "workspace-1",
     name: "acme-shop",
