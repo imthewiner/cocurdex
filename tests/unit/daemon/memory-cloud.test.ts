@@ -56,7 +56,7 @@ const statusSummary = (state) => ({
     data_dir: "/tmp/rsrs",
     server_addr: "https://api.rsrs.rs",
     autosync: state.autosync === true,
-    offline: false,
+    offline: state.offline === true,
     remote_configured: true,
     session: {
       user: state.user ?? "local",
@@ -398,5 +398,26 @@ describe("MemoryService cloud sync", () => {
     const status = await service.getStatus(true);
     expect(status.cloud.connected).toBe(false);
     expect(status.cloud.user).toBe("alice");
+  });
+
+  it("keeps the account connected while the device is offline", async () => {
+    const { service, statePath } = await createService();
+    await writeFile(
+      statePath,
+      JSON.stringify({
+        user: "alice",
+        hasToken: true,
+        autosync: true,
+        offline: true,
+      }),
+      "utf8",
+    );
+    const status = await service.getStatus(true);
+    expect(status.cloud).toMatchObject({
+      connected: true,
+      offline: true,
+      user: "alice",
+      autosync: true,
+    });
   });
 });

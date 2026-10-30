@@ -126,7 +126,7 @@ function errorMessage(error: unknown) {
 function toCloudStatus(summary: RsrsCloudSummary | null): MemoryCloudStatus {
   if (!summary) return { ...DEFAULT_MEMORY_CLOUD_STATUS };
   const user = summary.account;
-  const connected = summary.hasToken && Boolean(user) && !summary.offline;
+  const connected = summary.hasToken && Boolean(user);
   return {
     connected,
     user,
