@@ -5,7 +5,7 @@ import {
   getUtf16RangeFromByteOffsets,
 } from "@cocurdex/daemon/internal/search-service";
 import type { WorkspaceSearchDaemonEvent } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

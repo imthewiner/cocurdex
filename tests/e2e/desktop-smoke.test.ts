@@ -6,7 +6,7 @@ import { killProcessTree } from "@cocurdex/agent-adapters";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { getDaemonMetadataPath } from "@cocurdex/daemon/paths";
 import type { DaemonMetadata } from "@cocurdex/rpc";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import {
   type ElectronApplication,
   _electron as electron,

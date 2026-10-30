@@ -23,6 +23,34 @@
     "test": {
       "dependsOn": ["transit"],
       "outputs": []
+    },
+    "@cocurdex/desktop#build": {
+      "dependsOn": ["transit"],
+      "cache": false
+    },
+    "@cocurdex/desktop#check:startup-bundle": {
+      "dependsOn": ["@cocurdex/desktop#build"],
+      "cache": false
+    },
+    "@cocurdex/e2e#test:desktop": {
+      "dependsOn": ["@cocurdex/desktop#build"],
+      "cache": false,
+      "inputs": [
+        "desktop-smoke.test.ts",
+        "vitest.desktop.config.ts",
+        "helpers/**"
+      ]
+    },
+    "@cocurdex/scenarios#test:ui": {
+      "dependsOn": ["@cocurdex/desktop#build"],
+      "cache": false,
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.agents/skills/debug-desktop/scripts/**"
+      ]
     }
+  },
+  "futureFlags": {
+    "affectedUsingTaskInputs": true
   }
 }

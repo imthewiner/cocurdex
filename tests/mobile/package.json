@@ -16,6 +16,7 @@
     "@cocurdex/shared": "workspace:*"
   },
   "devDependencies": {
+    "@cocurdex/test-fixtures": "workspace:*",
     "@expo/fingerprint": "~0.21.6",
     "@expo/repack-app": "^0.10.4",
     "@types/node": "^24.19.2",

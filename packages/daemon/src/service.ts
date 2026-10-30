@@ -145,6 +145,7 @@ import {
   ProviderCredentials,
   ProviderLoginSessions,
 } from "./provider-credentials";
+import { SLOW_REQUEST_THRESHOLD_MS } from "./rpc-request-log";
 import { AgentRuntimeManager, type RuntimePersistence } from "./runtime";
 import { createWorkspaceScanPolicy } from "./scan-roots";
 import { ScriptRunModule } from "./script-run";
@@ -635,7 +636,7 @@ export class CocurdexDaemonService {
   }
 
   private async agentSupportsSteering(session: SessionRecord) {
-    const agents = await this.listAgents();
+    const agents = await this.listAgents(session.agentType);
     const agent = agents.find((item) => item.id === session.agentType);
     return agent?.capabilities.supportsSteering ?? false;
   }
@@ -789,8 +790,11 @@ export class CocurdexDaemonService {
     };
   }
 
-  async listAgents() {
-    const agents = await detectAgentInstallations(createAgentRegistry().list());
+  async listAgents(only?: AgentId) {
+    const descriptors = createAgentRegistry()
+      .list()
+      .filter((descriptor) => !only || descriptor.id === only);
+    const agents = await detectAgentInstallations(descriptors);
     this.state.recordAgentVersions(agents);
     return discoverInstalledAgentCapabilities(agents, {
       cache: this.state.agentCapabilityCache,
@@ -1742,7 +1746,7 @@ export class CocurdexDaemonService {
   ) {
     const session = await this.state.getSession(input.sessionId);
     if (!session) throw new Error(`Session ${input.sessionId} was not found.`);
-    const agent = (await this.listAgents()).find(
+    const agent = (await this.listAgents(session.agentType)).find(
       (candidate) => candidate.id === session.agentType,
     );
     const configuration = resolveRuntimeUpdate(session, input, {
@@ -2253,7 +2257,9 @@ export class CocurdexDaemonService {
     command: SendSessionCommand,
     { hold = false } = {},
   ) {
+    const submittedAt = performance.now();
     return this.sessionCommands.run(command.sessionId, async () => {
+      const startedAt = performance.now();
       const existing = await this.state.getMessageById(command.messageId);
       if (existing) return resolveRepeatedSend(existing, command);
       const accepted = await this.acceptSessionMessage(command, { hold });
@@ -2261,6 +2267,14 @@ export class CocurdexDaemonService {
         command.sessionId,
         command.attachments,
       );
+      const acceptedAt = performance.now();
+      if (acceptedAt - submittedAt >= SLOW_REQUEST_THRESHOLD_MS) {
+        logDaemonDiagnostic("warn", "session.sendSlow", {
+          sessionId: command.sessionId,
+          queuedMs: Math.round(startedAt - submittedAt),
+          acceptMs: Math.round(acceptedAt - startedAt),
+        });
+      }
       return accepted;
     });
   }
@@ -2784,7 +2798,7 @@ export class CocurdexDaemonService {
   }
 
   private async ensureAgentAvailable(agentId: AgentId) {
-    const agents = await this.listAgents();
+    const agents = await this.listAgents(agentId);
     const agent = agents.find((item) => item.id === agentId);
 
     if (agent?.availability === "available") {

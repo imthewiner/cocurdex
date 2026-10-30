@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { requestDaemon, subscribeDaemonEvents } from "@cocurdex/daemon/client";
 import { DAEMON_PROTOCOL_VERSION } from "@cocurdex/rpc";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { createDaemonRuntimeClient } from "@desktop/electron/chat/daemon-runtime-client";
 import { spawnOwnedDaemonProcess } from "@desktop/electron/chat/owned-daemon-process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

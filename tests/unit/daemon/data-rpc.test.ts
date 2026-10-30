@@ -7,7 +7,7 @@ import {
   noteDocStateVector,
 } from "@cocurdex/note-doc";
 import type { DaemonRequest } from "@cocurdex/rpc";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, describe, expect, it } from "vitest";
 import * as Y from "yjs";
 

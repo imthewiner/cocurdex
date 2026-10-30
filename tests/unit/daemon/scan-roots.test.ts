@@ -2,7 +2,7 @@ import { mkdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createWorkspaceScanPolicy } from "@cocurdex/daemon/internal/scan-roots";
 import type { DaemonState } from "@cocurdex/daemon/internal/state";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

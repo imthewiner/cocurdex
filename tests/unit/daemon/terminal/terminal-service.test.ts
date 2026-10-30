@@ -2,7 +2,7 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { TerminalService } from "@cocurdex/daemon/internal/terminal/terminal-service";
 import type { TerminalDaemonEvent } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

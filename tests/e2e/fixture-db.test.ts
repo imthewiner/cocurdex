@@ -1,7 +1,7 @@
 import path from "node:path";
 import { requestDaemon } from "@cocurdex/daemon/client";
 import { docImageUri, findDocImages } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type InstalledFixture, installFixtureDb } from "./fixture-db/install";
 import {

@@ -1,6 +1,6 @@
 import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { buildAppImageCliLauncher } from "@desktop/electron/cli-path/appimage-launcher";
 import {
   buildPathHint,

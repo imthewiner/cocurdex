@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { spawnOwnedDaemonProcess } from "@desktop/electron/chat/owned-daemon-process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

@@ -5,7 +5,7 @@ import { AgentRuntimeManager } from "@cocurdex/daemon/internal/runtime";
 import { CocurdexDaemonService } from "@cocurdex/daemon/internal/service";
 import { startDaemonServer } from "@cocurdex/daemon/internal/wire";
 import type { MessageRecord } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const tempDirs = createTempDirs();

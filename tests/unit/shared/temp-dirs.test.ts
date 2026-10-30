@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { describe, expect, it } from "vitest";
 
 describe("createTempDirs", () => {

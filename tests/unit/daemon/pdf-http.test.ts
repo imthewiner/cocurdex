@@ -8,7 +8,7 @@ import {
   parseByteRange,
 } from "@cocurdex/daemon/internal/pdf-http";
 import { buildDaemonPdfUrl, type HostPrincipal } from "@cocurdex/shared";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

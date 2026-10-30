@@ -7,7 +7,7 @@ import {
   isLoopbackHostHeader,
   resolveWebAssetPath,
 } from "@cocurdex/daemon/internal/web-assets";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();

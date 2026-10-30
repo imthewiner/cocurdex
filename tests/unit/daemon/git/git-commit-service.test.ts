@@ -4,7 +4,7 @@ import {
   commitGitChanges,
   pushGitBranch,
 } from "@cocurdex/daemon/internal/git/git-commit-service";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { simpleGit } from "simple-git";
 import { afterEach, describe, expect, it } from "vitest";
 

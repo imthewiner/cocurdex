@@ -7,7 +7,7 @@ import {
   installProductSkills,
   removeProductSkills,
 } from "@cocurdex/product-skills/internal/sync-product-skills";
-import { createTempDirs } from "@cocurdex/shared/testing";
+import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs = createTempDirs();
