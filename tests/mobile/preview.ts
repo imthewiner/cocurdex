@@ -1,7 +1,6 @@
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
-import { parseHostPairingLink } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { startAndroidTarget } from "./lib/android";
 import { buildAndroidApp } from "./lib/android-build";
@@ -9,6 +8,7 @@ import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
 import { startIosTarget } from "./lib/ios";
 import { buildIosApp } from "./lib/ios-build";
+import { pairingDeepLink } from "./lib/pairing-link";
 
 const mobileDir = path.resolve(import.meta.dirname, "../../apps/mobile");
 const { values } = parseArgs({
@@ -23,16 +23,6 @@ const { values } = parseArgs({
   },
 });
 const platform = values.platform === "android" ? "android" : "ios";
-
-function pairingDeepLink(pairingLink: string) {
-  const parsed = parseHostPairingLink(pairingLink);
-  if (!parsed) throw new Error(`Unexpected pairing link: ${pairingLink}`);
-  const query = new URLSearchParams({
-    host: parsed.baseUrl,
-    code: parsed.code,
-  });
-  return `cocurdex://pair?${query}`;
-}
 
 function untilInterrupted() {
   return new Promise<void>((resolve) => {

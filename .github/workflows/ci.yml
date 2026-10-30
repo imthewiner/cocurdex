@@ -301,17 +301,19 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.job }}-${{ github.sha }}-${{ github.run_attempt }}
 
   mobile:
-    name: Mobile e2e (${{ matrix.platform }})
+    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.flow }})
     needs: changes
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 75
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
       matrix:
+        platform: [ios, android]
+        flow: [pairing, transcript, compose, library]
         include:
           - platform: ios
             os: macos-latest
@@ -373,7 +375,7 @@ jobs:
           path: ${{ env.NATIVE_DIR }}
           key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
       - name: Delete older native apps
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.flow == 'pairing'
         env:
           GH_TOKEN: ${{ github.token }}
           KEEP: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
@@ -421,7 +423,7 @@ jobs:
           PR_RUN: ${{ matrix.pr_run }}
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/mobile-tests
         run: |
-          args=(--platform ${{ matrix.platform }} --app "${APP_DIR}/$(ls "${APP_DIR}")")
+          args=(--platform ${{ matrix.platform }} --flow ${{ matrix.flow }} --app "${APP_DIR}/$(ls "${APP_DIR}")")
           if [[ "${ALL_RUNS}" != "true" ]]; then
             args+=(--run "${PR_RUN}")
           fi
@@ -435,7 +437,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: mobile-tests-${{ matrix.platform }}
+          name: mobile-tests-${{ matrix.platform }}-${{ matrix.flow }}
           path: ${{ runner.temp }}/mobile-tests
           if-no-files-found: ignore
           retention-days: 7
