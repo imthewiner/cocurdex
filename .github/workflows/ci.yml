@@ -26,8 +26,8 @@ jobs:
       contents: read
     outputs:
       run_desktop: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_desktop || 'false' }}
-      run_mobile: ${{ steps.verified.outputs.hit != 'true' && steps.scope.outputs.run_mobile || 'false' }}
-      seed_mobile: ${{ steps.scope.outputs.seed_mobile }}
+      run_mobile: ${{ (github.event_name == 'push' || steps.verified.outputs.hit != 'true') && steps.scope.outputs.run_mobile || 'false' }}
+      mobile_runs: ${{ steps.scope.outputs.mobile_runs }}
       verified: ${{ steps.verified.outputs.hit == 'true' }}
       verified_key: ${{ steps.fingerprint.outputs.key }}
     steps:
@@ -113,17 +113,15 @@ jobs:
 
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             run_desktop="${desktop_affected}"
-            run_mobile="${mobile_affected}"
-            seed_mobile=false
+            mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
           else
             run_desktop=true
-            run_mobile=false
-            seed_mobile="${mobile_affected}"
+            mobile_runs='[{"platform":"ios","run":"light-en-US"},{"platform":"ios","run":"dark-zh-CN"},{"platform":"android","run":"light-en-US"},{"platform":"android","run":"dark-zh-CN"}]'
           fi
           {
             echo "run_desktop=${run_desktop}"
-            echo "run_mobile=${run_mobile}"
-            echo "seed_mobile=${seed_mobile}"
+            echo "run_mobile=${mobile_affected}"
+            echo "mobile_runs=${mobile_runs}"
           } >> "${GITHUB_OUTPUT}"
 
   workspace:
@@ -300,7 +298,7 @@ jobs:
   mobile-app:
     name: Mobile app (${{ matrix.platform }})
     needs: changes
-    if: needs.changes.outputs.run_mobile == 'true' || needs.changes.outputs.seed_mobile == 'true'
+    if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
@@ -349,7 +347,6 @@ jobs:
         with:
           path: ${{ env.NATIVE_DIR }}
           key: mobile-native-v1-${{ matrix.platform }}-${{ steps.fingerprint.outputs.hash }}
-          lookup-only: ${{ needs.changes.outputs.run_mobile != 'true' }}
       - name: Build native app
         if: steps.native.outputs.cache-hit != 'true'
         run: pnpm --filter @cocurdex/mobile-e2e app -- build --platform ${{ matrix.platform }} --out "${NATIVE_DIR}"
@@ -370,21 +367,19 @@ jobs:
             --jq ".[] | select(.key != \"${KEEP}\") | .id" |
             while read -r id; do gh cache delete "${id}" --repo "${GITHUB_REPOSITORY}"; done
       - name: Repack current JavaScript
-        if: needs.changes.outputs.run_mobile == 'true' && steps.native.outputs.cache-hit == 'true'
+        if: steps.native.outputs.cache-hit == 'true'
         run: |
           app="$(ls "${NATIVE_DIR}")"
           pnpm --filter @cocurdex/mobile-e2e app -- repack --platform ${{ matrix.platform }} \
             --source "${NATIVE_DIR}/${app}" --out "${APP_DIR}"
       - name: Use fresh native app
-        if: needs.changes.outputs.run_mobile == 'true' && steps.native.outputs.cache-hit != 'true'
+        if: steps.native.outputs.cache-hit != 'true'
         run: |
           rm -rf "${APP_DIR}"
           cp -R "${NATIVE_DIR}" "${APP_DIR}"
       - name: Archive app
-        if: needs.changes.outputs.run_mobile == 'true'
         run: tar -C "${APP_DIR}" -cf "${RUNNER_TEMP}/mobile-app.tar" .
       - name: Upload app
-        if: needs.changes.outputs.run_mobile == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: mobile-app-${{ matrix.platform }}
@@ -400,8 +395,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, android]
-        run: [light-en-US, dark-zh-CN]
+        include: ${{ fromJSON(needs.changes.outputs.mobile_runs) }}
     env:
       MAESTRO_VERSION: 2.11.0
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
