@@ -115,6 +115,7 @@ export interface HostAddress {
 }
 
 export interface HostRemoteAccessStatus {
+  allowed: boolean;
   settings: RemoteAccessSettings;
   listening: boolean;
   addresses: HostAddress[];

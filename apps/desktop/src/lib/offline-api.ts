@@ -516,12 +516,14 @@ export const offlineApi: DesktopApi = {
     error: "Proxy test is unavailable outside the desktop app",
   }),
   getHostRemoteAccess: async () => ({
+    allowed: true,
     settings: { enabled: false, port: DEFAULT_REMOTE_ACCESS_PORT },
     listening: false,
     addresses: [],
     error: null,
   }),
   setHostRemoteAccess: async (settings) => ({
+    allowed: true,
     settings,
     listening: false,
     addresses: [],

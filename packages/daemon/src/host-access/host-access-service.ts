@@ -41,6 +41,7 @@ export interface HostAccessServiceOptions {
   hostName(): string;
   listAddresses?(port: number): HostAddress[];
   now?(): Date;
+  remoteAccessAllowed?: boolean;
 }
 
 export interface RemoteListenerState {
@@ -138,6 +139,16 @@ export class HostAccessService {
     this.options = options;
   }
 
+  private get remoteAccessAllowed() {
+    return this.options.remoteAccessAllowed ?? true;
+  }
+
+  private assertRemoteAccessAllowed() {
+    if (!this.remoteAccessAllowed) {
+      throw new Error("Remote access is disabled in this build");
+    }
+  }
+
   private now() {
     return this.options.now?.() ?? new Date();
   }
@@ -204,6 +215,7 @@ export class HostAccessService {
     payload: CreateHostPairingPayload,
     principal: HostPrincipal,
   ): CreatedHostPairing {
+    this.assertRemoteAccessAllowed();
     const label = payload.label.trim();
     if (!label) throw new Error("A pairing needs a label");
     const scopes = normalizeDeviceScopes(payload.scopes);
@@ -385,17 +397,21 @@ export class HostAccessService {
   }
 
   async startRemoteListener() {
+    if (!this.remoteAccessAllowed) return;
     const settings = await this.readRemoteAccessSettings();
     if (settings.enabled) await this.remoteListener?.apply(settings);
   }
 
   async remoteAccessStatus(): Promise<HostRemoteAccessStatus> {
-    const settings = await this.readRemoteAccessSettings();
+    const stored = await this.readRemoteAccessSettings();
+    const allowed = this.remoteAccessAllowed;
+    const settings = allowed ? stored : { ...stored, enabled: false };
     const state = this.remoteListener?.state() ?? {
       listening: false,
       error: null,
     };
     return {
+      allowed,
       settings,
       listening: state.listening,
       addresses: state.listening
@@ -409,6 +425,7 @@ export class HostAccessService {
     settings: RemoteAccessSettings,
     principal: HostPrincipal,
   ) {
+    if (settings.enabled) this.assertRemoteAccessAllowed();
     const saved = await this.saveRemoteAccessSettings(settings, principal);
     await this.remoteListener?.apply(saved);
     return this.remoteAccessStatus();
