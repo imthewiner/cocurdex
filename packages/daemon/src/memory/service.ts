@@ -65,7 +65,6 @@ import {
   readMemoryCaptures,
   readMemoryInstallState,
   readMemorySettings,
-  shouldAutoInstall,
   writeMemoryCapture,
   writeMemoryInstallState,
   writeMemorySettings,
@@ -93,7 +92,6 @@ export interface MemoryServiceOptions {
   resolveSessionProvider(
     session: SessionRecord,
   ): Promise<AgentRuntimeProviderConfig | null>;
-  autoInstall?: boolean;
   device?: string;
   rsrsDataDir?: string;
   startRuntime?: boolean;
@@ -201,18 +199,6 @@ export class MemoryService {
     this.settings = settings;
     this.statusCache = null;
     this.broadcast();
-    if (settings.enabled && this.options.autoInstall === true) {
-      void (async () => {
-        try {
-          if (await this.resolveExecutable()) return;
-          await this.install(false);
-        } catch (error) {
-          logDaemonDiagnostic("warn", "memory.autoInstallFailed", {
-            error: errorMessage(error),
-          });
-        }
-      })();
-    }
     return settings;
   }
 
@@ -220,28 +206,12 @@ export class MemoryService {
     if (this.startupPromise) return this.startupPromise;
     this.startupPromise = (async () => {
       await this.ensureInitialized();
-      const settings = this.currentSettings();
-      if (!settings.enabled) return;
+      if (!this.currentSettings().enabled) return;
       if (this.currentInstallState().status === "installing") {
         await this.persistInstallState({
           ...this.currentInstallState(),
           status: "idle",
         });
-      }
-      const executable = await this.resolveExecutable();
-      if (!executable) {
-        if (shouldAutoInstall(settings, this.currentInstallState())) {
-          void this.install(false);
-        }
-        return;
-      }
-      const state = this.currentInstallState();
-      const attemptedAt = state.attemptedAt ? Date.parse(state.attemptedAt) : 0;
-      const stale =
-        !attemptedAt ||
-        this.now().getTime() - attemptedAt > 24 * 60 * 60 * 1000;
-      if (state.status !== "ready" || stale) {
-        void this.doctor();
       }
     })();
     return this.startupPromise;

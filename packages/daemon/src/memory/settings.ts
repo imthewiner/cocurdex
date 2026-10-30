@@ -157,16 +157,3 @@ export async function writeMemoryInstallState(
 ) {
   await store.setAppSetting(MEMORY_INSTALL_STATE_KEY, JSON.stringify(state));
 }
-
-export function shouldAutoInstall(
-  settings: MemorySettings,
-  state: MemoryInstallState,
-  now = Date.now(),
-) {
-  if (!settings.enabled) return false;
-  if (state.status === "ready" || state.status === "installing") return false;
-  if (!state.attemptedAt) return true;
-  const attemptedAt = Date.parse(state.attemptedAt);
-  if (!Number.isFinite(attemptedAt)) return true;
-  return now - attemptedAt > 24 * 60 * 60 * 1000;
-}
