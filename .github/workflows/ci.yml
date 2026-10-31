@@ -386,24 +386,21 @@ jobs:
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 75
-    continue-on-error: ${{ matrix.platform == 'ios' }}
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: pairing-library }
-          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: transcript-compose }
           - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: pairing }
           - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: transcript }
           - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: compose }
           - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: library }
-    env:
+    env: &mobile-env
       MAESTRO_VERSION: 2.11.0
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
       IOS_DEVICE_TYPE: iPhone 16 Pro
-    steps:
+    steps: &mobile-steps
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup pnpm
@@ -513,6 +510,23 @@ jobs:
           path: ${{ runner.temp }}/mobile-tests
           if-no-files-found: ignore
           retention-days: 7
+
+  mobile-ios:
+    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.shard }})
+    needs: [changes, mobile-prepare]
+    if: needs.changes.outputs.run_mobile == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: pairing-library }
+          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: transcript-compose }
+    env: *mobile-env
+    steps: *mobile-steps
 
   mobile-required:
     name: Mobile
