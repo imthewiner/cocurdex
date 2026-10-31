@@ -380,7 +380,7 @@ jobs:
           retention-days: 1
 
   mobile:
-    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.flow }})
+    name: Mobile e2e (${{ matrix.platform }}, ${{ matrix.shard }})
     needs: [changes, mobile-prepare]
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
@@ -390,15 +390,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, android]
-        flow: [pairing, transcript, compose, library]
         include:
-          - platform: ios
-            os: macos-latest
-            pr_run: light-en-US
-          - platform: android
-            os: ubuntu-latest
-            pr_run: dark-zh-CN
+          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: pairing-library }
+          - { platform: ios, os: macos-latest, pr_run: light-en-US, shard: transcript-compose }
+          - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: pairing }
+          - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: transcript }
+          - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: compose }
+          - { platform: android, os: ubuntu-latest, pr_run: dark-zh-CN, shard: library }
     env:
       MAESTRO_VERSION: 2.11.0
       ANDROID_SYSTEM_IMAGE: system-images;android-36;google_apis;x86_64
@@ -492,7 +490,9 @@ jobs:
           PR_RUN: ${{ matrix.pr_run }}
           COCURDEX_TEST_ARTIFACTS_DIR: ${{ runner.temp }}/mobile-tests
         run: |
-          args=(--platform ${{ matrix.platform }} --flow ${{ matrix.flow }} --app "${APP_DIR}/$(ls "${APP_DIR}")")
+          args=(--platform ${{ matrix.platform }} --app "${APP_DIR}/$(ls "${APP_DIR}")")
+          IFS=- read -ra flows <<< "${{ matrix.shard }}"
+          for flow in "${flows[@]}"; do args+=(--flow "${flow}"); done
           args+=(--fixture-db "${RUNNER_TEMP}/fixture-db")
           if [[ "${ALL_RUNS}" != "true" ]]; then
             args+=(--run "${PR_RUN}")
@@ -507,7 +507,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: mobile-tests-${{ matrix.platform }}-${{ matrix.flow }}
+          name: mobile-tests-${{ matrix.platform }}-${{ matrix.shard }}
           path: ${{ runner.temp }}/mobile-tests
           if-no-files-found: ignore
           retention-days: 7
