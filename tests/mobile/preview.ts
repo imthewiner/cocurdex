@@ -3,10 +3,12 @@ import { createInterface } from "node:readline";
 import { parseArgs } from "node:util";
 import { parseHostPairingLink } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
-import { buildAndroidApp, startAndroidTarget } from "./lib/android";
+import { startAndroidTarget } from "./lib/android";
+import { buildAndroidApp } from "./lib/android-build";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
-import { buildIosApp, startIosTarget } from "./lib/ios";
+import { startIosTarget } from "./lib/ios";
+import { buildIosApp } from "./lib/ios-build";
 
 const mobileDir = path.resolve(import.meta.dirname, "../../apps/mobile");
 const { values } = parseArgs({
