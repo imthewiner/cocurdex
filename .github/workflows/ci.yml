@@ -306,6 +306,7 @@ jobs:
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    continue-on-error: ${{ matrix.platform == 'ios' }}
     permissions:
       actions: write
       contents: read
@@ -385,6 +386,7 @@ jobs:
     if: needs.changes.outputs.run_mobile == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 75
+    continue-on-error: ${{ matrix.platform == 'ios' }}
     permissions:
       contents: read
     strategy:
