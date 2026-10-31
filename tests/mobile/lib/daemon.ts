@@ -136,6 +136,7 @@ function streamedChunks(reply: string) {
 export async function startPairingDaemon(
   platform: MobilePlatform,
   tempDirs: ReturnType<typeof createTempDirs>,
+  fixtureDbDir?: string,
 ) {
   if (!existsSync(bundledDaemonPath)) {
     throw new Error(`Missing ${bundledDaemonPath}; run with --build first`);
@@ -145,6 +146,7 @@ export async function startPairingDaemon(
   const fixture = await installFixtureDb({
     userDataPath,
     workspaceParent: path.join(root, "ws"),
+    builtDir: fixtureDbDir,
   });
   const daemon = await spawnDaemon({ entry: "bundled", userDataPath });
   const stub = await startStubLlmServer();

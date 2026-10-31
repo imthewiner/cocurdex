@@ -10,10 +10,12 @@ import {
 } from "@cocurdex/e2e/fixture-db/recipe";
 import type { SupportedLocale } from "@cocurdex/shared";
 import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
-import { androidSdk, buildAndroidApp, startAndroidTarget } from "./lib/android";
+import { startAndroidTarget } from "./lib/android";
+import { androidSdk, buildAndroidApp } from "./lib/android-build";
 import { runCommand } from "./lib/command";
 import { startPairingDaemon } from "./lib/daemon";
-import { buildIosApp, startIosTarget } from "./lib/ios";
+import { startIosTarget } from "./lib/ios";
+import { buildIosApp } from "./lib/ios-build";
 import type { Appearance, MobilePlatform, MobileTarget } from "./lib/target";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
@@ -140,6 +142,7 @@ function flowLabels(locale: SupportedLocale) {
     FILE_SOURCE_TEXT: ".*function cartSubtotal.*",
     EMPTY_TITLE: hosts.empty.title,
     EMPTY_SCAN: hosts.empty.scan,
+    EMPTY_PASTE: hosts.empty.paste,
     SCAN_TITLE: hosts.scan.title,
     SCAN_PASTE: hosts.scan.paste,
     SCAN_UNREACHABLE: hosts.pair.failure.unreachable,
@@ -192,7 +195,10 @@ const { values } = parseArgs({
     build: { type: "boolean", default: false },
     app: { type: "string" },
     run: { type: "string", multiple: true },
+    flow: { type: "string", multiple: true },
     avd: { type: "string" },
+    device: { type: "string" },
+    "fixture-db": { type: "string" },
     keep: { type: "boolean", default: false },
   },
 });
@@ -209,6 +215,11 @@ function parsePlatform(value: string | undefined): MobilePlatform {
 const platform = parsePlatform(values.platform);
 if (platform === "ios" && process.platform !== "darwin") {
   throw new Error("iOS runs need macOS with Xcode");
+}
+if (values.device && platform !== "ios") {
+  throw new Error(
+    "--device names a booted iOS simulator; use --avd on Android",
+  );
 }
 
 function runId({ appearance, locale }: (typeof RUNS)[number]) {
@@ -227,7 +238,22 @@ function selectRuns(requested: string[] | undefined) {
   return RUNS.filter((run) => requested.includes(runId(run)));
 }
 
+const FLOWS = ["pairing", "transcript", "compose", "library"] as const;
+type FlowName = (typeof FLOWS)[number];
+
+function selectFlows(requested: string[] | undefined): FlowName[] {
+  if (!requested) return [...FLOWS];
+  const unknown = requested.filter((name) => !FLOWS.includes(name as FlowName));
+  if (unknown.length > 0) {
+    throw new Error(
+      `--flow must be one of ${FLOWS.join(", ")}, not ${unknown.join(", ")}`,
+    );
+  }
+  return FLOWS.filter((name) => requested.includes(name));
+}
+
 const runs = selectRuns(values.run);
+const flows = selectFlows(values.flow);
 const appPath = values.app ? path.resolve(values.app) : undefined;
 
 const DRIVER_STARTUP_TIMEOUT_MS = "240000";
@@ -284,6 +310,34 @@ function flowOutputRoot(tempDirs: ReturnType<typeof createTempDirs>) {
   return outputRoot;
 }
 
+async function verifyComposedSessions(
+  daemon: Awaited<ReturnType<typeof startPairingDaemon>>,
+) {
+  const prompts = daemon.sentPrompts().join("\n");
+  for (const { locale } of runs) {
+    const { SEND_PROMPT, NEW_SESSION_PROMPT } = sendLabels(locale);
+    for (const prompt of [SEND_PROMPT, NEW_SESSION_PROMPT]) {
+      if (!prompts.includes(prompt)) {
+        throw new Error(`The agent never received "${prompt}"`);
+      }
+    }
+  }
+  const replySessionTitles = runs.map(
+    ({ locale }) => sendLabels(locale).SEND_SESSION_TITLE,
+  );
+  const started = (await daemon.sessions()).filter(
+    (session) =>
+      session.agentType === "pi" &&
+      session.providerSnapshot?.modelName === daemon.agentModelName &&
+      !replySessionTitles.includes(session.title),
+  );
+  if (started.length !== runs.length) {
+    throw new Error(
+      `Expected ${runs.length} sessions started on Pi with ${daemon.agentModelName}, found ${started.length}`,
+    );
+  }
+}
+
 async function main() {
   await runCommand("maestro", ["--version"]).catch(() => {
     throw new Error("Maestro CLI is missing; install it and Java 17+");
@@ -299,7 +353,11 @@ async function main() {
   }
   const tempDirs = createTempDirs();
   const outputRoot = flowOutputRoot(tempDirs);
-  const daemon = await startPairingDaemon(platform, tempDirs);
+  const daemon = await startPairingDaemon(
+    platform,
+    tempDirs,
+    values["fixture-db"] && path.resolve(values["fixture-db"]),
+  );
   const openedSessionState = async () =>
     (await daemon.sessionAttention()).find(
       (entry) => entry.sessionId === CODE_SESSION,
@@ -311,7 +369,7 @@ async function main() {
     }
     const target =
       platform === "ios"
-        ? await startIosTarget(mobileDir, { appPath })
+        ? await startIosTarget(mobileDir, { appPath, deviceId: values.device })
         : await startAndroidTarget(mobileDir, values.avd, { appPath });
     await daemon.createImageSession(
       IMAGE_SESSION.title,
@@ -329,69 +387,48 @@ async function main() {
           send.SEND_SESSION_TITLE,
           streamedReply(send),
         );
-        await target.resetState();
-        await target.setAppearance(appearance);
-        await target.setLocale(locale);
-        await runFlow(
-          target,
-          "pairing.yaml",
-          {
-            ...flowLabels(locale),
-            ...send,
-            SEND_SESSION_ID: replySession.id,
-            NEW_SESSION_MODEL: daemon.agentModelName,
-            AGENT_MODEL_ID: daemon.agentModelId,
-            PAIRING_LINK: await daemon.createPairingLink(),
-            HOST_ADDRESS: daemon.hostAddress,
-            LINK_NOTE_TITLE,
-            ISSUE_LINK_TEXT: issueLinkText,
-            RESTORE_ACTION: readMessages(
-              locale,
-              "sessions",
-            ).archived.restoreSession.replace(
-              "{{title}}",
-              send.SEND_SESSION_TITLE,
-            ),
-          },
-          path.join(outputRoot, `${appearance}-${locale}`),
-          daemon.diagnostics,
-        );
-      }
-      const after = await openedSessionState();
-      if (after === "completed-unread") {
-        throw new Error(`Opening ${CODE_SESSION} did not mark it visited`);
-      }
-      const prompts = daemon.sentPrompts().join("\n");
-      for (const { locale } of runs) {
-        const { SEND_PROMPT } = sendLabels(locale);
-        if (!prompts.includes(SEND_PROMPT)) {
-          throw new Error(`The agent never received "${SEND_PROMPT}"`);
+        for (const flow of flows) {
+          await target.resetState();
+          await target.setAppearance(appearance);
+          await target.setLocale(locale);
+          await runFlow(
+            target,
+            `${flow}.yaml`,
+            {
+              ...flowLabels(locale),
+              ...send,
+              SEND_SESSION_ID: replySession.id,
+              NEW_SESSION_MODEL: daemon.agentModelName,
+              AGENT_MODEL_ID: daemon.agentModelId,
+              PAIRING_LINK: await daemon.createPairingLink(),
+              HOST_ADDRESS: daemon.hostAddress,
+              LINK_NOTE_TITLE,
+              ISSUE_LINK_TEXT: issueLinkText,
+              RESTORE_ACTION: readMessages(
+                locale,
+                "sessions",
+              ).archived.restoreSession.replace(
+                "{{title}}",
+                send.SEND_SESSION_TITLE,
+              ),
+            },
+            path.join(outputRoot, `${appearance}-${locale}`, flow),
+            daemon.diagnostics,
+          );
         }
       }
-      const replySessionTitles = runs.map(
-        ({ locale }) => sendLabels(locale).SEND_SESSION_TITLE,
-      );
-      const started = (await daemon.sessions()).filter(
-        (session) =>
-          session.agentType === "pi" &&
-          session.providerSnapshot?.modelName === daemon.agentModelName &&
-          !replySessionTitles.includes(session.title),
-      );
-      if (started.length !== runs.length) {
-        throw new Error(
-          `Expected ${runs.length} sessions started on Pi with ${daemon.agentModelName}, found ${started.length}`,
-        );
-      }
-      for (const { locale } of runs) {
-        const { NEW_SESSION_PROMPT } = sendLabels(locale);
-        if (!prompts.includes(NEW_SESSION_PROMPT)) {
-          throw new Error(`The agent never received "${NEW_SESSION_PROMPT}"`);
+      if (flows.includes("transcript")) {
+        const after = await openedSessionState();
+        if (after === "completed-unread") {
+          throw new Error(`Opening ${CODE_SESSION} did not mark it visited`);
         }
       }
+      if (flows.includes("compose")) await verifyComposedSessions(daemon);
       const devices = await daemon.pairedDevices();
-      if (devices.length !== runs.length) {
+      const pairings = runs.length * flows.length;
+      if (devices.length !== pairings) {
         throw new Error(
-          `Expected ${runs.length} paired devices, daemon has ${devices.length}`,
+          `Expected ${pairings} paired devices, daemon has ${devices.length}`,
         );
       }
     } finally {

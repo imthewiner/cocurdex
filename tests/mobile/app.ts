@@ -3,9 +3,13 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { createTempDirs } from "@cocurdex/test-fixtures/temp-dirs";
 import { createFingerprintAsync } from "@expo/fingerprint";
-import { androidApkPath, androidSdk, buildAndroidApp } from "./lib/android";
+import {
+  androidApkPath,
+  androidSdk,
+  buildAndroidApp,
+} from "./lib/android-build";
 import { runCommand } from "./lib/command";
-import { buildIosApp, iosAppPath } from "./lib/ios";
+import { buildIosApp, iosAppPath } from "./lib/ios-build";
 import type { MobilePlatform } from "./lib/target";
 
 const repoRoot = path.resolve(import.meta.dirname, "../..");
@@ -13,9 +17,9 @@ const mobileDir = path.join(repoRoot, "apps/mobile");
 const patchesDir = path.join(repoRoot, "patches");
 const BUILD_SCRIPTS = [
   "app.ts",
-  "lib/android.ts",
+  "lib/android-build.ts",
   "lib/command.ts",
-  "lib/ios.ts",
+  "lib/ios-build.ts",
 ].map((file) => path.join(import.meta.dirname, file));
 const APP_FILE: Record<MobilePlatform, string> = {
   ios: "Cocurdex.app",
